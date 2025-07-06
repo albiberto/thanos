@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Thanos.Domain;
 using Thanos.Enums;
 using Thanos.Extensions;
@@ -16,16 +17,16 @@ public class MonteCarlo
     public static double DownScore;
     public static double LeftScore;
     public static double RightScore;
-
-    private static readonly (int, int)[] _vectors = [(0, 1), (0, -1), (-1, 0), (1, 0)];
-    private readonly int[] _moveTaskCounts = new int[4]; // Pre-alloca per 4 direzioni max
+    
+    // Pre-allocazioni statiche - zero allocazioni runtime
+    private static readonly double[] _resultsBuffer = new double[256];
+    private static readonly unsafe double*[] _scorePointers = new double*[4];
+    private static readonly ParallelOptions _parallelOptions = new() { MaxDegreeOfParallelism = Environment.ProcessorCount };
+    private static TaskDistribution _cachedDistribution;
+    private static int _lastMovesCount = -1;
 
     // Valori pre-computati di √(ln(n)) per ottimizzare il calcolo UCT nelle simulazioni Monte Carlo.
     private readonly double[] _precomputedSqrtLog;
-
-    // Buffer di task (Mosse X Core) pre-allocato per evitare allocazioni dinamiche
-    // 16 task per core, espandibile se necessario, un overkill
-    private readonly Task<double>[] _taskBuffer = new Task<double>[Environment.ProcessorCount * 16];
 
     public MonteCarlo(double[] precomputedSqrtLog)
     {
@@ -50,7 +51,7 @@ public class MonteCarlo
     /// <param name="request">Stato corrente del gioco contenente posizioni serpenti, cibo e dimensioni board</param>
     /// <returns>Direzione ottimale calcolata tramite simulazioni Monte Carlo</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public async Task<Direction>  GetBestMoveAsync(MoveRequest request)
+    public Direction  GetBestMove(MoveRequest request)
     {
         var board = request.Board;
         var mySnake = request.You;
@@ -94,9 +95,8 @@ public class MonteCarlo
         UpScore = DownScore = RightScore = LeftScore = 0.0;
 
         // FASE 2: FASE DI ESPLORAZIONE INIZIALE
-        await InitialExplorationAsync(movesCount);
-
-
+        InitialExploration(movesCount);
+        
         return Direction.Down;
     }
 
@@ -105,7 +105,7 @@ public class MonteCarlo
         BuildCollisionMatrix(width, height, myId, myBody, myBodyLength, hazards, hazardCount, snakes, snakeCount, eat);
         
         // TODO: DEBUG - Stampa matrice di collisione
-        _collisionMatrix.Print(width, height);
+        // _collisionMatrix.Print(width, height);
         
         var count = 0;
 
@@ -207,136 +207,105 @@ public class MonteCarlo
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private async Task InitialExplorationAsync(int movesCount)
+    private unsafe void InitialExploration(int movesCount)
     {
-        // 1. Calcola la distribuzione ottimale con operazioni bit-wise
-        var availableCores = Environment.ProcessorCount;
-        var division = availableCores / movesCount;
-        var tasksPerMove = Math.Max(1, division);
-        var timePerMove = PerformanceConfig.InitialExplorationTimeMs / movesCount;
-        var timePerTask = timePerMove / tasksPerMove;
-        var totalTasks = movesCount * tasksPerMove;
-
-        // Del buffer di task pre-allocato, usa solo la parte necessaria, grazie a Span<T>
-        var taskSpan = _taskBuffer.AsSpan(0, totalTasks);
-
-        var taskIndex = 0;
-
-        // 2. Distribuisce i task per ogni mossa - loop unrolled aggressivo
-        for (var i = 0; i < movesCount; i++)
+        // 1. Setup puntatori scores una volta sola (se non fatto)
+        if (_scorePointers[0] == null)
         {
-            var remainingCores = availableCores - taskIndex;
-            var coresForThisMove = tasksPerMove < remainingCores ? tasksPerMove : remainingCores;
-
-            taskIndex = EnqueueSimulationsUnrolled(_validMoves[i], coresForThisMove, timePerTask, taskSpan, taskIndex);
-            _moveTaskCounts[i] = coresForThisMove;
+            _scorePointers[0] = (double*)Unsafe.AsPointer(ref UpScore);
+            _scorePointers[1] = (double*)Unsafe.AsPointer(ref DownScore);  
+            _scorePointers[2] = (double*)Unsafe.AsPointer(ref LeftScore);
+            _scorePointers[3] = (double*)Unsafe.AsPointer(ref RightScore);
         }
-
-        // 3. Riduco lo span per monitorare solo i task attivi, per esempio con 16 core e 3 mosse avremmo 15 elementi.
-        // taskSpan: contiene 16 elementi, 1xCore, ma solo i primi 15 sono attivi
-        // taskIndex contiene il numero effettivo di core inserito nel buffer taskSpan (15).
-        var activeTasks = taskSpan[..taskIndex];
-        var results = await Task.WhenAll(activeTasks.ToArray()).ConfigureAwait(false);
+    
+        // 2. Cache distribuzione (branch prediction friendly)
+        var distribution = _lastMovesCount == movesCount 
+            ? _cachedDistribution 
+            : _cachedDistribution = new TaskDistribution(movesCount, Environment.ProcessorCount, PerformanceConfig.InitialExplorationTimeMs);
         
-        // 4. Aggregazione ultra-veloce con accesso diretto
-        var scoreIndex = 0;
-
-        for (var i = 0; i < movesCount; i++)
+        _lastMovesCount = movesCount;
+    
+        // 3. Esecuzione parallela raw - zero overhead
+        Parallel.For(0, distribution.TotalTasks, _parallelOptions, taskIndex =>
         {
-            var taskCount = _moveTaskCounts[i];
-            var scoresSpan = results.AsSpan(scoreIndex, taskCount);
-
-            var totalScore = SumScoresUnrolled(taskCount, scoresSpan);
-
-            // Assegnazione diretta ultra-veloce con jump table implicito
-            switch (_validMoves[i])
+            var moveIndex = taskIndex / distribution.TasksPerMove;
+            _resultsBuffer[taskIndex] = SimulateMove(_validMoves[moveIndex], distribution.TimePerTask);
+        });
+    
+        // 4. Aggregazione ultra-veloce con SIMD + unsafe
+        fixed (double* resultsPtr = _resultsBuffer)
+        {
+            var resultIndex = 0;
+        
+            for (var i = 0; i < movesCount; i++)
             {
-                case Direction.Up:
-                    UpScore = totalScore;
-                    break;
-                case Direction.Down:
-                    DownScore = totalScore;
-                    break;
-                case Direction.Left:
-                    LeftScore = totalScore;
-                    break;
-                case Direction.Right:
-                    RightScore = totalScore;
-                    break;
+                var moveInt = (int)_validMoves[i];
+                var scoresPtr = resultsPtr + resultIndex;
+                var totalScore = SumScoresHyperOptimized(scoresPtr, distribution.TasksPerMove);
+            
+                // Assegnazione diretta con puntatori - zero branch
+                *_scorePointers[moveInt] = totalScore;
+            
+                resultIndex += distribution.TasksPerMove;
             }
-
-            scoreIndex += taskCount;
         }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int EnqueueSimulationsUnrolled(Direction move, int coresForThisMove, double timePerTask, Span<Task<double>> taskSpan, int taskIndex)
-    {
-        var j = 0;
-        
-        // Unroll aggressivo a gruppi di 8
-        var unrollLimit = coresForThisMove & ~7;
-        for (; j < unrollLimit; j += 8)
-        {
-            taskSpan[taskIndex] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 1] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 2] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 3] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 4] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 5] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 6] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 7] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskIndex += 8;
-        }
-
-        // Unroll a gruppi di 4 per i rimanenti
-        var unrollLimit4 = coresForThisMove & ~3;
-        for (; j < unrollLimit4; j += 4)
-        {
-            taskSpan[taskIndex] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 1] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 2] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskSpan[taskIndex + 3] = Task.Run(() => SimulateMove(move, timePerTask));
-            taskIndex += 4;
-        }
-
-        // Rimanenti task (0-3)
-        for (; j < coresForThisMove; j++) taskSpan[taskIndex++] = Task.Run(() => SimulateMove(move, timePerTask));
-        
-        return taskIndex;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static double SumScoresUnrolled(int taskCount, Span<double> scoresSpan)
+    private static unsafe double SumScoresHyperOptimized(double* scores, int count)
     {
         var totalScore = 0.0;
+        var i = 0;
+    
+        // SIMD ultra-aggressivo con Vector<double>
+        if (Vector.IsHardwareAccelerated && count >= 16)
+        {
+            var vectorSize = Vector<double>.Count;
+            var vectorLimit = count & ~(vectorSize - 1);
+            var vectorSum = Vector<double>.Zero;
         
-        var j = 0;
-
-        // Unroll primario a gruppi di 8 per SIMD
-        for (; j <= taskCount - 8; j += 8)
-            totalScore += scoresSpan[j]
-                          + scoresSpan[j + 1]
-                          + scoresSpan[j + 2]
-                          + scoresSpan[j + 3]
-                          + scoresSpan[j + 4]
-                          + scoresSpan[j + 5]
-                          + scoresSpan[j + 6]
-                          + scoresSpan[j + 7];
-
-        // Unroll secondario a gruppi di 4
-        for (; j <= taskCount - 4; j += 4)
-            totalScore += scoresSpan[j]
-                          + scoresSpan[j + 1]
-                          + scoresSpan[j + 2]
-                          + scoresSpan[j + 3];
-
-        // Rimanenti elementi
-        for (; j < taskCount; j++) totalScore += scoresSpan[j];
+            // Unroll SIMD a blocchi di 4 vector (cache-friendly)
+            var blockLimit = vectorLimit & ~(vectorSize * 4 - 1);
+            for (; i < blockLimit; i += vectorSize * 4)
+            {
+                var v1 = Unsafe.Read<Vector<double>>(scores + i);
+                var v2 = Unsafe.Read<Vector<double>>(scores + i + vectorSize);
+                var v3 = Unsafe.Read<Vector<double>>(scores + i + vectorSize * 2);
+                var v4 = Unsafe.Read<Vector<double>>(scores + i + vectorSize * 3);
+                
+                vectorSum += v1 + v2 + v3 + v4;
+            }
         
+            // Rimanenti vector
+            for (; i < vectorLimit; i += vectorSize) vectorSum += Unsafe.Read<Vector<double>>(scores + i);
+        
+            // Estrai somma dal vector
+            for (var j = 0; j < vectorSize; j++) totalScore += vectorSum[j];
+        }
+    
+        // Unroll manuale aggressivo per i rimanenti
+        var remaining = count - i;
+        var unrollLimit8 = i + (remaining & ~7);
+    
+        for (; i < unrollLimit8; i += 8)
+        {
+            totalScore += scores[i] + scores[i + 1] + scores[i + 2] + scores[i + 3] +
+                          scores[i + 4] + scores[i + 5] + scores[i + 6] + scores[i + 7];
+        }
+    
+        var unrollLimit4 = i + (remaining & 7 & ~3);
+        for (; i < unrollLimit4; i += 4)
+        {
+            totalScore += scores[i] + scores[i + 1] + scores[i + 2] + scores[i + 3];
+        }
+    
+        // Ultimi elementi
+        for (; i < count; i++)
+            totalScore += scores[i];
+    
         return totalScore;
     }
-
+    
     private double SimulateMove(Direction move, double timeAllowedMs) => move == Direction.Up 
         ? .2 
         : .1;

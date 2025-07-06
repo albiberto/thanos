@@ -1,9 +1,9 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Thanos.Model;
 
-namespace Thanos.Console;
+namespace Thanos.Console.SuitUnderTest;
 
-public class GetBestMoveAsync
+public class GetBestMoveBenchmarks
 {
     private readonly MonteCarlo _monteCarlo = new([]);
 
@@ -18,9 +18,9 @@ public class GetBestMoveAsync
     }
 
     [Benchmark]
-    public async Task GetBestMove_Benchmark()
+    public void GetBestMove_Benchmark()
     {
-        await _monteCarlo.GetBestMoveAsync(new MoveRequest
+        _monteCarlo.GetBestMove(new MoveRequest
         {
             Board = _board,
             You = _mySnake
