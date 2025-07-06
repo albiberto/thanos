@@ -18,6 +18,9 @@ public class MonteCarlo
     public static double RightScore;
 
     private static readonly (int, int)[] _vectors = [(0, 1), (0, -1), (-1, 0), (1, 0)];
+    
+    // Buffer di task (Mosse X Core) pre-allocato per evitare allocazioni dinamiche
+    private readonly Task<double>[] _taskBuffer = new Task<double>[4 * Environment.ProcessorCount]; 
 
     // Valori pre-computati di √(ln(n)) per ottimizzare il calcolo UCT nelle simulazioni Monte Carlo.
     private readonly double[] _precomputedSqrtLog;
@@ -45,7 +48,7 @@ public class MonteCarlo
     /// <param name="request">Stato corrente del gioco contenente posizioni serpenti, cibo e dimensioni board</param>
     /// <returns>Direzione ottimale calcolata tramite simulazioni Monte Carlo</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Direction GetBestMove(MoveRequest request)
+    public async Task<Direction> GetBestMoveAsync(MoveRequest request)
     {
         var board = request.Board;
         var mySnake = request.You;
@@ -87,6 +90,7 @@ public class MonteCarlo
         UpScore = DownScore = RightScore = LeftScore = 0.0;
 
         // FASE 2: FASE DI ESPLORAZIONE INIZIALE
+        await InitialExplorationAsync(movesCount);
 
 
         return Direction.Down;
@@ -182,4 +186,68 @@ public class MonteCarlo
             }
         }
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private async Task InitialExplorationAsync(int movesCount)
+    {
+        // 1. Calcola la distribuzione ottimale
+        var availableCores = Environment.ProcessorCount;
+        var division = availableCores / movesCount;
+        var tasksPerMove = (division & ~(division >> 31)) | ((~division + 1) >> 31);
+        var timePerMove = PerformanceConfig.InitialExplorationTimeMs / movesCount;
+        var timePerTask = timePerMove / tasksPerMove;
+
+        var taskIndex = 0;
+        
+        // 2. Distribuisce i task per ogni mossa
+        for (var i = 0; i < movesCount; i++)
+        {
+            var move = _validMoves[i];
+            var remainingCores = availableCores - taskIndex;
+            var coresForThisMove = tasksPerMove < remainingCores ? tasksPerMove : remainingCores;
+        
+            for (var j = 0; j < coresForThisMove; j++) _taskBuffer[taskIndex++] = Task.Run(() => SimulateMove(move, timePerTask));
+        }
+        
+        // 3. Attende tutti i task e aggrega i risultati
+        var scores = await Task.WhenAll(_taskBuffer[..taskIndex]);
+        
+        // 4. Aggrega i risultati per mossa
+        for (var i = 0; i < movesCount; i++)
+        {
+            var totalScore = 0.0;
+            
+            var move = _validMoves[i];
+            
+            var startIndex = i * tasksPerMove;
+            var endIndex = Math.Min(startIndex + tasksPerMove, taskIndex);
+        
+            // Somma i risultati di tutti i task per questa mossa
+            for (var j = startIndex; j < endIndex; j++)
+            {
+                var score = scores[j];
+                totalScore += score;
+            }
+
+            switch (move)
+            {
+                case Direction.Up:
+                    UpScore = totalScore;
+                    break;
+                case Direction.Down:
+                    DownScore = totalScore;
+                    break;
+                case Direction.Left:
+                    LeftScore = totalScore;
+                    break;
+                case Direction.Right:
+                    RightScore = totalScore;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+    }
+
+    private double  SimulateMove(Direction move, int timeAllowedMs) => .1;
 }
