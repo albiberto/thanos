@@ -1,7 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Thanos.Model;
 
-namespace Thanos.Console;
+namespace Thanos.Console.SuitUnderTest;
 
 public class GetValidMovesBenchmarks
 {

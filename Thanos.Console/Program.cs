@@ -1,11 +1,12 @@
 ﻿using BenchmarkDotNet.Running;
 using Thanos;
 using Thanos.Console;
+using Thanos.Console.SuitUnderTest;
 using Thanos.Model;
 
-BenchmarkRunner.Run<BuildCollisionMatrixBenchmarks>();
-BenchmarkRunner.Run<GetValidMovesBenchmarks>();
-BenchmarkRunner.Run<GetBestMoveAsync>();
+// BenchmarkRunner.Run<BuildCollisionMatrixBenchmarks>();
+// BenchmarkRunner.Run<GetValidMovesBenchmarks>();
+BenchmarkRunner.Run<GetBestMoveBenchmarks>();
 
 return;
 
@@ -16,7 +17,7 @@ MonteCarlo.GetValidMoves(board.width, board.height, mySnake.id, mySnake.body, my
 
 board.Print();
 var monteCarlo = new MonteCarlo([]);
-await monteCarlo.GetBestMoveAsync(new MoveRequest
+monteCarlo.GetBestMove(new MoveRequest
 {
     Board = board,
     You = mySnake

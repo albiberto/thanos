@@ -2,7 +2,7 @@
 using Thanos.CollisionMatrix;
 using Thanos.Model;
 
-namespace Thanos.Console;
+namespace Thanos.Console.SuitUnderTest;
 
 public class BuildCollisionMatrixBenchmarks
 {
