@@ -23,12 +23,12 @@ public static class Support
                 {
                     id = "me",
                     health = 90,
-                    head = new Point { x = 0, y = 0 },
+                    head = new Point { x = 1, y = 1 },
                     body =
                     [
-                        new Point { x = 0, y = 0 },
-                        new Point { x = 1, y = 0 },
-                        new Point { x = 2, y = 0 }
+                        new Point { x = 2, y = 1 },
+                        new Point { x = 3, y = 1 },
+                        new Point { x = 4, y = 1 }
                     ]
                 },
                 new Snake
@@ -46,7 +46,7 @@ public static class Support
                 new Snake
                 {
                     id = "enemy2",
-                    health = 100,
+                    health = 70,
                     head = new Point { x = 0, y = 18 },
                     body =
                     [
@@ -58,7 +58,7 @@ public static class Support
                 new Snake
                 {
                     id = "enemy3",
-                    health = 100,
+                    health = 60,
                     head = new Point { x = 18, y = 18 },
                     body =
                     [
