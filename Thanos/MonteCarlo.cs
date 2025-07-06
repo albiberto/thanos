@@ -10,6 +10,14 @@ public class MonteCarlo
 {
     // Matrice globale riutilizzabile - zero allocazioni
     private static readonly bool[,] _collisionMatrix = new bool[19, 19];
+    private static readonly Direction[] _validMoves = new Direction[4];
+
+    public static double UpScore;
+    public static double DownScore;
+    public static double LeftScore;
+    public static double RightScore;
+
+    private static readonly (int, int)[] _vectors = [(0, 1), (0, -1), (-1, 0), (1, 0)];
 
     // Valori pre-computati di √(ln(n)) per ottimizzare il calcolo UCT nelle simulazioni Monte Carlo.
     private readonly double[] _precomputedSqrtLog;
@@ -54,27 +62,62 @@ public class MonteCarlo
         var myId = mySnake.id;
         var myBody = mySnake.body;
         var myBodyLength = myBody.Length;
+        var myHead = mySnake.head;
+        var myHeadX = myHead.x;
+        var myHeadY = myHead.y;
 
         var eat = mySnake.health < 100;
 
         // FASE 1: VALUTAZIONE DIREZIONI SICURE
-        var mask = GetValidMoves(width, height, myId, myBody, myBodyLength, hazards, hazardCount, snakes, snakeCount, eat);
+
+        // Questo metodo sfrutta le variabili di classe preallocate _collisionMatrix e _validMoves.
+        // _collisionMatrix è una variabile privata che rappresenta la matrice delle collisioni sulla board
+        // e viene utilizzata nei metodi GetValidMoves e BuildCollisionMatrix.
+        // _validMoves contiene sempre 4 elementi preallocati (uno per ogni direzione possibile),
+        // ma solo i primi movesCount sono effettivamente validi e rappresentano le mosse sicure trovate.
+        // Gli altri valori di _validMoves sono solo segnaposto dovuti alla preallocazione e non vanno considerati.
+        // Questo approccio riduce le allocazioni di memoria e migliora le prestazioni nelle simulazioni.
+        var movesCount = GetValidMoves(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);
+
+        // Gestione casi limite: se non ci sono scelte, evita simulazioni costose
+        if (movesCount < 1) return Direction.Up;
+        if (movesCount == 1) return _validMoves[0];
+
+        // Reset punteggi direzionali
+        UpScore = DownScore = RightScore = LeftScore = 0.0;
+
+        // FASE 2: FASE DI ESPLORAZIONE INIZIALE
+
 
         return Direction.Down;
     }
 
-    public Direction[] GetValidMoves(uint width, uint height, string myId, Point[] myBody, int myBodyLength, Point[] hazards, int hazardCount, Snake[] snakes, int snakeCount, bool eat)
+    public static unsafe int GetValidMoves(uint width, uint height, string myId, Point[] myBody, int myBodyLength, uint myHeadX, uint myHeadY, Point[] hazards, int hazardCount, Snake[] snakes, int snakeCount, bool eat)
     {
         BuildCollisionMatrix(width, height, myId, myBody, myBodyLength, hazards, hazardCount, snakes, snakeCount, eat);
 
-        // Ritorna tutte le mosse valide
-        return new[]
+        var count = 0;
+
+        fixed (bool* ptr = _collisionMatrix)
         {
-            Direction.Up,
-            Direction.Down,
-            Direction.Left,
-            Direction.Right
-        };
+            // === UP ===
+            var checkRow = myHeadY - 1;
+            if (checkRow < height && !*(ptr + checkRow * width + myHeadX)) _validMoves[count++] = Direction.Up;
+
+            // === RIGHT ===
+            var checkCol = myHeadX + 1;
+            if (checkCol < width && !*(ptr + myHeadY * width + checkCol)) _validMoves[count++] = Direction.Right;
+
+            // === DOWN ===
+            checkRow = myHeadY + 1;
+            if (checkRow < height && !*(ptr + checkRow * width + myHeadX)) _validMoves[count++] = Direction.Down;
+
+            // === LEFT ===
+            checkCol = myHeadX - 1;
+            if (checkCol < width && !*(ptr + myHeadY * width + checkCol)) _validMoves[count] = Direction.Left;
+        }
+
+        return count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
