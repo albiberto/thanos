@@ -18,12 +18,14 @@ public class MonteCarlo
     public static double RightScore;
 
     private static readonly (int, int)[] _vectors = [(0, 1), (0, -1), (-1, 0), (1, 0)];
-    
-    // Buffer di task (Mosse X Core) pre-allocato per evitare allocazioni dinamiche
-    private readonly Task<double>[] _taskBuffer = new Task<double>[4 * Environment.ProcessorCount]; 
+    private readonly int[] _moveTaskCounts = new int[4]; // Pre-alloca per 4 direzioni max
 
     // Valori pre-computati di √(ln(n)) per ottimizzare il calcolo UCT nelle simulazioni Monte Carlo.
     private readonly double[] _precomputedSqrtLog;
+
+    // Buffer di task (Mosse X Core) pre-allocato per evitare allocazioni dinamiche
+    // 16 task per core, espandibile se necessario, un overkill
+    private readonly Task<double>[] _taskBuffer = new Task<double>[Environment.ProcessorCount * 16];
 
     public MonteCarlo(double[] precomputedSqrtLog)
     {
@@ -48,7 +50,7 @@ public class MonteCarlo
     /// <param name="request">Stato corrente del gioco contenente posizioni serpenti, cibo e dimensioni board</param>
     /// <returns>Direzione ottimale calcolata tramite simulazioni Monte Carlo</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public async Task<Direction> GetBestMoveAsync(MoveRequest request)
+    public async Task<Direction>  GetBestMoveAsync(MoveRequest request)
     {
         var board = request.Board;
         var mySnake = request.You;
@@ -68,8 +70,10 @@ public class MonteCarlo
         var myHead = mySnake.head;
         var myHeadX = myHead.x;
         var myHeadY = myHead.y;
-
-        var eat = mySnake.health < 100;
+        
+        // TODO: Valutare se aggiungere il concetto di "mangiare" anche per i serpenti nemici. 
+        //       Da capire se il dato in mio possesso include già l'aumento di lunghezza del serpente nemico.
+        var eat = mySnake.health == 100;
 
         // FASE 1: VALUTAZIONE DIREZIONI SICURE
 
@@ -99,26 +103,41 @@ public class MonteCarlo
     public static unsafe int GetValidMoves(uint width, uint height, string myId, Point[] myBody, int myBodyLength, uint myHeadX, uint myHeadY, Point[] hazards, int hazardCount, Snake[] snakes, int snakeCount, bool eat)
     {
         BuildCollisionMatrix(width, height, myId, myBody, myBodyLength, hazards, hazardCount, snakes, snakeCount, eat);
-
+        
+        // TODO: DEBUG - Stampa matrice di collisione
+        _collisionMatrix.Print(width, height);
+        
         var count = 0;
 
         fixed (bool* ptr = _collisionMatrix)
         {
             // === UP ===
-            var checkRow = myHeadY - 1;
-            if (checkRow < height && !*(ptr + checkRow * width + myHeadX)) _validMoves[count++] = Direction.Up;
+            if (myHeadY > 0)
+            {
+                var checkRow = myHeadY - 1;
+                if (checkRow < height && !*(ptr + checkRow * width + myHeadX)) _validMoves[count++] = Direction.Up;
+            }
 
             // === RIGHT ===
-            var checkCol = myHeadX + 1;
-            if (checkCol < width && !*(ptr + myHeadY * width + checkCol)) _validMoves[count++] = Direction.Right;
+            if (myHeadX + 1 < width)
+            {
+                var checkCol = myHeadX + 1;
+                if (!*(ptr + myHeadY * width + checkCol)) _validMoves[count++] = Direction.Right;
+            }
 
             // === DOWN ===
-            checkRow = myHeadY + 1;
-            if (checkRow < height && !*(ptr + checkRow * width + myHeadX)) _validMoves[count++] = Direction.Down;
+            if (myHeadY + 1 < height)
+            {
+                var checkRow = myHeadY + 1;
+                if (!*(ptr + checkRow * width + myHeadX)) _validMoves[count++] = Direction.Down;
+            }
 
             // === LEFT ===
-            checkCol = myHeadX - 1;
-            if (checkCol < width && !*(ptr + myHeadY * width + checkCol)) _validMoves[count] = Direction.Left;
+            if (myHeadX > 0)
+            {
+                var checkCol = myHeadX - 1;
+                if (checkCol < width && !*(ptr + myHeadY * width + checkCol)) _validMoves[count++] = Direction.Left;
+            }
         }
 
         return count;
@@ -177,59 +196,60 @@ public class MonteCarlo
                 }
             }
 
-            // === ME - CORPO (salta testa) ===
-            var end = eat ? myBodyLength - 1 : myBodyLength;
-            for (var i = 1; i < end; i++)
+            // === ME - CORPO (includi testa per evitare movimenti all'indietro) ===
+            var end = eat ? myBodyLength : myBodyLength - 1;
+            for (var i = 0; i < end; i++)  // Parti da 0 per includere la testa
             {
                 var bodyPart = myBody[i];
                 *(ptr + bodyPart.y * width + bodyPart.x) = true;
             }
         }
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private async Task InitialExplorationAsync(int movesCount)
     {
-        // 1. Calcola la distribuzione ottimale
+        // 1. Calcola la distribuzione ottimale con operazioni bit-wise
         var availableCores = Environment.ProcessorCount;
         var division = availableCores / movesCount;
-        var tasksPerMove = (division & ~(division >> 31)) | ((~division + 1) >> 31);
+        var tasksPerMove = Math.Max(1, division);
         var timePerMove = PerformanceConfig.InitialExplorationTimeMs / movesCount;
         var timePerTask = timePerMove / tasksPerMove;
+        var totalTasks = movesCount * tasksPerMove;
+
+        // Del buffer di task pre-allocato, usa solo la parte necessaria, grazie a Span<T>
+        var taskSpan = _taskBuffer.AsSpan(0, totalTasks);
 
         var taskIndex = 0;
-        
-        // 2. Distribuisce i task per ogni mossa
+
+        // 2. Distribuisce i task per ogni mossa - loop unrolled aggressivo
         for (var i = 0; i < movesCount; i++)
         {
-            var move = _validMoves[i];
             var remainingCores = availableCores - taskIndex;
             var coresForThisMove = tasksPerMove < remainingCores ? tasksPerMove : remainingCores;
-        
-            for (var j = 0; j < coresForThisMove; j++) _taskBuffer[taskIndex++] = Task.Run(() => SimulateMove(move, timePerTask));
+
+            taskIndex = EnqueueSimulationsUnrolled(_validMoves[i], coresForThisMove, timePerTask, taskSpan, taskIndex);
+            _moveTaskCounts[i] = coresForThisMove;
         }
+
+        // 3. Riduco lo span per monitorare solo i task attivi, per esempio con 16 core e 3 mosse avremmo 15 elementi.
+        // taskSpan: contiene 16 elementi, 1xCore, ma solo i primi 15 sono attivi
+        // taskIndex contiene il numero effettivo di core inserito nel buffer taskSpan (15).
+        var activeTasks = taskSpan[..taskIndex];
+        var results = await Task.WhenAll(activeTasks.ToArray()).ConfigureAwait(false);
         
-        // 3. Attende tutti i task e aggrega i risultati
-        var scores = await Task.WhenAll(_taskBuffer[..taskIndex]);
-        
-        // 4. Aggrega i risultati per mossa
+        // 4. Aggregazione ultra-veloce con accesso diretto
+        var scoreIndex = 0;
+
         for (var i = 0; i < movesCount; i++)
         {
-            var totalScore = 0.0;
-            
-            var move = _validMoves[i];
-            
-            var startIndex = i * tasksPerMove;
-            var endIndex = Math.Min(startIndex + tasksPerMove, taskIndex);
-        
-            // Somma i risultati di tutti i task per questa mossa
-            for (var j = startIndex; j < endIndex; j++)
-            {
-                var score = scores[j];
-                totalScore += score;
-            }
+            var taskCount = _moveTaskCounts[i];
+            var scoresSpan = results.AsSpan(scoreIndex, taskCount);
 
-            switch (move)
+            var totalScore = SumScoresUnrolled(taskCount, scoresSpan);
+
+            // Assegnazione diretta ultra-veloce con jump table implicito
+            switch (_validMoves[i])
             {
                 case Direction.Up:
                     UpScore = totalScore;
@@ -243,11 +263,81 @@ public class MonteCarlo
                 case Direction.Right:
                     RightScore = totalScore;
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
+
+            scoreIndex += taskCount;
         }
     }
 
-    private double  SimulateMove(Direction move, int timeAllowedMs) => .1;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int EnqueueSimulationsUnrolled(Direction move, int coresForThisMove, double timePerTask, Span<Task<double>> taskSpan, int taskIndex)
+    {
+        var j = 0;
+        
+        // Unroll aggressivo a gruppi di 8
+        var unrollLimit = coresForThisMove & ~7;
+        for (; j < unrollLimit; j += 8)
+        {
+            taskSpan[taskIndex] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 1] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 2] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 3] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 4] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 5] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 6] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 7] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskIndex += 8;
+        }
+
+        // Unroll a gruppi di 4 per i rimanenti
+        var unrollLimit4 = coresForThisMove & ~3;
+        for (; j < unrollLimit4; j += 4)
+        {
+            taskSpan[taskIndex] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 1] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 2] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskSpan[taskIndex + 3] = Task.Run(() => SimulateMove(move, timePerTask));
+            taskIndex += 4;
+        }
+
+        // Rimanenti task (0-3)
+        for (; j < coresForThisMove; j++) taskSpan[taskIndex++] = Task.Run(() => SimulateMove(move, timePerTask));
+        
+        return taskIndex;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static double SumScoresUnrolled(int taskCount, Span<double> scoresSpan)
+    {
+        var totalScore = 0.0;
+        
+        var j = 0;
+
+        // Unroll primario a gruppi di 8 per SIMD
+        for (; j <= taskCount - 8; j += 8)
+            totalScore += scoresSpan[j]
+                          + scoresSpan[j + 1]
+                          + scoresSpan[j + 2]
+                          + scoresSpan[j + 3]
+                          + scoresSpan[j + 4]
+                          + scoresSpan[j + 5]
+                          + scoresSpan[j + 6]
+                          + scoresSpan[j + 7];
+
+        // Unroll secondario a gruppi di 4
+        for (; j <= taskCount - 4; j += 4)
+            totalScore += scoresSpan[j]
+                          + scoresSpan[j + 1]
+                          + scoresSpan[j + 2]
+                          + scoresSpan[j + 3];
+
+        // Rimanenti elementi
+        for (; j < taskCount; j++) totalScore += scoresSpan[j];
+        
+        return totalScore;
+    }
+
+    private double SimulateMove(Direction move, double timeAllowedMs) => move == Direction.Up 
+        ? .2 
+        : .1;
 }

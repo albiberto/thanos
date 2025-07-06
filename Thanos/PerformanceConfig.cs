@@ -18,8 +18,8 @@ public static class PerformanceConfig
     public const int TotalSimulationTimeMs = 500;
 
     public const uint SimulationTimeMs = (uint)(TotalSimulationTimeMs * SimulationTimeRatio); // Tempo massimo per ogni mossa
-    public const int InitialExplorationTimeMs = (int)(SimulationTimeMs * InitialExplorationTimeRatio); // Tempo massimo per la prima esplorazione
-    public const uint ExplorationTimeMs = (uint)(SimulationTimeMs * ExplorationTimeRatio); // Tempo massimo per le esplorazioni successive
+    public const double InitialExplorationTimeMs = (int)(SimulationTimeMs * InitialExplorationTimeRatio); // Tempo massimo per la prima esplorazione
+    public const double ExplorationTimeMs = (uint)(SimulationTimeMs * ExplorationTimeRatio); // Tempo massimo per le esplorazioni successive
     public const uint MinSimulationsPerMove = 100; // Minimo per move non valida
     public const uint MaxSimulationsPerMove = 1000000; // Limite massimo per sicurezza
 }
