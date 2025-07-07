@@ -4,6 +4,7 @@ using System.Runtime.Intrinsics.X86;
 using Thanos.Domain;
 using Thanos.Enums;
 using Thanos.Model;
+using Thanos.Extensions;
 
 namespace Thanos.CollisionMatrix;
 
@@ -141,6 +142,7 @@ public static class GetValidMovesLightSpeedB
                 *(ptr + bp.y * widthInt + bp.x) = 1;
             }
         }
+        Debug.Print(width, height, _collisionBytes);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

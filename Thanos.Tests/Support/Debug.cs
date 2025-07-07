@@ -1,14 +1,14 @@
 ﻿using Thanos.Domain;
 using Thanos.Model;
 
-namespace Thanos.Tests;
+namespace Thanos.Tests.Support;
 
-public static class GridDebugger
+public static class Debug
 {
     /// <summary>
     /// Stampa la griglia di gioco con tutti gli elementi visualizzati
     /// </summary>
-    public static void PrintGrid(uint width, uint height, uint headX, uint headY, Point[] myBody, Point[] hazards, Snake[] snakes, int validMoves = -1, string testName = "")
+    public static void Print(uint width, uint height, uint headX, uint headY, Point[] myBody, Point[] hazards, Snake[] snakes, int validMoves = -1, string testName = "")
     {
         Console.WriteLine($"\n=== {testName} ===");
         Console.WriteLine($"Griglia: {width}x{height}");
@@ -32,69 +32,6 @@ public static class GridDebugger
         Console.WriteLine($"LEFT (4): {(headX > 0 ? $"({headX - 1}, {headY})" : "FUORI GRIGLIA")}");
         Console.WriteLine($"RIGHT (8): {(headX < width - 1 ? $"({headX + 1}, {headY})" : "FUORI GRIGLIA")}");
         
-        // Legenda
-        Console.WriteLine("\nLegenda:");
-        Console.WriteLine("H = Testa del tuo serpente");
-        Console.WriteLine("B = Corpo del tuo serpente");
-        Console.WriteLine("E = Testa serpente nemico");
-        Console.WriteLine("e = Corpo serpente nemico");
-        Console.WriteLine("☠ = Hazard");
-        Console.WriteLine("· = Spazio vuoto");
-        
-        Console.WriteLine();
-        
-        // Crea la griglia
-        var grid = new char[height, width];
-        
-        // Riempie con spazi vuoti
-        for (var y = 0; y < height; y++)
-        for (var x = 0; x < width; x++) 
-            grid[y, x] = '·';
-        
-        // Aggiunge gli hazards
-        foreach (var hazard in hazards)
-            if (hazard.x < width && hazard.y < height) grid[hazard.y, hazard.x] = '☠';
-        
-        // Aggiunge i serpenti nemici
-        foreach (var snake in snakes)
-        {
-            for (var i = 0; i < snake.body.Length; i++)
-            {
-                var segment = snake.body[i];
-                if (segment.x < width && segment.y < height)
-                    grid[segment.y, segment.x] = i == 0 
-                        ? 'E' 
-                        : 'e'; // Testa del nemico
-            }
-        }
-        
-        // Aggiunge il mio serpente
-        for (var i = 0; i < myBody.Length; i++)
-        {
-            var segment = myBody[i];
-            if (segment.x < width && segment.y < height) 
-                grid[segment.y, segment.x] = i == 0 
-                    ? 'H' 
-                    : 'B'; // Testa
-        }
-        
-        // Aggiunge la posizione della testa attuale (se diversa dal primo elemento del corpo)
-        if (headX < width && headY < height) grid[headY, headX] = 'H';
-        
-        // Stampa la griglia
-        // Header con numeri di colonna
-        Console.Write("   ");
-        for (var x = 0; x < width; x++) Console.Write($"{x % 10} ");
-        Console.WriteLine();
-        
-        // Stampa ogni riga
-        for (var y = 0; y < height; y++)
-        {
-            Console.Write($"{y:D2} ");
-            for (var x = 0; x < width; x++) Console.Write($"{grid[y, x]} ");
-            Console.WriteLine();
-        }
-        
         Console.WriteLine("\nCombinazioni mosse valide:");
         Console.WriteLine("1 =>  UP");
         Console.WriteLine("2 =>  DOWN");
@@ -113,9 +50,63 @@ public static class GridDebugger
         Console.WriteLine("15 => UP | DOWN | LEFT | RIGHT");
         
         Console.WriteLine();
-        var validMovesString = validMoves < 0 ? "Nessuna" : GetDirectionString(validMoves);
-        Console.WriteLine($"Mosse valide: {validMovesString}");
+        Console.WriteLine($"✅ Mosse valide: {GetDirectionIconString(validMoves)}");
         Console.WriteLine();
+        
+        // Legenda
+        Console.WriteLine("Legenda:");
+        Console.WriteLine("👽 = Testa del tuo serpente");
+        Console.WriteLine("💲 = Corpo del tuo serpente");
+        Console.WriteLine("😈 = Testa serpente nemico");
+        Console.WriteLine("⛔ = Corpo serpente nemico");
+        Console.WriteLine("💀 = Hazard");
+        Console.WriteLine("⬛ = Spazio vuoto");
+        
+        Console.WriteLine("\n🗺️ Mappa:");
+        
+        // Stampa la griglia con icone
+        var grid = new string[height, width];
+        // Inizializza tutto vuoto (grigio scuro)
+        for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++)
+                grid[y, x] = "⬛";
+
+        // Hazards
+        foreach (var h in hazards)
+            grid[h.y, h.x] = "💀";
+
+        // Corpo nemici
+        foreach (var s in snakes)
+        {
+            for (var i = 0; i < s.body.Length; i++)
+            {
+                var p = s.body[i];
+                if (i == 0)
+                    grid[p.y, p.x] = "😈"; // Testa nemico (palla rossa)
+                else
+                    grid[p.y, p.x] = "⛔"; // Corpo nemico (quadrato rosso tenue)
+            }
+        }
+
+        // Corpo mio (sovrascrive nemici se overlap)
+        for (var i = 0; i < myBody.Length; i++)
+        {
+            var p = myBody[i];
+            if (i == 0)
+                grid[p.y, p.x] = "👽"; // Testa mia (palla blu)
+            else
+                grid[p.y, p.x] = "💲"; // Corpo mio (quadrato blu)
+        }
+
+        // Stampa la griglia allineata
+        Console.WriteLine("\n    " + string.Join("  ", Enumerable.Range(0, (int)width).Select(x => x.ToString("D2"))));
+        for (var y = 0; y < height; y++)
+        {
+            Console.Write($"{y:D2} ");
+            for (var x = 0; x < width; x++)
+                Console.Write(grid[y, x] + "  ");
+            Console.WriteLine();
+        }
     }
     
     /// <summary>
@@ -130,6 +121,18 @@ public static class GridDebugger
         if ((directions & MonteCarlo.LEFT) != 0) parts.Add("LEFT");
         if ((directions & MonteCarlo.RIGHT) != 0) parts.Add("RIGHT");
         
+        return parts.Count > 0 ? string.Join(" | ", parts) : "NESSUNA";
+    }
+    
+    private static string GetDirectionIconString(int directions)
+    {
+        var parts = new List<string>();
+
+        if ((directions & MonteCarlo.UP) != 0) parts.Add("⬆️ UP");
+        if ((directions & MonteCarlo.DOWN) != 0) parts.Add("⬇️ DOWN");
+        if ((directions & MonteCarlo.LEFT) != 0) parts.Add("⬅️ LEFT");
+        if ((directions & MonteCarlo.RIGHT) != 0) parts.Add("➡️ RIGHT");
+
         return parts.Count > 0 ? string.Join(" | ", parts) : "NESSUNA";
     }
 }
