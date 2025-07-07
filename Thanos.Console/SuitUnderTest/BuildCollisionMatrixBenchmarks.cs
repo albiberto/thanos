@@ -33,10 +33,4 @@ public class BuildCollisionMatrixBenchmarks
     {
         CollisionMatrixUnsafeNoBounds.BuildCollisionMatrix(_board, _mySnake);
     }
-
-    [Benchmark]
-    public void BuildCollisionMatrixMonteCarlo_Benchmark()
-    {
-        MonteCarlo.BuildCollisionMatrix(_board.width, _board.height, _mySnake.id, _mySnake.body, _mySnake.body.Length, _board.hazards, _board.hazards.Length, _board.snakes, _board.snakes.Length, _mySnake.health < 100);
-    }
 }
