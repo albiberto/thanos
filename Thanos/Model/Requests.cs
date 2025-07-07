@@ -8,10 +8,9 @@ namespace Thanos.Model;
 /// </summary>
 public sealed class MoveRequest
 {
-    [JsonPropertyName("game")] public Game Game { get; set; } = new();
+    public Game game { get; set; } = new();
 
-    [JsonPropertyName("turn")] public uint Turn { get; set; }
-
+    public uint turn { get; set; }
     [JsonPropertyName("board")] public Board Board { get; set; } = new();
 
     [JsonPropertyName("you")] public Snake You { get; set; } = new();
