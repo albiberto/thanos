@@ -276,7 +276,7 @@ public static class Bootstrapper
 
             for (var i = 1; i < tableSize; i++) precomputedSqrtLog[i] = Math.Sqrt(Math.Log(i));
 
-            var service = new MonteCarlo(precomputedSqrtLog);
+            var service = new MonteCarlo();
 
             // Force immediate memory allocation verso target
             GC.Collect(0, GCCollectionMode.Optimized);
