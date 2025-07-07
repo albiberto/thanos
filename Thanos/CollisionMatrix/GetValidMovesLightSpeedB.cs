@@ -11,14 +11,8 @@ public static class GetValidMovesLightSpeedB
 {
     private static readonly byte[] _collisionBytes = new byte[19 * 19];
     
-    // Bit flags per direzioni
-    private const int UP = 1;      // 0001
-    private const int DOWN = 2;    // 0010
-    private const int LEFT = 4;    // 0100
-    private const int RIGHT = 8;   // 1000
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe int GetValidMovesLightSpeed(uint width, uint height, string myId, Point[] myBody, int myBodyLength, uint myHeadX, uint myHeadY, Point[] hazards, int hazardCount, Snake[] snakes, int snakeCount, bool eat)
+    public static int GetValidMovesLightSpeed(uint width, uint height, string myId, Point[] myBody, int myBodyLength, uint myHeadX, uint myHeadY, Point[] hazards, int hazardCount, Snake[] snakes, int snakeCount, bool eat)
     {
         ClearCollisionMatrix();
         BuildCollisionMatrix(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);
@@ -162,16 +156,16 @@ public static class GetValidMovesLightSpeedB
             var result = 0;
             
             // UP: y > 0 && matrix[y-1][x] == 0
-            result |= myHeadY > 0 && *(ptr + baseOffset - widthInt) == 0 ? UP : 0;
+            result |= myHeadY > 0 && *(ptr + baseOffset - widthInt) == 0 ? MonteCarlo.UP : 0;
             
             // DOWN: y < height-1 && matrix[y+1][x] == 0  
-            result |= myHeadY < height - 1 && *(ptr + baseOffset + widthInt) == 0 ? DOWN : 0;
+            result |= myHeadY < height - 1 && *(ptr + baseOffset + widthInt) == 0 ? MonteCarlo.DOWN : 0;
             
             // LEFT: x > 0 && matrix[y][x-1] == 0
-            result |= myHeadX > 0 && *(ptr + baseOffset - 1) == 0 ? LEFT : 0;
+            result |= myHeadX > 0 && *(ptr + baseOffset - 1) == 0 ? MonteCarlo.LEFT : 0;
             
             // RIGHT: x < width-1 && matrix[y][x+1] == 0
-            result |= myHeadX < width - 1 && *(ptr + baseOffset + 1) == 0 ? RIGHT : 0;
+            result |= myHeadX < width - 1 && *(ptr + baseOffset + 1) == 0 ? MonteCarlo.RIGHT : 0;
             
             return result;
         }
@@ -196,10 +190,10 @@ public static class GetValidMovesLightSpeedB
         var directions = new Direction[GetMoveCount(validMoves)];
         var index = 0;
         
-        if ((validMoves & UP) != 0) directions[index++] = Direction.Up;
-        if ((validMoves & DOWN) != 0) directions[index++] = Direction.Down;
-        if ((validMoves & LEFT) != 0) directions[index++] = Direction.Left;
-        if ((validMoves & RIGHT) != 0) directions[index++] = Direction.Right;
+        if ((validMoves & MonteCarlo.UP) != 0) directions[index++] = Direction.Up;
+        if ((validMoves & MonteCarlo.DOWN) != 0) directions[index++] = Direction.Down;
+        if ((validMoves & MonteCarlo.LEFT) != 0) directions[index++] = Direction.Left;
+        if ((validMoves & MonteCarlo.RIGHT) != 0) directions[index] = Direction.Right;
         
         return directions;
     }
