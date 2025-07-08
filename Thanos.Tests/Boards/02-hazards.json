@@ -1,11 +1,11 @@
-﻿[
+[
   {
-    "Id": 100,
+    "Id": 300,
     "Name": "Hazard singolo davanti - movimento bloccato",
     "Expected": 12,
     "MoveRequest": {
       "game": {
-        "id": "game-100",
+        "id": "game-300",
         "ruleset": {
           "name": "standard"
         },
@@ -24,8 +24,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -60,12 +60,12 @@
     }
   },
   {
-    "Id": 101,
+    "Id": 301,
     "Name": "Hazard a sinistra - movimento bloccato",
     "Expected": 9,
     "MoveRequest": {
       "game": {
-        "id": "game-101",
+        "id": "game-301",
         "ruleset": {
           "name": "standard"
         },
@@ -84,8 +84,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -120,12 +120,12 @@
     }
   },
   {
-    "Id": 102,
+    "Id": 302,
     "Name": "Hazard a destra - movimento bloccato",
     "Expected": 5,
     "MoveRequest": {
       "game": {
-        "id": "game-102",
+        "id": "game-302",
         "ruleset": {
           "name": "standard"
         },
@@ -144,8 +144,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -180,12 +180,12 @@
     }
   },
   {
-    "Id": 103,
+    "Id": 303,
     "Name": "Hazard dietro - nessun effetto (può tornare indietro)",
     "Expected": 13,
     "MoveRequest": {
       "game": {
-        "id": "game-103",
+        "id": "game-303",
         "ruleset": {
           "name": "standard"
         },
@@ -204,8 +204,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -240,12 +240,12 @@
     }
   },
   {
-    "Id": 104,
+    "Id": 304,
     "Name": "Hazard multipli - circondato su 3 lati",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-104",
+        "id": "game-304",
         "ruleset": {
           "name": "standard"
         },
@@ -272,8 +272,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -308,12 +308,12 @@
     }
   },
   {
-    "Id": 105,
+    "Id": 305,
     "Name": "Hazard nell'angolo - doppio blocco",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-105",
+        "id": "game-305",
         "ruleset": {
           "name": "standard"
         },
@@ -336,8 +336,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -372,12 +372,12 @@
     }
   },
   {
-    "Id": 106,
+    "Id": 306,
     "Name": "Hazard + bordo - intrappolato nell'angolo",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-106",
+        "id": "game-306",
         "ruleset": {
           "name": "standard"
         },
@@ -400,8 +400,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -436,12 +436,12 @@
     }
   },
   {
-    "Id": 107,
+    "Id": 307,
     "Name": "Hazard lungo il bordo superiore",
     "Expected": 4,
     "MoveRequest": {
       "game": {
-        "id": "game-107",
+        "id": "game-307",
         "ruleset": {
           "name": "standard"
         },
@@ -460,8 +460,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -496,12 +496,12 @@
     }
   },
   {
-    "Id": 108,
+    "Id": 308,
     "Name": "Hazard sparse - solo uno bloccante",
     "Expected": 9,
     "MoveRequest": {
       "game": {
-        "id": "game-108",
+        "id": "game-308",
         "ruleset": {
           "name": "standard"
         },
@@ -528,8 +528,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -564,12 +564,12 @@
     }
   },
   {
-    "Id": 109,
+    "Id": 309,
     "Name": "Hazard + corpo proprio - doppio blocco",
     "Expected": 2,
     "MoveRequest": {
       "game": {
-        "id": "game-109",
+        "id": "game-309",
         "ruleset": {
           "name": "standard"
         },
@@ -588,8 +588,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -660,12 +660,12 @@
     }
   },
   {
-    "Id": 110,
+    "Id": 310,
     "Name": "Hazard in linea retta - corridoio bloccato",
     "Expected": 3,
     "MoveRequest": {
       "game": {
-        "id": "game-110",
+        "id": "game-310",
         "ruleset": {
           "name": "standard"
         },
@@ -696,8 +696,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -732,12 +732,12 @@
     }
   },
   {
-    "Id": 111,
+    "Id": 311,
     "Name": "Hazard a L - angolo pericoloso",
     "Expected": 2,
     "MoveRequest": {
       "game": {
-        "id": "game-111",
+        "id": "game-311",
         "ruleset": {
           "name": "standard"
         },
@@ -764,8 +764,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -800,12 +800,12 @@
     }
   },
   {
-    "Id": 112,
+    "Id": 312,
     "Name": "Hazard in diagonale - nessun effetto diretto",
     "Expected": 13,
     "MoveRequest": {
       "game": {
-        "id": "game-112",
+        "id": "game-312",
         "ruleset": {
           "name": "standard"
         },
@@ -836,8 +836,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -872,12 +872,12 @@
     }
   },
   {
-    "Id": 113,
+    "Id": 313,
     "Name": "Hazard zona massiva - evita l'area",
     "Expected": 3,
     "MoveRequest": {
       "game": {
-        "id": "game-113",
+        "id": "game-313",
         "ruleset": {
           "name": "standard"
         },
@@ -928,8 +928,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -964,12 +964,12 @@
     }
   },
   {
-    "Id": 114,
+    "Id": 314,
     "Name": "Hazard singolo al centro - libero movimento",
     "Expected": 13,
     "MoveRequest": {
       "game": {
-        "id": "game-114",
+        "id": "game-314",
         "ruleset": {
           "name": "standard"
         },
@@ -988,8 +988,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1024,12 +1024,12 @@
     }
   },
   {
-    "Id": 115,
+    "Id": 315,
     "Name": "Hazard a scacchiera - movimento limitato",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-115",
+        "id": "game-315",
         "ruleset": {
           "name": "standard"
         },
@@ -1064,8 +1064,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1100,12 +1100,12 @@
     }
   },
   {
-    "Id": 116,
+    "Id": 316,
     "Name": "Hazard lungo tutto il bordo - trappola mortale",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-116",
+        "id": "game-316",
         "ruleset": {
           "name": "standard"
         },
@@ -1132,8 +1132,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1168,12 +1168,12 @@
     }
   },
   {
-    "Id": 117,
+    "Id": 317,
     "Name": "Hazard a spirale - percorso complesso",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-117",
+        "id": "game-317",
         "ruleset": {
           "name": "standard"
         },
@@ -1220,8 +1220,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1256,12 +1256,12 @@
     }
   },
   {
-    "Id": 118,
+    "Id": 318,
     "Name": "Hazard con snake nemico - doppio pericolo",
     "Expected": 8,
     "MoveRequest": {
       "game": {
-        "id": "game-118",
+        "id": "game-318",
         "ruleset": {
           "name": "standard"
         },
@@ -1280,8 +1280,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1348,12 +1348,12 @@
     }
   },
   {
-    "Id": 119,
+    "Id": 319,
     "Name": "Hazard con cibo - rischio vs ricompensa",
     "Expected": 4,
     "MoveRequest": {
       "game": {
-        "id": "game-119",
+        "id": "game-319",
         "ruleset": {
           "name": "standard"
         },
@@ -1377,8 +1377,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 50,
             "body": [
               {
@@ -1445,12 +1445,12 @@
     }
   },
   {
-    "Id": 120,
+    "Id": 320,
     "Name": "Hazard temporaneo - valutazione dinamica",
     "Expected": 8,
     "MoveRequest": {
       "game": {
-        "id": "game-120",
+        "id": "game-320",
         "ruleset": {
           "name": "standard"
         },
@@ -1473,8 +1473,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1509,12 +1509,12 @@
     }
   },
   {
-    "Id": 121,
+    "Id": 321,
     "Name": "Snake lungo con hazard - movimento limitato",
     "Expected": 0,
     "MoveRequest": {
       "game": {
-        "id": "game-121",
+        "id": "game-321",
         "ruleset": {
           "name": "standard"
         },
@@ -1537,8 +1537,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1617,12 +1617,12 @@
     }
   },
   {
-    "Id": 122,
+    "Id": 322,
     "Name": "Hazard in movimento - previsione necessaria",
     "Expected": 3,
     "MoveRequest": {
       "game": {
-        "id": "game-122",
+        "id": "game-322",
         "ruleset": {
           "name": "standard"
         },
@@ -1645,8 +1645,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1681,12 +1681,12 @@
     }
   },
   {
-    "Id": 123,
+    "Id": 323,
     "Name": "Hazard con più snake - caos controllato",
     "Expected": 1,
     "MoveRequest": {
       "game": {
-        "id": "game-123",
+        "id": "game-323",
         "ruleset": {
           "name": "standard"
         },
@@ -1705,8 +1705,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 100,
             "body": [
               {
@@ -1805,12 +1805,12 @@
     }
   },
   {
-    "Id": 124,
+    "Id": 324,
     "Name": "Hazard con salute bassa - rischio estremo",
     "Expected": 2,
     "MoveRequest": {
       "game": {
-        "id": "game-124",
+        "id": "game-324",
         "ruleset": {
           "name": "standard"
         },
@@ -1833,8 +1833,8 @@
         ],
         "snakes": [
           {
-            "id": "betty",
-            "name": "Betty",
+            "id": "thanos",
+            "name": "Thanos",
             "health": 15,
             "body": [
               {
@@ -1867,5 +1867,1101 @@
         ]
       }
     }
+  },
+  {
+    "Id": 325,
+    "Name": "Labirinto di hazard - navigazione complessa",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-325",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 25,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 9,
+            "y": 9
+          }
+        ],
+        "hazards": [
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 80,
+            "body": [
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 2
+              },
+              {
+                "x": 1,
+                "y": 3
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 1,
+              "y": 1
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 326,
+    "Name": "Zona hazard in espansione - fuga temporizzata",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-326",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 30,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 60,
+            "body": [
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 327,
+    "Name": "Corridoio di hazard - passaggio obbligato",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-327",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 40,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 5,
+            "y": 2
+          }
+        ],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 8
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 40,
+            "body": [
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 10
+              },
+              {
+                "x": 4,
+                "y": 10
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 9
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 328,
+    "Name": "Hazard come scudo - protezione tattica",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-328",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 35,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "threat1",
+            "name": "Threat1",
+            "health": 90,
+            "body": [
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 1,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "threat2",
+            "name": "Threat2",
+            "health": 95,
+            "body": [
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 4
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 9,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 329,
+    "Name": "Salute bassa con hazard - decisione disperata",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-329",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 50,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 15,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker",
+            "name": "Blocker",
+            "health": 80,
+            "body": [
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 330,
+    "Name": "Hazard dinamici - pattern in movimento",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-330",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 45,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 70,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 6
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 331,
+    "Name": "Hazard clustering - evitare zone dense",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-331",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 60,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 8,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 7
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 332,
+    "Name": "Attraversamento hazard - calcolo rischio",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-332",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 70,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 8,
+            "y": 5
+          }
+        ],
+        "hazards": [
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 45,
+            "body": [
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 4,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 333,
+    "Name": "Hazard permanenti vs temporanei",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-333",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 80,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 7
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 55,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 334,
+    "Name": "Forzare nemico in hazard - tattica offensiva",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-334",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 90,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 75,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 6
+              },
+              {
+                "x": 0,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 10,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "victim",
+            "name": "Victim",
+            "health": 50,
+            "body": [
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 4,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
   }
-]
+] 

@@ -17,7 +17,7 @@
     </ItemGroup>
     
     <ItemGroup>
-      <None Update="borders.json">
+      <None Update="boards\borders.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>

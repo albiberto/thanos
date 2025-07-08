@@ -18,7 +18,15 @@ public static class Debug
     private const string KO = "❌";
     private const string OK = "✔️";
     private const string KO_SELF = "⭕";
-    
+
+    private static readonly Direction[] directions =
+    [
+        new() { Label = $"{UP_ICON} (1) UP", DX = 0, DY = -1, Flag = MonteCarlo.UP },
+        new() { Label = $"{DOWN_ICON} (2) DOWN", DX = 0, DY = 1, Flag = MonteCarlo.DOWN },
+        new() { Label = $"{LEFT_ICON} (4)LEFT", DX = -1, DY = 0, Flag = MonteCarlo.LEFT },
+        new() { Label = $"{RIGHT_ICON} (8) RIGHT", DX = 1, DY = 0, Flag = MonteCarlo.RIGHT }
+    ];
+
 
     public static void PrintHeader()
     {
@@ -46,10 +54,28 @@ public static class Debug
     /// <summary>
     ///     Stampa la griglia di gioco con tutti gli elementi visualizzati
     /// </summary>
-    public static void PrintMap(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int scenario, string testName, string fileName, int id)
+    public static void PrintMap(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int scenario, string testName, string fileName, int id, bool onlyFailed = true)
     {
+        var headX = myBody[0].x;
+        var headY = myBody[0].y;
+
+        // Calcola subito se c'è un fallimento
+        var hasFailed = directions.Any(dir =>
+        {
+            var targetX = (int)headX + dir.DX;
+            var targetY = (int)headY + dir.DY;
+            var inGrid = targetX >= 0 && targetX < (int)width && targetY >= 0 && targetY < (int)height;
+            var isSelf = myBody.Skip(1).Any(p => p.x == targetX && p.y == targetY);
+            var isExpected = (expected & dir.Flag) != 0;
+            var isValid = inGrid && !isSelf;
+            // Fallisce se una mossa attesa non è valida OPPURE se esiste una mossa valida non attesa
+            return (isExpected && !isValid) || (isValid && !isExpected);
+        });
+
+        if (onlyFailed && !hasFailed) return;
+
         PrintCurrentScenario(width, height, snakes, hazards, scenario, testName, fileName);
-        PrintGrid(width, height, myBody, hazards, snakes, expected, id);
+        PrintGrid(width, height, myBody, hazards, snakes, expected, id, hasFailed);
     }
 
     private static void PrintCurrentScenario(uint width, uint height, Snake[] snakes, Point[] hazards, int scenario, string testName, string fileName)
@@ -80,7 +106,7 @@ public static class Debug
         Console.WriteLine("🐍 Serpenti:");
         foreach (var snake in snakes)
         {
-            var isBetty = snake.id == "betty";
+            var isBetty = string.Equals(snake.id, Constants.Me, StringComparison.OrdinalIgnoreCase);
             var headIcon = isBetty ? MY_HEAD_ICON : ENEMY_HEAD_ICON;
             var bodyIcon = isBetty ? MY_BODY_ICON : ENEMY_BODY_ICON;
 
@@ -105,64 +131,54 @@ public static class Debug
         Console.WriteLine($"{EMPTY_ICON} = Spazio vuoto");
     }
 
-private static void PrintMoveOptions(int expected, uint headX, uint headY, uint width, uint height, int id, Point[] myBody)
-{
-    Console.WriteLine($"🏁🏁🏁 Risultato Test: {id} 🏁🏁🏁");
-    Console.WriteLine($"🎯🎯🎯 Expected: {expected}");
-
-    var directions = new[]
+    private static void PrintMoveOptions(int expected, uint headX, uint headY, uint width, uint height, int id, Point[] myBody, bool hasFailed)
     {
-        new { Label = $"{UP_ICON} (1) UP",    DX =  0, DY = -1, Flag = MonteCarlo.UP },
-        new { Label = $"{DOWN_ICON} (2) DOWN", DX =  0, DY =  1, Flag = MonteCarlo.DOWN },
-        new { Label = $"{LEFT_ICON} (4)LEFT", DX = -1, DY =  0, Flag = MonteCarlo.LEFT },
-        new { Label = $"{RIGHT_ICON} (8) RIGHT", DX =  1, DY =  0, Flag = MonteCarlo.RIGHT }
-    };
+        Console.WriteLine($"🏁🏁🏁 Risultato Test: {id} 🏁🏁🏁");
 
-    foreach (var dir in directions)
-    {
-        var targetX = (int)headX + dir.DX;
-        var targetY = (int)headY + dir.DY;
 
-        var inGrid = targetX >= 0 && targetX < (int)width && targetY >= 0 && targetY < (int)height;
-        var isExpected = (expected & dir.Flag) != 0;
-        var isSelf = myBody.Skip(1).Any(p => p.x == targetX && p.y == targetY);
+        Console.WriteLine($"{(hasFailed ? $"{KO}{KO}{KO} FAILED {KO}{KO}{KO}" : $"{OK}{OK}{OK} SUCCESS {OK}{OK}{OK}")}");
+        Console.WriteLine($"🎯🎯🎯 Expected: {expected} 🎯🎯🎯");
+        Console.WriteLine();
 
-        var positionStr = inGrid ? $"({targetX}, {targetY})" : $"{KO} FUORI GRIGLIA";
+        foreach (var dir in directions)
+        {
+            var targetX = (int)headX + dir.DX;
+            var targetY = (int)headY + dir.DY;
 
-        if (!inGrid)
-        {
-            Console.WriteLine($"{KO} {dir.Label,-18} {KO} ({targetX}, {targetY}) FUORI GRIGLIA");
+            var inGrid = targetX >= 0 && targetX < (int)width && targetY >= 0 && targetY < (int)height;
+            var isExpected = (expected & dir.Flag) != 0;
+            var isSelf = myBody.Skip(1).Any(p => p.x == targetX && p.y == targetY);
+
+            var positionStr = inGrid ? $"({targetX}, {targetY})" : $"{KO} FUORI GRIGLIA";
+
+            if (!inGrid)
+                Console.WriteLine($"{KO} {dir.Label,-18} {KO} ({targetX}, {targetY}) FUORI GRIGLIA");
+            else if (isSelf)
+                Console.WriteLine($"{KO_SELF} {dir.Label,-18} {KO_SELF} {positionStr} TORNA SU SE STESSO");
+            else if (isExpected)
+                Console.WriteLine($"{OK} {dir.Label,-18} {OK} {positionStr}");
+            else
+                Console.WriteLine($"{KO} {dir.Label,-18} {KO} {positionStr} COLLISION");
         }
-        else if (isSelf)
-        {
-            Console.WriteLine($"{KO_SELF} {dir.Label,-18} {KO_SELF} {positionStr} TORNA SU SE STESSO");
-        }
-        else if (isExpected)
-        {
-            Console.WriteLine($"{OK} {dir.Label,-18} {OK} {positionStr}");
-        }
-        else
-        {
-            Console.WriteLine($"{KO} {dir.Label,-18} {KO} {positionStr} COLLISION");
-        }
+
+        Console.WriteLine();
     }
-}
 
-    private static void PrintGrid(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int id)
+    private static void PrintGrid(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int id, bool onlyFailed)
     {
         var grid = new string[height, width];
-    
+
         // Inizializza tutto vuoto
         for (var y = 0; y < height; y++)
         for (var x = 0; x < width; x++)
             grid[y, x] = EMPTY_ICON;
-    
+
         // Hazards
         foreach (var h in hazards)
             grid[h.y, h.x] = HAZARD_ICON;
-    
+
         // Corpo nemici
-        foreach (var s in snakes)
+        foreach (var s in snakes.Where(snake => snake.id != Constants.Me))
             for (var i = 0; i < s.body.Length; i++)
             {
                 var p = s.body[i];
@@ -171,7 +187,7 @@ private static void PrintMoveOptions(int expected, uint headX, uint headY, uint 
                 else
                     grid[p.y, p.x] = ENEMY_BODY_ICON;
             }
-    
+
         // Corpo mio (sovrascrive nemici se overlap)
         for (var i = 0; i < myBody.Length; i++)
         {
@@ -181,17 +197,17 @@ private static void PrintMoveOptions(int expected, uint headX, uint headY, uint 
             else
                 grid[p.y, p.x] = MY_BODY_ICON;
         }
-    
+
         // --- INSERIMENTO FRECCE E X ---
         var head = myBody[0];
         var directions = new[]
         {
-            new { Icon = UP_ICON,    DX =  0, DY = -1, Flag = MonteCarlo.UP },
-            new { Icon = DOWN_ICON,  DX =  0, DY =  1, Flag = MonteCarlo.DOWN },
-            new { Icon = LEFT_ICON,  DX = -1, DY =  0, Flag = MonteCarlo.LEFT },
-            new { Icon = RIGHT_ICON, DX =  1, DY =  0, Flag = MonteCarlo.RIGHT }
+            new { Icon = UP_ICON, DX = 0, DY = -1, Flag = MonteCarlo.UP },
+            new { Icon = DOWN_ICON, DX = 0, DY = 1, Flag = MonteCarlo.DOWN },
+            new { Icon = LEFT_ICON, DX = -1, DY = 0, Flag = MonteCarlo.LEFT },
+            new { Icon = RIGHT_ICON, DX = 1, DY = 0, Flag = MonteCarlo.RIGHT }
         };
-    
+
         foreach (var dir in directions)
         {
             var tx = (int)head.x + dir.DX;
@@ -205,7 +221,7 @@ private static void PrintMoveOptions(int expected, uint headX, uint headY, uint 
             else
                 grid[ty, tx] = KO;
         }
-    
+
         // Stampa la griglia allineata
         Console.WriteLine("\n    " + string.Join("  ", Enumerable.Range(0, (int)width).Select(x => x.ToString("D2"))));
         for (var y = 0; y < height; y++)
@@ -215,9 +231,17 @@ private static void PrintMoveOptions(int expected, uint headX, uint headY, uint 
                 Console.Write(grid[y, x] + "  ");
             Console.WriteLine();
         }
-    
+
         Console.WriteLine();
-    
-        PrintMoveOptions(expected, myBody[0].x, myBody[0].y, width, height, id, myBody);
+
+        PrintMoveOptions(expected, myBody[0].x, myBody[0].y, width, height, id, myBody, onlyFailed);
+    }
+
+    private class Direction
+    {
+        public string Label { get; set; }
+        public int DX { get; set; }
+        public int DY { get; set; }
+        public int Flag { get; set; }
     }
 }

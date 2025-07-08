@@ -1,0 +1,1733 @@
+[
+  {
+    "Id": 101,
+    "Name": "Movimento verso UP - non può invertire",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-101",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":3},{"x":5,"y":4},{"x":5,"y":5}],
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 102,
+    "Name": "Movimento verso RIGHT - non può invertire",
+    "Expected": 11,
+    "MoveRequest": {
+      "game": {
+        "id": "game-102",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":7,"y":5},{"x":6,"y":5},{"x":5,"y":5}],
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 103,
+    "Name": "Movimento verso DOWN - non può invertire",
+    "Expected": 14,
+    "MoveRequest": {
+      "game": {
+        "id": "game-103",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":7},{"x":5,"y":6},{"x":5,"y":5}],
+            "head": {
+              "x": 5,
+              "y": 7
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 104,
+    "Name": "Movimento verso LEFT - non può invertire",
+    "Expected": 7,
+    "MoveRequest": {
+      "game": {
+        "id": "game-104",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":3,"y":5},{"x":4,"y":5},{"x":5,"y":5}],
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 105,
+    "Name": "Thanos in angolo TOP-LEFT (0,0) - UP e RIGHT",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-105",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":0,"y":0},{"x":0,"y":1},{"x":0,"y":2}],
+            "head": {
+              "x": 0,
+              "y": 0
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 106,
+    "Name": "Thanos in angolo TOP-RIGHT (10,0) - DOWN e LEFT",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-106",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":10,"y":0},{"x":10,"y":1},{"x":10,"y":2}],
+            "head": {
+              "x": 10,
+              "y": 0
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 107,
+    "Name": "Thanos in angolo BOTTOM-RIGHT (10,10) - solo LEFT",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-107",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":10,"y":10},{"x":10,"y":9},{"x":10,"y":8}],
+            "head": {
+              "x": 10,
+              "y": 10
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 108,
+    "Name": "Thanos in angolo BOTTOM-LEFT (0,10) - solo RIGHT",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-108",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":0,"y":10},{"x":0,"y":9},{"x":0,"y":8}],
+            "head": {
+              "x": 0,
+              "y": 10
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 109,
+    "Name": "Thanos a metà lato TOP (5,0) - LEFT e RIGHT",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-109",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":0},{"x":5,"y":1},{"x":5,"y":2}],
+            "head": {
+              "x": 5,
+              "y": 0
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 110,
+    "Name": "Thanos a metà lato RIGHT (10,5) - UP e DOWN",
+    "Expected": 3,
+    "MoveRequest": {
+      "game": {
+        "id": "game-110",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":10,"y":5},{"x":9,"y":5},{"x":8,"y":5}],
+            "head": {
+              "x": 10,
+              "y": 5
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 111,
+    "Name": "Thanos a metà lato BOTTOM (5,10) - LEFT e RIGHT",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-111",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":10},{"x":5,"y":9},{"x":5,"y":8}],
+            "head": {
+              "x": 5,
+              "y": 10
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 112,
+    "Name": "Thanos a metà lato LEFT (0,5) - UP e DOWN",
+    "Expected": 3,
+    "MoveRequest": {
+      "game": {
+        "id": "game-112",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":0,"y":5},{"x":1,"y":5},{"x":2,"y":5}],
+            "head": {
+              "x": 0,
+              "y": 5
+            },
+            "length": 3,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 113,
+    "Name": "Collisione inferiore con il corpo - UP e RIGHT",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-113",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":4,"y":5},{"x":4,"y":6},{"x":5,"y":6}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 114,
+    "Name": "Collisione laterale sinistra con il corpo - RIGHT e DOWN",
+    "Expected": 10,
+    "MoveRequest": {
+      "game": {
+        "id": "game-114",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":5,"y":4},{"x":4,"y":4},{"x":4,"y":5}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 115,
+    "Name": "Collisione superiore con il corpo - DOWN e LEFT",
+    "Expected": 6,
+    "MoveRequest": {
+      "game": {
+        "id": "game-115",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":6,"y":5},{"x":6,"y":4},{"x":5,"y":4}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 116,
+    "Name": "Collisione laterale destra con il corpo - UP e LEFT",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-116",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":5,"y":6},{"x":6,"y":6},{"x":6,"y":5}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 117,
+    "Name": "Collisione frontale imminente - solo UP",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-117",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":6,"y":5},{"x":6,"y":6},{"x":5,"y":6},{"x":4,"y":6},{"x":4,"y":5}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 118,
+    "Name": "Collisione frontale imminente - solo RIGHT",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-118",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":5,"y":4},{"x":4,"y":4},{"x":4,"y":5},{"x":4,"y":6},{"x":5,"y":6}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 119,
+    "Name": "Collisione frontale imminente - solo DOWN",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-119",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":4,"y":5},{"x":4,"y":4},{"x":5,"y":4},{"x":6,"y":4},{"x":6,"y":5}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 120,
+    "Name": "Collisione frontale imminente - solo LEFT",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-120",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":5,"y":6},{"x":6,"y":6},{"x":6,"y":5},{"x":6,"y":4},{"x":5,"y":4}],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 121,
+    "Name": "Canale lungo il muro LEFT - movimento verso RIGHT",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-121",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":0,"y":1},{"x":0,"y":2},{"x":1,"y":2},{"x":0,"y":3},{"x":1,"y":3},{"x":0,"y":4},{"x":1,"y":4},{"x":0,"y":5},{"x":1,"y":5},{"x":0,"y":6},{"x":1,"y":6},{"x":0,"y":7},{"x":1,"y":7},{"x":0,"y":8},{"x":1,"y":8},{"x":0,"y":9},{"x":1,"y":9}],
+            "head": {
+              "x": 0,
+              "y": 1
+            },
+            "length": 17,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 122,
+    "Name": "Canale lungo il muro RIGHT - movimento verso LEFT",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-122",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":10,"y":1},{"x":9,"y":2},{"x":10,"y":2},{"x":9,"y":3},{"x":10,"y":3},{"x":9,"y":4},{"x":10,"y":4},{"x":9,"y":5},{"x":10,"y":5},{"x":9,"y":6},{"x":10,"y":6},{"x":9,"y":7},{"x":10,"y":7},{"x":9,"y":8},{"x":10,"y":8},{"x":9,"y":9},{"x":10,"y":9}],
+            "head": {
+              "x": 10,
+              "y": 1
+            },
+            "length": 17,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 123,
+    "Name": "Canale lungo il muro TOP - movimento verso DOWN",
+    "Expected": 10,
+    "MoveRequest": {
+      "game": {
+        "id": "game-123",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":9,"y":0},{"x":3,"y":0},{"x":4,"y":0},{"x":5,"y":0},{"x":6,"y":0},{"x":7,"y":0},{"x":8,"y":0},{"x":3,"y":1},{"x":4,"y":1},{"x":5,"y":1},{"x":6,"y":1},{"x":7,"y":1},{"x":8,"y":1}],
+            "head": {
+              "x": 9,
+              "y": 0
+            },
+            "length": 13,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 124,
+    "Name": "Canale lungo il muro BOTTOM - movimento verso UP",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-124",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":9,"y":10},{"x":3,"y":9},{"x":4,"y":9},{"x":5,"y":9},{"x":6,"y":9},{"x":7,"y":9},{"x":8,"y":9},{"x":3,"y":10},{"x":4,"y":10},{"x":5,"y":10},{"x":6,"y":10},{"x":7,"y":10},{"x":8,"y":10}],
+            "head": {
+              "x": 9,
+              "y": 10
+            },
+            "length": 13,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 125,
+    "Name": "Canale lungo il muro RIGHT - movimento verso LEFT",
+    "Expected": 6,
+    "MoveRequest": {
+      "game": {
+        "id": "game-125",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":10,"y":9},{"x":9,"y":1},{"x":10,"y":1},{"x":9,"y":2},{"x":10,"y":2},{"x":9,"y":3},{"x":10,"y":3},{"x":9,"y":4},{"x":10,"y":4},{"x":9,"y":5},{"x":10,"y":5},{"x":9,"y":6},{"x":10,"y":6},{"x":9,"y":7},{"x":10,"y":7},{"x":9,"y":8},{"x":10,"y":8}],
+            "head": {
+              "x": 10,
+              "y": 9
+            },
+            "length": 17,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 126,
+    "Name": "Canale lungo il muro LEFT - movimento verso RIGHT",
+    "Expected": 10,
+    "MoveRequest": {
+      "game": {
+        "id": "game-126",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":0,"y":9},{"x":0,"y":1},{"x":1,"y":1},{"x":0,"y":2},{"x":1,"y":2},{"x":0,"y":3},{"x":1,"y":3},{"x":0,"y":4},{"x":1,"y":4},{"x":0,"y":5},{"x":1,"y":5},{"x":0,"y":6},{"x":1,"y":6},{"x":0,"y":7},{"x":1,"y":7},{"x":0,"y":8},{"x":1,"y":8}],
+            "head": {
+              "x": 0,
+              "y": 9
+            },
+            "length": 17,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 127,
+    "Name": "Canale lungo il muro BOTTOM - movimento verso UP",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-127",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":1,"y":10},{"x":2,"y":9},{"x":3,"y":9},{"x":4,"y":9},{"x":5,"y":9},{"x":6,"y":9},{"x":7,"y":9},{"x":8,"y":9},{"x":2,"y":10},{"x":3,"y":10},{"x":4,"y":10},{"x":5,"y":10},{"x":6,"y":10},{"x":7,"y":10},{"x":8,"y":10}],
+            "head": {
+              "x": 1,
+              "y": 10
+            },
+            "length": 15,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 128,
+    "Name": "Canale lungo il muro TOP - movimento verso DOWN",
+    "Expected": 6,
+    "MoveRequest": {
+      "game": {
+        "id": "game-128",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [{"x":1,"y":0},{"x":2,"y":0},{"x":3,"y":0},{"x":4,"y":0},{"x":5,"y":0},{"x":6,"y":0},{"x":7,"y":0},{"x":8,"y":0},{"x":2,"y":1},{"x":3,"y":1},{"x":4,"y":1},{"x":5,"y":1},{"x":6,"y":1},{"x":7,"y":1},{"x":8,"y":1}],
+            "head": {
+              "x": 1,
+              "y": 0
+            },
+            "length": 15,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 129,
+    "Name": "Canale lungo il muro LEFT - movimento verso UP",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-776",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":0,"y":2},{"x":1,"y":2},{"x":0,"y":3},{"x":1,"y":3},{"x":0,"y":4},{"x":1,"y":4},{"x":0,"y":5},{"x":1,"y":5},{"x":0,"y":6},{"x":1,"y":6},{"x":0,"y":7},{"x":1,"y":7},{"x":0,"y":8},{"x":1,"y":8},{"x":0,"y":9},{"x":1,"y":9},{"x":0,"y":10},{"x":1,"y":10}],
+            "latency": 50,
+            "head": {
+              "x": 0,
+              "y": 2
+            },
+            "length": 18,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+
+
+
+  {
+    "Id": 130,
+    "Name": "asdasds",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-714",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":10,"y":1},{"x":9,"y":1},{"x":9,"y":2},{"x":10,"y":2},{"x":10,"y":3},{"x":9,"y":3},{"x":9,"y":4},{"x":10,"y":4},{"x":10,"y":5},{"x":9,"y":5},{"x":9,"y":6},{"x":10,"y":6},{"x":10,"y":7},{"x":9,"y":7},{"x":9,"y":8},{"x":10,"y":8},{"x":10,"y":9},{"x":9,"y":9}],
+            "latency": 50,
+            "head": {
+              "x": 10,
+              "y": 1
+            },
+            "length": 18,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+
+  
+  
+  
+  
+  
+  {
+    "Id": 131,
+    "Name": "Canale lungo il muro TOP- movimento verso RIGHT",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-207",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":9,"y":1},{"x":3,"y":1},{"x":4,"y":1},{"x":5,"y":1},{"x":6,"y":1},{"x":7,"y":1},{"x":8,"y":1},{"x":3,"y":2},{"x":4,"y":2},{"x":5,"y":2},{"x":6,"y":2},{"x":7,"y":2},{"x":8,"y":2},{"x":9,"y":2}],
+            "latency": 50,
+            "head": {
+              "x": 9,
+              "y": 1
+            },
+            "length": 14,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 132,
+    "Name": "Canale lungo il muro BOTTOM - movimento verso RIGHT",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-633",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":9,"y":11},{"x":3,"y":10},{"x":4,"y":10},{"x":5,"y":10},{"x":6,"y":10},{"x":7,"y":10},{"x":8,"y":10},{"x":9,"y":10},{"x":3,"y":11},{"x":4,"y":11},{"x":5,"y":11},{"x":6,"y":11},{"x":7,"y":11},{"x":8,"y":11}],
+            "latency": 50,
+            "head": {
+              "x": 9,
+              "y": 11
+            },
+            "length": 14,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 133,
+    "Name": "Canale lungo il muro RIGHT - movimento verso DOWN",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-945",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":10,"y":10},{"x":9,"y":2},{"x":10,"y":2},{"x":9,"y":3},{"x":10,"y":3},{"x":9,"y":4},{"x":10,"y":4},{"x":9,"y":5},{"x":10,"y":5},{"x":9,"y":6},{"x":10,"y":6},{"x":9,"y":7},{"x":10,"y":7},{"x":9,"y":8},{"x":10,"y":8},{"x":9,"y":9},{"x":10,"y":9},{"x":9,"y":10}],
+            "latency": 50,
+            "head": {
+              "x": 10,
+              "y": 10
+            },
+            "length": 18,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 134,
+    "Name": "Canale lungo il muro LEFT - movimento verso DOWN",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-73",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":0,"y":10},{"x":0,"y":2},{"x":1,"y":2},{"x":0,"y":3},{"x":1,"y":3},{"x":0,"y":4},{"x":1,"y":4},{"x":0,"y":5},{"x":1,"y":5},{"x":0,"y":6},{"x":1,"y":6},{"x":0,"y":7},{"x":1,"y":7},{"x":0,"y":8},{"x":1,"y":8},{"x":0,"y":9},{"x":1,"y":9},{"x":1,"y":10}],
+            "latency": 50,
+            "head": {
+              "x": 0,
+              "y": 10
+            },
+            "length": 18,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 135,
+    "Name": "Canale lungo il muro BOTTOM - movimento verso LEFT",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-938",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":1,"y":11},{"x":1,"y":10},{"x":2,"y":10},{"x":3,"y":10},{"x":4,"y":10},{"x":5,"y":10},{"x":6,"y":10},{"x":7,"y":10},{"x":8,"y":10},{"x":2,"y":11},{"x":3,"y":11},{"x":4,"y":11},{"x":5,"y":11},{"x":6,"y":11},{"x":7,"y":11},{"x":8,"y":11}],
+            "latency": 50,
+            "head": {
+              "x": 1,
+              "y": 11
+            },
+            "length": 16,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 136,
+    "Name": "Canale lungo il muro TOP - movimento verso LEFT",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-994",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":1,"y":1},{"x":2,"y":1},{"x":3,"y":1},{"x":4,"y":1},{"x":5,"y":1},{"x":6,"y":1},{"x":7,"y":1},{"x":8,"y":1},{"x":1,"y":2},{"x":2,"y":2},{"x":3,"y":2},{"x":4,"y":2},{"x":5,"y":2},{"x":6,"y":2},{"x":7,"y":2},{"x":8,"y":2}],
+            "latency": 50,
+            "head": {
+              "x": 1,
+              "y": 1
+            },
+            "length": 16,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 137,
+    "Name": "Snake ultra lungo quadrato - navigazione verso RIGHT",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-129",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 85,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 95,
+            "body": [{"x":5,"y":3},{"x":4,"y":3},{"x":3,"y":3},{"x":2,"y":3},{"x":1,"y":3},{"x":1,"y":4},{"x":1,"y":5},{"x":1,"y":6},{"x":1,"y":7},{"x":2,"y":7},{"x":3,"y":7},{"x":4,"y":7},{"x":5,"y":7},{"x":5,"y":6},{"x":5,"y":5},{"x":5,"y":4},{"x":4,"y":4},{"x":3,"y":4},{"x":2,"y":4},{"x":2,"y":5},{"x":2,"y":6},{"x":3,"y":6},{"x":4,"y":6},{"x":4,"y":5},{"x":3,"y":5}],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 25,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 138,
+    "Name": "Snake ultra lungo quadrato - navigazione verso DOWN e RIGHT",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-130",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 75,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [{"x":7,"y":7},{"x":6,"y":7},{"x":5,"y":7},{"x":4,"y":7},{"x":3,"y":7},{"x":3,"y":6},{"x":4,"y":6},{"x":5,"y":6},{"x":6,"y":6},{"x":7,"y":6},{"x":7,"y":5},{"x":6,"y":5},{"x":5,"y":5},{"x":4,"y":5},{"x":3,"y":5},{"x":3,"y":4},{"x":4,"y":4},{"x":5,"y":4},{"x":6,"y":4},{"x":7,"y":4},{"x":7,"y":3},{"x":6,"y":3},{"x":5,"y":3},{"x":4,"y":3},{"x":3,"y":3}],
+            "latency": 50,
+            "head": {
+              "x": 7,
+              "y": 7
+            },
+            "length": 25,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 139,
+    "Name": "Snake ultra lungo quadrato - navigazione verso DOWN",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-131",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 75,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [{"x":5,"y":7},{"x":5,"y":6},{"x":5,"y":5},{"x":5,"y":4},{"x":5,"y":3},{"x":6,"y":3},{"x":7,"y":3},{"x":8,"y":3},{"x":9,"y":3},{"x":9,"y":4},{"x":9,"y":5},{"x":9,"y":6},{"x":9,"y":7},{"x":8,"y":7},{"x":7,"y":7},{"x":6,"y":7},{"x":6,"y":6},{"x":6,"y":5},{"x":6,"y":4},{"x":7,"y":4},{"x":8,"y":4},{"x":8,"y":5},{"x":8,"y":6},{"x":7,"y":6},{"x":7,"y":5}],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 7
+            },
+            "length": 25,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 140,
+    "Name": "Snake ultra lungo quadrato - navigazione verso UP",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-132",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 75,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [{"x":3,"y":3},{"x":3,"y":4},{"x":3,"y":5},{"x":3,"y":6},{"x":3,"y":7},{"x":4,"y":7},{"x":5,"y":7},{"x":6,"y":7},{"x":7,"y":7},{"x":7,"y":6},{"x":7,"y":5},{"x":7,"y":4},{"x":7,"y":3},{"x":6,"y":3},{"x":5,"y":3},{"x":4,"y":3},{"x":4,"y":4},{"x":4,"y":5},{"x":4,"y":6},{"x":5,"y":6},{"x":6,"y":6},{"x":6,"y":5},{"x":6,"y":4},{"x":5,"y":4},{"x":5,"y":5}],
+            "latency": 50,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 25,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 141,
+    "Name": "Snake ultra lungo - navigazione complessa lineare",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-133",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 80,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [{"x":5,"y":5},{"x":5,"y":6},{"x":5,"y":7},{"x":5,"y":8},{"x":5,"y":9},{"x":5,"y":10},{"x":4,"y":10},{"x":3,"y":10},{"x":2,"y":10},{"x":1,"y":10},{"x":0,"y":10},{"x":0,"y":9},{"x":0,"y":8},{"x":0,"y":7},{"x":0,"y":6},{"x":0,"y":5},{"x":0,"y":4},{"x":0,"y":3},{"x":0,"y":2},{"x":0,"y":1},{"x":0,"y":0},{"x":1,"y":0},{"x":2,"y":0},{"x":3,"y":0},{"x":4,"y":0},{"x":5,"y":0},{"x":6,"y":0},{"x":7,"y":0},{"x":8,"y":0},{"x":9,"y":0},{"x":10,"y":0},{"x":10,"y":1},{"x":10,"y":2},{"x":10,"y":3},{"x":10,"y":4},{"x":10,"y":5},{"x":9,"y":5},{"x":8,"y":5},{"x":7,"y":5},{"x":6,"y":5}],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 40,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  }
+]

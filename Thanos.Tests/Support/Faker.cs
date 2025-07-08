@@ -17,12 +17,11 @@ public static class Faker
     /// 8. Scenari di controllo territorio
     /// </summary>
     /// <returns>La lista di tutti i possibili scenari</returns>
-    
     public static List<Scenario> GetAllScenarios(string scenarioBatch)
     {
         var currentDir = Directory.GetCurrentDirectory();
         var projectRoot = Directory.GetParent(currentDir)!.Parent!.Parent!.FullName;
-        var jsonPath = Path.Combine(projectRoot, $"{scenarioBatch}.json");
+        var jsonPath = Path.Combine(projectRoot, "Boards", $"{scenarioBatch}.json");
 
         if (!File.Exists(jsonPath)) throw new FileNotFoundException($"File '{scenarioBatch}.json' non trovato nel percorso: {jsonPath}");
 
@@ -37,7 +36,7 @@ public static class Faker
 
             foreach (var scenario in scenarios)
             {
-                scenario.MoveRequest.You = scenario.MoveRequest.Board.snakes.Single(snake => string.Equals(snake.id, "betty", StringComparison.OrdinalIgnoreCase));
+                scenario.MoveRequest.You = scenario.MoveRequest.Board.snakes.Single(snake => string.Equals(snake.id, Constants.Me, StringComparison.OrdinalIgnoreCase));
                 scenario.FileName = scenarioBatch;
             }
             
