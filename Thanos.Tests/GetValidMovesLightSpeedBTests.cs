@@ -2,6 +2,8 @@
 using Thanos.CollisionMatrix;
 using Thanos.Tests.Support;
 
+namespace Thanos.Tests;
+
 [TestFixture]
 public class GetValidMovesTests
 {
@@ -9,12 +11,49 @@ public class GetValidMovesTests
     public void TestGetValidMoves()
     {
         // Arrange
-        var scenarios = Faker.GetScenarios();
+        var corners = Faker.GetAllScenarios("corners");
+        var borders = Faker.GetAllScenarios("borders");
+        var cornerHazards = Faker.GetAllScenarios("corners-hazard");
+        var enemies = Faker.GetAllScenarios("enemies");
+        
+        // var scenarios = corners.Concat(borders).Concat(cornerHazards).Concat(enemies).ToList();
+        
+        // Debug.PrintHeader();
+
+        // scenarios = [scenarios.Last()];
+        var scenarios = enemies.Where(a => a.Id > 122).ToList();
+        
+        foreach (var scenario in scenarios) 
+        {
+            var request = scenario.MoveRequest;
+            
+            var board = request.Board;
+            var mySnake = request.You;
+
+            var width = board.width;
+            var height = board.height;
+            var hazards = board.hazards;
+            var hazardCount = hazards.Length;
+            var snakes = board.snakes;
+            var snakeCount = snakes.Length;
+            var myId = mySnake.id;
+            var myBody = mySnake.body;
+            var myBodyLength = myBody.Length;
+            var myHead = mySnake.head;
+            var myHeadX = myHead.x;
+            var myHeadY = myHead.y;
+            var eat = mySnake.health == 100;
+            
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id);
+        }
+        
+        return;
 
         foreach (var scenario in scenarios)
         {
             var request = scenario.MoveRequest;
             
+            var scenarioId = scenario.Id;
             var scenarioName = scenario.Name;
             var expected = scenario.Expected;
             
@@ -36,7 +75,7 @@ public class GetValidMovesTests
             var eat = mySnake.health == 100;
             
             // Debug    
-            Debug.Print(width, height, myHeadX, myHeadY, myBody, hazards, snakes, expected, scenarioName);
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id);
         
             // Act
             var result = GetValidMovesLightSpeedB.GetValidMovesLightSpeed(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);

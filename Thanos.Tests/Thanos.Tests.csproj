@@ -15,5 +15,11 @@
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
       <PackageReference Include="NUnit" Version="4.3.2" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="borders.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 
 </Project>
