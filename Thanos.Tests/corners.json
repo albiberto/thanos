@@ -1,0 +1,150 @@
+﻿[
+  {
+    "Id": 1,
+    "Name": "Betty in angolo 0,0",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-1",
+        "ruleset": { "name": "standard" },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              { "x": 0, "y": 0 },
+              { "x": 0, "y": 1 },
+              { "x": 0, "y": 2 }
+            ],
+            "latency": 50,
+            "head": { "x": 0, "y": 0 },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": { "color": "#FF0000", "head": "default", "tail": "default" }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 2,
+    "Name": "Betty in angolo 11,0",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-2",
+        "ruleset": { "name": "standard" },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              { "x": 10, "y": 0 },
+              { "x": 10, "y": 1 },
+              { "x": 10, "y": 2 }
+            ],
+            "latency": 50,
+            "head": { "x": 10, "y": 0 },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": { "color": "#FF0000", "head": "default", "tail": "default" }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 3,
+    "Name": "Betty in angolo 0,11",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-3",
+        "ruleset": { "name": "standard" },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              { "x": 0, "y": 10 },
+              { "x": 0, "y": 9 },
+              { "x": 0, "y": 8 }
+            ],
+            "latency": 50,
+            "head": { "x": 0, "y": 10 },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": { "color": "#FF0000", "head": "default", "tail": "default" }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 4,
+    "Name": "Betty in angolo 11,11",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-4",
+        "ruleset": { "name": "standard" },
+        "timeout": 500
+      },
+      "turn": 1,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              { "x": 10, "y": 10 },
+              { "x": 10, "y": 9 },
+              { "x": 10, "y": 8 }
+            ],
+            "latency": 50,
+            "head": { "x": 10, "y": 10 },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": { "color": "#FF0000", "head": "default", "tail": "default" }
+          }
+        ]
+      }
+    }
+  }
+]

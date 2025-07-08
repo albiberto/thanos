@@ -21,8 +21,8 @@ public static void Print(this Board board)
         System.Console.Write($"{y,2}|");
         for (var x = 0; x < board.width; x++)
         {
-            bool isHazard = board.hazards.Any(h => h.x == x && h.y == y);
-            bool isSnake = board.snakes.Any(s => s.body.Any(p => p.x == x && p.y == y));
+            var isHazard = board.hazards.Any(h => h.x == x && h.y == y);
+            var isSnake = board.snakes.Any(s => s.body.Any(p => p.x == x && p.y == y));
             if (isSnake)
                 System.Console.Write(" S ");
             else if (isHazard)

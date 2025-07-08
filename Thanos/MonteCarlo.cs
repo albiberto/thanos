@@ -100,9 +100,8 @@ public class MonteCarlo
     /// Ottiene il punteggio per una specifica direzione
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static double GetScoreForMove(Direction move)
-    {
-        return move switch
+    private static double GetScoreForMove(Direction move) =>
+        move switch
         {
             Direction.Up => _scores.Up,
             Direction.Down => _scores.Down,
@@ -110,7 +109,6 @@ public class MonteCarlo
             Direction.Right => _scores.Right,
             _ => 0.0
         };
-    }
 
     // 5. ELIMINAZIONE OVERHEAD PARALLEL.FOR
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

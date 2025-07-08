@@ -1,0 +1,1871 @@
+﻿[
+  {
+    "Id": 100,
+    "Name": "Hazard singolo davanti - movimento bloccato",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-100",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 101,
+    "Name": "Hazard a sinistra - movimento bloccato",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-101",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 102,
+    "Name": "Hazard a destra - movimento bloccato",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-102",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 6,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 103,
+    "Name": "Hazard dietro - nessun effetto (può tornare indietro)",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-103",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 104,
+    "Name": "Hazard multipli - circondato su 3 lati",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-104",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 105,
+    "Name": "Hazard nell'angolo - doppio blocco",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-105",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 0,
+              "y": 0
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 106,
+    "Name": "Hazard + bordo - intrappolato nell'angolo",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-106",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": 1
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 0,
+              "y": 0
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 107,
+    "Name": "Hazard lungo il bordo superiore",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-107",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 6,
+            "y": 0
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 1
+              },
+              {
+                "x": 5,
+                "y": 2
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 0
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 108,
+    "Name": "Hazard sparse - solo uno bloccante",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-108",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 3
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 109,
+    "Name": "Hazard + corpo proprio - doppio blocco",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-109",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 4
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 12,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 110,
+    "Name": "Hazard in linea retta - corridoio bloccato",
+    "Expected": 3,
+    "MoveRequest": {
+      "game": {
+        "id": "game-110",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 4,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 111,
+    "Name": "Hazard a L - angolo pericoloso",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-111",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 112,
+    "Name": "Hazard in diagonale - nessun effetto diretto",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-112",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 113,
+    "Name": "Hazard zona massiva - evita l'area",
+    "Expected": 3,
+    "MoveRequest": {
+      "game": {
+        "id": "game-113",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 8,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 114,
+    "Name": "Hazard singolo al centro - libero movimento",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-114",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 115,
+    "Name": "Hazard a scacchiera - movimento limitato",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-115",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 2
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 4
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 116,
+    "Name": "Hazard lungo tutto il bordo - trappola mortale",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-116",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 0,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 1
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 0,
+                "y": 1
+              },
+              {
+                "x": 0,
+                "y": 2
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 0,
+              "y": 0
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 117,
+    "Name": "Hazard a spirale - percorso complesso",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-117",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 118,
+    "Name": "Hazard con snake nemico - doppio pericolo",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-118",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy",
+            "name": "Enemy",
+            "health": 85,
+            "body": [
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 4,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 119,
+    "Name": "Hazard con cibo - rischio vs ricompensa",
+    "Expected": 4,
+    "MoveRequest": {
+      "game": {
+        "id": "game-119",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 5,
+            "y": 4
+          }
+        ],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 50,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy",
+            "name": "Enemy",
+            "health": 85,
+            "body": [
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 6,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 120,
+    "Name": "Hazard temporaneo - valutazione dinamica",
+    "Expected": 8,
+    "MoveRequest": {
+      "game": {
+        "id": "game-120",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 121,
+    "Name": "Snake lungo con hazard - movimento limitato",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-121",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 6
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 4
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 4,
+              "y": 5
+            },
+            "length": 14,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 122,
+    "Name": "Hazard in movimento - previsione necessaria",
+    "Expected": 3,
+    "MoveRequest": {
+      "game": {
+        "id": "game-122",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 8,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 123,
+    "Name": "Hazard con più snake - caos controllato",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-123",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy1",
+            "name": "Enemy1",
+            "health": 85,
+            "body": [
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 6,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy2",
+            "name": "Enemy2",
+            "health": 90,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 124,
+    "Name": "Hazard con salute bassa - rischio estremo",
+    "Expected": 2,
+    "MoveRequest": {
+      "game": {
+        "id": "game-124",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 15,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 3
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  }
+]

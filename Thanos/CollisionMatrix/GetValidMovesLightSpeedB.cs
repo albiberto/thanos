@@ -142,7 +142,7 @@ public static class GetValidMovesLightSpeedB
                 *(ptr + bp.y * widthInt + bp.x) = 1;
             }
         }
-        Debug.Print(width, height, _collisionBytes);
+        // Debug.Print(width, height, _collisionBytes);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

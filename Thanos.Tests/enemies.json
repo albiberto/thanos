@@ -1,0 +1,1117 @@
+﻿[
+  {
+    "Id": 127,
+    "Name": "Confronto testa a testa - snake più piccolo vs più grande",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-127",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "giant",
+            "name": "Giant",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 128,
+    "Name": "Confronto testa a testa - snake uguale dimensione",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-128",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "equal",
+            "name": "Equal",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 129,
+    "Name": "Confronto testa a testa - snake più grande vs più piccolo",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-129",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 10
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "smaller",
+            "name": "Smaller",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 130,
+    "Name": "Triangolo di minacce - 3 snake in conflitto",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-130",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy1",
+            "name": "Enemy1",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy2",
+            "name": "Enemy2",
+            "health": 90,
+            "body": [
+              {
+                "x": 7,
+                "y": 3
+              },
+              {
+                "x": 8,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 3
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 7,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 132,
+    "Name": "Inseguimento - predatore e preda",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-132",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 25,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "hunter",
+            "name": "Hunter",
+            "health": 100,
+            "body": [
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 8,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 133,
+    "Name": "Blocco cooperativo - 2 snake bloccano 1",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-133",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 30,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker1",
+            "name": "Blocker1",
+            "health": 85,
+            "body": [
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 4,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker2",
+            "name": "Blocker2",
+            "health": 90,
+            "body": [
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 4
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 6,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 134,
+    "Name": "Corridoio stretto - solo uno può passare",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-134",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 35,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 10
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker",
+            "name": "Blocker",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "wall1",
+            "name": "Wall1",
+            "health": 100,
+            "body": [
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 4,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "wall2",
+            "name": "Wall2",
+            "health": 100,
+            "body": [
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 4
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 6,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FFFF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 135,
+    "Name": "Fuga dall'angolo - circondato da nemici",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-135",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 40,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 2
+              },
+              {
+                "x": 1,
+                "y": 3
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 1,
+              "y": 1
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "corner1",
+            "name": "Corner1",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 6,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "corner2",
+            "name": "Corner2",
+            "health": 90,
+            "body": [
+              {
+                "x": 3,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 1
+              },
+              {
+                "x": 5,
+                "y": 1
+              },
+              {
+                "x": 6,
+                "y": 1
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 3,
+              "y": 1
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 136,
+    "Name": "Catena di minacce - effetto domino",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-136",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 45,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "betty",
+            "name": "Betty",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "chain1",
+            "name": "Chain1",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "chain2",
+            "name": "Chain2",
+            "health": 90,
+            "body": [
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 1,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "chain3",
+            "name": "Chain3",
+            "health": 75,
+            "body": [
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FFFF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  }
+]
