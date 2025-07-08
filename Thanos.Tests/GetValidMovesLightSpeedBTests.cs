@@ -10,20 +10,37 @@ public class GetValidMovesTests
     [Test]
     public void TestGetValidMoves()
     {
-        // Arrange
-        var corners = Faker.GetAllScenarios("corners");
-        var borders = Faker.GetAllScenarios("borders");
-        var cornerHazards = Faker.GetAllScenarios("corners-hazard");
-        var enemies = Faker.GetAllScenarios("enemies");
+        // Arrange - Load all existing scenarios
+        var basics = Faker.GetAllScenarios("01-basics");
+        // var hazardss = Faker.GetAllScenarios("02-hazards");
+        // var space_control = Faker.GetAllScenarios("04-space-control");
+        // var combat = Faker.GetAllScenarios("05-combat");
+        var complex = Faker.GetAllScenarios("10-complex");
         
-        // var scenarios = corners.Concat(borders).Concat(cornerHazards).Concat(enemies).ToList();
+        // Combine all scenarios for comprehensive testing
+        var scenarios =
+            Enumerable.Empty<Scenario>()
+                .Concat(basics)
+                // .Concat(hazardss)
+                // .Concat(space_control)
+                // .Concat(combat)
+                .Concat(complex)
+                .Concat([]);
+        
+        // const bool onlyFailed = true;
+        const bool onlyFailed = false;
+        
+        // For testing specific scenarios, uncomment and modify as needed:
+        scenarios = scenarios.Where(a => a.Id is >= 130 and < 131); // Basic movements
+        // scenarios = scenarios.Where(a => a.Id is >= 200 and < 300); // Borders
+        // scenarios = scenarios.Where(a => a.Id is >= 300 and < 400); // Hazards
+        // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
+        // scenarios = scenarios.Where(a => a.Id is >= 500 and < 600); // Combat
+        // scenarios = scenarios.Where(a => a.Id is >= 1000);          // Complex 
+        scenarios = complex;
         
         // Debug.PrintHeader();
-
-        // scenarios = [scenarios.Last()];
-        var scenarios = enemies.Where(a => a.Id > 122).ToList();
-        
-        foreach (var scenario in scenarios) 
+        foreach (var scenario in scenarios)
         {
             var request = scenario.MoveRequest;
             
@@ -44,7 +61,7 @@ public class GetValidMovesTests
             var myHeadY = myHead.y;
             var eat = mySnake.health == 100;
             
-            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id);
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed);
         }
         
         return;

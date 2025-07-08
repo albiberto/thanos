@@ -1,0 +1,2499 @@
+[
+  {
+    "Id": 500,
+    "Name": "Confronto testa a testa - snake più piccolo vs più grande",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-500",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "giant",
+            "name": "Giant",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 501,
+    "Name": "Confronto testa a testa - snake uguale dimensione",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-501",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "equal",
+            "name": "Equal",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 502,
+    "Name": "Confronto testa a testa - snake più grande vs più piccolo",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-502",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 10
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "smaller",
+            "name": "Smaller",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 503,
+    "Name": "Triangolo di minacce - 3 snake in conflitto",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-503",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy1",
+            "name": "Enemy1",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy2",
+            "name": "Enemy2",
+            "health": 90,
+            "body": [
+              {
+                "x": 7,
+                "y": 3
+              },
+              {
+                "x": 8,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 3
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 7,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 504,
+    "Name": "Inseguimento - predatore e preda",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-504",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 25,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "hunter",
+            "name": "Hunter",
+            "health": 100,
+            "body": [
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 8,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 505,
+    "Name": "Blocco cooperativo - 2 snake bloccano 1",
+    "Expected": 0,
+    "MoveRequest": {
+      "game": {
+        "id": "game-505",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 30,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker1",
+            "name": "Blocker1",
+            "health": 85,
+            "body": [
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 4,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker2",
+            "name": "Blocker2",
+            "health": 90,
+            "body": [
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 4
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 6,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 506,
+    "Name": "Corridoio stretto - solo uno può passare",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-506",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 35,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 10
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "blocker",
+            "name": "Blocker",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "wall1",
+            "name": "Wall1",
+            "health": 100,
+            "body": [
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 4,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "wall2",
+            "name": "Wall2",
+            "health": 100,
+            "body": [
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 4
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 6,
+              "y": 4
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FFFF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 507,
+    "Name": "Fuga dall'angolo - circondato da nemici",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-507",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 40,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 1,
+                "y": 2
+              },
+              {
+                "x": 1,
+                "y": 3
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 1,
+              "y": 1
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "corner1",
+            "name": "Corner1",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 6,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "corner2",
+            "name": "Corner2",
+            "health": 90,
+            "body": [
+              {
+                "x": 3,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 1
+              },
+              {
+                "x": 5,
+                "y": 1
+              },
+              {
+                "x": 6,
+                "y": 1
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 3,
+              "y": 1
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 508,
+    "Name": "Catena di minacce - effetto domino",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-508",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 45,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "chain1",
+            "name": "Chain1",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "chain2",
+            "name": "Chain2",
+            "health": 90,
+            "body": [
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 1,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "chain3",
+            "name": "Chain3",
+            "health": 75,
+            "body": [
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FFFF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 509,
+    "Name": "Duello diretto - snake uguale lunghezza",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-509",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 15,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy",
+            "name": "Enemy",
+            "health": 90,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 510,
+    "Name": "Vantaggio dimensionale - attaccare snake più piccolo",
+    "Expected": 12,
+    "MoveRequest": {
+      "game": {
+        "id": "game-510",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 20,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 95,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 4,
+                "y": 8
+              },
+              {
+                "x": 3,
+                "y": 8
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "smaller",
+            "name": "Smaller",
+            "health": 80,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 511,
+    "Name": "Svantaggio dimensionale - evitare snake più grande",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-511",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 25,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "giant",
+            "name": "Giant",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 8,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 512,
+    "Name": "Battaglia a tre - posizionamento tattico",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-512",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 30,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 8
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy1",
+            "name": "Enemy1",
+            "health": 90,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 3
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "enemy2",
+            "name": "Enemy2",
+            "health": 85,
+            "body": [
+              {
+                "x": 7,
+                "y": 3
+              },
+              {
+                "x": 8,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 3
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 7,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 513,
+    "Name": "Circondamento - fuga strategica",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-513",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 40,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 80,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "hunter1",
+            "name": "Hunter1",
+            "health": 95,
+            "body": [
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "hunter2",
+            "name": "Hunter2",
+            "health": 90,
+            "body": [
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "hunter3",
+            "name": "Hunter3",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              }
+            ],
+            "latency": 40,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FFFF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 514,
+    "Name": "Manovra di fiancheggiamento",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-514",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 35,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 8
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 3,
+              "y": 5
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "target",
+            "name": "Target",
+            "health": 80,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 515,
+    "Name": "Formazione difensiva - proteggere territorio",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-515",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 45,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 2
+          }
+        ],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 4,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 2,
+                "y": 7
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "invader",
+            "name": "Invader",
+            "health": 85,
+            "body": [
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 8,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 516,
+    "Name": "Attacco a sorpresa - imboscata",
+    "Expected": 1,
+    "MoveRequest": {
+      "game": {
+        "id": "game-516",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 50,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 95,
+            "body": [
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 3
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 2,
+              "y": 5
+            },
+            "length": 7,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "prey",
+            "name": "Prey",
+            "health": 70,
+            "body": [
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 4,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 517,
+    "Name": "Battaglia finale - ultimi due snake",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-517",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 100,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 60,
+            "body": [
+              {
+                "x": 2,
+                "y": 2
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 2,
+              "y": 2
+            },
+            "length": 10,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "finalist",
+            "name": "Finalist",
+            "health": 75,
+            "body": [
+              {
+                "x": 8,
+                "y": 8
+              },
+              {
+                "x": 8,
+                "y": 7
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
+                "x": 7,
+                "y": 6
+              },
+              {
+                "x": 6,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 2,
+                "y": 6
+              },
+              {
+                "x": 1,
+                "y": 6
+              },
+              {
+                "x": 0,
+                "y": 6
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 8,
+              "y": 8
+            },
+            "length": 11,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 518,
+    "Name": "Sacrificio tattico - lasciare che nemici si eliminino",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-518",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 60,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 85,
+            "body": [
+              {
+                "x": 8,
+                "y": 8
+              },
+              {
+                "x": 8,
+                "y": 9
+              },
+              {
+                "x": 8,
+                "y": 10
+              },
+              {
+                "x": 7,
+                "y": 10
+              },
+              {
+                "x": 6,
+                "y": 10
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 8,
+              "y": 8
+            },
+            "length": 5,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "fighter1",
+            "name": "Fighter1",
+            "health": 80,
+            "body": [
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 3,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "fighter2",
+            "name": "Fighter2",
+            "health": 85,
+            "body": [
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              }
+            ],
+            "latency": 35,
+            "head": {
+              "x": 5,
+              "y": 3
+            },
+            "length": 4,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#00FF00",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 513,
+    "Name": "Game molto lunga - gestione late game",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-213",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 500,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 50,
+            "body": [
+              {
+                "x": 2,
+                "y": 2
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 4
+              }
+            ],
+            "latency": 50,
+            "head": {
+              "x": 2,
+              "y": 2
+            },
+            "length": 9,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "survivor",
+            "name": "Survivor",
+            "health": 45,
+            "body": [
+              {
+                "x": 8,
+                "y": 8
+              },
+              {
+                "x": 8,
+                "y": 7
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
+                "x": 7,
+                "y": 6
+              },
+              {
+                "x": 6,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 6
+              }
+            ],
+            "latency": 30,
+            "head": {
+              "x": 8,
+              "y": 8
+            },
+            "length": 8,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "Id": 514,
+    "Name": "Latenza alta - compensazione lag",
+    "Expected": 13,
+    "MoveRequest": {
+      "game": {
+        "id": "game-214",
+        "ruleset": {
+          "name": "standard"
+        },
+        "timeout": 500
+      },
+      "turn": 10,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 90,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
+              }
+            ],
+            "latency": 200,
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          },
+          {
+            "id": "fast",
+            "name": "Fast",
+            "health": 90,
+            "body": [
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              }
+            ],
+            "latency": 5,
+            "head": {
+              "x": 7,
+              "y": 5
+            },
+            "length": 3,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#0000FF",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      }
+    }
+  }
+] 
