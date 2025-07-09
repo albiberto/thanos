@@ -29,6 +29,8 @@ public class GetValidMovesTests
         
         // const bool onlyFailed = true;
         const bool onlyFailed = false;
+        const bool onlyBoards = true;
+        // const bool onlyBoards = false;
         
         // For testing specific scenarios, uncomment and modify as needed:
         scenarios = scenarios.Where(a => a.Id is >= 130 and < 131); // Basic movements
@@ -61,7 +63,7 @@ public class GetValidMovesTests
             var myHeadY = myHead.y;
             var eat = mySnake.health == 100;
             
-            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed);
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed, onlyBoards);
         }
         
         return;

@@ -144,8 +144,9 @@
             font-size: 0.9em;
         }
 
-        .control-group input[type="text"], 
-        .control-group input[type="number"] {
+        .control-group input[type="text"],
+        .control-group input[type="number"],
+        .control-group select {
             width: 100%;
             padding: 8px 12px;
             background: #ffffff;
@@ -155,67 +156,101 @@
             font-size: 14px;
         }
 
-        .control-group input:focus {
+        .control-group input:focus,
+        .control-group select:focus {
             outline: none;
             border-color: #22c55e;
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
         }
 
-        .expected-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin-top: 8px;
-            max-height: 200px;
+        .boards-counter {
+            background: #dcfce7;
+            border: 2px solid #22c55e;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: bold;
+            color: #166534;
+        }
+
+        .boards-counter-number {
+            font-size: 1.5em;
+            color: #22c55e;
+        }
+
+        .boards-config {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
-        .expected-option {
-            background: #ffffff;
-            border: 2px solid #d1d5db;
-            border-radius: 6px;
-            padding: 4px 2px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-            min-height: 50px;
+        .board-config-item {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
         }
 
-        .expected-option:hover {
-            background: #f3f4f6;
-            border-color: #22c55e;
+        .board-config-item:last-child {
+            border-bottom: none;
         }
 
-        .expected-option.selected {
-            background: #dcfce7;
-            border-color: #22c55e;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        .board-config-item:nth-child(even) {
+            background: #f8f9fa;
         }
 
-        .expected-option input[type="radio"] {
-            display: none;
-        }
-
-        .expected-option-label {
-            font-size: 10px;
-            margin-bottom: 2px;
-            color: #22c55e;
+        .board-number {
+            min-width: 60px;
             font-weight: bold;
+            color: #22c55e;
+            text-align: center;
         }
 
-        .expected-option-icons {
+        .board-test-id {
+            min-width: 80px;
+            padding: 4px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
             font-size: 12px;
-            margin-bottom: 2px;
+            text-align: center;
         }
 
-        .expected-option-desc {
-            font-size: 8px;
-            color: #6b7280;
-            line-height: 1;
+        .board-test-id:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        .board-expected {
+            min-width: 120px;
+            padding: 4px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .board-expected:focus {
+            outline: none;
+            border-color: #22c55e;
+        }
+
+        .board-name {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .board-name:focus {
+            outline: none;
+            border-color: #22c55e;
         }
 
         .button {
@@ -381,15 +416,53 @@
             margin-bottom: 15px;
         }
 
+        .apply-all-section {
+            background: #fef9e7;
+            border: 2px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .apply-all-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .apply-all-controls select {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .apply-all-controls button {
+            padding: 6px 12px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .apply-all-controls button:hover {
+            background: #d97706;
+        }
+
         /* Scrollbar styling */
-        .expected-grid::-webkit-scrollbar,
+        .boards-config::-webkit-scrollbar,
         .json-code::-webkit-scrollbar,
         .controls-scroll::-webkit-scrollbar,
         .board-input::-webkit-scrollbar {
             width: 6px;
         }
 
-        .expected-grid::-webkit-scrollbar-track,
+        .boards-config::-webkit-scrollbar-track,
         .json-code::-webkit-scrollbar-track,
         .controls-scroll::-webkit-scrollbar-track,
         .board-input::-webkit-scrollbar-track {
@@ -397,7 +470,7 @@
             border-radius: 3px;
         }
 
-        .expected-grid::-webkit-scrollbar-thumb,
+        .boards-config::-webkit-scrollbar-thumb,
         .json-code::-webkit-scrollbar-thumb,
         .controls-scroll::-webkit-scrollbar-thumb,
         .board-input::-webkit-scrollbar-thumb {
@@ -410,60 +483,63 @@
                 grid-template-columns: 1fr;
                 grid-template-rows: 1fr auto;
             }
-            
+
             .controls-section {
                 max-height: 40vh;
-            }
-            
-            .expected-grid {
-                grid-template-columns: repeat(6, 1fr);
             }
         }
 
         @media (max-width: 768px) {
-            .expected-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-            
             .container {
                 padding: 10px;
             }
-            
+
             h1 {
                 font-size: 1.5em;
                 margin-bottom: 10px;
+            }
+
+            .board-config-item {
+                flex-direction: column;
+                gap: 5px;
+                align-items: stretch;
+            }
+
+            .board-number {
+                min-width: auto;
+                text-align: left;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🐍 Battlesnake Board Converter</h1>
-        
-        <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('converter')">Board Converter</button>
-            <button class="tab-button" onclick="switchTab('formatter')">JSON Formatter</button>
-        </div>
+<div class="container">
+    <h1>🐍 Battlesnake Board Converter</h1>
 
-        <div id="converter-tab" class="tab-content active">
-            <div class="main-content">
-                <div class="board-section">
-                    <h2>Board Input</h2>
-                    <div class="hint">
-                        <div class="hint-title">Icone Board (clicca per copiare):</div>
-                        <div class="icon-buttons">
-                            <button class="button-fill icon-btn" onclick="copyIcon('👽')" title="Copia head">👽 (head)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('💲')" title="Copia body">💲 (body)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('⬛')" title="Copia empty">⬛ (empty)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('🍎')" title="Copia food">🍎 (food)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('💀')" title="Copia hazard">💀 (hazard)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('⬆️')" title="Copia up">⬆️ (up)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('⬇️')" title="Copia down">⬇️ (down)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('⬅️')" title="Copia left">⬅️ (left)</button>
-                            <button class="button-fill icon-btn" onclick="copyIcon('➡️')" title="Copia right">➡️ (right)</button>
-                        </div>
+    <div class="tabs">
+        <button class="tab-button active" onclick="switchTab('converter')">Board Converter</button>
+        <button class="tab-button" onclick="switchTab('formatter')">JSON Formatter</button>
+    </div>
+
+    <div id="converter-tab" class="tab-content active">
+        <div class="main-content">
+            <div class="board-section">
+                <h2>Board Input</h2>
+                <div class="hint">
+                    <div class="hint-title">Icone Board (clicca per copiare):</div>
+                    <div class="icon-buttons">
+                        <button class="button-fill icon-btn" onclick="copyIcon('👽')" title="Copia head">👽 (head)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('💲')" title="Copia body">💲 (body)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('⬛')" title="Copia empty">⬛ (empty)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('🍎')" title="Copia food">🍎 (food)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('💀')" title="Copia hazard">💀 (hazard)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('⬆️')" title="Copia up">⬆️ (up)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('⬇️')" title="Copia down">⬇️ (down)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('⬅️')" title="Copia left">⬅️ (left)</button>
+                        <button class="button-fill icon-btn" onclick="copyIcon('➡️')" title="Copia right">➡️ (right)</button>
                     </div>
-                    <textarea id="boardInput" class="board-input" placeholder="Incolla qui la griglia o liste di griglie...
+                </div>
+                <textarea id="boardInput" class="board-input" placeholder="Incolla qui la griglia o liste di griglie...
 
 Esempio singola griglia:
 00  01  02  03  04  05  06  07  08  09  10
@@ -485,55 +561,79 @@ Esempio multiple griglie (separate da linee vuote):
 00  01  02  03
 00 ⬛  ⬛  ⬛  ⬛  
 01 ⬛  ⬛  👽  ⬛  
-02 ⬛  ⬛  💲  ⬛  "></textarea>
-                </div>
+02 ⬛  ⬛  💲  ⬛  " oninput="analyzeBoards()"></textarea>
+            </div>
 
-                <div class="controls-section">
-                    <div class="controls-scroll">
-                        <h2>Configuration</h2>
+            <div class="controls-section">
+                <div class="controls-scroll">
+                    <h2>Configuration</h2>
 
-                        <div class="control-group" style="margin-bottom:6px; display:flex; align-items:center; gap:4px;">
-                            <label for="testId" style="font-size:12px;">Starting Test ID:</label>
-                            <input type="number" id="testId" value="101" min="1" max="999"
-                                   style="flex:1; font-size:12px; padding:2px 4px; width:60px;">
-                            <span style="font-size:10px; color:#666;">(auto-increment per ogni griglia)</span>
-                        </div>
+                    <div class="control-group">
+                        <label for="testName">Test Name Base:</label>
+                        <input type="text" id="testName" placeholder="Movimento verso"
+                               style="font-size:12px; padding:8px;">
+                        <small style="font-size:10px; color:#666; margin-top:2px; display:block;">
+                            Il nome sarà: "{nome base} {numero}"
+                        </small>
+                    </div>
 
-                        <div class="control-group" style="margin-bottom:6px; display:flex; align-items:center; gap:4px;">
-                            <label for="testName" style="font-size:12px;">Test Name Base:</label>
-                            <input type="text" id="testName" placeholder="Movimento verso UP"
-                                   style="flex:1; font-size:12px; padding:2px 4px;">
-                            <span style="font-size:10px; color:#666;">(+ numero per ogni griglia)</span>
-                        </div>
+                    <div id="boardsCounter" class="boards-counter" style="display: none;">
+                        <div>Rilevate</div>
+                        <div class="boards-counter-number" id="boardsCount">0</div>
+                        <div>Board</div>
+                    </div>
 
-                        <div class="control-group"> 
-                            <label>Expected Result:</label>
-                            <div class="expected-grid" id="expectedGrid"></div>
+                    <div class="apply-all-section" id="applyAllSection" style="display: none;">
+                        <div style="font-weight: bold; margin-bottom: 8px; color: #92400e;">⚡ Applica a tutte:</div>
+                        <div class="apply-all-controls">
+                            <select id="globalExpected">
+                                <option value="1">1 - ⬆️ UP</option>
+                                <option value="2">2 - ⬇️ DOWN</option>
+                                <option value="3">3 - ⬆️⬇️ UP | DOWN</option>
+                                <option value="4">4 - ⬅️ LEFT</option>
+                                <option value="5">5 - ⬆️⬅️ UP | LEFT</option>
+                                <option value="6">6 - ⬇️⬅️ DOWN | LEFT</option>
+                                <option value="7">7 - ⬆️⬇️⬅️ UP | DOWN | LEFT</option>
+                                <option value="8">8 - ➡️ RIGHT</option>
+                                <option value="9">9 - ⬆️➡️ UP | RIGHT</option>
+                                <option value="10">10 - ⬇️➡️ DOWN | RIGHT</option>
+                                <option value="11">11 - ⬆️⬇️➡️ UP | DOWN | RIGHT</option>
+                                <option value="12">12 - ⬅️➡️ LEFT | RIGHT</option>
+                                <option value="13" selected>13 - ⬆️⬅️➡️ UP | LEFT | RIGHT</option>
+                                <option value="14">14 - ⬇️⬅️➡️ DOWN | LEFT | RIGHT</option>
+                                <option value="15">15 - ⬆️⬇️⬅️➡️ ALL</option>
+                            </select>
+                            <button onclick="applyExpectedToAll()">Applica</button>
                         </div>
                     </div>
 
-                    <button class="button" onclick="convertBoard()">🔄 Convert to JSON</button>
+                    <div id="boardsConfig" class="boards-config" style="display: none;">
+                        <!-- Le configurazioni delle board verranno generate qui -->
+                    </div>
                 </div>
-            </div>
 
-            <div id="statusMessage"></div>
-
-            <div class="json-output" id="jsonOutput" style="display: none;">
-                <h2>Generated JSON</h2>
-                <div class="json-code" id="jsonCode"></div>
-                <button class="button copy-button" id="copyButton" onclick="copyToClipboard()">📋 Copy JSON</button>
+                <button class="button" onclick="convertBoard()">🔄 Convert to JSON</button>
             </div>
         </div>
 
-        <div id="formatter-tab" class="tab-content">
-            <div class="formatter-content">
-                <div class="formatter-section">
-                    <h2>JSON List Input</h2>
-                    <div class="hint">
-                        <div class="hint-title">Formato:</div>
-                        Incolla qui una lista di JSON (array) da formattare con body inline
-                    </div>
-                    <textarea id="jsonListInput" class="board-input" placeholder="Incolla qui la lista di JSON...
+        <div id="statusMessage"></div>
+
+        <div class="json-output" id="jsonOutput" style="display: none;">
+            <h2>Generated JSON</h2>
+            <div class="json-code" id="jsonCode"></div>
+            <button class="button copy-button" id="copyButton" onclick="copyToClipboard()">📋 Copy JSON</button>
+        </div>
+    </div>
+
+    <div id="formatter-tab" class="tab-content">
+        <div class="formatter-content">
+            <div class="formatter-section">
+                <h2>JSON List Input</h2>
+                <div class="hint">
+                    <div class="hint-title">Formato:</div>
+                    Incolla qui una lista di JSON (array) da formattare con body inline
+                </div>
+                <textarea id="jsonListInput" class="board-input" placeholder="Incolla qui la lista di JSON...
 
 Esempio:
 [
@@ -546,466 +646,539 @@ Esempio:
     }
   }
 ]"></textarea>
-                </div>
-
-                <div class="formatter-controls">
-                    <button class="button" onclick="formatJSONList()">🔄 Format JSON List</button>
-                </div>
             </div>
 
-            <div class="json-output" id="formatterOutput" style="display: none;">
-                <h2>Formatted JSON List</h2>
-                <div class="json-code" id="formatterCode"></div>
-                <button class="button copy-button" onclick="copyFormatterOutput()">📋 Copy Formatted JSON</button>
+            <div class="formatter-controls">
+                <button class="button" onclick="formatJSONList()">🔄 Format JSON List</button>
             </div>
         </div>
+
+        <div class="json-output" id="formatterOutput" style="display: none;">
+            <h2>Formatted JSON List</h2>
+            <div class="json-code" id="formatterCode"></div>
+            <button class="button copy-button" onclick="copyFormatterOutput()">📋 Copy Formatted JSON</button>
+        </div>
     </div>
+</div>
 
-    <script>
-        const expectedOptions = [
-            { value: 1, icons: "⬆️", desc: "UP" },
-            { value: 2, icons: "⬇️", desc: "DOWN" },
-            { value: 3, icons: "⬆️⬇️", desc: "UP | DOWN" },
-            { value: 4, icons: "⬅️", desc: "LEFT" },
-            { value: 5, icons: "⬆️⬅️", desc: "UP | LEFT" },
-            { value: 6, icons: "⬇️⬅️", desc: "DOWN | LEFT" },
-            { value: 7, icons: "⬆️⬇️⬅️", desc: "UP | DOWN | LEFT" },
-            { value: 8, icons: "➡️", desc: "RIGHT" },
-            { value: 9, icons: "⬆️➡️", desc: "UP | RIGHT" },
-            { value: 10, icons: "⬇️➡️", desc: "DOWN | RIGHT" },
-            { value: 11, icons: "⬆️⬇️➡️", desc: "UP | DOWN | RIGHT" },
-            { value: 12, icons: "⬅️➡️", desc: "LEFT | RIGHT" },
-            { value: 13, icons: "⬆️⬅️➡️", desc: "UP | LEFT | RIGHT" },
-            { value: 14, icons: "⬇️⬅️➡️", desc: "DOWN | LEFT | RIGHT" },
-            { value: 15, icons: "⬆️⬇️⬅️➡️", desc: "ALL" }
-        ];
+<script>
+    let boardConfigs = [];
+    let boardCount = 0;
 
-        let selectedExpected = 13;
+    const expectedOptions = [
+        { value: 1, label: "1 - ⬆️ UP" },
+        { value: 2, label: "2 - ⬇️ DOWN" },
+        { value: 3, label: "3 - ⬆️⬇️ UP | DOWN" },
+        { value: 4, label: "4 - ⬅️ LEFT" },
+        { value: 5, label: "5 - ⬆️⬅️ UP | LEFT" },
+        { value: 6, label: "6 - ⬇️⬅️ DOWN | LEFT" },
+        { value: 7, label: "7 - ⬆️⬇️⬅️ UP | DOWN | LEFT" },
+        { value: 8, label: "8 - ➡️ RIGHT" },
+        { value: 9, label: "9 - ⬆️➡️ UP | RIGHT" },
+        { value: 10, label: "10 - ⬇️➡️ DOWN | RIGHT" },
+        { value: 11, label: "11 - ⬆️⬇️➡️ UP | DOWN | RIGHT" },
+        { value: 12, label: "12 - ⬅️➡️ LEFT | RIGHT" },
+        { value: 13, label: "13 - ⬆️⬅️➡️ UP | LEFT | RIGHT" },
+        { value: 14, label: "14 - ⬇️⬅️➡️ DOWN | LEFT | RIGHT" },
+        { value: 15, label: "15 - ⬆️⬇️⬅️➡️ ALL" }
+    ];
 
-        function showStatus(message, isError = false) {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.innerHTML = `<div class="status-message ${isError ? 'status-error' : 'status-success'}">${message}</div>`;
-            setTimeout(() => {
-                statusDiv.innerHTML = '';
-            }, 3000);
+    function showStatus(message, isError = false) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.innerHTML = `<div class="status-message ${isError ? 'status-error' : 'status-success'}">${message}</div>`;
+        setTimeout(() => {
+            statusDiv.innerHTML = '';
+        }, 3000);
+    }
+
+    function analyzeBoards() {
+        const boardInput = document.getElementById('boardInput').value.trim();
+
+        if (!boardInput) {
+            hideBoardsConfig();
+            return;
         }
 
-        function initializeExpectedGrid() {
-            const grid = document.getElementById('expectedGrid');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
+        try {
+            const gameStates = parseMultipleBoards(boardInput);
+            boardCount = gameStates.length;
 
-            expectedOptions.forEach(option => {
-                const div = document.createElement('div');
-                div.className = 'expected-option';
-                if (option.value === selectedExpected) {
-                    div.classList.add('selected');
-                }
+            if (boardCount === 0) {
+                hideBoardsConfig();
+                return;
+            }
 
-                div.innerHTML = `
-                    <input type="radio" name="expected" value="${option.value}" id="exp${option.value}" ${option.value === selectedExpected ? 'checked' : ''}>
-                    <div class="expected-option-label">${option.value}</div>
-                    <div class="expected-option-icons">${option.icons}</div>
-                    <div class="expected-option-desc">${option.desc}</div>
+            // Inizializza le configurazioni delle board
+            initializeBoardConfigs();
+            showBoardsConfig();
+
+        } catch (error) {
+            console.warn('Errore nell\'analisi delle board:', error);
+            hideBoardsConfig();
+        }
+    }
+
+    function initializeBoardConfigs() {
+        // Calcola il primo ID disponibile basato sui file esistenti
+        const startingId = getNextAvailableId();
+
+        boardConfigs = [];
+        for (let i = 0; i < boardCount; i++) {
+            boardConfigs.push({
+                id: startingId + i,
+                expected: 13, // Default
+                name: `Board ${i + 1}`
+            });
+        }
+    }
+
+    function getNextAvailableId() {
+        // Logica per calcolare il prossimo ID disponibile
+        // Per ora iniziamo da 101, ma puoi modificare questo in base ai tuoi file esistenti
+        return 101;
+    }
+
+    function showBoardsConfig() {
+        document.getElementById('boardsCounter').style.display = 'block';
+        document.getElementById('boardsCount').textContent = boardCount;
+        document.getElementById('applyAllSection').style.display = 'block';
+        document.getElementById('boardsConfig').style.display = 'block';
+
+        renderBoardConfigs();
+    }
+
+    function hideBoardsConfig() {
+        document.getElementById('boardsCounter').style.display = 'none';
+        document.getElementById('applyAllSection').style.display = 'none';
+        document.getElementById('boardsConfig').style.display = 'none';
+        boardCount = 0;
+        boardConfigs = [];
+    }
+
+    function renderBoardConfigs() {
+        const container = document.getElementById('boardsConfig');
+        container.innerHTML = '';
+
+        boardConfigs.forEach((config, index) => {
+            const div = document.createElement('div');
+            div.className = 'board-config-item';
+
+            div.innerHTML = `
+                    <div class="board-number">Board ${index + 1}</div>
+                    <input type="number" class="board-test-id" value="${config.id}" 
+                           onchange="updateBoardConfig(${index}, 'id', this.value)" 
+                           min="1" max="9999" title="Test ID">
+                    <select class="board-expected" onchange="updateBoardConfig(${index}, 'expected', this.value)">
+                        ${expectedOptions.map(opt =>
+                `<option value="${opt.value}" ${opt.value === config.expected ? 'selected' : ''}>${opt.label}</option>`
+            ).join('')}
+                    </select>
+                    <input type="text" class="board-name" value="${config.name}" 
+                           onchange="updateBoardConfig(${index}, 'name', this.value)" 
+                           placeholder="Nome del test">
                 `;
 
-                div.addEventListener('click', () => {
-                    selectedExpected = option.value;
-                    updateSelectedExpected();
-                });
+            container.appendChild(div);
+        });
+    }
 
-                grid.appendChild(div);
-            });
+    function updateBoardConfig(index, field, value) {
+        if (index >= 0 && index < boardConfigs.length) {
+            if (field === 'id') {
+                boardConfigs[index][field] = parseInt(value) || 101;
+            } else if (field === 'expected') {
+                boardConfigs[index][field] = parseInt(value) || 13;
+            } else {
+                boardConfigs[index][field] = value;
+            }
         }
+    }
 
-        function updateSelectedExpected() {
-            const options = document.querySelectorAll('.expected-option');
-            const radios = document.querySelectorAll('input[name="expected"]');
-            
-            options.forEach((option, index) => {
-                if (expectedOptions[index]) {
-                    option.classList.toggle('selected', expectedOptions[index].value === selectedExpected);
-                }
-            });
-            
-            radios.forEach(radio => {
-                radio.checked = parseInt(radio.value) === selectedExpected;
-            });
-        }
+    function applyExpectedToAll() {
+        const globalExpected = parseInt(document.getElementById('globalExpected').value);
 
-        function isAdjacent(pos1, pos2) {
-            const dx = Math.abs(pos1.x - pos2.x);
-            const dy = Math.abs(pos1.y - pos2.y);
-            return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
-        }
+        boardConfigs.forEach(config => {
+            config.expected = globalExpected;
+        });
 
-        function findSnakePath(head, bodySegments) {
-            if (bodySegments.length === 0) return [head];
-            
-            const path = [head];
-            const remaining = [...bodySegments];
-            
-            while (remaining.length > 0) {
-                const current = path[path.length - 1];
-                let nextIndex = -1;
-                
-                // Find the next adjacent segment
-                for (let i = 0; i < remaining.length; i++) {
-                    if (isAdjacent(current, remaining[i])) {
-                        nextIndex = i;
-                        break;
-                    }
-                }
-                
-                if (nextIndex === -1) {
-                    // If no adjacent segment found, take the closest one
-                    let minDistance = Infinity;
-                    for (let i = 0; i < remaining.length; i++) {
-                        const distance = Math.abs(current.x - remaining[i].x) + Math.abs(current.y - remaining[i].y);
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            nextIndex = i;
-                        }
-                    }
-                }
-                
-                if (nextIndex !== -1) {
-                    path.push(remaining[nextIndex]);
-                    remaining.splice(nextIndex, 1);
-                } else {
+        renderBoardConfigs();
+        showStatus('✅ Expected applicato a tutte le board!');
+    }
+
+    function isAdjacent(pos1, pos2) {
+        const dx = Math.abs(pos1.x - pos2.x);
+        const dy = Math.abs(pos1.y - pos2.y);
+        return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    }
+
+    function findSnakePath(head, bodySegments) {
+        if (bodySegments.length === 0) return [head];
+
+        const path = [head];
+        const remaining = [...bodySegments];
+
+        while (remaining.length > 0) {
+            const current = path[path.length - 1];
+            let nextIndex = -1;
+
+            // Find the next adjacent segment
+            for (let i = 0; i < remaining.length; i++) {
+                if (isAdjacent(current, remaining[i])) {
+                    nextIndex = i;
                     break;
                 }
             }
-            
-            // Add any remaining segments that couldn't be connected
-            path.push(...remaining);
-            
-            return path;
-        }
 
-        function parseMultipleBoards(inputText) {
-            // Dividi l'input in sezioni separate da linee vuote multiple o separatori
-            const sections = inputText.split(/\n\s*\n|\n.*?---.*?\n/).filter(section => section.trim());
-            
-            if (sections.length === 1) {
-                // Input singolo - comportamento originale
-                return [parseBoard(sections[0])];
-            }
-            
-            // Multiple griglie
-            const boards = [];
-            for (let i = 0; i < sections.length; i++) {
-                const section = sections[i].trim();
-                if (section && section.match(/^\s*\d+/m)) { // Verifica che contenga una griglia
-                    try {
-                        const board = parseBoard(section);
-                        boards.push(board);
-                    } catch (error) {
-                        console.warn(`Errore parsing griglia ${i + 1}:`, error);
-                    }
-                }
-            }
-            
-            return boards;
-        }
-
-        function parseBoard(boardText) {
-            console.log("Input board text:", boardText); // DEBUG
-            
-            const lines = boardText.split('\n').filter(line => line.trim());
-            console.log("Filtered lines:", lines); // DEBUG
-            
-            const gridLines = lines.filter(line => line.match(/^\s*\d+/));
-            console.log("Grid lines:", gridLines); // DEBUG
-            
-            if (gridLines.length === 0) {
-                throw new Error('Nessuna riga della griglia trovata');
-            }
-
-            const snakes = [];
-            let bodySegments = [];
-            let head = null;
-            const food = [];
-            const hazards = [];
-
-            // CORREZIONE: Usa il numero di riga effettivo invece dell'indice
-            for (let i = 0; i < gridLines.length; i++) {
-                const line = gridLines[i];
-                console.log(`Processing line ${i}: "${line}"`); // DEBUG
-                
-                const parts = line.trim().split(/\s+/).filter(part => part.length > 0);
-                console.log("Parts:", parts); // DEBUG
-                
-                const rowNumber = parseInt(parts[0]); // Estrai il numero di riga effettivo
-                console.log("Row number:", rowNumber); // DEBUG
-                
-                const cells = parts.slice(1).filter(cell => cell.trim().length > 0); // Rimuovi il numero di riga e celle vuote
-                console.log("Cells:", cells); // DEBUG
-                
-                for (let x = 0; x < cells.length; x++) {
-                    const cell = cells[x];
-                    
-                    if (cell === '👽') {
-                        head = { x, y: rowNumber }; // Usa rowNumber invece di i
-                        console.log("Found head at:", head); // DEBUG
-                    } else if (cell === '💲') {
-                        const bodyPart = { x, y: rowNumber };
-                        bodySegments.push(bodyPart); // Usa rowNumber invece di i
-                        console.log("Found body part at:", bodyPart); // DEBUG
-                    } else if (cell === '🍎' || cell === '🟢') {
-                        food.push({ x, y: rowNumber });
-                    } else if (cell === '💀' || cell === '🔥' || cell === '⚠️') {
-                        hazards.push({ x, y: rowNumber });
+            if (nextIndex === -1) {
+                // If no adjacent segment found, take the closest one
+                let minDistance = Infinity;
+                for (let i = 0; i < remaining.length; i++) {
+                    const distance = Math.abs(current.x - remaining[i].x) + Math.abs(current.y - remaining[i].y);
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nextIndex = i;
                     }
                 }
             }
 
-            console.log("Final head:", head); // DEBUG
-            console.log("Final body segments:", bodySegments); // DEBUG
-
-            if (head) {
-                // Create properly ordered snake body from head to tail
-                const snakeBody = findSnakePath(head, bodySegments);
-                
-                snakes.push({
-                    id: "thanos",
-                    name: "Thanos",
-                    health: 100,
-                    body: snakeBody,
-                    latency: 50,
-                    head: head,
-                    length: snakeBody.length,
-                    shout: "",
-                    squad: "",
-                    customizations: {
-                        color: "#FF0000",
-                        head: "default",
-                        tail: "default"
-                    }
-                });
+            if (nextIndex !== -1) {
+                path.push(remaining[nextIndex]);
+                remaining.splice(nextIndex, 1);
+            } else {
+                break;
             }
+        }
 
-            // CORREZIONE: Calcola altezza e larghezza correttamente
-            const widths = gridLines.map(line => {
-                const parts = line.trim().split(/\s+/).filter(part => part.length > 0);
-                const cells = parts.slice(1); // Rimuovi il numero di riga
-                const filteredCells = cells.filter(cell => cell.trim().length > 0); // Rimuovi celle vuote
-                console.log("Line:", line.substring(0, 20) + "...", "Cells found:", filteredCells.length, "Cells:", filteredCells); // DEBUG
-                return filteredCells.length;
-            });
-            const width = Math.max(...widths);
-            
-            const heights = gridLines.map(line => {
-                const parts = line.split(/\s+/);
-                return parseInt(parts[0]);
-            });
-            const height = Math.max(...heights) + 1; // +1 perché inizia da 0
+        // Add any remaining segments that couldn't be connected
+        path.push(...remaining);
 
-            console.log("All widths found:", widths); // DEBUG
-            console.log("Calculated width:", width); // DEBUG
-            console.log("Calculated height:", height); // DEBUG
+        return path;
+    }
 
-            return {
-                game: {
-                    id: `game-${Math.floor(Math.random() * 1000)}`,
-                    ruleset: {
-                        name: "standard"
-                    },
-                    timeout: 500
-                },
-                turn: 5,
-                board: {
-                    height: height,
-                    width: width,
-                    food: food,
-                    hazards: hazards,
-                    snakes: snakes
+    function parseMultipleBoards(inputText) {
+        // Dividi l'input in sezioni separate da linee vuote multiple o separatori
+        const sections = inputText.split(/\n\s*\n|\n.*?---.*?\n/).filter(section => section.trim());
+
+        if (sections.length === 1) {
+            // Input singolo - comportamento originale
+            return [parseBoard(sections[0])];
+        }
+
+        // Multiple griglie
+        const boards = [];
+        for (let i = 0; i < sections.length; i++) {
+            const section = sections[i].trim();
+            if (section && section.match(/^\s*\d+/m)) { // Verifica che contenga una griglia
+                try {
+                    const board = parseBoard(section);
+                    boards.push(board);
+                } catch (error) {
+                    console.warn(`Errore parsing griglia ${i + 1}:`, error);
                 }
-            };
-        }
-
-        function formatSnakeBody(body) {
-            return body.map(pos => `{"x":${pos.x},"y":${pos.y}}`).join(',');
-        }
-
-        function formatSingleJSON(jsonData) {
-            const formattedData = JSON.parse(JSON.stringify(jsonData));
-            
-            if (formattedData.MoveRequest && formattedData.MoveRequest.board && formattedData.MoveRequest.board.snakes) {
-                formattedData.MoveRequest.board.snakes.forEach(snake => {
-                    if (snake.body && Array.isArray(snake.body)) {
-                        snake.body = `[${formatSnakeBody(snake.body)}]`;
-                    }
-                });
-            }
-
-            let output = JSON.stringify(formattedData, null, 2);
-            output = output.replace(/"body"\s*:\s*"\[(.*?)\]"/g, (match, bodyContent) => {
-                const decodedContent = bodyContent.replace(/\\"/g, '"');
-                return `"body": [${decodedContent}]`;
-            });
-
-            return output;
-        }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
-            
-            if (tabName === 'converter') {
-                setTimeout(() => initializeExpectedGrid(), 10);
             }
         }
 
-        function convertBoard() {
-            try {
-                const boardInput = document.getElementById('boardInput').value.trim();
-                const startingTestId = parseInt(document.getElementById('testId').value);
-                const testNameBase = document.getElementById('testName').value.trim();
+        return boards;
+    }
 
-                if (!boardInput) {
-                    throw new Error('Inserisci una o più griglie da convertire');
+    function parseBoard(boardText) {
+        console.log("Input board text:", boardText); // DEBUG
+
+        const lines = boardText.split('\n').filter(line => line.trim());
+        console.log("Filtered lines:", lines); // DEBUG
+
+        const gridLines = lines.filter(line => line.match(/^\s*\d+/));
+        console.log("Grid lines:", gridLines); // DEBUG
+
+        if (gridLines.length === 0) {
+            throw new Error('Nessuna riga della griglia trovata');
+        }
+
+        const snakes = [];
+        let bodySegments = [];
+        let head = null;
+        const food = [];
+        const hazards = [];
+
+        // CORREZIONE: Usa il numero di riga effettivo invece dell'indice
+        for (let i = 0; i < gridLines.length; i++) {
+            const line = gridLines[i];
+            console.log(`Processing line ${i}: "${line}"`); // DEBUG
+
+            const parts = line.trim().split(/\s+/).filter(part => part.length > 0);
+            console.log("Parts:", parts); // DEBUG
+
+            const rowNumber = parseInt(parts[0]); // Estrai il numero di riga effettivo
+            console.log("Row number:", rowNumber); // DEBUG
+
+            const cells = parts.slice(1).filter(cell => cell.trim().length > 0); // Rimuovi il numero di riga e celle vuote
+            console.log("Cells:", cells); // DEBUG
+
+            for (let x = 0; x < cells.length; x++) {
+                const cell = cells[x];
+
+                if (cell === '👽') {
+                    head = { x, y: rowNumber }; // Usa rowNumber invece di i
+                    console.log("Found head at:", head); // DEBUG
+                } else if (cell === '💲') {
+                    const bodyPart = { x, y: rowNumber };
+                    bodySegments.push(bodyPart); // Usa rowNumber invece di i
+                    console.log("Found body part at:", bodyPart); // DEBUG
+                } else if (cell === '🍎' || cell === '🟢') {
+                    food.push({ x, y: rowNumber });
+                } else if (cell === '💀' || cell === '🔥' || cell === '⚠️') {
+                    hazards.push({ x, y: rowNumber });
                 }
-
-                if (!testNameBase) {
-                    throw new Error('Inserisci un nome base per i test');
-                }
-
-                const gameStates = parseMultipleBoards(boardInput);
-                
-                if (gameStates.length === 0) {
-                    throw new Error('Nessuna griglia valida trovata nell\'input');
-                }
-
-                let jsonOutput;
-                
-                if (gameStates.length === 1) {
-                    // Singola griglia - output come singolo oggetto
-                    const testCase = {
-                        Id: startingTestId,
-                        Name: testNameBase,
-                        Expected: selectedExpected,
-                        MoveRequest: gameStates[0]
-                    };
-                    jsonOutput = formatSingleJSON(testCase);
-                } else {
-                    // Multiple griglie - output come array
-                    const testCases = gameStates.map((gameState, index) => ({
-                        Id: startingTestId + index,
-                        Name: `${testNameBase} ${index + 1}`,
-                        Expected: selectedExpected,
-                        MoveRequest: gameState
-                    }));
-                    
-                    const formattedCases = testCases.map(testCase => formatSingleJSON(testCase));
-                    jsonOutput = '[\n' + formattedCases.map(json => json.replace(/^/gm, '  ')).join(',\n') + '\n]';
-                }
-                
-                document.getElementById('jsonCode').textContent = jsonOutput;
-                document.getElementById('jsonOutput').style.display = 'flex';
-                
-                const gridCount = gameStates.length;
-                const message = gridCount === 1 ? 
-                    '✅ Conversione completata!' : 
-                    `✅ Convertite ${gridCount} griglie!`;
-                showStatus(message);
-
-            } catch (error) {
-                showStatus(`❌ Errore: ${error.message}`, true);
-                console.error('Conversion error:', error);
             }
         }
 
-        function formatJSONList() {
-            try {
-                const input = document.getElementById('jsonListInput').value.trim();
-                
-                if (!input) {
-                    throw new Error('Inserisci una lista di JSON da formattare');
-                }
+        console.log("Final head:", head); // DEBUG
+        console.log("Final body segments:", bodySegments); // DEBUG
 
-                const jsonList = JSON.parse(input);
-                
-                if (!Array.isArray(jsonList)) {
-                    throw new Error('Il JSON deve essere un array di oggetti');
-                }
+        if (head) {
+            // Create properly ordered snake body from head to tail
+            const snakeBody = findSnakePath(head, bodySegments);
 
-                const formattedList = jsonList.map(item => formatSingleJSON(item));
-                const output = '[\n' + formattedList.map(json => json.replace(/^/gm, '  ')).join(',\n') + '\n]';
-                
-                document.getElementById('formatterCode').textContent = output;
-                document.getElementById('formatterOutput').style.display = 'flex';
-                
-                showStatus('✅ Lista JSON formattata con successo!');
-                
-            } catch (error) {
-                showStatus(`❌ Errore: ${error.message}`, true);
-                console.error('Formatting error:', error);
-            }
-        }
-
-        async function copyToClipboard() {
-            try {
-                const jsonText = document.getElementById('jsonCode').textContent;
-                await navigator.clipboard.writeText(jsonText);
-                
-                const button = document.getElementById('copyButton');
-                const originalText = button.textContent;
-                button.textContent = '✅ Copiato!';
-                button.classList.add('copied');
-                
-                setTimeout(() => {
-                    button.textContent = originalText;
-                    button.classList.remove('copied');
-                }, 2000);
-                
-                showStatus('📋 JSON copiato!');
-                
-            } catch (error) {
-                showStatus('❌ Errore nella copia: ' + error.message, true);
-            }
-        }
-
-        async function copyFormatterOutput() {
-            try {
-                const jsonText = document.getElementById('formatterCode').textContent;
-                await navigator.clipboard.writeText(jsonText);
-                
-                showStatus('📋 JSON formattato copiato!');
-                
-            } catch (error) {
-                showStatus('❌ Errore nella copia: ' + error.message, true);
-            }
-        }
-
-        async function copyIcon(icon) {
-            try {
-                await navigator.clipboard.writeText(icon);
-                showStatus(`📋 Icona ${icon} copiata!`);
-            } catch (error) {
-                showStatus('❌ Errore nella copia: ' + error.message, true);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeExpectedGrid();
-            
-            document.addEventListener('change', function(e) {
-                if (e.target.name === 'expected') {
-                    selectedExpected = parseInt(e.target.value);
-                    updateSelectedExpected();
+            snakes.push({
+                id: "thanos",
+                name: "Thanos",
+                health: 100,
+                body: snakeBody,
+                latency: 50,
+                head: head,
+                length: snakeBody.length,
+                shout: "",
+                squad: "",
+                customizations: {
+                    color: "#FF0000",
+                    head: "default",
+                    tail: "default"
                 }
             });
+        }
+
+        // CORREZIONE: Calcola altezza e larghezza correttamente
+        const widths = gridLines.map(line => {
+            const parts = line.trim().split(/\s+/).filter(part => part.length > 0);
+            const cells = parts.slice(1); // Rimuovi il numero di riga
+            const filteredCells = cells.filter(cell => cell.trim().length > 0); // Rimuovi celle vuote
+            console.log("Line:", line.substring(0, 20) + "...", "Cells found:", filteredCells.length, "Cells:", filteredCells); // DEBUG
+            return filteredCells.length;
         });
-    </script>
+        const width = Math.max(...widths);
+
+        const heights = gridLines.map(line => {
+            const parts = line.split(/\s+/);
+            return parseInt(parts[0]);
+        });
+        const height = Math.max(...heights) + 1; // +1 perché inizia da 0
+
+        console.log("All widths found:", widths); // DEBUG
+        console.log("Calculated width:", width); // DEBUG
+        console.log("Calculated height:", height); // DEBUG
+
+        return {
+            game: {
+                id: `game-${Math.floor(Math.random() * 1000)}`,
+                ruleset: {
+                    name: "standard"
+                },
+                timeout: 500
+            },
+            turn: 5,
+            board: {
+                height: height,
+                width: width,
+                food: food,
+                hazards: hazards,
+                snakes: snakes
+            }
+        };
+    }
+
+    function formatSnakeBody(body) {
+        return body.map(pos => `{"x":${pos.x},"y":${pos.y}}`).join(',');
+    }
+
+    function formatSingleJSON(jsonData) {
+        const formattedData = JSON.parse(JSON.stringify(jsonData));
+
+        if (formattedData.MoveRequest && formattedData.MoveRequest.board && formattedData.MoveRequest.board.snakes) {
+            formattedData.MoveRequest.board.snakes.forEach(snake => {
+                if (snake.body && Array.isArray(snake.body)) {
+                    snake.body = `[${formatSnakeBody(snake.body)}]`;
+                }
+            });
+        }
+
+        let output = JSON.stringify(formattedData, null, 2);
+        output = output.replace(/"body"\s*:\s*"\[(.*?)\]"/g, (match, bodyContent) => {
+            const decodedContent = bodyContent.replace(/\\"/g, '"');
+            return `"body": [${decodedContent}]`;
+        });
+
+        return output;
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        document.getElementById(tabName + '-tab').classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function convertBoard() {
+        try {
+            const boardInput = document.getElementById('boardInput').value.trim();
+            const testNameBase = document.getElementById('testName').value.trim();
+
+            if (!boardInput) {
+                throw new Error('Inserisci una o più griglie da convertire');
+            }
+
+            if (!testNameBase) {
+                throw new Error('Inserisci un nome base per i test');
+            }
+
+            if (boardConfigs.length === 0) {
+                throw new Error('Nessuna configurazione board trovata. Inserisci le griglie prima.');
+            }
+
+            const gameStates = parseMultipleBoards(boardInput);
+
+            if (gameStates.length === 0) {
+                throw new Error('Nessuna griglia valida trovata nell\'input');
+            }
+
+            if (gameStates.length !== boardConfigs.length) {
+                throw new Error(`Mismatch: trovate ${gameStates.length} griglie ma configurate ${boardConfigs.length}`);
+            }
+
+            let jsonOutput;
+
+            if (gameStates.length === 1) {
+                // Singola griglia - output come singolo oggetto
+                const config = boardConfigs[0];
+                const testCase = {
+                    Id: config.id,
+                    Name: config.name,
+                    Expected: config.expected,
+                    MoveRequest: gameStates[0]
+                };
+                jsonOutput = formatSingleJSON(testCase);
+            } else {
+                // Multiple griglie - output come array
+                const testCases = gameStates.map((gameState, index) => {
+                    const config = boardConfigs[index];
+                    return {
+                        Id: config.id,
+                        Name: config.name,
+                        Expected: config.expected,
+                        MoveRequest: gameState
+                    };
+                });
+
+                const formattedCases = testCases.map(testCase => formatSingleJSON(testCase));
+                jsonOutput = '[\n' + formattedCases.map(json => json.replace(/^/gm, '  ')).join(',\n') + '\n]';
+            }
+
+            document.getElementById('jsonCode').textContent = jsonOutput;
+            document.getElementById('jsonOutput').style.display = 'flex';
+
+            const gridCount = gameStates.length;
+            const message = gridCount === 1 ?
+                '✅ Conversione completata!' :
+                `✅ Convertite ${gridCount} griglie!`;
+            showStatus(message);
+
+        } catch (error) {
+            showStatus(`❌ Errore: ${error.message}`, true);
+            console.error('Conversion error:', error);
+        }
+    }
+
+    function formatJSONList() {
+        try {
+            const input = document.getElementById('jsonListInput').value.trim();
+
+            if (!input) {
+                throw new Error('Inserisci una lista di JSON da formattare');
+            }
+
+            const jsonList = JSON.parse(input);
+
+            if (!Array.isArray(jsonList)) {
+                throw new Error('Il JSON deve essere un array di oggetti');
+            }
+
+            const formattedList = jsonList.map(item => formatSingleJSON(item));
+            const output = '[\n' + formattedList.map(json => json.replace(/^/gm, '  ')).join(',\n') + '\n]';
+
+            document.getElementById('formatterCode').textContent = output;
+            document.getElementById('formatterOutput').style.display = 'flex';
+
+            showStatus('✅ Lista JSON formattata con successo!');
+
+        } catch (error) {
+            showStatus(`❌ Errore: ${error.message}`, true);
+            console.error('Formatting error:', error);
+        }
+    }
+
+    async function copyToClipboard() {
+        try {
+            const jsonText = document.getElementById('jsonCode').textContent;
+            await navigator.clipboard.writeText(jsonText);
+
+            const button = document.getElementById('copyButton');
+            const originalText = button.textContent;
+            button.textContent = '✅ Copiato!';
+            button.classList.add('copied');
+
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('copied');
+            }, 2000);
+
+            showStatus('📋 JSON copiato!');
+
+        } catch (error) {
+            showStatus('❌ Errore nella copia: ' + error.message, true);
+        }
+    }
+
+    async function copyFormatterOutput() {
+        try {
+            const jsonText = document.getElementById('formatterCode').textContent;
+            await navigator.clipboard.writeText(jsonText);
+
+            showStatus('📋 JSON formattato copiato!');
+
+        } catch (error) {
+            showStatus('❌ Errore nella copia: ' + error.message, true);
+        }
+    }
+
+    async function copyIcon(icon) {
+        try {
+            await navigator.clipboard.writeText(icon);
+            showStatus(`📋 Icona ${icon} copiata!`);
+        } catch (error) {
+            showStatus('❌ Errore nella copia: ' + error.message, true);
+        }
+    }
+
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup initial state
+        hideBoardsConfig();
+    });
+</script>
 </body>
 </html>
