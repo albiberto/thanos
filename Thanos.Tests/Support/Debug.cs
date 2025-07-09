@@ -54,7 +54,7 @@ public static class Debug
     /// <summary>
     ///     Stampa la griglia di gioco con tutti gli elementi visualizzati
     /// </summary>
-    public static void PrintMap(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int scenario, string testName, string fileName, int id, bool onlyFailed = true)
+    public static void PrintMap(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int scenario, string testName, string fileName, int id, bool onlyFailed = true, bool onlyBoards = false)
     {
         var headX = myBody[0].x;
         var headY = myBody[0].y;
@@ -74,8 +74,8 @@ public static class Debug
 
         if (onlyFailed && !hasFailed) return;
 
-        PrintCurrentScenario(width, height, snakes, hazards, scenario, testName, fileName);
-        PrintGrid(width, height, myBody, hazards, snakes, expected, id, hasFailed);
+        if(!onlyBoards) PrintCurrentScenario(width, height, snakes, hazards, scenario, testName, fileName);
+        PrintGrid(width, height, myBody, hazards, snakes, expected, id, hasFailed, onlyBoards);
     }
 
     private static void PrintCurrentScenario(uint width, uint height, Snake[] snakes, Point[] hazards, int scenario, string testName, string fileName)
@@ -164,7 +164,7 @@ public static class Debug
         Console.WriteLine();
     }
 
-    private static void PrintGrid(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int id, bool onlyFailed)
+    private static void PrintGrid(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int id, bool onlyFailed, bool onlyBoards)
     {
         var grid = new string[height, width];
 
@@ -234,7 +234,7 @@ public static class Debug
 
         Console.WriteLine();
 
-        PrintMoveOptions(expected, myBody[0].x, myBody[0].y, width, height, id, myBody, onlyFailed);
+        if(!onlyBoards) PrintMoveOptions(expected, myBody[0].x, myBody[0].y, width, height, id, myBody, onlyFailed);
     }
 
     private class Direction
