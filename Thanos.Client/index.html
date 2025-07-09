@@ -1,10 +1,12 @@
-﻿<!DOCTYPE>
+﻿<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battlesnake Board Converter</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/import-tab.css">
+    <link rel="stylesheet" href="css/formatter-tab.css">
 </head>
 <body>
 <div class="container">
@@ -16,65 +18,9 @@
         <button class="tab-button" onclick="switchTab('formatter')">JSON Formatter</button>
     </div>
 
-    <!-- Import Tab -->
+    <!-- Import Tab - Content loaded from import-tab.js -->
     <div id="import-tab" class="tab-content active">
-        <div class="import-content">
-            <div class="board-input-section">
-                <h2>Board Input</h2>
-                <textarea id="boardInput" class="board-input" placeholder="Incolla qui la griglia o liste di griglie...
-
-Esempio singola griglia:
-00  01  02  03  04  05  06  07  08  09  10
-00 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-01 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-02 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-03 ⬛  ⬛  ⬛  ⬛  ⬛  👽  ⬛  ⬛  ⬛  ⬛  ⬛  
-04 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
-05 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
-
-Esempio multiple griglie (separate da linee vuote):
---- GRID 1 ---
-00  01  02  03
-00 ⬛  ⬛  ⬛  ⬛  
-01 ⬛  👽  ⬛  ⬛  
-02 ⬛  💲  ⬛  ⬛  
-
---- GRID 2 ---
-00  01  02  03
-00 ⬛  ⬛  ⬛  ⬛  
-01 ⬛  ⬛  👽  ⬛  
-02 ⬛  ⬛  💲  ⬛  "></textarea>
-
-                <button class="button" id="importBtn" onclick="importBoards()">📥 Import Boards</button>
-            </div>
-
-            <div class="icons-section">
-                <h2>Board Icons</h2>
-                <div class="hint">
-                    <div class="hint-title">Icone Board (clicca per copiare):</div>
-                    <div class="icon-buttons">
-                        <button class="button-fill icon-btn" onclick="copyIcon('👽')" title="Copia head">👽 (head)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('💲')" title="Copia body">💲 (body)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('⬛')" title="Copia empty">⬛ (empty)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('🍎')" title="Copia food">🍎 (food)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('💀')" title="Copia hazard">💀 (hazard)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('⬆️')" title="Copia up">⬆️ (up)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('⬇️')" title="Copia down">⬇️ (down)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('⬅️')" title="Copia left">⬅️ (left)</button>
-                        <button class="button-fill icon-btn" onclick="copyIcon('➡️')" title="Copia right">➡️ (right)</button>
-                    </div>
-                </div>
-
-                <div class="hint">
-                    <div class="hint-title">Suggerimenti:</div>
-                    <ul style="margin: 5px 0; padding-left: 15px; font-size: 11px;">
-                        <li>Usa Ctrl+1, Ctrl+2, Ctrl+3 per cambiare tab</li>
-                        <li>Usa Ctrl+Enter per azioni rapide</li>
-                        <li>Separa più griglie con linee vuote</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <!-- Content will be loaded by import-tab.js -->
     </div>
 
     <!-- Process Tab -->
@@ -133,60 +79,32 @@ Esempio multiple griglie (separate da linee vuote):
         </div>
     </div>
 
-    <!-- Formatter Tab -->
+    <!-- Formatter Tab - Content loaded from formatter-tab.js -->
     <div id="formatter-tab" class="tab-content">
-        <div class="formatter-content">
-            <div class="formatter-section">
-                <h2>JSON List Input</h2>
-                <div class="hint">
-                    <div class="hint-title">Formato:</div>
-                    Incolla qui una lista di JSON (array) da formattare con body inline
-                </div>
-                <textarea id="jsonListInput" class="board-input" placeholder="Incolla qui la lista di JSON...
-
-Esempio:
-[
-  {
-    &quot;Id&quot;: 127,
-    &quot;Name&quot;: &quot;Test 1&quot;,
-    &quot;Expected&quot;: 5,
-    &quot;MoveRequest&quot;: {
-      ...
-    }
-  }
-]"></textarea>
-            </div>
-
-            <div class="formatter-controls">
-                <button class="button" id="formatBtn" onclick="formatJSONList()">🔄 Format JSON List</button>
-            </div>
-        </div>
+        <!-- Content will be loaded by formatter-tab.js -->
     </div>
 
     <!-- Status Messages -->
     <div id="statusMessage"></div>
 
-    <!-- JSON Output -->
+    <!-- JSON Output (used by process tab) -->
     <div class="json-output" id="jsonOutput" style="display: none;">
         <h2>Generated JSON</h2>
         <div class="json-code" id="jsonCode"></div>
         <button class="button" id="copyButton" onclick="copyToClipboard()">📋 Copy JSON</button>
     </div>
 
-    <!-- Formatter Output -->
-    <div class="json-output" id="formatterOutput" style="display: none;">
-        <h2>Formatted JSON List</h2>
-        <div class="json-code" id="formatterCode"></div>
-        <button class="button" id="copyFormatterBtn" onclick="copyFormatterOutput()">📋 Copy Formatted JSON</button>
-    </div>
+    <!-- Copy Feedback (used by import tab) -->
+    <div class="copy-feedback" id="copyFeedback"></div>
 </div>
 
 <!-- Load JavaScript modules in correct order -->
 <script src="js/common.js"></script>
 <script src="js/tab-manager.js"></script>
-<script src="js/tabs/import-tab.js"></script>
 <script src="js/tabs/process-tab.js"></script>
+<script src="js/tabs/import-tab.js"></script>
 <script src="js/tabs/formatter-tab.js"></script>
 <script src="js/main.js"></script>
+
 </body>
 </html>
