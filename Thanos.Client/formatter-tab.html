@@ -1,0 +1,121 @@
+﻿<!-- Formatter Tab HTML Structure -->
+<div id="formatter-tab" class="tab-content">
+    <div class="formatter-content">
+        <!-- JSON Input Section -->
+        <div class="formatter-section">
+            <h2>📝 JSON List Input</h2>
+
+            <div class="hint">
+                <div class="hint-title">📋 Formato richiesto:</div>
+                Incolla qui una lista di JSON (array) da formattare con body inline per i test Battlesnake
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-action-btn" id="prettifyBtn">🎨 Prettify</button>
+                <button class="quick-action-btn" id="minifyBtn">📦 Minify</button>
+                <button class="quick-action-btn" id="clearJsonBtn">🗑️ Clear</button>
+                <button class="quick-action-btn" id="exampleJsonBtn">📋 Example</button>
+            </div>
+
+            <div class="json-input-container">
+                <textarea
+                        id="jsonListInput"
+                        class="json-input"
+                        placeholder="Incolla qui la lista di JSON...
+
+Esempio:
+[
+  {
+    &quot;Id&quot;: 127,
+    &quot;Name&quot;: &quot;Test Movement Up&quot;,
+    &quot;Expected&quot;: 1,
+    &quot;MoveRequest&quot;: {
+      &quot;game&quot;: {
+        &quot;id&quot;: &quot;test-game&quot;,
+        &quot;ruleset&quot;: {
+          &quot;name&quot;: &quot;standard&quot;
+        }
+      },
+      &quot;turn&quot;: 1,
+      &quot;board&quot;: {
+        &quot;height&quot;: 11,
+        &quot;width&quot;: 11,
+        &quot;food&quot;: [
+          {&quot;x&quot;: 5, &quot;y&quot;: 4}
+        ],
+        &quot;snakes&quot;: [
+          {
+            &quot;id&quot;: &quot;snake-1&quot;,
+            &quot;name&quot;: &quot;Test Snake&quot;,
+            &quot;health&quot;: 100,
+            &quot;body&quot;: [
+              {&quot;x&quot;: 5, &quot;y&quot;: 5},
+              {&quot;x&quot;: 5, &quot;y&quot;: 6}
+            ],
+            &quot;head&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}
+          }
+        ]
+      },
+      &quot;you&quot;: {
+        &quot;id&quot;: &quot;snake-1&quot;,
+        &quot;name&quot;: &quot;Test Snake&quot;,
+        &quot;health&quot;: 100,
+        &quot;body&quot;: [
+          {&quot;x&quot;: 5, &quot;y&quot;: 5},
+          {&quot;x&quot;: 5, &quot;y&quot;: 6}
+        ],
+        &quot;head&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}
+      }
+    }
+  }
+]"></textarea>
+
+                <div class="input-stats" id="jsonInputStats">
+                    <span>Lines: <span class="stat-number" id="jsonLineCount">0</span></span>
+                    <span>Characters: <span class="stat-number" id="jsonCharCount">0</span></span>
+                    <span>Items: <span class="stat-number" id="jsonItemCount">0</span></span>
+                    <span>Status: <span class="stat-number" id="jsonValidStatus">-</span></span>
+                </div>
+
+                <div class="validation-status" id="jsonValidation" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="formatter-controls">
+            <h3>🔧 Formatting Controls</h3>
+
+            <div class="control-row">
+                <button class="button" id="formatBtn">
+                    🔄 Format JSON List
+                </button>
+                <button class="button secondary" id="validateBtn">
+                    ✅ Validate Only
+                </button>
+            </div>
+
+            <div class="format-progress" id="formatProgress">
+                Processing JSON list...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formatter Output Section (appears when formatting is done) -->
+<div class="formatter-output" id="formatterOutput" style="display: none;">
+    <h2>📄 Formatted JSON List</h2>
+
+    <div class="formatter-output-code" id="formatterCode"></div>
+
+    <div class="formatter-output-actions">
+        <button class="button" id="copyFormatterBtn">
+            📋 Copy to Clipboard
+        </button>
+        <button class="button export" id="exportBtn">
+            💾 Export as File
+        </button>
+        <button class="button secondary" id="hideOutputBtn">
+            🙈 Hide Output
+        </button>
+    </div>
+</div>

@@ -1,0 +1,334 @@
+﻿/* Formatter Tab Specific Styles */
+
+/* Main layout for formatter tab */
+.formatter-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 15px;
+}
+
+/* Input section */
+.formatter-section {
+    background: #f8f9fa;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 15px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.formatter-section h2 {
+    margin-bottom: 12px;
+    color: #22c55e;
+    font-size: 1.2em;
+    border-bottom: 2px solid #22c55e;
+    padding-bottom: 5px;
+}
+
+/* Controls section */
+.formatter-controls {
+    background: #f8f9fa;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.formatter-controls h3 {
+    margin-bottom: 10px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.control-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.control-row .button {
+    flex: 1;
+    min-width: 120px;
+    margin-bottom: 0;
+}
+
+/* JSON input area */
+.json-input-container {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.json-input {
+    flex: 1;
+    background: #ffffff;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #333;
+    resize: none;
+    line-height: 1.4;
+    min-height: 200px;
+}
+
+.json-input:focus {
+    outline: none;
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.json-input.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.json-input.valid {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
+}
+
+/* Input statistics */
+.input-stats {
+    display: flex;
+    gap: 15px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.input-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-number {
+    font-weight: 600;
+    color: #374151;
+}
+
+.stat-valid {
+    color: #22c55e;
+}
+
+.stat-invalid {
+    color: #ef4444;
+}
+
+/* Validation status */
+.validation-status {
+    margin-top: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.validation-success {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #22c55e;
+}
+
+.validation-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #ef4444;
+}
+
+/* Output sections */
+.formatter-output {
+    background: #f8f9fa;
+    border: 2px solid #22c55e;
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    max-height: 50vh;
+}
+
+.formatter-output h2 {
+    margin-bottom: 12px;
+    color: #22c55e;
+    font-size: 1.1em;
+    border-bottom: 2px solid #22c55e;
+    padding-bottom: 5px;
+}
+
+.formatter-output-code {
+    background: #1f2937;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #22c55e;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 150px;
+    max-height: 400px;
+}
+
+.formatter-output-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.formatter-output-actions .button {
+    flex: 1;
+    min-width: 120px;
+    margin-bottom: 0;
+}
+
+/* Export button specific styling */
+.button.export {
+    background: linear-gradient(45deg, #3b82f6, #2563eb);
+}
+
+.button.export:hover {
+    background: linear-gradient(45deg, #2563eb, #1d4ed8);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Quick actions */
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.quick-action-btn {
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+    background: #4b5563;
+    transform: translateY(-1px);
+}
+
+/* Progress indicator */
+.format-progress {
+    display: none;
+    margin: 10px 0;
+    padding: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+}
+
+.format-progress.active {
+    display: block;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+    .formatter-content {
+        gap: 10px;
+    }
+
+    .control-row {
+        flex-direction: column;
+    }
+
+    .control-row .button {
+        min-width: auto;
+    }
+
+    .formatter-output-actions {
+        flex-direction: column;
+    }
+
+    .formatter-output-actions .button {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .input-stats {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .quick-actions {
+        flex-direction: column;
+    }
+
+    .formatter-output {
+        max-height: 40vh;
+    }
+
+    .formatter-output-code {
+        font-size: 10px;
+        min-height: 120px;
+        max-height: 300px;
+    }
+}
+
+/* Dark mode support for JSON output */
+@media (prefers-color-scheme: dark) {
+    .formatter-output-code {
+        background: #0f172a;
+        color: #10b981;
+        border: 1px solid #374151;
+    }
+}
+
+/* Animation for status changes */
+@keyframes fadeInStatus {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.validation-status {
+    animation: fadeInStatus 0.3s ease;
+}
+
+/* Loading state */
+.button.loading {
+    position: relative;
+    color: transparent;
+}
+
+.button.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    color: white;
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}

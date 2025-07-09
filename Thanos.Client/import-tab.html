@@ -1,0 +1,133 @@
+﻿<!-- Import Tab HTML Structure -->
+<div id="import-tab" class="tab-content active">
+    <div class="import-content">
+        <!-- Board Input Section (Left side - grows) -->
+        <div class="board-input-section">
+            <h2>📝 Board Input</h2>
+
+            <textarea
+                    id="boardInput"
+                    class="board-input"
+                    placeholder="Incolla qui la griglia o liste di griglie...
+
+Esempio singola griglia:
+00  01  02  03  04  05  06  07  08  09  10
+00 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
+01 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
+02 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
+03 ⬛  ⬛  ⬛  ⬛  ⬛  👽  ⬛  ⬛  ⬛  ⬛  ⬛  
+04 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
+05 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
+
+Esempio multiple griglie (separate da linee vuote):
+--- GRID 1 ---
+00  01  02  03
+00 ⬛  ⬛  ⬛  ⬛  
+01 ⬛  👽  ⬛  ⬛  
+02 ⬛  💲  ⬛  ⬛  
+
+--- GRID 2 ---
+00  01  02  03
+00 ⬛  ⬛  ⬛  ⬛  
+01 ⬛  ⬛  👽  ⬛  
+02 ⬛  ⬛  💲  ⬛  "></textarea>
+
+            <div class="input-actions">
+                <button class="button" id="importBtn">
+                    📥 Import Boards
+                </button>
+                <button class="button secondary" id="clearBtn">
+                    🗑️ Clear
+                </button>
+                <button class="button secondary" id="exampleBtn">
+                    📋 Example
+                </button>
+            </div>
+
+            <div class="input-stats" id="inputStats">
+                <span>Lines: <span id="lineCount">0</span></span>
+                <span>Characters: <span id="charCount">0</span></span>
+                <span>Grids detected: <span id="gridCount">0</span></span>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+        </div>
+
+        <!-- Icons Section (Right side - fixed width) -->
+        <div class="icons-section">
+            <h2>🎯 Quick Icons</h2>
+
+            <div class="icons-grid">
+                <button class="icon-btn" data-icon="👽">
+                    <span class="icon-emoji">👽</span>
+                    <span class="icon-label">Snake Head</span>
+                </button>
+                <button class="icon-btn" data-icon="💲">
+                    <span class="icon-emoji">💲</span>
+                    <span class="icon-label">Snake Body</span>
+                </button>
+                <button class="icon-btn" data-icon="⬛">
+                    <span class="icon-emoji">⬛</span>
+                    <span class="icon-label">Empty</span>
+                </button>
+                <button class="icon-btn" data-icon="🍎">
+                    <span class="icon-emoji">🍎</span>
+                    <span class="icon-label">Food</span>
+                </button>
+                <button class="icon-btn" data-icon="💀">
+                    <span class="icon-emoji">💀</span>
+                    <span class="icon-label">Hazard</span>
+                </button>
+                <button class="icon-btn" data-icon="⬆️">
+                    <span class="icon-emoji">⬆️</span>
+                    <span class="icon-label">Up</span>
+                </button>
+                <button class="icon-btn" data-icon="⬇️">
+                    <span class="icon-emoji">⬇️</span>
+                    <span class="icon-label">Down</span>
+                </button>
+                <button class="icon-btn" data-icon="⬅️">
+                    <span class="icon-emoji">⬅️</span>
+                    <span class="icon-label">Left</span>
+                </button>
+                <button class="icon-btn" data-icon="➡️">
+                    <span class="icon-emoji">➡️</span>
+                    <span class="icon-label">Right</span>
+                </button>
+            </div>
+
+            <div class="legend">
+                <h3>📚 Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-emoji">👽</span>
+                        <span>Snake Head</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-emoji">💲</span>
+                        <span>Snake Body</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-emoji">⬛</span>
+                        <span>Empty Space</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-emoji">🍎</span>
+                        <span>Food</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-emoji">💀</span>
+                        <span>Hazard</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-emoji">⬆️⬇️⬅️➡️</span>
+                        <span>Directions</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Copy Feedback Element -->
+<div class="copy-feedback" id="copyFeedback"></div>
