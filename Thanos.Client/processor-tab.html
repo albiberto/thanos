@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prosser Board - Thanos Client</title>
+    <link rel="stylesheet" href="prosser-board.css">
+</head>
+<body>
+<div class="prosser-container">
+    <header class="prosser-header">
+        <h1>Prosser Board</h1>
+        <div class="header-controls">
+            <button class="btn btn-primary" id="addProcessorBtn">
+                <i class="icon-plus"></i>
+                Aggiungi Processore
+            </button>
+            <button class="btn btn-secondary" id="refreshBtn">
+                <i class="icon-refresh"></i>
+                Aggiorna
+            </button>
+        </div>
+    </header>
+
+    <div class="filters-section">
+        <div class="filter-group">
+            <label for="statusFilter">Stato:</label>
+            <select id="statusFilter">
+                <option value="">Tutti</option>
+                <option value="active">Attivo</option>
+                <option value="idle">Inattivo</option>
+                <option value="processing">In Elaborazione</option>
+                <option value="error">Errore</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="typeFilter">Tipo:</label>
+            <select id="typeFilter">
+                <option value="">Tutti</option>
+                <option value="data">Data Processor</option>
+                <option value="image">Image Processor</option>
+                <option value="text">Text Processor</option>
+                <option value="queue">Queue Processor</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <input type="text" id="searchFilter" placeholder="Cerca processori...">
+        </div>
+    </div>
+
+    <div class="stats-overview">
+        <div class="stat-card">
+            <div class="stat-icon active"></div>
+            <div class="stat-info">
+                <h3 id="activeCount">0</h3>
+                <p>Processori Attivi</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon processing"></div>
+            <div class="stat-info">
+                <h3 id="processingCount">0</h3>
+                <p>In Elaborazione</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon idle"></div>
+            <div class="stat-info">
+                <h3 id="idleCount">0</h3>
+                <p>Inattivi</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon error"></div>
+            <div class="stat-info">
+                <h3 id="errorCount">0</h3>
+                <p>Con Errori</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="processors-grid" id="processorsGrid">
+        <!-- I processori verranno inseriti qui dinamicamente -->
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Caricamento processori...</p>
+    </div>
+</div>
+
+<!-- Modal per aggiungere/modificare processore -->
+<div class="modal" id="processorModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Aggiungi Processore</h2>
+            <button class="close-btn" id="closeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="processorForm">
+                <div class="form-group">
+                    <label for="processorName">Nome Processore:</label>
+                    <input type="text" id="processorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="processorType">Tipo:</label>
+                    <select id="processorType" required>
+                        <option value="">Seleziona tipo</option>
+                        <option value="data">Data Processor</option>
+                        <option value="image">Image Processor</option>
+                        <option value="text">Text Processor</option>
+                        <option value="queue">Queue Processor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="processorDescription">Descrizione:</label>
+                    <textarea id="processorDescription" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="processorPriority">Priorità:</label>
+                    <select id="processorPriority">
+                        <option value="low">Bassa</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="high">Alta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="processorAutoStart">
+                        Avvio automatico
+                    </label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelBtn">Annulla</button>
+            <button class="btn btn-primary" id="saveBtn">Salva</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per dettagli processore -->
+<div class="modal" id="detailsModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="detailsTitle">Dettagli Processore</h2>
+            <button class="close-btn" id="closeDetailsModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="details-content" id="detailsContent">
+                <!-- Dettagli verranno inseriti qui -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="closeDetailsBtn">Chiudi</button>
+        </div>
+    </div>
+</div>
+
+<script src="prosser-board.js"></script>
+</body>
+</html>

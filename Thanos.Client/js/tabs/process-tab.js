@@ -1,324 +1,702 @@
-﻿// Battlesnake Board Converter - Process Tab
-
-class ProcessTab {
+﻿// Prosser Board JavaScript
+class ProsserBoard {
     constructor() {
-        this.initialized = false;
+        this.processors = [];
+        this.filteredProcessors = [];
+        this.currentProcessor = null;
+        this.refreshInterval = null;
+        this.autoRefreshEnabled = true;
+        this.init();
     }
 
-    // Initialize the process tab
     init() {
-        if (this.initialized) return;
-
         this.setupEventListeners();
-        this.updateUI();
-        this.initialized = true;
-
-        console.log('ProcessTab initialized');
+        this.loadProcessors();
+        this.updateStats();
+        this.startAutoRefresh();
     }
 
-    // Setup event listeners
     setupEventListeners() {
-        // Generate JSON button
-        const generateBtn = document.getElementById('generateBtn');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', () => this.generateAllJSON());
-        }
+        // Header controls
+        document.getElementById('addProcessorBtn').addEventListener('click', () => this.showAddProcessorModal());
+        document.getElementById('refreshBtn').addEventListener('click', () => this.refreshProcessors());
 
-        // Bulk action buttons
-        this.setupBulkActionButtons();
+        // Filters
+        document.getElementById('statusFilter').addEventListener('change', () => this.applyFilters());
+        document.getElementById('typeFilter').addEventListener('change', () => this.applyFilters());
+        document.getElementById('searchFilter').addEventListener('input', () => this.applyFilters());
 
-        // Listen for boards imported event
-        document.addEventListener('boardsImported', (event) => {
-            this.onBoardsImported(event.detail);
+        // Modals
+        document.getElementById('closeModal').addEventListener('click', () => this.closeModal('processorModal'));
+        document.getElementById('cancelBtn').addEventListener('click', () => this.closeModal('processorModal'));
+        document.getElementById('saveBtn').addEventListener('click', () => this.saveProcessor());
+        document.getElementById('closeDetailsModal').addEventListener('click', () => this.closeModal('detailsModal'));
+        document.getElementById('closeDetailsBtn').addEventListener('click', () => this.closeModal('detailsModal'));
+
+        // Form
+        document.getElementById('processorForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveProcessor();
         });
-    }
 
-    // Setup bulk action buttons
-    setupBulkActionButtons() {
-        const bulkButtons = [
-            { selector: '[onclick*="setAllExpected(13)"]', value: 13 },
-            { selector: '[onclick*="setAllExpected(15)"]', value: 15 },
-            { selector: '[onclick*="setAllExpected(1)"]', value: 1 },
-            { selector: '[onclick*="setAllExpected(2)"]', value: 2 },
-            { selector: '[onclick*="setAllExpected(4)"]', value: 4 },
-            { selector: '[onclick*="setAllExpected(8)"]', value: 8 },
-            { selector: '[onclick*="setAllExpected(3)"]', value: 3 },
-            { selector: '[onclick*="setAllExpected(12)"]', value: 12 },
-            { selector: '[onclick*="setAllExpected(5)"]', value: 5 },
-            { selector: '[onclick*="setAllExpected(9)"]', value: 9 }
-        ];
-
-        bulkButtons.forEach(({ selector, value }) => {
-            const button = document.querySelector(selector);
-            if (button) {
-                button.addEventListener('click', () => this.setAllExpected(value));
+        // Close modal on outside click
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                this.closeModal(e.target.id);
             }
         });
     }
 
-    // Update the entire UI
-    updateUI() {
-        this.updateHeader();
-        this.updateBoardsList();
+    loadProcessors() {
+        this.showLoading();
+
+        // Simula caricamento dati
+        setTimeout(() => {
+            this.processors = this.generateMockProcessors();
+            this.filteredProcessors = [...this.processors];
+            this.renderProcessors();
+            this.updateStats();
+            this.hideLoading();
+        }, 1000);
     }
 
-    // Update header information
-    updateHeader() {
-        const boards = window.BattlesnakeCommon.getImportedBoards();
-        const boardsCount = document.getElementById('boardsCount');
-        const generateBtn = document.getElementById('generateBtn');
+    generateMockProcessors() {
+        const types = ['data', 'image', 'text', 'queue'];
+        const statuses = ['active', 'idle', 'processing', 'error'];
+        const priorities = ['low', 'medium', 'high'];
+        const processors = [];
 
-        if (boardsCount) {
-            boardsCount.textContent = boards.length;
+        const processorNames = [
+            'Data Aggregator', 'Image Optimizer', 'Text Analyzer', 'Queue Manager',
+            'File Processor', 'Media Converter', 'Log Parser', 'Cache Handler',
+            'Backup Service', 'Index Builder', 'Report Generator', 'Sync Engine'
+        ];
+
+        const descriptions = [
+            'Elabora e aggrega dati da multiple sorgenti',
+            'Ottimizza e ridimensiona immagini automaticamente',
+            'Analizza contenuti testuali e estrae metadati',
+            'Gestisce code di elaborazione distribuita',
+            'Processa file caricati dagli utenti',
+            'Converte file multimediali in diversi formati',
+            'Analizza log di sistema e genera report',
+            'Gestisce cache distribuita per performance',
+            'Esegue backup automatici del sistema',
+            'Costruisce indici per ricerca full-text',
+            'Genera report periodici automatizzati',
+            'Sincronizza dati tra sistemi esterni'
+        ];
+
+        for (let i = 0; i < 12; i++) {
+            const type = types[i % types.length];
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            const priority = priorities[Math.floor(Math.random() * priorities.length)];
+
+            processors.push({
+                id: i + 1,
+                name: processorNames[i],
+                type: type,
+                status: status,
+                description: descriptions[i],
+                priority: priority,
+                autoStart: Math.random() > 0.3, // 70% chance di auto-start
+                metrics: {
+                    cpu: status === 'active' || status === 'processing' ?
+                        Math.floor(Math.random() * 80) + 20 : Math.floor(Math.random() * 10),
+                    memory: status === 'active' || status === 'processing' ?
+                        Math.floor(Math.random() * 60) + 30 : Math.floor(Math.random() * 20),
+                    tasks: status === 'active' || status === 'processing' ?
+                        Math.floor(Math.random() * 45) + 5 : 0
+                },
+                created: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+                lastActive: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000),
+                version: `v${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`,
+                uptime: Math.floor(Math.random() * 1000000) // millisecondi
+            });
         }
 
-        if (generateBtn) {
-            generateBtn.disabled = boards.length === 0;
-        }
+        return processors;
     }
 
-    // Update boards list
-    updateBoardsList() {
-        const container = document.getElementById('boardsList');
-        if (!container) return;
+    renderProcessors() {
+        const grid = document.getElementById('processorsGrid');
 
-        const boards = window.BattlesnakeCommon.getImportedBoards();
-        const expectedValues = window.BattlesnakeCommon.getBoardExpectedValues();
-
-        if (boards.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; color: #6b7280; margin-top: 40px;">
-                    No boards loaded. Use the Import tab to load boards first.
+        if (this.filteredProcessors.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <h3>Nessun processore trovato</h3>
+                    <p>Prova a modificare i filtri di ricerca o aggiungi un nuovo processore</p>
+                    <button class="btn btn-primary" onclick="prosserBoard.showAddProcessorModal()">
+                        Aggiungi Processore
+                    </button>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = '';
-
-        boards.forEach((board, index) => {
-            const preview = this.generateBoardPreview(board);
-            const cardElement = this.createBoardCard(index, preview, expectedValues[index]);
-            container.appendChild(cardElement);
-        });
+        grid.innerHTML = this.filteredProcessors.map(processor => this.createProcessorCard(processor)).join('');
     }
 
-    // Generate board preview text
-    generateBoardPreview(gameState) {
-        const board = gameState.board;
-        const width = board.width;
-        const height = board.height;
+    createProcessorCard(processor) {
+        const typeLabels = {
+            data: 'Data Processor',
+            image: 'Image Processor',
+            text: 'Text Processor',
+            queue: 'Queue Processor'
+        };
 
-        let preview = `${width}x${height} board\n`;
+        const priorityLabels = {
+            low: 'Bassa',
+            medium: 'Media',
+            high: 'Alta'
+        };
 
-        if (board.snakes.length > 0) {
-            const snake = board.snakes[0];
-            preview += `Snake: (${snake.head.x},${snake.head.y})`;
-            if (snake.body.length > 1) {
-                preview += ` + ${snake.body.length - 1} body`;
-            }
-            preview += `\n`;
-        }
+        const statusLabels = {
+            active: 'Attivo',
+            idle: 'Inattivo',
+            processing: 'In Elaborazione',
+            error: 'Errore'
+        };
 
-        if (board.food.length > 0) {
-            preview += `Food: ${board.food.length} pieces\n`;
-        }
-
-        if (board.hazards.length > 0) {
-            preview += `Hazards: ${board.hazards.length} pieces\n`;
-        }
-
-        return preview.trim();
-    }
-
-    // Create a board card element
-    createBoardCard(index, preview, expectedValue) {
-        const card = document.createElement('div');
-        card.className = 'board-card';
-
-        const expectedOption = window.BattlesnakeCommon.EXPECTED_OPTIONS.find(opt => opt.value === expectedValue) ||
-            window.BattlesnakeCommon.EXPECTED_OPTIONS[12];
-
-        card.innerHTML = `
-            <div>
-                <div style="font-weight: bold; margin-bottom: 8px; color: #374151;">
-                    Board ${index + 1}
+        return `
+            <div class="processor-card status-${processor.status}">
+                <div class="processor-header">
+                    <div class="processor-info">
+                        <h3>${processor.name}</h3>
+                        <div class="processor-type">${typeLabels[processor.type]}</div>
+                    </div>
+                    <div class="processor-status ${processor.status}">
+                        ${statusLabels[processor.status]}
+                    </div>
                 </div>
-                <div class="board-preview">${preview}</div>
+                
+                <div class="processor-description">
+                    ${processor.description}
+                </div>
+                
+                <div class="processor-metrics">
+                    <div class="metric">
+                        <div class="metric-value">${processor.metrics.cpu}%</div>
+                        <div class="metric-label">CPU</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${processor.metrics.memory}%</div>
+                        <div class="metric-label">Memoria</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">${processor.metrics.tasks}</div>
+                        <div class="metric-label">Tasks</div>
+                    </div>
+                </div>
+                
+                <div class="processor-actions">
+                    ${this.getProcessorActions(processor)}
+                </div>
             </div>
-            <div class="board-controls">
-                <div style="font-size: 12px; font-weight: bold; margin-bottom: 5px;">Expected:</div>
-                <div style="background: #dcfce7; border: 1px solid #22c55e; border-radius: 4px; padding: 5px; text-align: center; margin-bottom: 8px;">
-                    <div style="font-size: 10px; color: #22c55e; font-weight: bold;">${expectedValue}</div>
-                    <div style="font-size: 12px; margin: 2px 0;">${expectedOption.icons}</div>
-                    <div style="font-size: 8px; color: #6b7280;">${expectedOption.desc}</div>
+        `;
+    }
+
+    getProcessorActions(processor) {
+        const actions = [];
+
+        if (processor.status === 'idle') {
+            actions.push(`<button class="btn btn-success" onclick="prosserBoard.startProcessor(${processor.id})">
+                <i class="icon-play"></i> Avvia
+            </button>`);
+        } else if (processor.status === 'active' || processor.status === 'processing') {
+            actions.push(`<button class="btn btn-warning" onclick="prosserBoard.pauseProcessor(${processor.id})">
+                <i class="icon-pause"></i> Pausa
+            </button>`);
+        }
+
+        if (processor.status !== 'idle') {
+            actions.push(`<button class="btn btn-danger" onclick="prosserBoard.stopProcessor(${processor.id})">
+                <i class="icon-stop"></i> Stop
+            </button>`);
+        }
+
+        actions.push(`<button class="btn btn-info" onclick="prosserBoard.showProcessorDetails(${processor.id})">
+            <i class="icon-info"></i> Dettagli
+        </button>`);
+
+        actions.push(`<button class="btn btn-secondary" onclick="prosserBoard.editProcessor(${processor.id})">
+            <i class="icon-edit"></i> Modifica
+        </button>`);
+
+        return actions.join('');
+    }
+
+    applyFilters() {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const typeFilter = document.getElementById('typeFilter').value;
+        const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+
+        this.filteredProcessors = this.processors.filter(processor => {
+            const matchesStatus = !statusFilter || processor.status === statusFilter;
+            const matchesType = !typeFilter || processor.type === typeFilter;
+            const matchesSearch = !searchFilter ||
+                processor.name.toLowerCase().includes(searchFilter) ||
+                processor.description.toLowerCase().includes(searchFilter);
+
+            return matchesStatus && matchesType && matchesSearch;
+        });
+
+        this.renderProcessors();
+    }
+
+    updateStats() {
+        const stats = {
+            active: 0,
+            processing: 0,
+            idle: 0,
+            error: 0
+        };
+
+        this.processors.forEach(processor => {
+            stats[processor.status]++;
+        });
+
+        document.getElementById('activeCount').textContent = stats.active;
+        document.getElementById('processingCount').textContent = stats.processing;
+        document.getElementById('idleCount').textContent = stats.idle;
+        document.getElementById('errorCount').textContent = stats.error;
+    }
+
+    showAddProcessorModal() {
+        document.getElementById('modalTitle').textContent = 'Aggiungi Processore';
+        document.getElementById('processorForm').reset();
+        this.currentProcessor = null;
+        this.showModal('processorModal');
+    }
+
+    editProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (!processor) return;
+
+        document.getElementById('modalTitle').textContent = 'Modifica Processore';
+        document.getElementById('processorName').value = processor.name;
+        document.getElementById('processorType').value = processor.type;
+        document.getElementById('processorDescription').value = processor.description;
+        document.getElementById('processorPriority').value = processor.priority;
+        document.getElementById('processorAutoStart').checked = processor.autoStart;
+
+        this.currentProcessor = processor;
+        this.showModal('processorModal');
+    }
+
+    saveProcessor() {
+        const form = document.getElementById('processorForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const formData = {
+            name: document.getElementById('processorName').value,
+            type: document.getElementById('processorType').value,
+            description: document.getElementById('processorDescription').value,
+            priority: document.getElementById('processorPriority').value,
+            autoStart: document.getElementById('processorAutoStart').checked
+        };
+
+        if (this.currentProcessor) {
+            // Modifica processore esistente
+            Object.assign(this.currentProcessor, formData);
+            this.showNotification('Processore modificato con successo', 'success');
+        } else {
+            // Aggiungi nuovo processore
+            const newProcessor = {
+                id: Math.max(...this.processors.map(p => p.id)) + 1,
+                ...formData,
+                status: formData.autoStart ? 'active' : 'idle',
+                metrics: {
+                    cpu: 0,
+                    memory: 0,
+                    tasks: 0
+                },
+                created: new Date(),
+                lastActive: new Date()
+            };
+
+            this.processors.push(newProcessor);
+            this.showNotification('Processore aggiunto con successo', 'success');
+        }
+
+        this.applyFilters();
+        this.updateStats();
+        this.closeModal('processorModal');
+    }
+
+    showProcessorDetails(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (!processor) return;
+
+        const typeLabels = {
+            data: 'Data Processor',
+            image: 'Image Processor',
+            text: 'Text Processor',
+            queue: 'Queue Processor'
+        };
+
+        const priorityLabels = {
+            low: 'Bassa',
+            medium: 'Media',
+            high: 'Alta'
+        };
+
+        const statusLabels = {
+            active: 'Attivo',
+            idle: 'Inattivo',
+            processing: 'In Elaborazione',
+            error: 'Errore'
+        };
+
+        document.getElementById('detailsTitle').textContent = `Dettagli - ${processor.name}`;
+        document.getElementById('detailsContent').innerHTML = `
+            <div class="detail-section">
+                <h3>Informazioni Generali</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Nome:</span>
+                    <span class="detail-value">${processor.name}</span>
                 </div>
-                <div class="expected-mini-grid" id="miniGrid${index}"></div>
+                <div class="detail-item">
+                    <span class="detail-label">Tipo:</span>
+                    <span class="detail-value">${typeLabels[processor.type]}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Stato:</span>
+                    <span class="detail-value">${statusLabels[processor.status]}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Priorità:</span>
+                    <span class="detail-value">${priorityLabels[processor.priority]}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Avvio Automatico:</span>
+                    <span class="detail-value">${processor.autoStart ? 'Sì' : 'No'}</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Metriche Correnti</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Utilizzo CPU:</span>
+                    <span class="detail-value">${processor.metrics.cpu}%</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Utilizzo Memoria:</span>
+                    <span class="detail-value">${processor.metrics.memory}%</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Tasks Attivi:</span>
+                    <span class="detail-value">${processor.metrics.tasks}</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Cronologia</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Creato il:</span>
+                    <span class="detail-value">${processor.created.toLocaleDateString('it-IT')} ${processor.created.toLocaleTimeString('it-IT')}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Ultima Attività:</span>
+                    <span class="detail-value">${processor.lastActive.toLocaleDateString('it-IT')} ${processor.lastActive.toLocaleTimeString('it-IT')}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Versione:</span>
+                    <span class="detail-value">${processor.version || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Uptime:</span>
+                    <span class="detail-value">${ProsserUtils.formatDuration(processor.uptime || 0)}</span>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Descrizione</h3>
+                <p>${processor.description}</p>
             </div>
         `;
 
-        // Setup mini grid after DOM insertion
-        setTimeout(() => this.createMiniExpectedGrid(index, expectedValue), 0);
-
-        return card;
+        this.showModal('detailsModal');
     }
 
-    // Create mini expected value grid for a board
-    createMiniExpectedGrid(boardIndex, currentValue) {
-        const container = document.getElementById(`miniGrid${boardIndex}`);
-        if (!container) return;
+    startProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (processor) {
+            processor.status = 'active';
+            processor.lastActive = new Date();
+            this.renderProcessors();
+            this.updateStats();
+            this.showNotification(`Processore ${processor.name} avviato`, 'success');
+        }
+    }
 
-        container.innerHTML = '';
+    pauseProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (processor) {
+            processor.status = 'idle';
+            this.renderProcessors();
+            this.updateStats();
+            this.showNotification(`Processore ${processor.name} in pausa`, 'warning');
+        }
+    }
 
-        // Show only most common values in mini grid
-        const commonValues = [1, 2, 4, 8, 3, 12, 13, 15];
+    stopProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (processor) {
+            processor.status = 'idle';
+            processor.metrics.cpu = 0;
+            processor.metrics.memory = 0;
+            processor.metrics.tasks = 0;
+            this.renderProcessors();
+            this.updateStats();
+            this.showNotification(`Processore ${processor.name} fermato`, 'info');
+        }
+    }
 
-        commonValues.forEach(value => {
-            const option = window.BattlesnakeCommon.EXPECTED_OPTIONS.find(opt => opt.value === value);
-            if (!option) return;
+    deleteProcessor(id) {
+        if (confirm('Sei sicuro di voler eliminare questo processore?')) {
+            this.processors = this.processors.filter(p => p.id !== id);
+            this.applyFilters();
+            this.updateStats();
+            this.showNotification('Processore eliminato', 'success');
+        }
+    }
 
-            const div = document.createElement('div');
-            div.className = 'expected-mini-option';
-            if (value === currentValue) {
-                div.classList.add('selected');
-            }
+    refreshProcessors() {
+        this.showLoading();
 
-            div.innerHTML = `
-                <div style="font-size: 8px; font-weight: bold;">${value}</div>
-                <div style="font-size: 8px;">${option.icons}</div>
-            `;
-
-            div.addEventListener('click', () => {
-                window.BattlesnakeCommon.setBoardExpectedValue(boardIndex, value);
-                this.updateBoardsList();
+        // Simula refresh dei dati
+        setTimeout(() => {
+            // Aggiorna metriche random
+            this.processors.forEach(processor => {
+                if (processor.status === 'active' || processor.status === 'processing') {
+                    processor.metrics.cpu = Math.floor(Math.random() * 100);
+                    processor.metrics.memory = Math.floor(Math.random() * 100);
+                    processor.metrics.tasks = Math.floor(Math.random() * 50);
+                    processor.lastActive = new Date();
+                }
             });
 
-            container.appendChild(div);
-        });
+            this.renderProcessors();
+            this.updateStats();
+            this.hideLoading();
+            this.showNotification('Dati aggiornati', 'success');
+        }, 500);
     }
 
-    // Set all boards to same expected value
-    setAllExpected(value) {
-        const boards = window.BattlesnakeCommon.getImportedBoards();
-
-        if (boards.length === 0) {
-            window.BattlesnakeCommon.showStatus('❌ Nessuna board caricata', true);
-            return;
+    startAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
         }
 
-        window.BattlesnakeCommon.setAllBoardExpectedValues(value);
-        this.updateBoardsList();
-        window.BattlesnakeCommon.showStatus(`✅ Tutte le board impostate a ${value}`);
+        this.refreshInterval = setInterval(() => {
+            if (!document.hidden && this.autoRefreshEnabled) {
+                // Aggiorna solo le metriche senza ricaricare tutto
+                this.processors.forEach(processor => {
+                    if (processor.status === 'active' || processor.status === 'processing') {
+                        // Simula variazioni realistiche delle metriche
+                        processor.metrics.cpu = Math.max(0, Math.min(100,
+                            processor.metrics.cpu + (Math.random() - 0.5) * 10));
+                        processor.metrics.memory = Math.max(0, Math.min(100,
+                            processor.metrics.memory + (Math.random() - 0.5) * 5));
+                        processor.metrics.tasks = Math.max(0, Math.min(50,
+                            processor.metrics.tasks + Math.floor((Math.random() - 0.5) * 3)));
+
+                        processor.lastActive = new Date();
+                    }
+                });
+
+                this.renderProcessors();
+            }
+        }, 5000); // Aggiorna ogni 5 secondi
     }
 
-    // Generate JSON for all boards
-    generateAllJSON() {
-        try {
-            const boards = window.BattlesnakeCommon.getImportedBoards();
-            const expectedValues = window.BattlesnakeCommon.getBoardExpectedValues();
-
-            if (boards.length === 0) {
-                throw new Error('Nessuna board caricata');
-            }
-
-            const startingTestId = parseInt(document.getElementById('processTestId')?.value || '101');
-            const testNameBase = document.getElementById('processTestName')?.value?.trim() || 'Test';
-
-            if (!testNameBase) {
-                throw new Error('Inserisci un nome base per i test');
-            }
-
-            let jsonOutput;
-
-            if (boards.length === 1) {
-                // Single board - output as single object
-                const testCase = {
-                    Id: startingTestId,
-                    Name: testNameBase,
-                    Expected: expectedValues[0],
-                    MoveRequest: boards[0]
-                };
-                jsonOutput = window.BattlesnakeCommon.formatSingleJSON(testCase);
-            } else {
-                // Multiple boards - output as array
-                const testCases = boards.map((gameState, index) => ({
-                    Id: startingTestId + index,
-                    Name: `${testNameBase} ${index + 1}`,
-                    Expected: expectedValues[index],
-                    MoveRequest: gameState
-                }));
-
-                const formattedCases = testCases.map(testCase =>
-                    window.BattlesnakeCommon.formatSingleJSON(testCase)
-                );
-                jsonOutput = '[\n' + formattedCases.map(json =>
-                    json.replace(/^/gm, '  ')
-                ).join(',\n') + '\n]';
-            }
-
-            // Display output
-            const jsonCodeElement = document.getElementById('jsonCode');
-            const jsonOutputElement = document.getElementById('jsonOutput');
-
-            if (jsonCodeElement && jsonOutputElement) {
-                jsonCodeElement.textContent = jsonOutput;
-                jsonOutputElement.style.display = 'flex';
-            }
-
-            const message = boards.length === 1 ?
-                '✅ JSON generato!' :
-                `✅ Generato JSON per ${boards.length} board!`;
-            window.BattlesnakeCommon.showStatus(message);
-
-        } catch (error) {
-            window.BattlesnakeCommon.showStatus(`❌ Errore: ${error.message}`, true);
-            console.error('Generation error:', error);
+    stopAutoRefresh() {
+        this.autoRefreshEnabled = false;
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
         }
     }
 
-    // Called when boards are imported
-    onBoardsImported(detail) {
-        this.updateUI();
+    resumeAutoRefresh() {
+        this.autoRefreshEnabled = true;
+        this.startAutoRefresh();
     }
 
-    // Called when tab becomes active
-    onActivate() {
-        this.updateUI();
+    showModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+        document.body.style.overflow = 'hidden';
     }
 
-    // Get current configuration
-    getConfiguration() {
-        return {
-            startingTestId: parseInt(document.getElementById('processTestId')?.value || '101'),
-            testNameBase: document.getElementById('processTestName')?.value?.trim() || 'Test',
-            boardCount: window.BattlesnakeCommon.getImportedBoards().length
+    closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    showLoading() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    hideLoading() {
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    showNotification(message, type = 'info') {
+        // Crea notifica temporanea
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        `;
+
+        const colors = {
+            success: '#28a745',
+            error: '#dc3545',
+            warning: '#ffc107',
+            info: '#17a2b8'
         };
+
+        notification.style.backgroundColor = colors[type] || colors.info;
+        document.body.appendChild(notification);
+
+        // Animazione di ingresso
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Rimozione automatica
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // Metodi per API esterne (placeholder)
+    async fetchProcessorsFromAPI() {
+        try {
+            // const response = await fetch('/api/processors');
+            // return await response.json();
+            return this.generateMockProcessors();
+        } catch (error) {
+            console.error('Errore nel caricamento dei processori:', error);
+            this.showNotification('Errore nel caricamento dei dati', 'error');
+            return [];
+        }
+    }
+
+    async saveProcessorToAPI(processor) {
+        try {
+            // const response = await fetch('/api/processors', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(processor)
+            // });
+            // return await response.json();
+            return processor;
+        } catch (error) {
+            console.error('Errore nel salvataggio del processore:', error);
+            this.showNotification('Errore nel salvataggio', 'error');
+            throw error;
+        }
+    }
+
+    async updateProcessorStatus(id, status) {
+        try {
+            // const response = await fetch(`/api/processors/${id}/status`, {
+            //     method: 'PATCH',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ status })
+            // });
+            // return await response.json();
+            return { id, status };
+        } catch (error) {
+            console.error('Errore nell\'aggiornamento dello stato:', error);
+            this.showNotification('Errore nell\'aggiornamento dello stato', 'error');
+            throw error;
+        }
     }
 }
 
-// Create process tab instance
-const processTab = new ProcessTab();
-
-// Global functions for backward compatibility
-function setAllExpected(value) {
-    processTab.setAllExpected(value);
-}
-
-function generateAllJSON() {
-    processTab.generateAllJSON();
-}
-
-// Auto-register with tab manager when available
+// Inizializza l'applicazione quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.BattlesnakeTabManager) {
-        window.BattlesnakeTabManager.tabManager.registerTab('process', processTab);
-    }
-    processTab.init();
+    window.prosserBoard = new ProsserBoard();
 });
 
-// Export for module use
-window.BattlesnakeProcessTab = {
-    processTab,
-    setAllExpected,
-    generateAllJSON
+// Gestione della visibilità della pagina per pausare gli aggiornamenti
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        console.log('Pagina nascosta - aggiornamenti in pausa');
+        if (window.prosserBoard) {
+            window.prosserBoard.stopAutoRefresh();
+        }
+    } else {
+        console.log('Pagina visibile - ripresa aggiornamenti');
+        if (window.prosserBoard) {
+            window.prosserBoard.resumeAutoRefresh();
+            window.prosserBoard.refreshProcessors();
+        }
+    }
+});
+
+// Gestione degli errori globali
+window.addEventListener('error', (event) => {
+    console.error('Errore JavaScript:', event.error);
+    if (window.prosserBoard) {
+        window.prosserBoard.showNotification('Si è verificato un errore imprevisto', 'error');
+    }
+});
+
+// Utility functions
+const ProsserUtils = {
+    formatBytes(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+
+    formatDuration(ms) {
+        const seconds = Math.floor((ms / 1000) % 60);
+        const minutes = Math.floor((ms / (1000 * 60)) % 60);
+        const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m ${seconds}s`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${seconds}s`;
+        } else {
+            return `${seconds}s`;
+        }
+    },
+
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 };
