@@ -146,9 +146,7 @@
 <!-- Load CSS and JS for this tab -->
 <link rel="stylesheet" href="css/import-tab.css">
 <script>
-    
-    if(window.snake !== undefined && window.snake.importTabManager === undefined) {
-        window.snake.importTabManager = new ImportTabManager()
+    if (window.snake !== undefined && window.snake.importTabManager === undefined) {
+        window.snake.importTabManager = new ImportTabManager(window.snake.notifyService);
     }
-    
 </script>
