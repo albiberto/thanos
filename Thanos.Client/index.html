@@ -4,20 +4,23 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>BattleSnake Board Converter</title>
-    <!-- Bootstrap CSS -->
-    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
+    <link href="css/styles.css" rel="stylesheet">
 </head>
-<body class="vh-100 bg-light">
-<!-- Container principale con Bootstrap Flexbox -->
-<div class="container-fluid vh-100 d-flex flex-column p-0">
+<body class="bg-light">
 
-    <!-- Header Section -->
-    <header class="bg-white shadow-sm border-bottom border-success border-2 p-3">
+<div class="d-flex flex-column vh-100">
+    <!-- Header -->
+    <header class="bg-white border-bottom">
         <div class="container-xxl">
-            <div class="d-flex align-items-center justify-content-center">
-                <h1 class="display-6 text-success fw-bold mb-0">
-                    🐍 BattleSnake Board Converter 🐍
-                </h1>
+            <div class="row align-items-center py-3">
+                <div class="col">
+                    <h1 class="h3 mb-0 text-primary">🐍 BattleSnake Board Converter</h1>
+                    <p class="text-muted mb-0 small">Converti e formatta griglie di gioco BattleSnake</p>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-success">v1.0</span>
+                </div>
             </div>
         </div>
     </header>
@@ -25,12 +28,13 @@
     <!-- Navigation Tabs -->
     <nav class="bg-white border-bottom">
         <div class="container-xxl">
-            <ul class="nav nav-tabs border-0 pt-2" id="mainTabs" role="tablist">
+            <ul class="nav nav-tabs border-0" id="mainTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button aria-controls="import-tab" aria-selected="true"
                             class="nav-link active fw-semibold"
                             data-bs-target="#import-tab" data-bs-toggle="tab"
-                            id="import-tab-btn" role="tab" type="button">
+                            id="import-tab-btn" role="tab" type="button"
+                            onclick="snake.tabManager.switchTab('import')">
                         📥 Import Boards
                     </button>
                 </li>
@@ -38,7 +42,8 @@
                     <button aria-controls="process-tab" aria-selected="false"
                             class="nav-link fw-semibold"
                             data-bs-target="#process-tab" data-bs-toggle="tab"
-                            id="process-tab-btn" role="tab" type="button">
+                            id="process-tab-btn" role="tab" type="button"
+                            onclick="snake.tabManager.switchTab('process')">
                         ⚙️ Process Boards
                     </button>
                 </li>
@@ -46,7 +51,8 @@
                     <button aria-controls="formatter-tab" aria-selected="false"
                             class="nav-link fw-semibold"
                             data-bs-target="#formatter-tab" data-bs-toggle="tab"
-                            id="formatter-tab-btn" role="tab" type="button">
+                            id="formatter-tab-btn" role="tab" type="button"
+                            onclick="snake.tabManager.switchTab('formatter')">
                         📝 JSON Formatter
                     </button>
                 </li>
@@ -59,54 +65,55 @@
         <div class="container-xxl h-100">
             <div class="tab-content h-100 py-3" id="mainTabContent">
 
-                <!-- Import Tab -->
-                <div aria-labelledby="import-tab-btn" class="tab-pane fade h-100 d-flex flex-column" id="import-tab" role="tabpanel">
+                <div class="alert alert-warning">
+                    Quick note: The content for each tab (import, process, formatter) should be loaded dynamically
                 </div>
-
-                <!-- Process Tab -->
-                <div aria-labelledby="process-tab-btn" class="tab-pane fade h-100 d-flex flex-column" id="process-tab" role="tabpanel">
-                    <div class="alert alert-warning">
-                        <strong>Process Tab</strong> - Contenuto da implementare
-                    </div>
-                </div>
-
-                <!-- Formatter Tab -->
-                <div aria-labelledby="formatter-tab-btn" class="tab-pane fade h-100 d-flex flex-column" id="formatter-tab" role="tabpanel">
-                    <div class="alert alert-warning">
-                        <strong>Formatter Tab</strong> - Contenuto da implementare
-                    </div>
-                </div>
+                
             </div>
         </div>
     </main>
-
-    <!-- Footer con Status Messages -->
-    <footer class="mt-auto bg-white border-top">
-        <div class="container-xxl p-2">
-            <div class="text-center text-muted" id="statusMessage"></div>
-        </div>
-    </footer>
 </div>
 
-<!-- Toast Container per Notifiche -->
-<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
-
-<!-- Loading Overlay -->
-<div class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center" id="loadingOverlay" style="z-index: 9999;">
-    <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">Loading...</span>
+<!-- Toast container -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="statusToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notifica</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            <!-- Il messaggio apparirà qui -->
+        </div>
     </div>
 </div>
 
 <!-- Scripts -->
-<script crossorigin="anonymous" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+<script src="js/core/tab-manager.js"></script>
+<script src="js/core/notify.js"></script>
+<script src="js/tabs/import-tab.js"></script>
 
 <script>
+    // Aspetta che il DOM sia completamente caricato
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('🚀 DOM loaded, inizializzando TabManager...');
 
+        const content = document.querySelector('.tab-content');
+        const tabManager = new TabManager(content);
 
-    
-    const tabManager = new TabManager('import', ['import', 'process', 'formatter'], document.querySelector('.tabs'), document.querySelector('.tab-content'));
+        let toastElement = document.getElementById('statusToast');
+        let toastBody = document.getElementById('toastMessage');
+        const notifyService = new NotifyService(toastElement, toastBody);
 
+        window.snake = 
+        {
+            tabManager,
+            notifyService,
+        } 
+
+        window.snake.tabManager.switchTab('import');
+        window.snake.notifyService.show("Benvenuto nel BattleSnake Board Converter!", "info");
+    });
 </script>
 
 </body>

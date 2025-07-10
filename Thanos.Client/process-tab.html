@@ -1,0 +1,164 @@
+﻿<h1>Process</h1>
+<!--&lt;!&ndash; Process Tab Content &ndash;&gt;-->
+<!--<div class="h-100 d-flex flex-column">-->
+<!--    &lt;!&ndash; Header with Controls &ndash;&gt;-->
+<!--    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-success border-2">-->
+<!--        <h2 class="h3 mb-0 text-success fw-bold">⚙️ Process Boards</h2>-->
+<!--        <div class="d-flex gap-2">-->
+<!--            <button class="btn btn-outline-success btn-sm" id="refreshBtn">-->
+<!--                🔄 Refresh-->
+<!--            </button>-->
+<!--            <button class="btn btn-success btn-sm" id="processAllBtn">-->
+<!--                ⚡ Process All-->
+<!--            </button>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Stats Section &ndash;&gt;-->
+<!--    <div class="row g-3 mb-4" id="statsSection">-->
+<!--        <div class="col-md-3">-->
+<!--            <div class="card text-white bg-primary">-->
+<!--                <div class="card-body text-center">-->
+<!--                    <div class="h2 mb-1" id="totalBoards">0</div>-->
+<!--                    <div class="small text-uppercase">Total Boards</div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="col-md-3">-->
+<!--            <div class="card text-white bg-success">-->
+<!--                <div class="card-body text-center">-->
+<!--                    <div class="h2 mb-1" id="processedBoards">0</div>-->
+<!--                    <div class="small text-uppercase">Processed</div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="col-md-3">-->
+<!--            <div class="card text-white bg-warning">-->
+<!--                <div class="card-body text-center">-->
+<!--                    <div class="h2 mb-1" id="pendingBoards">0</div>-->
+<!--                    <div class="small text-uppercase">Pending</div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="col-md-3">-->
+<!--            <div class="card text-white bg-danger">-->
+<!--                <div class="card-body text-center">-->
+<!--                    <div class="h2 mb-1" id="errorBoards">0</div>-->
+<!--                    <div class="small text-uppercase">Errors</div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Filters Section &ndash;&gt;-->
+<!--    <div class="card border-secondary-subtle mb-4">-->
+<!--        <div class="card-header bg-light">-->
+<!--            <h5 class="card-title mb-0">🔍 Filters</h5>-->
+<!--        </div>-->
+<!--        <div class="card-body">-->
+<!--            <div class="row g-3">-->
+<!--                <div class="col-md-3">-->
+<!--                    <div class="form-floating">-->
+<!--                        <select class="form-select" id="statusFilter">-->
+<!--                            <option value="">All Statuses</option>-->
+<!--                            <option value="pending">Pending</option>-->
+<!--                            <option value="processing">Processing</option>-->
+<!--                            <option value="completed">Completed</option>-->
+<!--                            <option value="error">Error</option>-->
+<!--                        </select>-->
+<!--                        <label for="statusFilter">Status</label>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="col-md-3">-->
+<!--                    <div class="form-floating">-->
+<!--                        <select class="form-select" id="sizeFilter">-->
+<!--                            <option value="">All Sizes</option>-->
+<!--                            <option value="small">Small (≤10x10)</option>-->
+<!--                            <option value="medium">Medium (11x11-20x20)</option>-->
+<!--                            <option value="large">Large (>20x20)</option>-->
+<!--                        </select>-->
+<!--                        <label for="sizeFilter">Board Size</label>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="col-md-3">-->
+<!--                    <div class="form-floating">-->
+<!--                        <input type="text" class="form-control" id="searchFilter" placeholder="Search...">-->
+<!--                        <label for="searchFilter">Search</label>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="col-md-3 d-flex align-items-end">-->
+<!--                    <button class="btn btn-outline-secondary w-100" id="clearFilters">-->
+<!--                        🗑️ Clear Filters-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Processors List &ndash;&gt;-->
+<!--    <div class="flex-fill overflow-auto">-->
+<!--        <div class="row g-3" id="processorsList">-->
+<!--            &lt;!&ndash; Processors will be dynamically loaded here &ndash;&gt;-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Progress Section &ndash;&gt;-->
+<!--    <div class="mt-3" id="progressSection" style="display: none;">-->
+<!--        <div class="card border-info">-->
+<!--            <div class="card-body">-->
+<!--                <div class="d-flex justify-content-between align-items-center mb-2">-->
+<!--                    <span class="fw-semibold">Processing Progress</span>-->
+<!--                    <span id="progressText">0%</span>-->
+<!--                </div>-->
+<!--                <div class="progress">-->
+<!--                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="progressBar" style="width: 0%"></div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Processor Card Template &ndash;&gt;-->
+<!--<template id="processorCardTemplate">-->
+<!--    <div class="col-lg-6 col-xl-4">-->
+<!--        <div class="card h-100 border-2 processor-card">-->
+<!--            <div class="card-header d-flex justify-content-between align-items-center">-->
+<!--                <h6 class="card-title mb-0 fw-semibold processor-name"></h6>-->
+<!--                <span class="badge processor-status"></span>-->
+<!--            </div>-->
+<!--            <div class="card-body d-flex flex-column">-->
+<!--                <p class="card-text small text-muted processor-description mb-3"></p>-->
+
+<!--                &lt;!&ndash; Metrics &ndash;&gt;-->
+<!--                <div class="row g-2 mb-3 processor-metrics">-->
+<!--                    <div class="col-4 text-center">-->
+<!--                        <div class="fw-semibold metric-value"></div>-->
+<!--                        <div class="small text-muted metric-label"></div>-->
+<!--                    </div>-->
+<!--                    <div class="col-4 text-center">-->
+<!--                        <div class="fw-semibold metric-value"></div>-->
+<!--                        <div class="small text-muted metric-label"></div>-->
+<!--                    </div>-->
+<!--                    <div class="col-4 text-center">-->
+<!--                        <div class="fw-semibold metric-value"></div>-->
+<!--                        <div class="small text-muted metric-label"></div>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; Actions &ndash;&gt;-->
+<!--                <div class="d-flex flex-wrap gap-1 mt-auto processor-actions">-->
+<!--                    &lt;!&ndash; Buttons will be dynamically added &ndash;&gt;-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</template>-->
+
+<!--&lt;!&ndash; Loading Overlay &ndash;&gt;-->
+<!--<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center bg-white bg-opacity-75" style="display: none !important; z-index: 1050;">-->
+<!--    <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">-->
+<!--        <span class="visually-hidden">Loading...</span>-->
+<!--    </div>-->
+<!--    <h5 class="text-success">Processing...</h5>-->
+<!--    <p class="text-muted">Please wait while we process your boards</p>-->
+<!--</div>-->

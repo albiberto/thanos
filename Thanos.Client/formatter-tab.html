@@ -1,176 +1,178 @@
-﻿<!-- Formatter Tab Content -->
-<div class="h-100 d-flex flex-column">
-    <!-- Header -->
-    <div class="text-center mb-4 pb-3 border-bottom border-success border-2">
-        <h2 class="h3 mb-2 text-success fw-bold">📝 JSON Formatter</h2>
-        <p class="text-muted mb-0">Format, validate, and beautify your JSON data</p>
-    </div>
+﻿<h1>Formatter</h1>
 
-    <!-- Controls -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-8">
-            <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-success" id="formatBtn">
-                    ✨ Format JSON
-                </button>
-                <button class="btn btn-outline-success" id="validateBtn">
-                    ✅ Validate
-                </button>
-                <button class="btn btn-outline-secondary" id="minifyBtn">
-                    📦 Minify
-                </button>
-                <button class="btn btn-outline-info" id="copyFormattedBtn">
-                    📋 Copy
-                </button>
-                <button class="btn btn-outline-danger" id="clearFormatterBtn">
-                    🗑️ Clear
-                </button>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="d-flex gap-2">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="autoFormatCheck" checked>
-                    <label class="form-check-label small" for="autoFormatCheck">
-                        Auto-format
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="sortKeysCheck">
-                    <label class="form-check-label small" for="sortKeysCheck">
-                        Sort keys
-                    </label>
-                </div>
-            </div>
-        </div>
-    </div>
+<!--&lt;!&ndash; Formatter Tab Content &ndash;&gt;-->
+<!--<div class="h-100 d-flex flex-column">-->
+<!--    &lt;!&ndash; Header &ndash;&gt;-->
+<!--    <div class="text-center mb-4 pb-3 border-bottom border-success border-2">-->
+<!--        <h2 class="h3 mb-2 text-success fw-bold">📝 JSON Formatter</h2>-->
+<!--        <p class="text-muted mb-0">Format, validate, and beautify your JSON data</p>-->
+<!--    </div>-->
 
-    <!-- Main Content Area -->
-    <div class="row flex-fill g-3">
-        <!-- Input Section -->
-        <div class="col-lg-6 d-flex flex-column">
-            <div class="card h-100 border-2 border-primary-subtle">
-                <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 text-primary fw-semibold">📥 Input JSON</h5>
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-outline-primary btn-sm" id="loadExampleBtn">
-                            📄 Example
-                        </button>
-                        <button class="btn btn-outline-primary btn-sm" id="pasteBtn">
-                            📋 Paste
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body d-flex flex-column p-0">
-                    <textarea
-                            id="jsonInput"
-                            class="form-control border-0 flex-fill font-monospace"
-                            placeholder="Paste your JSON here..."
-                            style="font-size: 12px; line-height: 1.4; resize: none; border-radius: 0;"
-                    ></textarea>
-                    <div class="border-top px-3 py-2 bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="small text-muted">
-                                <span>Lines: </span><span id="inputLines" class="fw-semibold">0</span>
-                                <span class="ms-3">Chars: </span><span id="inputChars" class="fw-semibold">0</span>
-                            </div>
-                            <div id="inputStatus" class="small"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!--    &lt;!&ndash; Controls &ndash;&gt;-->
+<!--    <div class="row g-3 mb-4">-->
+<!--        <div class="col-md-8">-->
+<!--            <div class="d-flex flex-wrap gap-2">-->
+<!--                <button class="btn btn-success" id="formatBtn">-->
+<!--                    ✨ Format JSON-->
+<!--                </button>-->
+<!--                <button class="btn btn-outline-success" id="validateBtn">-->
+<!--                    ✅ Validate-->
+<!--                </button>-->
+<!--                <button class="btn btn-outline-secondary" id="minifyBtn">-->
+<!--                    📦 Minify-->
+<!--                </button>-->
+<!--                <button class="btn btn-outline-info" id="copyFormattedBtn">-->
+<!--                    📋 Copy-->
+<!--                </button>-->
+<!--                <button class="btn btn-outline-danger" id="clearFormatterBtn">-->
+<!--                    🗑️ Clear-->
+<!--                </button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="col-md-4">-->
+<!--            <div class="d-flex gap-2">-->
+<!--                <div class="form-check">-->
+<!--                    <input class="form-check-input" type="checkbox" id="autoFormatCheck" checked>-->
+<!--                    <label class="form-check-label small" for="autoFormatCheck">-->
+<!--                        Auto-format-->
+<!--                    </label>-->
+<!--                </div>-->
+<!--                <div class="form-check">-->
+<!--                    <input class="form-check-input" type="checkbox" id="sortKeysCheck">-->
+<!--                    <label class="form-check-label small" for="sortKeysCheck">-->
+<!--                        Sort keys-->
+<!--                    </label>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 
-        <!-- Output Section -->
-        <div class="col-lg-6 d-flex flex-column">
-            <div class="card h-100 border-2 border-success-subtle">
-                <div class="card-header bg-success-subtle d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 text-success fw-semibold">📤 Formatted JSON</h5>
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-outline-success btn-sm" id="downloadBtn">
-                            💾 Download
-                        </button>
-                        <button class="btn btn-outline-success btn-sm" id="copyOutputBtn">
-                            📋 Copy
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body d-flex flex-column p-0">
-                    <textarea
-                            id="jsonOutput"
-                            class="form-control border-0 flex-fill font-monospace"
-                            placeholder="Formatted JSON will appear here..."
-                            readonly
-                            style="font-size: 12px; line-height: 1.4; resize: none; border-radius: 0;"
-                    ></textarea>
-                    <div class="border-top px-3 py-2 bg-light">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="small text-muted">
-                                <span>Lines: </span><span id="outputLines" class="fw-semibold">0</span>
-                                <span class="ms-3">Size: </span><span id="outputSize" class="fw-semibold">0 B</span>
-                            </div>
-                            <div id="outputStatus" class="small"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<!--    &lt;!&ndash; Main Content Area &ndash;&gt;-->
+<!--    <div class="row flex-fill g-3">-->
+<!--        &lt;!&ndash; Input Section &ndash;&gt;-->
+<!--        <div class="col-lg-6 d-flex flex-column">-->
+<!--            <div class="card h-100 border-2 border-primary-subtle">-->
+<!--                <div class="card-header bg-primary-subtle d-flex justify-content-between align-items-center">-->
+<!--                    <h5 class="card-title mb-0 text-primary fw-semibold">📥 Input JSON</h5>-->
+<!--                    <div class="d-flex gap-1">-->
+<!--                        <button class="btn btn-outline-primary btn-sm" id="loadExampleBtn">-->
+<!--                            📄 Example-->
+<!--                        </button>-->
+<!--                        <button class="btn btn-outline-primary btn-sm" id="pasteBtn">-->
+<!--                            📋 Paste-->
+<!--                        </button>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="card-body d-flex flex-column p-0">-->
+<!--                    <textarea-->
+<!--                            id="jsonInput"-->
+<!--                            class="form-control border-0 flex-fill font-monospace"-->
+<!--                            placeholder="Paste your JSON here..."-->
+<!--                            style="font-size: 12px; line-height: 1.4; resize: none; border-radius: 0;"-->
+<!--                    ></textarea>-->
+<!--                    <div class="border-top px-3 py-2 bg-light">-->
+<!--                        <div class="d-flex justify-content-between align-items-center">-->
+<!--                            <div class="small text-muted">-->
+<!--                                <span>Lines: </span><span id="inputLines" class="fw-semibold">0</span>-->
+<!--                                <span class="ms-3">Chars: </span><span id="inputChars" class="fw-semibold">0</span>-->
+<!--                            </div>-->
+<!--                            <div id="inputStatus" class="small"></div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
 
-    <!-- Info Panel -->
-    <div class="row mt-3">
-        <div class="col-12">
-            <div class="card border-info-subtle">
-                <div class="card-body">
-                    <div class="row g-3">
-                        <!-- Validation Results -->
-                        <div class="col-md-6">
-                            <h6 class="text-info fw-semibold mb-2">🔍 Validation Results</h6>
-                            <div id="validationResults" class="small">
-                                <div class="text-muted">No validation performed yet</div>
-                            </div>
-                        </div>
+<!--        &lt;!&ndash; Output Section &ndash;&gt;-->
+<!--        <div class="col-lg-6 d-flex flex-column">-->
+<!--            <div class="card h-100 border-2 border-success-subtle">-->
+<!--                <div class="card-header bg-success-subtle d-flex justify-content-between align-items-center">-->
+<!--                    <h5 class="card-title mb-0 text-success fw-semibold">📤 Formatted JSON</h5>-->
+<!--                    <div class="d-flex gap-1">-->
+<!--                        <button class="btn btn-outline-success btn-sm" id="downloadBtn">-->
+<!--                            💾 Download-->
+<!--                        </button>-->
+<!--                        <button class="btn btn-outline-success btn-sm" id="copyOutputBtn">-->
+<!--                            📋 Copy-->
+<!--                        </button>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="card-body d-flex flex-column p-0">-->
+<!--                    <textarea-->
+<!--                            id="jsonOutput"-->
+<!--                            class="form-control border-0 flex-fill font-monospace"-->
+<!--                            placeholder="Formatted JSON will appear here..."-->
+<!--                            readonly-->
+<!--                            style="font-size: 12px; line-height: 1.4; resize: none; border-radius: 0;"-->
+<!--                    ></textarea>-->
+<!--                    <div class="border-top px-3 py-2 bg-light">-->
+<!--                        <div class="d-flex justify-content-between align-items-center">-->
+<!--                            <div class="small text-muted">-->
+<!--                                <span>Lines: </span><span id="outputLines" class="fw-semibold">0</span>-->
+<!--                                <span class="ms-3">Size: </span><span id="outputSize" class="fw-semibold">0 B</span>-->
+<!--                            </div>-->
+<!--                            <div id="outputStatus" class="small"></div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
 
-                        <!-- JSON Statistics -->
-                        <div class="col-md-6">
-                            <h6 class="text-info fw-semibold mb-2">📊 JSON Statistics</h6>
-                            <div id="jsonStats" class="small">
-                                <div class="row g-2">
-                                    <div class="col-6 text-muted">Objects: <span id="objectCount" class="fw-semibold">-</span></div>
-                                    <div class="col-6 text-muted">Arrays: <span id="arrayCount" class="fw-semibold">-</span></div>
-                                    <div class="col-6 text-muted">Strings: <span id="stringCount" class="fw-semibold">-</span></div>
-                                    <div class="col-6 text-muted">Numbers: <span id="numberCount" class="fw-semibold">-</span></div>
-                                    <div class="col-6 text-muted">Booleans: <span id="boolCount" class="fw-semibold">-</span></div>
-                                    <div class="col-6 text-muted">Nulls: <span id="nullCount" class="fw-semibold">-</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<!--    &lt;!&ndash; Info Panel &ndash;&gt;-->
+<!--    <div class="row mt-3">-->
+<!--        <div class="col-12">-->
+<!--            <div class="card border-info-subtle">-->
+<!--                <div class="card-body">-->
+<!--                    <div class="row g-3">-->
+<!--                        &lt;!&ndash; Validation Results &ndash;&gt;-->
+<!--                        <div class="col-md-6">-->
+<!--                            <h6 class="text-info fw-semibold mb-2">🔍 Validation Results</h6>-->
+<!--                            <div id="validationResults" class="small">-->
+<!--                                <div class="text-muted">No validation performed yet</div>-->
+<!--                            </div>-->
+<!--                        </div>-->
 
-<!-- Validation Modal -->
-<div class="modal fade" id="validationModal" tabindex="-1" aria-labelledby="validationModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="validationModalLabel">🔍 JSON Validation Results</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="validationModalContent">
-                    <!-- Validation details will be inserted here -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!--                        &lt;!&ndash; JSON Statistics &ndash;&gt;-->
+<!--                        <div class="col-md-6">-->
+<!--                            <h6 class="text-info fw-semibold mb-2">📊 JSON Statistics</h6>-->
+<!--                            <div id="jsonStats" class="small">-->
+<!--                                <div class="row g-2">-->
+<!--                                    <div class="col-6 text-muted">Objects: <span id="objectCount" class="fw-semibold">-</span></div>-->
+<!--                                    <div class="col-6 text-muted">Arrays: <span id="arrayCount" class="fw-semibold">-</span></div>-->
+<!--                                    <div class="col-6 text-muted">Strings: <span id="stringCount" class="fw-semibold">-</span></div>-->
+<!--                                    <div class="col-6 text-muted">Numbers: <span id="numberCount" class="fw-semibold">-</span></div>-->
+<!--                                    <div class="col-6 text-muted">Booleans: <span id="boolCount" class="fw-semibold">-</span></div>-->
+<!--                                    <div class="col-6 text-muted">Nulls: <span id="nullCount" class="fw-semibold">-</span></div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
 
-<!-- Success Toast -->
-<div></div>
+<!--&lt;!&ndash; Validation Modal &ndash;&gt;-->
+<!--<div class="modal fade" id="validationModal" tabindex="-1" aria-labelledby="validationModalLabel" aria-hidden="true">-->
+<!--    <div class="modal-dialog modal-lg">-->
+<!--        <div class="modal-content">-->
+<!--            <div class="modal-header bg-info text-white">-->
+<!--                <h5 class="modal-title" id="validationModalLabel">🔍 JSON Validation Results</h5>-->
+<!--                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--            </div>-->
+<!--            <div class="modal-body">-->
+<!--                <div id="validationModalContent">-->
+<!--                    &lt;!&ndash; Validation details will be inserted here &ndash;&gt;-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            <div class="modal-footer">-->
+<!--                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
+
+<!--&lt;!&ndash; Success Toast &ndash;&gt;-->
+<!--<div></div>-->
