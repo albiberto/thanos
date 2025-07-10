@@ -2,15 +2,17 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Battlesnake Board Converter</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/import-tab.css">
-    <link rel="stylesheet" href="css/formatter-tab.css">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>BattleSnake Board Converter</title>
+    <link href="css/styles.css" rel="stylesheet">
+    <link href="css/import-tab.css" rel="stylesheet">
+    <link href="css/formatter-tab.css" rel="stylesheet">
+    <link href="css/processor-tab.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
 </head>
 <body>
 <div class="container">
-    <h1>🐍 Battlesnake Board Converter</h1>
+    <h1>🐍 BattleSnake Board Converter 🐍</h1>
 
     <div class="tabs">
         <button class="tab-button active" onclick="switchTab('import')">Import Boards</button>
@@ -19,83 +21,23 @@
     </div>
 
     <!-- Import Tab - Content loaded from import-tab.js -->
-    <div id="import-tab" class="tab-content active">
+    <div class="tab-content active" id="import-tab">
         <!-- Content will be loaded by import-tab.js -->
     </div>
 
-    <!-- Process Tab -->
-    <div id="process-tab" class="tab-content">
-        <div class="process-header">
-            <div class="header-row">
-                <div class="boards-info">
-                    <strong id="boardsCount">0</strong> boards loaded
-                </div>
-
-                <div></div>
-
-                <div class="config-inputs">
-                    <label for="processTestId">Start ID:</label>
-                    <input type="number" id="processTestId" value="101" min="1" max="999">
-
-                    <label for="processTestName">Base Name:</label>
-                    <input type="text" id="processTestName" placeholder="Test name" style="width: 150px;">
-                </div>
-
-                <button class="button" onclick="generateAllJSON()" id="generateBtn" disabled style="width: auto; padding: 8px 16px; margin: 0;">
-                    🔄 Generate JSON
-                </button>
-            </div>
-        </div>
-
-        <div class="process-main">
-            <div class="boards-list" id="boardsList">
-                <div style="text-align: center; color: #6b7280; margin-top: 40px;">
-                    No boards loaded. Use the Import tab to load boards first.
-                </div>
-            </div>
-
-            <div class="controls-panel">
-                <h2>Bulk Actions</h2>
-
-                <button class="button" onclick="setAllExpected(13)">Set All to UP|LEFT|RIGHT (13)</button>
-                <button class="button" onclick="setAllExpected(15)">Set All to ALL DIRECTIONS (15)</button>
-                <button class="button" onclick="setAllExpected(1)">Set All to UP (1)</button>
-
-                <div style="margin: 15px 0; border-top: 1px solid #e5e7eb; padding-top: 15px;">
-                    <h3 style="margin-bottom: 10px; font-size: 14px;">Quick Expected Values:</h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 10px;">
-                        <button class="button-fill" onclick="setAllExpected(1)">1: ⬆️</button>
-                        <button class="button-fill" onclick="setAllExpected(2)">2: ⬇️</button>
-                        <button class="button-fill" onclick="setAllExpected(4)">4: ⬅️</button>
-                        <button class="button-fill" onclick="setAllExpected(8)">8: ➡️</button>
-                        <button class="button-fill" onclick="setAllExpected(3)">3: ⬆️⬇️</button>
-                        <button class="button-fill" onclick="setAllExpected(12)">12: ⬅️➡️</button>
-                        <button class="button-fill" onclick="setAllExpected(5)">5: ⬆️⬅️</button>
-                        <button class="button-fill" onclick="setAllExpected(9)">9: ⬆️➡️</button>
-                        <button class="button-fill" onclick="setAllExpected(15)">15: ALL</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Processor Tab - Content loaded from processor-tab.js -->
+    <div class="tab-content" id="processor-tab">
+        <!-- Processor will be loaded by formatter-tab.js -->
     </div>
 
     <!-- Formatter Tab - Content loaded from formatter-tab.js -->
-    <div id="formatter-tab" class="tab-content">
+    <div class="tab-content" id="formatter-tab">
         <!-- Content will be loaded by formatter-tab.js -->
     </div>
 
     <!-- Status Messages -->
     <div id="statusMessage"></div>
-
-    <!-- JSON Output (used by process tab) -->
-    <div class="json-output" id="jsonOutput" style="display: none;">
-        <h2>Generated JSON</h2>
-        <div class="json-code" id="jsonCode"></div>
-        <button class="button" id="copyButton" onclick="copyToClipboard()">📋 Copy JSON</button>
-    </div>
-
-    <!-- Copy Feedback (used by import tab) -->
-    <div class="copy-feedback" id="copyFeedback"></div>
+    
 </div>
 
 <!-- Load JavaScript modules in correct order -->
@@ -105,6 +47,7 @@
 <script src="js/tabs/import-tab.js"></script>
 <script src="js/tabs/formatter-tab.js"></script>
 <script src="js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
 
 </body>
 </html>
