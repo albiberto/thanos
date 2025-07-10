@@ -95,43 +95,80 @@
 <script src="js/tabs/import-tab.js"></script>
 
 <script>
-    // === IOC CONTAINER ===
+    // === APPLICAZIONE PRINCIPALE ===
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 Inizializzazione applicazione...');
 
-        // 1. Istanzia in ordine di dipendenza (come C# IoC)
-        const notifyService = new NotifyService('statusToast');
-        const tabManager = new TabManager('mainTabContent', notifyService);
-        const importTabManager = new ImportTabManager('boardInput', notifyService);
+        try {
+            // 1. Istanzia servizi di base
+            const notifyService = new NotifyService('statusToast');
+            const tabManager = new TabManager('mainTabContent', notifyService);
+            const importTabManager = new ImportTabManager('boardInput', notifyService);
 
-        // 2. Registra callback per quando i tab vengono caricati
-        tabManager.registerTabCallback('import', () => {
-            // Reset del cache quando il tab import viene ricaricato
-            importTabManager.resetCache();
-            console.log('✅ Import tab loaded and initialized');
-        });
+            // 2. Registra callback per quando i tab vengono caricati
+            tabManager.registerTabCallback('import', () => {
+                console.log('📥 Inizializzazione tab import...');
+                // Assicurati che l'ImportTabManager si inizializzi quando il tab viene caricato
+                setTimeout(() => {
+                    importTabManager.initialize();
+                }, 100); // Piccolo delay per essere sicuri che il DOM sia pronto
+            });
 
-        tabManager.registerTabCallback('process', () => {
-            console.log('✅ Process tab loaded');
-            // Qui potresti inizializzare ProcessTabManager se necessario
-        });
+            tabManager.registerTabCallback('process', () => {
+                console.log('⚙️ Inizializzazione tab process...');
+                // Inizializza il ProcessTab se è disponibile
+                if (window.BattlesnakeProcessTab) {
+                    window.BattlesnakeProcessTab.init();
+                }
+            });
 
-        tabManager.registerTabCallback('formatter', () => {
-            console.log('✅ Formatter tab loaded');
-            // Qui potresti inizializzare FormatterTabManager se necessario
-        });
-        
-        // 3. Esponi globalmente
-        window.snake = {
-            notifyService,
-            tabManager,
-            importTabManager
-        };
+            tabManager.registerTabCallback('formatter', () => {
+                console.log('📝 Inizializzazione tab formatter...');
+                // Inizializza il FormatterTab se è disponibile
+                if (window.BattlesnakeFormatterTab) {
+                    window.BattlesnakeFormatterTab.init();
+                }
+            });
 
-        // 4. Carica tab iniziale
-        tabManager.switchTab('import');
+            // 3. Esponi globalmente l'oggetto snake
+            window.snake = {
+                notifyService,
+                tabManager,
+                importTabManager
+            };
 
-        console.log('✅ App inizializzata');
+            // 4. Carica il tab iniziale
+            tabManager.switchTab('import');
+
+            console.log('✅ App inizializzata con successo');
+
+        } catch (error) {
+            console.error('❌ Errore durante l\'inizializzazione:', error);
+            document.getElementById('mainTabContent').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Errore di inizializzazione</h4>
+                    <p>Si è verificato un errore durante l'avvio dell'applicazione.</p>
+                    <p class="mb-0"><strong>Errore:</strong> ${error.message}</p>
+                </div>
+            `;
+        }
     });
+
+    // === GESTIONE ERRORI GLOBALE ===
+    window.addEventListener('error', function(event) {
+        console.error('Errore JavaScript globale:', event.error);
+        if (window.snake?.notifyService) {
+            window.snake.notifyService.error('Si è verificato un errore imprevisto');
+        }
+    });
+
+    // === HELPER PER DEBUG ===
+    window.debugSnake = function() {
+        console.log('=== DEBUG SNAKE APP ===');
+        console.log('snake object:', window.snake);
+        console.log('Current tab:', window.snake?.tabManager?.getCurrentTab());
+        console.log('Available tabs:', Object.keys(window.snake?.tabManager?.callbacks || {}));
+    };
 </script>
 
 </body>
