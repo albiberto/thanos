@@ -88,11 +88,20 @@
     </div>
 </div>
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
-<script src="js/core/tab-manager.js"></script>
+<!-- Scripts - Ordine di caricamento importante! -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
+
+<!-- Core services -->
 <script src="js/core/notify.js"></script>
+<script src="js/core/tab-manager.js"></script>
+
+<!-- Tab managers -->
 <script src="js/tabs/import-tab.js"></script>
+<script src="js/tabs/formatter-tab.js"></script>
+<script src="js/tabs/process-tab.js"></script>
+
+<!-- Main application -->
+<script src="js/main.js"></script>
 
 <script>
     // === APPLICAZIONE PRINCIPALE ===
@@ -104,6 +113,7 @@
             const notifyService = new NotifyService('statusToast');
             const tabManager = new TabManager('mainTabContent', notifyService);
             const importTabManager = new ImportTabManager('boardInput', notifyService);
+            const formatterTabManager = new FormatterTabManager('jsonListInput', notifyService);
 
             // 2. Registra callback per quando i tab vengono caricati
             tabManager.registerTabCallback('import', () => {
@@ -124,17 +134,17 @@
 
             tabManager.registerTabCallback('formatter', () => {
                 console.log('📝 Inizializzazione tab formatter...');
-                // Inizializza il FormatterTab se è disponibile
-                if (window.BattlesnakeFormatterTab) {
-                    window.BattlesnakeFormatterTab.init();
-                }
+                setTimeout(() => {
+                    formatterTabManager.initialize();
+                }, 100);
             });
 
             // 3. Esponi globalmente l'oggetto snake
             window.snake = {
                 notifyService,
                 tabManager,
-                importTabManager
+                importTabManager,
+                formatterTabManager
             };
 
             // 4. Carica il tab iniziale
