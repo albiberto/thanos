@@ -1,168 +1,101 @@
-﻿/**
- * Battlesnake Board Converter - Formatter Tab JavaScript
- * Handles JSON list formatting, validation, and export functionality
- * Updated: HTML moved to formatter-tab.html, uses global NotifyService
- */
-
-class FormatterTab {
-    constructor() {
+﻿class FormatterTabManager {
+    constructor(inputId, notifyService) {
+        this.inputId = inputId;
+        this.notify = notifyService;
+        this._input = null;
+        this._eventListener = null;
         this.initialized = false;
-        this.elements = {};
-        this.debounceTimeout = null;
     }
 
-    /**
-     * Initialize the formatter tab
-     */
-    init() {
-        if (this.initialized) return;
+    // Getter che trova l'elemento quando necessario
+    get input() {
+        if (!this._input) {
+            this._input = document.getElementById(this.inputId);
+            if (!this._input) {
+                console.warn(`Element ${this.inputId} not found`);
+            }
+        }
+        return this._input;
+    }
 
-        // Check if HTML is already loaded
-        const formatterTab = document.getElementById('formatter-tab');
-        if (!formatterTab) {
-            console.error('Formatter tab container not found');
+    // Setup dell'event listener per aggiornare automaticamente le statistiche
+    setupEventListener() {
+        if (this.input && !this._eventListener) {
+            this._eventListener = () => this.updateStats();
+            this.input.addEventListener('input', this._eventListener);
+            this.updateStats();
+            console.log('✅ Event listener setup per formatter tab');
+        }
+    }
+
+    // Aggiorna le statistiche in tempo reale
+    updateStats() {
+        if (!this.input) {
+            console.warn('Input element not available for stats update');
             return;
         }
 
-        // HTML should be loaded from formatter-tab.html, just cache elements
-        this.cacheElements();
-        this.setupEventListeners();
-        this.updateStats();
-        this.initialized = true;
-        console.log('FormatterTab initialized');
+        const input = this.input.value || '';
+        const lines = input.split('\n').length;
+        const chars = input.length;
+        let itemCount = 0;
+
+        try {
+            if (input.trim()) {
+                const parsed = JSON.parse(input);
+                itemCount = Array.isArray(parsed) ? parsed.length : 1;
+            }
+        } catch (error) {
+            // Invalid JSON, keep count at 0
+        }
+
+        this.updateStatElement('jsonLineCount', lines);
+        this.updateStatElement('jsonCharCount', chars);
+        this.updateStatElement('jsonItemCount', itemCount);
+        this.updateStatElement('jsonStatus', input.trim() ? 'Content present' : 'Empty');
     }
 
-    /**
-     * Cache DOM elements for performance
-     */
-    cacheElements() {
-        this.elements = {
-            jsonListInput: document.getElementById('jsonListInput'),
-            formatBtn: document.getElementById('formatBtn'),
-            validateBtn: document.getElementById('validateBtn'),
-            prettifyBtn: document.getElementById('prettifyBtn'),
-            minifyBtn: document.getElementById('minifyBtn'),
-            clearJsonBtn: document.getElementById('clearJsonBtn'),
-            exampleJsonBtn: document.getElementById('exampleJsonBtn'),
-            copyFormatterBtn: document.getElementById('copyFormatterBtn'),
-            exportBtn: document.getElementById('exportBtn'),
-            hideOutputBtn: document.getElementById('hideOutputBtn'),
-            formatterOutput: document.getElementById('formatterOutput'),
-            formatterCode: document.getElementById('formatterCode'),
-            formatProgress: document.getElementById('formatProgress'),
-            jsonValidation: document.getElementById('jsonValidation'),
-            jsonLineCount: document.getElementById('jsonLineCount'),
-            jsonCharCount: document.getElementById('jsonCharCount'),
-            jsonItemCount: document.getElementById('jsonItemCount'),
-            jsonStatus: document.getElementById('jsonStatus')
-        };
-    }
-
-    /**
-     * Setup all event listeners
-     */
-    setupEventListeners() {
-        // Format button
-        if (this.elements.formatBtn) {
-            this.elements.formatBtn.addEventListener('click', () => this.formatJSON());
-        }
-
-        // Validate button
-        if (this.elements.validateBtn) {
-            this.elements.validateBtn.addEventListener('click', () => this.validateJSON());
-        }
-
-        // Prettify button
-        if (this.elements.prettifyBtn) {
-            this.elements.prettifyBtn.addEventListener('click', () => this.prettifyJSON());
-        }
-
-        // Minify button
-        if (this.elements.minifyBtn) {
-            this.elements.minifyBtn.addEventListener('click', () => this.minifyJSON());
-        }
-
-        // Clear button
-        if (this.elements.clearJsonBtn) {
-            this.elements.clearJsonBtn.addEventListener('click', () => this.clearInput());
-        }
-
-        // Example button
-        if (this.elements.exampleJsonBtn) {
-            this.elements.exampleJsonBtn.addEventListener('click', () => this.loadExample());
-        }
-
-        // Copy button
-        if (this.elements.copyFormatterBtn) {
-            this.elements.copyFormatterBtn.addEventListener('click', () => this.copyToClipboard());
-        }
-
-        // Export button
-        if (this.elements.exportBtn) {
-            this.elements.exportBtn.addEventListener('click', () => this.exportJSON());
-        }
-
-        // Hide output button
-        if (this.elements.hideOutputBtn) {
-            this.elements.hideOutputBtn.addEventListener('click', () => this.hideOutput());
-        }
-
-        // Input change for live stats and validation
-        if (this.elements.jsonListInput) {
-            this.elements.jsonListInput.addEventListener('input', () => {
-                this.updateStats();
-                this.debounceValidation();
-            });
-        }
-
-        // Register tab with tab manager
-        if (window.BattlesnakeTabManager) {
-            window.BattlesnakeTabManager.registerTab('formatter', {
-                onActivate: () => this.onTabActivate(),
-                onDeactivate: () => this.onTabDeactivate()
-            });
+    // Helper per aggiornare un elemento delle statistiche
+    updateStatElement(elementId, value) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = value;
         }
     }
 
-    /**
-     * Tab activation handler
-     */
-    onTabActivate() {
-        if (this.elements.jsonListInput) {
-            this.elements.jsonListInput.focus();
+    // Reset del cache quando il tab cambia
+    resetCache() {
+        if (this._input && this._eventListener) {
+            this._input.removeEventListener('input', this._eventListener);
         }
+        this._input = null;
+        this._eventListener = null;
+        this.initialized = false;
     }
 
-    /**
-     * Tab deactivation handler
-     */
-    onTabDeactivate() {
-        // Cleanup when leaving tab
-    }
-
-    /**
-     * Format JSON with inline body
-     */
+    // Format JSON with inline body per Battlesnake
     formatJSON() {
-        const input = this.elements.jsonListInput?.value?.trim();
+        console.log('📝 Tentativo di formattazione JSON...');
 
-        if (!input) {
-            window.NotifyService?.error('❌ Inserisci del JSON nel campo di input');
+        if (!this.input) {
+            this.notify.error('Campo di input non trovato');
+            return;
+        }
+
+        if (!this.input.value.trim()) {
+            this.notify.error('Inserisci del JSON nel campo di input');
             return;
         }
 
         try {
-            this.showProgress(true);
-            window.NotifyService?.info('🔄 Formattazione in corso...');
-
-            // Parse and validate JSON
-            const jsonList = JSON.parse(input);
+            // Parse JSON
+            const jsonList = JSON.parse(this.input.value);
 
             if (!Array.isArray(jsonList)) {
-                throw new Error('Input must be an array of JSON objects');
+                throw new Error('Input deve essere un array di oggetti JSON');
             }
 
-            // Format each item with inline body
+            // Format each item with inline body per Battlesnake
             const formattedList = jsonList.map(item => this.formatItemWithInlineBody(item));
 
             // Generate output
@@ -171,19 +104,15 @@ class FormatterTab {
             // Show output
             this.showOutput(formattedJSON);
 
-            window.NotifyService?.success(`✅ ${formattedList.length} elementi formattati con successo`);
+            this.notify.success(`${formattedList.length} elementi formattati con successo`);
 
         } catch (error) {
             console.error('Format error:', error);
-            window.NotifyService?.error(`❌ Errore nella formattazione: ${error.message}`);
-        } finally {
-            this.showProgress(false);
+            this.notify.error(`Errore nella formattazione: ${error.message}`);
         }
     }
 
-    /**
-     * Format item with inline body for Battlesnake tests
-     */
+    // Format item with inline body for Battlesnake tests
     formatItemWithInlineBody(item) {
         if (!item.MoveRequest?.board?.snakes) {
             return item;
@@ -205,145 +134,117 @@ class FormatterTab {
         return formatted;
     }
 
-    /**
-     * Validate JSON only
-     */
+    // Validate JSON
     validateJSON() {
-        const input = this.elements.jsonListInput?.value?.trim();
+        console.log('🔍 Validazione JSON...');
 
-        if (!input) {
-            window.NotifyService?.warning('⚠️ Nessun contenuto da validare');
+        if (!this.input) {
+            this.notify.error('Campo di input non trovato');
+            return;
+        }
+
+        if (!this.input.value.trim()) {
+            this.notify.warning('Nessun contenuto da validare');
             return;
         }
 
         try {
-            const parsed = JSON.parse(input);
+            const parsed = JSON.parse(this.input.value);
             const isArray = Array.isArray(parsed);
             const itemCount = isArray ? parsed.length : 1;
 
             this.updateValidationStatus(
-                `✅ JSON valido - ${itemCount} elemento${itemCount !== 1 ? 'i' : ''}`,
+                `JSON valido - ${itemCount} elemento${itemCount !== 1 ? 'i' : ''}`,
                 'success'
             );
 
-            window.NotifyService?.success('✅ JSON valido');
+            this.notify.success('JSON valido');
 
         } catch (error) {
-            this.updateValidationStatus(`❌ JSON non valido: ${error.message}`, 'error');
-            window.NotifyService?.error('❌ JSON non valido');
+            this.updateValidationStatus(`JSON non valido: ${error.message}`, 'error');
+            this.notify.error('JSON non valido');
         }
     }
 
-    /**
-     * Debounced validation for live feedback
-     */
-    debounceValidation() {
-        if (this.debounceTimeout) {
-            clearTimeout(this.debounceTimeout);
-        }
-
-        this.debounceTimeout = setTimeout(() => {
-            this.validateInput();
-        }, 500);
-    }
-
-    /**
-     * Validate input for live feedback
-     */
-    validateInput() {
-        const input = this.elements.jsonListInput?.value?.trim();
-
-        if (!input) {
-            this.clearValidationStatus();
-            return;
-        }
-
-        try {
-            JSON.parse(input);
-            this.updateValidationStatus('✅ JSON valido', 'success');
-        } catch (error) {
-            this.updateValidationStatus('❌ JSON non valido', 'error');
-        }
-    }
-
-    /**
-     * Prettify JSON
-     */
+    // Prettify JSON
     prettifyJSON() {
-        const input = this.elements.jsonListInput?.value?.trim();
+        console.log('🎨 Prettify JSON...');
 
-        if (!input) {
-            window.NotifyService?.error('❌ Nessun contenuto da formattare');
+        if (!this.input) {
+            this.notify.error('Campo di input non trovato');
+            return;
+        }
+
+        if (!this.input.value.trim()) {
+            this.notify.error('Nessun contenuto da formattare');
             return;
         }
 
         try {
-            const parsed = JSON.parse(input);
+            const parsed = JSON.parse(this.input.value);
             const prettified = JSON.stringify(parsed, null, 2);
-            this.elements.jsonListInput.value = prettified;
+            this.input.value = prettified;
             this.updateStats();
-            window.NotifyService?.success('✅ JSON formattato');
+            this.notify.success('JSON formattato');
 
         } catch (error) {
-            window.NotifyService?.error('❌ JSON non valido per la formattazione');
+            this.notify.error('JSON non valido per la formattazione');
         }
     }
 
-    /**
-     * Minify JSON
-     */
+    // Minify JSON
     minifyJSON() {
-        const input = this.elements.jsonListInput?.value?.trim();
+        console.log('📦 Minify JSON...');
 
-        if (!input) {
-            window.NotifyService?.error('❌ Nessun contenuto da comprimere');
+        if (!this.input) {
+            this.notify.error('Campo di input non trovato');
+            return;
+        }
+
+        if (!this.input.value.trim()) {
+            this.notify.error('Nessun contenuto da comprimere');
             return;
         }
 
         try {
-            const parsed = JSON.parse(input);
+            const parsed = JSON.parse(this.input.value);
             const minified = JSON.stringify(parsed);
-            this.elements.jsonListInput.value = minified;
+            this.input.value = minified;
             this.updateStats();
-            window.NotifyService?.success('✅ JSON compresso');
+            this.notify.success('JSON compresso');
 
         } catch (error) {
-            window.NotifyService?.error('❌ JSON non valido per la compressione');
+            this.notify.error('JSON non valido per la compressione');
         }
     }
 
-    /**
-     * Clear input
-     */
+    // Clear input
     clearInput() {
-        if (this.elements.jsonListInput) {
-            this.elements.jsonListInput.value = '';
-            this.updateStats();
-            this.clearValidationStatus();
-            this.hideOutput();
-            this.elements.jsonListInput.focus();
-            window.NotifyService?.success('✅ Campo pulito');
+        console.log('🗑️ Clear input...');
+
+        if (!this.input) {
+            this.notify.error('Campo non trovato');
+            return;
         }
+
+        this.input.value = '';
+        this.updateStats();
+        this.clearValidationStatus();
+        this.hideOutput();
+        this.input.focus();
+        this.notify.success('Campo pulito');
     }
 
-    /**
-     * Load example JSON
-     */
+    // Load example JSON
     loadExample() {
-        const exampleJSON = this.getExampleJSON();
-        if (this.elements.jsonListInput) {
-            this.elements.jsonListInput.value = exampleJSON;
-            this.updateStats();
-            this.validateInput();
-            window.NotifyService?.success('✅ Esempio caricato');
-        }
-    }
+        console.log('📄 Caricamento esempio...');
 
-    /**
-     * Get example JSON content
-     */
-    getExampleJSON() {
-        return `[
+        if (!this.input) {
+            this.notify.error('Campo non trovato');
+            return;
+        }
+
+        const exampleJSON = `[
   {
     "Id": 127,
     "Name": "Test Movement Up",
@@ -397,97 +298,55 @@ class FormatterTab {
     }
   }
 ]`;
+
+        this.input.value = exampleJSON;
+        this.updateStats();
+        this.notify.success('Esempio caricato');
     }
 
-    /**
-     * Update statistics
-     */
-    updateStats() {
-        const input = this.elements.jsonListInput?.value || '';
-        const lines = input.split('\n').length;
-        const chars = input.length;
-        let itemCount = 0;
-
-        try {
-            if (input.trim()) {
-                const parsed = JSON.parse(input);
-                itemCount = Array.isArray(parsed) ? parsed.length : 1;
-            }
-        } catch (error) {
-            // Invalid JSON, keep count at 0
-        }
-
-        if (this.elements.jsonLineCount) {
-            this.elements.jsonLineCount.textContent = lines;
-        }
-        if (this.elements.jsonCharCount) {
-            this.elements.jsonCharCount.textContent = chars;
-        }
-        if (this.elements.jsonItemCount) {
-            this.elements.jsonItemCount.textContent = itemCount;
-        }
-        if (this.elements.jsonStatus) {
-            this.elements.jsonStatus.textContent = input.trim() ? 'Contenuto presente' : 'Vuoto';
-        }
-    }
-
-    /**
-     * Show output section
-     */
-    showOutput(content) {
-        if (this.elements.formatterOutput && this.elements.formatterCode) {
-            this.elements.formatterCode.textContent = content;
-            this.elements.formatterOutput.style.display = 'block';
-
-            // Scroll to output
-            this.elements.formatterOutput.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-    }
-
-    /**
-     * Hide output section
-     */
-    hideOutput() {
-        if (this.elements.formatterOutput) {
-            this.elements.formatterOutput.style.display = 'none';
-        }
-    }
-
-    /**
-     * Copy formatted JSON to clipboard
-     */
+    // Copy to clipboard
     async copyToClipboard() {
-        const content = this.elements.formatterCode?.textContent;
+        console.log('📋 Copy to clipboard...');
+
+        const formatterCode = document.getElementById('formatterCode');
+        const content = formatterCode?.textContent;
 
         if (!content) {
-            window.NotifyService?.error('❌ Nessun contenuto da copiare');
+            this.notify.error('Nessun contenuto da copiare');
             return;
         }
 
         try {
             await navigator.clipboard.writeText(content);
-
-            // Animate button
-            this.animateButton(this.elements.copyFormatterBtn, '✅ Copiato!');
-            window.NotifyService?.success('✅ JSON copiato negli appunti');
+            this.notify.success('JSON copiato negli appunti');
 
         } catch (error) {
-            console.error('Failed to copy:', error);
-            window.NotifyService?.error('❌ Errore durante la copia');
+            // Fallback
+            const tempInput = document.createElement('input');
+            tempInput.value = content;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+
+            try {
+                document.execCommand('copy');
+                this.notify.success('JSON copiato negli appunti');
+            } catch (e) {
+                this.notify.warning('Impossibile copiare');
+            } finally {
+                document.body.removeChild(tempInput);
+            }
         }
     }
 
-    /**
-     * Export JSON as file
-     */
+    // Export JSON
     exportJSON() {
-        const content = this.elements.formatterCode?.textContent;
+        console.log('💾 Export JSON...');
+
+        const formatterCode = document.getElementById('formatterCode');
+        const content = formatterCode?.textContent;
 
         if (!content) {
-            window.NotifyService?.error('❌ Nessun contenuto da esportare');
+            this.notify.error('Nessun contenuto da esportare');
             return;
         }
 
@@ -504,76 +363,81 @@ class FormatterTab {
 
             URL.revokeObjectURL(url);
 
-            window.NotifyService?.success('✅ File esportato');
+            this.notify.success('File esportato');
 
         } catch (error) {
             console.error('Export error:', error);
-            window.NotifyService?.error('❌ Errore durante l\'esportazione');
+            this.notify.error('Errore durante l\'esportazione');
         }
     }
 
-    /**
-     * Update validation status display
-     */
+    // Show output
+    showOutput(content) {
+        const formatterOutput = document.getElementById('formatterOutput');
+        const formatterPlaceholder = document.getElementById('formatterPlaceholder');
+        const formatterCode = document.getElementById('formatterCode');
+
+        if (formatterOutput && formatterPlaceholder && formatterCode) {
+            formatterCode.textContent = content;
+            formatterOutput.style.display = 'block';
+            formatterPlaceholder.style.display = 'none';
+
+            // Scroll to output
+            formatterOutput.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    }
+
+    // Hide output
+    hideOutput() {
+        const formatterOutput = document.getElementById('formatterOutput');
+        const formatterPlaceholder = document.getElementById('formatterPlaceholder');
+
+        if (formatterOutput && formatterPlaceholder) {
+            formatterOutput.style.display = 'none';
+            formatterPlaceholder.style.display = 'block';
+        }
+    }
+
+    // Update validation status
     updateValidationStatus(message, type) {
-        if (this.elements.jsonValidation) {
-            this.elements.jsonValidation.textContent = message;
-            this.elements.jsonValidation.className = `validation-status validation-${type}`;
-            this.elements.jsonValidation.style.display = 'block';
+        const jsonValidation = document.getElementById('jsonValidation');
+        if (jsonValidation) {
+            jsonValidation.textContent = message;
+            jsonValidation.className = `validation-status validation-${type}`;
+            jsonValidation.style.display = 'block';
         }
     }
 
-    /**
-     * Clear validation status
-     */
+    // Clear validation status
     clearValidationStatus() {
-        if (this.elements.jsonValidation) {
-            this.elements.jsonValidation.style.display = 'none';
+        const jsonValidation = document.getElementById('jsonValidation');
+        if (jsonValidation) {
+            jsonValidation.style.display = 'none';
         }
     }
 
-    /**
-     * Show progress indicator
-     */
-    showProgress(show) {
-        if (this.elements.formatProgress) {
-            this.elements.formatProgress.classList.toggle('active', show);
-        }
+    // Initialize
+    initialize() {
+        console.log('🔧 Inizializzazione FormatterTabManager...');
 
-        if (this.elements.formatBtn) {
-            this.elements.formatBtn.classList.toggle('loading', show);
-            this.elements.formatBtn.disabled = show;
-        }
-    }
-
-    /**
-     * Animate button with temporary text
-     */
-    animateButton(button, tempText) {
-        if (!button) return;
-
-        const originalText = button.textContent;
-        button.textContent = tempText;
-        button.style.background = 'linear-gradient(45deg, #10b981, #059669)';
+        this.resetCache();
 
         setTimeout(() => {
-            button.textContent = originalText;
-            button.style.background = '';
-        }, 2000);
+            if (this.input) {
+                this.setupEventListener();
+                this.initialized = true;
+                console.log('✅ FormatterTabManager inizializzato');
+            } else {
+                console.error('❌ Elemento input non trovato');
+            }
+        }, 50);
+    }
+
+    // Check if initialized
+    isInitialized() {
+        return this.initialized && this.input !== null;
     }
 }
-
-// Create and register the formatter tab
-const formatterTab = new FormatterTab();
-
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        formatterTab.init();
-    });
-} else {
-    formatterTab.init();
-}
-
-// Export for global access
-window.BattlesnakeFormatterTab = formatterTab;
