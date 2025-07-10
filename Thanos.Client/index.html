@@ -102,6 +102,23 @@
         const notifyService = new NotifyService('statusToast');
         const tabManager = new TabManager('mainTabContent', notifyService);
         const importTabManager = new ImportTabManager('boardInput', notifyService);
+
+        // 2. Registra callback per quando i tab vengono caricati
+        tabManager.registerTabCallback('import', () => {
+            // Reset del cache quando il tab import viene ricaricato
+            importTabManager.resetCache();
+            console.log('✅ Import tab loaded and initialized');
+        });
+
+        tabManager.registerTabCallback('process', () => {
+            console.log('✅ Process tab loaded');
+            // Qui potresti inizializzare ProcessTabManager se necessario
+        });
+
+        tabManager.registerTabCallback('formatter', () => {
+            console.log('✅ Formatter tab loaded');
+            // Qui potresti inizializzare FormatterTabManager se necessario
+        });
         
         // 3. Esponi globalmente
         window.snake = {
