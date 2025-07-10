@@ -1,6 +1,7 @@
 ﻿/**
  * Process Tab - Unobtrusive JavaScript
  * Works with existing HTML structure without creating DOM elements
+ * Updated: Uses global NotifyService, no individual notifications
  */
 class ProcessTab {
     constructor() {
@@ -66,9 +67,6 @@ class ProcessTab {
             this.saveProcessor();
         });
 
-        // Notification close
-        this.bindEvent('notificationClose', 'click', () => this.hideNotification());
-
         // Close modals on backdrop click
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
@@ -83,6 +81,28 @@ class ProcessTab {
                 this.hideModal('detailsModal');
             }
         });
+
+        // Register tab with tab manager
+        if (window.BattlesnakeTabManager) {
+            window.BattlesnakeTabManager.registerTab('process', {
+                onActivate: () => this.onTabActivate(),
+                onDeactivate: () => this.onTabDeactivate()
+            });
+        }
+    }
+
+    /**
+     * Tab activation handler
+     */
+    onTabActivate() {
+        this.refreshProcessors();
+    }
+
+    /**
+     * Tab deactivation handler
+     */
+    onTabDeactivate() {
+        this.stopAutoRefresh();
     }
 
     /**
@@ -132,6 +152,7 @@ class ProcessTab {
      */
     loadProcessors() {
         this.showLoading();
+        window.NotifyService?.info('🔄 Caricamento processori...');
 
         // Simulate API call
         setTimeout(() => {
@@ -141,6 +162,8 @@ class ProcessTab {
             this.updateStats();
             this.hideLoading();
             this.startAutoRefresh();
+
+            window.NotifyService?.success(`✅ ${this.processors.length} processori caricati`);
         }, 1000);
     }
 
@@ -292,30 +315,106 @@ class ProcessTab {
         if (!container) return;
 
         container.addEventListener('click', (e) => {
-            const button = e.target.closest('[data-action]');
+            const button = e.target.closest('button[data-action]');
             if (!button) return;
 
-            const action = button.dataset.action;
-            const processorId = parseInt(button.dataset.id);
+            const action = button.getAttribute('data-action');
+            const id = parseInt(button.getAttribute('data-id'));
 
-            switch (action) {
-                case 'start':
-                    this.startProcessor(processorId);
-                    break;
-                case 'pause':
-                    this.pauseProcessor(processorId);
-                    break;
-                case 'stop':
-                    this.stopProcessor(processorId);
-                    break;
-                case 'details':
-                    this.showProcessorDetails(processorId);
-                    break;
-                case 'edit':
-                    this.editProcessor(processorId);
-                    break;
-            }
+            this.handleProcessorAction(action, id);
         });
+    }
+
+    /**
+     * Handle processor actions
+     */
+    handleProcessorAction(action, id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (!processor) return;
+
+        switch (action) {
+            case 'start':
+                this.startProcessor(id);
+                break;
+            case 'pause':
+                this.pauseProcessor(id);
+                break;
+            case 'stop':
+                this.stopProcessor(id);
+                break;
+            case 'details':
+                this.showProcessorDetails(id);
+                break;
+            case 'edit':
+                this.editProcessor(id);
+                break;
+        }
+    }
+
+    /**
+     * Start processor
+     */
+    startProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (processor) {
+            processor.status = 'active';
+            processor.lastActive = new Date();
+            this.renderProcessors();
+            this.updateStats();
+            window.NotifyService?.success(`✅ Processore "${processor.name}" avviato`);
+        }
+    }
+
+    /**
+     * Pause processor
+     */
+    pauseProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (processor) {
+            processor.status = 'idle';
+            this.renderProcessors();
+            this.updateStats();
+            window.NotifyService?.info(`⏸️ Processore "${processor.name}" in pausa`);
+        }
+    }
+
+    /**
+     * Stop processor
+     */
+    stopProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (processor) {
+            processor.status = 'idle';
+            processor.metrics.cpu = 0;
+            processor.metrics.memory = 0;
+            processor.metrics.tasks = 0;
+            this.renderProcessors();
+            this.updateStats();
+            window.NotifyService?.warning(`⏹️ Processore "${processor.name}" fermato`);
+        }
+    }
+
+    /**
+     * Edit processor
+     */
+    editProcessor(id) {
+        const processor = this.processors.find(p => p.id === id);
+        if (!processor) return;
+
+        this.currentProcessor = processor;
+        this.updateText('modalTitle', 'Modifica Processore');
+
+        // Populate form
+        const form = document.getElementById('processorForm');
+        if (form) {
+            form.querySelector('#processorName').value = processor.name;
+            form.querySelector('#processorType').value = processor.type;
+            form.querySelector('#processorDescription').value = processor.description;
+            form.querySelector('#processorPriority').value = processor.priority;
+            form.querySelector('#processorAutoStart').checked = processor.autoStart;
+        }
+
+        this.showModal('processorModal');
     }
 
     /**
@@ -343,11 +442,12 @@ class ProcessTab {
      * Update statistics
      */
     updateStats() {
-        const stats = { active: 0, processing: 0, idle: 0, error: 0 };
-
-        this.processors.forEach(processor => {
-            stats[processor.status]++;
-        });
+        const stats = {
+            active: this.processors.filter(p => p.status === 'active').length,
+            processing: this.processors.filter(p => p.status === 'processing').length,
+            idle: this.processors.filter(p => p.status === 'idle').length,
+            error: this.processors.filter(p => p.status === 'error').length
+        };
 
         this.updateText('activeCount', stats.active);
         this.updateText('processingCount', stats.processing);
@@ -390,33 +490,10 @@ class ProcessTab {
     }
 
     /**
-     * Show notification
-     */
-    showNotification(message, type = 'info') {
-        this.updateText('notificationMessage', message);
-        const notification = document.getElementById('notification');
-        if (notification) {
-            notification.className = `notification ${type}`;
-            notification.style.display = 'block';
-
-            // Auto hide after 3 seconds
-            setTimeout(() => this.hideNotification(), 3000);
-        }
-    }
-
-    /**
-     * Hide notification
-     */
-    hideNotification() {
-        this.toggleElement('notification', false);
-    }
-
-    /**
      * Refresh processors
      */
     refreshProcessors() {
         this.loadProcessors();
-        this.showNotification('Processori aggiornati', 'success');
     }
 
     /**
@@ -431,69 +508,50 @@ class ProcessTab {
     }
 
     /**
-     * Edit processor
-     */
-    editProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (!processor) return;
-
-        this.updateText('modalTitle', 'Modifica Processore');
-
-        // Fill form with processor data
-        const fields = {
-            processorName: processor.name,
-            processorType: processor.type,
-            processorDescription: processor.description,
-            processorPriority: processor.priority
-        };
-
-        Object.entries(fields).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) element.value = value;
-        });
-
-        const autoStartElement = document.getElementById('processorAutoStart');
-        if (autoStartElement) autoStartElement.checked = processor.autoStart;
-
-        this.currentProcessor = processor;
-        this.showModal('processorModal');
-    }
-
-    /**
      * Save processor
      */
     saveProcessor() {
         const form = document.getElementById('processorForm');
-        if (!form || !form.checkValidity()) {
-            form?.reportValidity();
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const name = formData.get('processorName') || form.querySelector('#processorName')?.value;
+        const type = formData.get('processorType') || form.querySelector('#processorType')?.value;
+        const description = formData.get('processorDescription') || form.querySelector('#processorDescription')?.value;
+        const priority = formData.get('processorPriority') || form.querySelector('#processorPriority')?.value;
+        const autoStart = form.querySelector('#processorAutoStart')?.checked;
+
+        if (!name || !type) {
+            window.NotifyService?.error('❌ Nome e tipo sono obbligatori');
             return;
         }
 
-        const formData = {
-            name: document.getElementById('processorName')?.value || '',
-            type: document.getElementById('processorType')?.value || 'data',
-            description: document.getElementById('processorDescription')?.value || '',
-            priority: document.getElementById('processorPriority')?.value || 'medium',
-            autoStart: document.getElementById('processorAutoStart')?.checked || false
-        };
-
         if (this.currentProcessor) {
             // Update existing processor
-            Object.assign(this.currentProcessor, formData);
-            this.showNotification('Processore modificato con successo', 'success');
+            this.currentProcessor.name = name;
+            this.currentProcessor.type = type;
+            this.currentProcessor.description = description;
+            this.currentProcessor.priority = priority;
+            this.currentProcessor.autoStart = autoStart;
+
+            window.NotifyService?.success('✅ Processore aggiornato');
         } else {
             // Add new processor
             const newProcessor = {
-                id: Math.max(...this.processors.map(p => p.id), 0) + 1,
-                ...formData,
-                status: formData.autoStart ? 'active' : 'idle',
+                id: Math.max(...this.processors.map(p => p.id)) + 1,
+                name,
+                type,
+                description,
+                priority,
+                autoStart,
+                status: autoStart ? 'active' : 'idle',
                 metrics: { cpu: 0, memory: 0, tasks: 0 },
                 created: new Date(),
                 lastActive: new Date()
             };
 
             this.processors.push(newProcessor);
-            this.showNotification('Processore aggiunto con successo', 'success');
+            window.NotifyService?.success('✅ Processore aggiunto');
         }
 
         this.applyFilters();
@@ -552,16 +610,8 @@ class ProcessTab {
                     <span class="detail-label">Avvio Automatico:</span>
                     <span class="detail-value">${processor.autoStart ? 'Sì' : 'No'}</span>
                 </div>
-                <div class="detail-item">
-                    <span class="detail-label">Creato:</span>
-                    <span class="detail-value">${processor.created.toLocaleString()}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Ultima Attività:</span>
-                    <span class="detail-value">${processor.lastActive.toLocaleString()}</span>
-                </div>
             </div>
-
+            
             <div class="detail-section">
                 <h3>Metriche</h3>
                 <div class="detail-item">
@@ -577,39 +627,83 @@ class ProcessTab {
                     <span class="detail-value">${processor.metrics.tasks}</span>
                 </div>
             </div>
+            
+            <div class="detail-section">
+                <h3>Timestamp</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Creato:</span>
+                    <span class="detail-value">${processor.created.toLocaleString()}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Ultima Attività:</span>
+                    <span class="detail-value">${processor.lastActive.toLocaleString()}</span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h3>Descrizione</h3>
+                <p>${this.escapeHtml(processor.description)}</p>
+            </div>
         `);
 
         this.showModal('detailsModal');
     }
 
     /**
-     * Start processor
+     * Start auto refresh
      */
-    startProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (processor) {
-            processor.status = 'active';
-            processor.lastActive = new Date();
-            this.renderProcessors();
-            this.updateStats();
-            this.showNotification(`Processore ${processor.name} avviato`, 'success');
+    startAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
+
+        this.refreshInterval = setInterval(() => {
+            if (this.autoRefreshEnabled) {
+                // Update metrics randomly
+                this.processors.forEach(processor => {
+                    if (processor.status === 'active' || processor.status === 'processing') {
+                        processor.metrics.cpu = Math.max(0, processor.metrics.cpu + (Math.random() - 0.5) * 10);
+                        processor.metrics.memory = Math.max(0, processor.metrics.memory + (Math.random() - 0.5) * 5);
+                        processor.metrics.tasks = Math.max(0, processor.metrics.tasks + Math.floor((Math.random() - 0.5) * 3));
+                    }
+                });
+
+                this.renderProcessors();
+            }
+        }, 5000);
+    }
+
+    /**
+     * Stop auto refresh
+     */
+    stopAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
         }
     }
 
     /**
-     * Pause processor
+     * Escape HTML for safety
      */
-    pauseProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (processor) {
-            processor.status = 'idle';
-            this.renderProcessors();
-            this.updateStats();
-            this.showNotification(`Processore ${processor.name} messo in pausa`, 'warning');
-        }
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
+}
 
-    /**
-     * Stop processor
-     */
-    stopProcessor(id) {
+// Create and register the process tab
+const processTab = new ProcessTab();
+
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        processTab.init();
+    });
+} else {
+    processTab.init();
+}
+
+// Export for global access
+window.BattlesnakeProcessTab = processTab;

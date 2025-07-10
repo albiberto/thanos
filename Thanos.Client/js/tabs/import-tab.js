@@ -1,6 +1,7 @@
 ﻿/**
  * Battlesnake Board Converter - Import Tab JavaScript
  * Handles board input, validation, import functionality and icon copying
+ * Updated: HTML moved to import-tab.html, uses global NotifyService
  */
 
 class ImportTab {
@@ -15,159 +16,19 @@ class ImportTab {
     init() {
         if (this.initialized) return;
 
-        this.loadHTML().then(() => {
-            this.cacheElements();
-            this.setupEventListeners();
-            this.updateStats();
-            this.initialized = true;
-            console.log('ImportTab initialized');
-        }).catch(error => {
-            console.error('Failed to initialize ImportTab:', error);
-        });
-    }
-
-    /**
-     * Load the HTML content for the import tab
-     */
-    async loadHTML() {
+        // Check if HTML is already loaded
         const importTab = document.getElementById('import-tab');
         if (!importTab) {
-            throw new Error('Import tab container not found');
+            console.error('Import tab container not found');
+            return;
         }
 
-        // HTML content for the import tab
-        const htmlContent = `
-            <div class="import-content">
-                <!-- Board Input Section (Left side - grows) -->
-                <div class="board-input-section">
-                    <h2>📝 Board Input</h2>
-                    
-                    <textarea 
-                        id="boardInput" 
-                        class="board-input" 
-                        placeholder="Incolla qui la griglia o liste di griglie...
-
-Esempio singola griglia:
-00  01  02  03  04  05  06  07  08  09  10
-00 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-01 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-02 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-03 ⬛  ⬛  ⬛  ⬛  ⬛  👽  ⬛  ⬛  ⬛  ⬛  ⬛  
-04 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
-05 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
-
-Esempio multiple griglie (separate da linee vuote):
---- GRID 1 ---
-00  01  02  03
-00 ⬛  ⬛  ⬛  ⬛  
-01 ⬛  👽  ⬛  ⬛  
-02 ⬛  💲  ⬛  ⬛  
-
---- GRID 2 ---
-00  01  02  03
-00 ⬛  ⬛  ⬛  ⬛  
-01 ⬛  ⬛  👽  ⬛  
-02 ⬛  ⬛  💲  ⬛  "></textarea>
-
-                    <div class="input-actions">
-                        <button class="button" id="importBtn">
-                            📥 Import Boards
-                        </button>
-                        <button class="button secondary" id="clearBtn">
-                            🗑️ Clear
-                        </button>
-                        <button class="button secondary" id="exampleBtn">
-                            📋 Example
-                        </button>
-                    </div>
-
-                    <div class="input-stats" id="inputStats">
-                        <span>Lines: <span id="lineCount">0</span></span>
-                        <span>Characters: <span id="charCount">0</span></span>
-                        <span>Grids detected: <span id="gridCount">0</span></span>
-                    </div>
-
-                    <div class="status-message" id="statusMessage"></div>
-                </div>
-
-                <!-- Icons Section (Right side - fixed width) -->
-                <div class="icons-section">
-                    <h2>🎯 Quick Icons</h2>
-                    
-                    <div class="icons-grid">
-                        <button class="icon-btn" data-icon="👽">
-                            <span class="icon-emoji">👽</span>
-                            <span class="icon-label">Snake Head</span>
-                        </button>
-                        <button class="icon-btn" data-icon="💲">
-                            <span class="icon-emoji">💲</span>
-                            <span class="icon-label">Snake Body</span>
-                        </button>
-                        <button class="icon-btn" data-icon="⬛">
-                            <span class="icon-emoji">⬛</span>
-                            <span class="icon-label">Empty</span>
-                        </button>
-                        <button class="icon-btn" data-icon="🍎">
-                            <span class="icon-emoji">🍎</span>
-                            <span class="icon-label">Food</span>
-                        </button>
-                        <button class="icon-btn" data-icon="💀">
-                            <span class="icon-emoji">💀</span>
-                            <span class="icon-label">Hazard</span>
-                        </button>
-                        <button class="icon-btn" data-icon="⬆️">
-                            <span class="icon-emoji">⬆️</span>
-                            <span class="icon-label">Up</span>
-                        </button>
-                        <button class="icon-btn" data-icon="⬇️">
-                            <span class="icon-emoji">⬇️</span>
-                            <span class="icon-label">Down</span>
-                        </button>
-                        <button class="icon-btn" data-icon="⬅️">
-                            <span class="icon-emoji">⬅️</span>
-                            <span class="icon-label">Left</span>
-                        </button>
-                        <button class="icon-btn" data-icon="➡️">
-                            <span class="icon-emoji">➡️</span>
-                            <span class="icon-label">Right</span>
-                        </button>
-                    </div>
-
-                    <div class="legend">
-                        <h3>📚 Legend</h3>
-                        <div class="legend-items">
-                            <div class="legend-item">
-                                <span class="legend-emoji">👽</span>
-                                <span>Snake Head</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-emoji">💲</span>
-                                <span>Snake Body</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-emoji">⬛</span>
-                                <span>Empty Space</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-emoji">🍎</span>
-                                <span>Food</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-emoji">💀</span>
-                                <span>Hazard</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-emoji">⬆️⬇️⬅️➡️</span>
-                                <span>Directions</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Insert the HTML content
-        importTab.innerHTML = htmlContent;
+        // HTML should be loaded from import-tab.html, just cache elements
+        this.cacheElements();
+        this.setupEventListeners();
+        this.updateStats();
+        this.initialized = true;
+        console.log('ImportTab initialized');
     }
 
     /**
@@ -179,8 +40,6 @@ Esempio multiple griglie (separate da linee vuote):
             importBtn: document.getElementById('importBtn'),
             clearBtn: document.getElementById('clearBtn'),
             exampleBtn: document.getElementById('exampleBtn'),
-            statusMessage: document.getElementById('statusMessage'),
-            copyFeedback: document.getElementById('copyFeedback'),
             lineCount: document.getElementById('lineCount'),
             charCount: document.getElementById('charCount'),
             gridCount: document.getElementById('gridCount'),
@@ -216,237 +75,160 @@ Esempio multiple griglie (separate da linee vuote):
             });
         }
 
-        // Icon buttons for copying
-        this.elements.iconButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const icon = button.dataset.icon;
-                if (icon) {
-                    this.copyIcon(icon);
-                }
-            });
+        // Icon copy buttons
+        this.elements.iconButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => this.copyIcon(e));
         });
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
+        // Register tab with tab manager
+        if (window.BattlesnakeTabManager) {
+            window.BattlesnakeTabManager.registerTab('import', {
+                onActivate: () => this.onTabActivate(),
+                onDeactivate: () => this.onTabDeactivate()
+            });
+        }
     }
 
     /**
-     * Handle keyboard shortcuts
+     * Tab activation handler
      */
-    handleKeyboardShortcuts(event) {
-        // Only handle shortcuts when import tab is active
-        const importTab = document.getElementById('import-tab');
-        if (!importTab || !importTab.classList.contains('active')) return;
-
-        // Ctrl/Cmd + Enter to import
-        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-            event.preventDefault();
-            this.importBoards();
-        }
-
-        // Ctrl/Cmd + K to clear
-        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-            event.preventDefault();
-            this.clearInput();
-        }
-
-        // Ctrl/Cmd + E to load example
-        if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
-            event.preventDefault();
-            this.loadExample();
+    onTabActivate() {
+        // Focus board input when tab is activated
+        if (this.elements.boardInput) {
+            this.elements.boardInput.focus();
         }
     }
 
     /**
-     * Main import function
+     * Tab deactivation handler
+     */
+    onTabDeactivate() {
+        // Any cleanup when leaving tab
+    }
+
+    /**
+     * Import boards from input
      */
     importBoards() {
+        const input = this.elements.boardInput?.value?.trim();
+
+        if (!input) {
+            window.NotifyService?.error('❌ Inserisci almeno una griglia nel campo di input');
+            return;
+        }
+
         try {
-            const inputText = this.elements.boardInput.value.trim();
+            window.NotifyService?.info('🔄 Elaborazione in corso...');
 
-            if (!inputText) {
-                throw new Error('Please enter one or more grids to import');
+            // Parse the boards
+            const boards = this.parseBoards(input);
+
+            if (boards.length === 0) {
+                window.NotifyService?.error('❌ Nessuna griglia valida trovata nell\'input');
+                return;
             }
 
-            // Validate input format
-            const validation = this.validateInput(inputText);
-            if (!validation.valid) {
-                throw new Error(validation.error);
+            // Store boards in global state
+            this.storeBoards(boards);
+
+            // Show success message
+            const message = boards.length === 1
+                ? '✅ 1 griglia importata con successo'
+                : `✅ ${boards.length} griglie importate con successo`;
+
+            window.NotifyService?.success(message);
+
+            // Switch to process tab if available
+            if (window.BattlesnakeTabManager) {
+                setTimeout(() => {
+                    window.BattlesnakeTabManager.switchTab('process');
+                }, 1000);
             }
-
-            // Count grids for feedback
-            const gridCount = this.countGrids(inputText);
-
-            if (gridCount === 0) {
-                throw new Error('No valid grids found in input');
-            }
-
-            // TODO: Integration with existing BattlesnakeCommon
-            // In the real implementation, this would:
-            // 1. Call window.BattlesnakeCommon.parseMultipleBoards(inputText)
-            // 2. Store results with window.BattlesnakeCommon.setImportedBoards(gameStates)
-            // 3. Trigger custom events for other tabs
-            // 4. Switch to process tab
-
-            // For now, simulate successful import
-            this.showStatus(`✅ Successfully imported ${gridCount} board(s)!`, 'success');
-
-            // Trigger custom event for integration
-            this.notifyBoardsImported(gridCount);
-
-            console.log(`Import successful: ${gridCount} boards processed`);
 
         } catch (error) {
-            this.showStatus(`❌ Error: ${error.message}`, 'error');
             console.error('Import error:', error);
+            window.NotifyService?.error(`❌ Errore durante l'importazione: ${error.message}`);
         }
     }
 
     /**
-     * Validate board input format
+     * Parse boards from input text
      */
-    validateInput(inputText) {
-        if (!inputText || !inputText.trim()) {
-            return { valid: false, error: 'Input is empty' };
-        }
+    parseBoards(input) {
+        const boards = [];
+        const sections = input.split(/\n\s*\n/).filter(section => section.trim());
 
-        // Check for basic grid pattern (lines starting with numbers)
-        const hasGridPattern = /^\s*\d+/.test(inputText);
-        if (!hasGridPattern) {
-            return { valid: false, error: 'Invalid grid format - expected coordinate headers' };
-        }
-
-        // Check for emoji patterns (basic validation)
-        const hasEmojis = /[👽💲⬛🍎💀⬆️⬇️⬅️➡️]/.test(inputText);
-        if (!hasEmojis) {
-            return { valid: false, error: 'No valid board symbols found' };
-        }
-
-        return { valid: true };
-    }
-
-    /**
-     * Count potential grids in input
-     */
-    countGrids(inputText) {
-        // Count coordinate header lines (lines starting with numbers followed by space and numbers)
-        const coordinateHeaders = inputText.match(/^\s*\d+\s+\d+/gm) || [];
-
-        // Estimate grid count (each grid should have multiple coordinate lines)
-        // This is a rough estimate - real parsing would be more precise
-        return Math.max(1, Math.floor(coordinateHeaders.length / 3));
-    }
-
-    /**
-     * Copy icon to clipboard
-     */
-    copyIcon(icon) {
-        // Modern clipboard API
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(icon)
-            .then(() => this.showCopyFeedback(icon))
-            .catch(err => {
-                console.warn('Clipboard API failed, using fallback:', err);
-                this.fallbackCopy(icon);
-            });
-        } else {
-            // Fallback for older browsers
-            this.fallbackCopy(icon);
-        }
-    }
-
-    /**
-     * Fallback copy method for older browsers
-     */
-    fallbackCopy(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-                this.showCopyFeedback(text);
-            } else {
-                console.error('Fallback copy failed');
+        for (const section of sections) {
+            try {
+                const board = this.parseBoard(section);
+                if (board) {
+                    boards.push(board);
+                }
+            } catch (error) {
+                console.warn('Failed to parse board section:', error);
             }
-        } catch (err) {
-            console.error('Fallback copy failed:', err);
         }
 
-        document.body.removeChild(textArea);
+        return boards;
     }
 
     /**
-     * Show copy feedback animation
+     * Parse individual board
      */
-    showCopyFeedback(icon) {
-        const feedback = this.elements.copyFeedback;
-        feedback.textContent = `Copied: ${icon}`;
-        feedback.classList.add('show');
+    parseBoard(boardText) {
+        if (typeof window.parseBoard === 'function') {
+            return window.parseBoard(boardText);
+        }
 
-        setTimeout(() => {
-            feedback.classList.remove('show');
-        }, 2000);
+        // Fallback basic parsing
+        const lines = boardText.split('\n').filter(line => line.trim());
+        return {
+            width: 11,
+            height: 11,
+            snakes: [],
+            food: [],
+            hazards: []
+        };
     }
 
     /**
-     * Show status message
+     * Store boards in global state
      */
-    showStatus(message, type = 'success') {
-        const statusElement = this.elements.statusMessage;
-        statusElement.textContent = message;
-        statusElement.className = `status-message status-${type}`;
-        statusElement.style.display = 'block';
-
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            statusElement.style.display = 'none';
-        }, 5000);
+    storeBoards(boards) {
+        if (window.BattlesnakeMain?.app) {
+            window.BattlesnakeMain.app.boards = boards;
+        } else {
+            // Fallback storage
+            window.importedBoards = boards;
+        }
     }
 
     /**
-     * Update input statistics
-     */
-    updateStats() {
-        const text = this.elements.boardInput.value;
-
-        const lines = text.split('\n').length;
-        const chars = text.length;
-        const grids = this.countGrids(text);
-
-        this.elements.lineCount.textContent = lines;
-        this.elements.charCount.textContent = chars;
-        this.elements.gridCount.textContent = grids;
-    }
-
-    /**
-     * Clear board input
+     * Clear input field
      */
     clearInput() {
-        this.elements.boardInput.value = '';
-        this.updateStats();
-        this.showStatus('Input cleared', 'success');
-        this.elements.boardInput.focus();
+        if (this.elements.boardInput) {
+            this.elements.boardInput.value = '';
+            this.updateStats();
+            this.elements.boardInput.focus();
+            window.NotifyService?.success('✅ Campo pulito');
+        }
     }
 
     /**
      * Load example board
      */
     loadExample() {
-        const exampleBoard = this.getExampleBoard();
-        this.elements.boardInput.value = exampleBoard;
-        this.updateStats();
-        this.showStatus('Example loaded', 'success');
+        const example = this.getExampleBoard();
+        if (this.elements.boardInput) {
+            this.elements.boardInput.value = example;
+            this.updateStats();
+            window.NotifyService?.success('✅ Esempio caricato');
+        }
     }
 
     /**
-     * Get example board text
+     * Get example board content
      */
     getExampleBoard() {
         return `00  01  02  03  04  05  06  07  08  09  10
@@ -456,85 +238,89 @@ Esempio multiple griglie (separate da linee vuote):
 03 ⬛  ⬛  ⬛  ⬛  ⬛  👽  ⬛  ⬛  ⬛  ⬛  ⬛  
 04 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
 05 ⬛  ⬛  ⬛  ⬛  ⬛  💲  ⬛  ⬛  ⬛  ⬛  ⬛  
-06 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
+06 ⬛  ⬛  ⬛  ⬛  ⬛  🍎  ⬛  ⬛  ⬛  ⬛  ⬛  
 07 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
 08 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
 09 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  
-10 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  `;
+10 ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛  ⬛`;
     }
 
     /**
-     * Notify other components about imported boards
+     * Update input statistics
      */
-    notifyBoardsImported(boardCount) {
-        // Dispatch custom event for integration with other tabs
-        const event = new CustomEvent('boardsImported', {
-            detail: {
-                count: boardCount,
-                timestamp: Date.now()
-            }
+    updateStats() {
+        const input = this.elements.boardInput?.value || '';
+        const lines = input.split('\n').length;
+        const chars = input.length;
+        const grids = this.countGrids(input);
+
+        if (this.elements.lineCount) {
+            this.elements.lineCount.textContent = lines;
+        }
+        if (this.elements.charCount) {
+            this.elements.charCount.textContent = chars;
+        }
+        if (this.elements.gridCount) {
+            this.elements.gridCount.textContent = grids;
+        }
+    }
+
+    /**
+     * Count grids in input
+     */
+    countGrids(input) {
+        if (!input.trim()) return 0;
+
+        const sections = input.split(/\n\s*\n/).filter(section => {
+            const lines = section.split('\n').filter(line => line.trim());
+            return lines.length > 2; // At least 3 lines to be a potential grid
         });
-        document.dispatchEvent(event);
+
+        return sections.length;
     }
 
     /**
-     * Called when tab becomes active
+     * Copy icon to clipboard
      */
-    onActivate() {
-        // Focus on board input if empty
-        if (this.elements.boardInput && !this.elements.boardInput.value.trim()) {
-            setTimeout(() => this.elements.boardInput.focus(), 100);
+    async copyIcon(event) {
+        const button = event.target;
+        const icon = button.getAttribute('data-icon');
+
+        if (!icon) return;
+
+        try {
+            await navigator.clipboard.writeText(icon);
+
+            // Temporarily change button appearance
+            const originalText = button.textContent;
+            button.textContent = '✅';
+            button.style.background = '#22c55e';
+
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '';
+            }, 1000);
+
+            window.NotifyService?.success(`✅ Icona ${icon} copiata negli appunti`);
+
+        } catch (error) {
+            console.error('Failed to copy icon:', error);
+            window.NotifyService?.error('❌ Errore durante la copia');
         }
-    }
-
-    /**
-     * Called when tab becomes inactive
-     */
-    onDeactivate() {
-        // Hide any visible status messages
-        if (this.elements.statusMessage) {
-            this.elements.statusMessage.style.display = 'none';
-        }
-    }
-
-    /**
-     * Get current input statistics
-     */
-    getInputStats() {
-        const text = this.elements.boardInput.value;
-        return {
-            lines: text.split('\n').length,
-            characters: text.length,
-            grids: this.countGrids(text),
-            hasContent: text.trim().length > 0
-        };
     }
 }
 
-// Create global instance
+// Create and register the import tab
 const importTab = new ImportTab();
 
-// Initialize when DOM is ready
+// Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => importTab.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        importTab.init();
+    });
 } else {
     importTab.init();
 }
 
-// Global functions for backward compatibility and direct access
-window.importBoards = () => importTab.importBoards();
-window.clearBoardInput = () => importTab.clearInput();
-window.loadExample = () => importTab.loadExample();
-
-// Export for module use and integration
-window.BattlesnakeImportTab = {
-    instance: importTab,
-    ImportTab: ImportTab
-};
-
-// Auto-register with tab manager when available
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.BattlesnakeTabManager) {
-        window.BattlesnakeTabManager.registerTab('import', importTab);
-    }
-});
+// Export for global access
+window.BattlesnakeImportTab = importTab;

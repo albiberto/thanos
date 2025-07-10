@@ -1,6 +1,7 @@
 ﻿/**
  * Battlesnake Board Converter - Formatter Tab JavaScript
  * Handles JSON list formatting, validation, and export functionality
+ * Updated: HTML moved to formatter-tab.html, uses global NotifyService
  */
 
 class FormatterTab {
@@ -16,150 +17,19 @@ class FormatterTab {
     init() {
         if (this.initialized) return;
 
-        this.loadHTML().then(() => {
-            this.cacheElements();
-            this.setupEventListeners();
-            this.updateStats();
-            this.initialized = true;
-            console.log('FormatterTab initialized');
-        }).catch(error => {
-            console.error('Failed to initialize FormatterTab:', error);
-        });
-    }
-
-    /**
-     * Load the HTML content for the formatter tab
-     */
-    async loadHTML() {
+        // Check if HTML is already loaded
         const formatterTab = document.getElementById('formatter-tab');
         if (!formatterTab) {
-            throw new Error('Formatter tab container not found');
+            console.error('Formatter tab container not found');
+            return;
         }
 
-        // HTML content for the formatter tab
-        const htmlContent = `
-            <div class="formatter-content">
-                <!-- JSON Input Section -->
-                <div class="formatter-section">
-                    <h2>📝 JSON List Input</h2>
-                    
-                    <div class="hint">
-                        <div class="hint-title">📋 Formato richiesto:</div>
-                        Incolla qui una lista di JSON (array) da formattare con body inline per i test Battlesnake
-                    </div>
-
-                    <div class="quick-actions">
-                        <button class="quick-action-btn" id="prettifyBtn">🎨 Prettify</button>
-                        <button class="quick-action-btn" id="minifyBtn">📦 Minify</button>
-                        <button class="quick-action-btn" id="clearJsonBtn">🗑️ Clear</button>
-                        <button class="quick-action-btn" id="exampleJsonBtn">📋 Example</button>
-                    </div>
-
-                    <div class="json-input-container">
-                        <textarea 
-                            id="jsonListInput" 
-                            class="json-input" 
-                            placeholder="Incolla qui la lista di JSON...
-
-Esempio:
-[
-  {
-    &quot;Id&quot;: 127,
-    &quot;Name&quot;: &quot;Test Movement Up&quot;,
-    &quot;Expected&quot;: 1,
-    &quot;MoveRequest&quot;: {
-      &quot;game&quot;: {
-        &quot;id&quot;: &quot;test-game&quot;,
-        &quot;ruleset&quot;: {
-          &quot;name&quot;: &quot;standard&quot;
-        }
-      },
-      &quot;turn&quot;: 1,
-      &quot;board&quot;: {
-        &quot;height&quot;: 11,
-        &quot;width&quot;: 11,
-        &quot;food&quot;: [
-          {&quot;x&quot;: 5, &quot;y&quot;: 4}
-        ],
-        &quot;snakes&quot;: [
-          {
-            &quot;id&quot;: &quot;snake-1&quot;,
-            &quot;name&quot;: &quot;Test Snake&quot;,
-            &quot;health&quot;: 100,
-            &quot;body&quot;: [
-              {&quot;x&quot;: 5, &quot;y&quot;: 5},
-              {&quot;x&quot;: 5, &quot;y&quot;: 6}
-            ],
-            &quot;head&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}
-          }
-        ]
-      },
-      &quot;you&quot;: {
-        &quot;id&quot;: &quot;snake-1&quot;,
-        &quot;name&quot;: &quot;Test Snake&quot;,
-        &quot;health&quot;: 100,
-        &quot;body&quot;: [
-          {&quot;x&quot;: 5, &quot;y&quot;: 5},
-          {&quot;x&quot;: 5, &quot;y&quot;: 6}
-        ],
-        &quot;head&quot;: {&quot;x&quot;: 5, &quot;y&quot;: 5}
-      }
-    }
-  }
-]"></textarea>
-
-                        <div class="input-stats" id="jsonInputStats">
-                            <span>Lines: <span class="stat-number" id="jsonLineCount">0</span></span>
-                            <span>Characters: <span class="stat-number" id="jsonCharCount">0</span></span>
-                            <span>Items: <span class="stat-number" id="jsonItemCount">0</span></span>
-                            <span>Status: <span class="stat-number" id="jsonValidStatus">-</span></span>
-                        </div>
-
-                        <div class="validation-status" id="jsonValidation" style="display: none;"></div>
-                    </div>
-                </div>
-
-                <!-- Controls Section -->
-                <div class="formatter-controls">
-                    <h3>🔧 Formatting Controls</h3>
-                    
-                    <div class="control-row">
-                        <button class="button" id="formatBtn">
-                            🔄 Format JSON List
-                        </button>
-                        <button class="button secondary" id="validateBtn">
-                            ✅ Validate Only
-                        </button>
-                    </div>
-
-                    <div class="format-progress" id="formatProgress">
-                        Processing JSON list...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Formatter Output Section (appears when formatting is done) -->
-            <div class="formatter-output" id="formatterOutput" style="display: none;">
-                <h2>📄 Formatted JSON List</h2>
-                
-                <div class="formatter-output-code" id="formatterCode"></div>
-                
-                <div class="formatter-output-actions">
-                    <button class="button" id="copyFormatterBtn">
-                        📋 Copy to Clipboard
-                    </button>
-                    <button class="button export" id="exportBtn">
-                        💾 Export as File
-                    </button>
-                    <button class="button secondary" id="hideOutputBtn">
-                        🙈 Hide Output
-                    </button>
-                </div>
-            </div>
-        `;
-
-        // Insert the HTML content
-        formatterTab.innerHTML = htmlContent;
+        // HTML should be loaded from formatter-tab.html, just cache elements
+        this.cacheElements();
+        this.setupEventListeners();
+        this.updateStats();
+        this.initialized = true;
+        console.log('FormatterTab initialized');
     }
 
     /**
@@ -184,7 +54,7 @@ Esempio:
             jsonLineCount: document.getElementById('jsonLineCount'),
             jsonCharCount: document.getElementById('jsonCharCount'),
             jsonItemCount: document.getElementById('jsonItemCount'),
-            jsonValidStatus: document.getElementById('jsonValidStatus')
+            jsonStatus: document.getElementById('jsonStatus')
         };
     }
 
@@ -192,320 +62,253 @@ Esempio:
      * Setup all event listeners
      */
     setupEventListeners() {
-        // Main action buttons
+        // Format button
         if (this.elements.formatBtn) {
-            this.elements.formatBtn.addEventListener('click', () => this.formatJSONList());
+            this.elements.formatBtn.addEventListener('click', () => this.formatJSON());
         }
 
+        // Validate button
         if (this.elements.validateBtn) {
-            this.elements.validateBtn.addEventListener('click', () => this.validateOnly());
+            this.elements.validateBtn.addEventListener('click', () => this.validateJSON());
         }
 
-        // Quick action buttons
+        // Prettify button
         if (this.elements.prettifyBtn) {
-            this.elements.prettifyBtn.addEventListener('click', () => this.prettifyInput());
+            this.elements.prettifyBtn.addEventListener('click', () => this.prettifyJSON());
         }
 
+        // Minify button
         if (this.elements.minifyBtn) {
-            this.elements.minifyBtn.addEventListener('click', () => this.minifyInput());
+            this.elements.minifyBtn.addEventListener('click', () => this.minifyJSON());
         }
 
+        // Clear button
         if (this.elements.clearJsonBtn) {
             this.elements.clearJsonBtn.addEventListener('click', () => this.clearInput());
         }
 
+        // Example button
         if (this.elements.exampleJsonBtn) {
             this.elements.exampleJsonBtn.addEventListener('click', () => this.loadExample());
         }
 
-        // Output action buttons
+        // Copy button
         if (this.elements.copyFormatterBtn) {
-            this.elements.copyFormatterBtn.addEventListener('click', () => this.copyFormatterOutput());
+            this.elements.copyFormatterBtn.addEventListener('click', () => this.copyToClipboard());
         }
 
+        // Export button
         if (this.elements.exportBtn) {
-            this.elements.exportBtn.addEventListener('click', () => this.exportFormatted());
+            this.elements.exportBtn.addEventListener('click', () => this.exportJSON());
         }
 
+        // Hide output button
         if (this.elements.hideOutputBtn) {
             this.elements.hideOutputBtn.addEventListener('click', () => this.hideOutput());
         }
 
-        // Input change handlers with debouncing
+        // Input change for live stats and validation
         if (this.elements.jsonListInput) {
-            this.elements.jsonListInput.addEventListener('input', () => this.debouncedUpdateStats());
-            this.elements.jsonListInput.addEventListener('paste', () => {
-                setTimeout(() => this.debouncedUpdateStats(), 10);
+            this.elements.jsonListInput.addEventListener('input', () => {
+                this.updateStats();
+                this.debounceValidation();
             });
         }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
-    }
-
-    /**
-     * Handle keyboard shortcuts
-     */
-    handleKeyboardShortcuts(event) {
-        // Only handle shortcuts when formatter tab is active
-        const formatterTab = document.getElementById('formatter-tab');
-        if (!formatterTab || !formatterTab.classList.contains('active')) return;
-
-        // Ctrl/Cmd + Enter to format
-        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-            event.preventDefault();
-            this.formatJSONList();
-        }
-
-        // Ctrl/Cmd + Shift + F to prettify
-        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'F') {
-            event.preventDefault();
-            this.prettifyInput();
-        }
-
-        // Ctrl/Cmd + K to clear
-        if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-            event.preventDefault();
-            this.clearInput();
+        // Register tab with tab manager
+        if (window.BattlesnakeTabManager) {
+            window.BattlesnakeTabManager.registerTab('formatter', {
+                onActivate: () => this.onTabActivate(),
+                onDeactivate: () => this.onTabDeactivate()
+            });
         }
     }
 
     /**
-     * Debounced update stats function
+     * Tab activation handler
      */
-    debouncedUpdateStats() {
-        clearTimeout(this.debounceTimeout);
-        this.debounceTimeout = setTimeout(() => {
-            this.updateStats();
-            this.validateInput();
-        }, 300);
+    onTabActivate() {
+        if (this.elements.jsonListInput) {
+            this.elements.jsonListInput.focus();
+        }
     }
 
     /**
-     * Main format JSON list function
+     * Tab deactivation handler
      */
-    formatJSONList() {
+    onTabDeactivate() {
+        // Cleanup when leaving tab
+    }
+
+    /**
+     * Format JSON with inline body
+     */
+    formatJSON() {
+        const input = this.elements.jsonListInput?.value?.trim();
+
+        if (!input) {
+            window.NotifyService?.error('❌ Inserisci del JSON nel campo di input');
+            return;
+        }
+
         try {
             this.showProgress(true);
+            window.NotifyService?.info('🔄 Formattazione in corso...');
 
-            const inputText = this.elements.jsonListInput.value.trim();
-
-            if (!inputText) {
-                throw new Error('Please enter a JSON list to format');
-            }
-
-            const jsonList = JSON.parse(inputText);
+            // Parse and validate JSON
+            const jsonList = JSON.parse(input);
 
             if (!Array.isArray(jsonList)) {
-                throw new Error('Input must be a JSON array');
+                throw new Error('Input must be an array of JSON objects');
             }
 
-            // Format each item in the list using BattlesnakeCommon if available
-            const formattedList = jsonList.map(item => {
-                if (window.BattlesnakeCommon && window.BattlesnakeCommon.formatSingleJSON) {
-                    return window.BattlesnakeCommon.formatSingleJSON(item);
-                } else {
-                    // Fallback formatting
-                    return this.formatSingleItem(item);
-                }
-            });
+            // Format each item with inline body
+            const formattedList = jsonList.map(item => this.formatItemWithInlineBody(item));
 
-            // Create final formatted output
-            const output = '[\n' + formattedList.map(json =>
-                json.replace(/^/gm, '  ')
-            ).join(',\n') + '\n]';
+            // Generate output
+            const formattedJSON = JSON.stringify(formattedList, null, 2);
 
-            // Display output
-            this.displayFormattedOutput(output);
-            this.showStatus('✅ JSON list formatted successfully!', 'success');
+            // Show output
+            this.showOutput(formattedJSON);
+
+            window.NotifyService?.success(`✅ ${formattedList.length} elementi formattati con successo`);
 
         } catch (error) {
-            this.showStatus(`❌ Error: ${error.message}`, 'error');
-            console.error('Formatting error:', error);
-            this.hideOutput();
+            console.error('Format error:', error);
+            window.NotifyService?.error(`❌ Errore nella formattazione: ${error.message}`);
         } finally {
             this.showProgress(false);
         }
     }
 
     /**
-     * Fallback formatting for single item
+     * Format item with inline body for Battlesnake tests
      */
-    formatSingleItem(item) {
-        return JSON.stringify(item, null, 2);
-    }
-
-    /**
-     * Validate input only (without formatting)
-     */
-    validateOnly() {
-        try {
-            const inputText = this.elements.jsonListInput.value.trim();
-
-            if (!inputText) {
-                throw new Error('Please enter JSON to validate');
-            }
-
-            const parsed = JSON.parse(inputText);
-
-            if (!Array.isArray(parsed)) {
-                throw new Error('Input must be a JSON array');
-            }
-
-            this.showStatus(`✅ Valid JSON array with ${parsed.length} items`, 'success');
-
-        } catch (error) {
-            this.showStatus(`❌ Validation error: ${error.message}`, 'error');
-        }
-    }
-
-    /**
-     * Display formatted output
-     */
-    displayFormattedOutput(output) {
-        if (this.elements.formatterCode && this.elements.formatterOutput) {
-            this.elements.formatterCode.textContent = output;
-            this.elements.formatterOutput.style.display = 'flex';
-
-            // Scroll to output
-            this.elements.formatterOutput.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-    }
-
-    /**
-     * Hide output section
-     */
-    hideOutput() {
-        if (this.elements.formatterOutput) {
-            this.elements.formatterOutput.style.display = 'none';
-        }
-    }
-
-    /**
-     * Copy formatter output to clipboard
-     */
-    copyFormatterOutput() {
-        const content = this.elements.formatterCode.textContent;
-
-        if (!content) {
-            this.showStatus('❌ No output to copy', 'error');
-            return;
+    formatItemWithInlineBody(item) {
+        if (!item.MoveRequest?.board?.snakes) {
+            return item;
         }
 
-        navigator.clipboard.writeText(content)
-        .then(() => {
-            this.showStatus('✅ Copied to clipboard!', 'success');
-            this.animateButton(this.elements.copyFormatterBtn, 'Copied!');
-        })
-        .catch(err => {
-            console.error('Copy failed:', err);
-            this.fallbackCopy(content);
-        });
-    }
+        const formatted = JSON.parse(JSON.stringify(item)); // Deep clone
 
-    /**
-     * Fallback copy method
-     */
-    fallbackCopy(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.select();
+        // Format snakes with inline body
+        formatted.MoveRequest.board.snakes = formatted.MoveRequest.board.snakes.map(snake => ({
+            ...snake,
+            body: snake.body ? JSON.stringify(snake.body) : "[]"
+        }));
 
-        try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-                this.showStatus('✅ Copied to clipboard!', 'success');
-            } else {
-                this.showStatus('❌ Copy failed', 'error');
-            }
-        } catch (err) {
-            this.showStatus('❌ Copy not supported', 'error');
+        // Format 'you' snake if exists
+        if (formatted.MoveRequest.you?.body) {
+            formatted.MoveRequest.you.body = JSON.stringify(formatted.MoveRequest.you.body);
         }
 
-        document.body.removeChild(textArea);
+        return formatted;
     }
 
     /**
-     * Export formatted result as file
+     * Validate JSON only
      */
-    exportFormatted() {
-        const content = this.elements.formatterCode.textContent;
+    validateJSON() {
+        const input = this.elements.jsonListInput?.value?.trim();
 
-        if (!content) {
-            this.showStatus('❌ No output to export', 'error');
+        if (!input) {
+            window.NotifyService?.warning('⚠️ Nessun contenuto da validare');
             return;
         }
 
         try {
-            // Create download link
-            const blob = new Blob([content], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `formatted-battlesnake-tests-${Date.now()}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const parsed = JSON.parse(input);
+            const isArray = Array.isArray(parsed);
+            const itemCount = isArray ? parsed.length : 1;
 
-            this.showStatus('✅ File exported successfully!', 'success');
-            this.animateButton(this.elements.exportBtn, 'Exported!');
+            this.updateValidationStatus(
+                `✅ JSON valido - ${itemCount} elemento${itemCount !== 1 ? 'i' : ''}`,
+                'success'
+            );
+
+            window.NotifyService?.success('✅ JSON valido');
 
         } catch (error) {
-            this.showStatus('❌ Export failed', 'error');
-            console.error('Export error:', error);
+            this.updateValidationStatus(`❌ JSON non valido: ${error.message}`, 'error');
+            window.NotifyService?.error('❌ JSON non valido');
         }
     }
 
     /**
-     * Prettify JSON input
+     * Debounced validation for live feedback
      */
-    prettifyInput() {
-        try {
-            const inputText = this.elements.jsonListInput.value.trim();
-            if (!inputText) {
-                this.showStatus('❌ No JSON to prettify', 'error');
-                return;
-            }
+    debounceValidation() {
+        if (this.debounceTimeout) {
+            clearTimeout(this.debounceTimeout);
+        }
 
-            const parsed = JSON.parse(inputText);
+        this.debounceTimeout = setTimeout(() => {
+            this.validateInput();
+        }, 500);
+    }
+
+    /**
+     * Validate input for live feedback
+     */
+    validateInput() {
+        const input = this.elements.jsonListInput?.value?.trim();
+
+        if (!input) {
+            this.clearValidationStatus();
+            return;
+        }
+
+        try {
+            JSON.parse(input);
+            this.updateValidationStatus('✅ JSON valido', 'success');
+        } catch (error) {
+            this.updateValidationStatus('❌ JSON non valido', 'error');
+        }
+    }
+
+    /**
+     * Prettify JSON
+     */
+    prettifyJSON() {
+        const input = this.elements.jsonListInput?.value?.trim();
+
+        if (!input) {
+            window.NotifyService?.error('❌ Nessun contenuto da formattare');
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(input);
             const prettified = JSON.stringify(parsed, null, 2);
             this.elements.jsonListInput.value = prettified;
             this.updateStats();
-            this.validateInput();
-            this.showStatus('✅ JSON prettified!', 'success');
+            window.NotifyService?.success('✅ JSON formattato');
 
         } catch (error) {
-            this.showStatus('❌ Invalid JSON for prettifying', 'error');
+            window.NotifyService?.error('❌ JSON non valido per la formattazione');
         }
     }
 
     /**
-     * Minify JSON input
+     * Minify JSON
      */
-    minifyInput() {
-        try {
-            const inputText = this.elements.jsonListInput.value.trim();
-            if (!inputText) {
-                this.showStatus('❌ No JSON to minify', 'error');
-                return;
-            }
+    minifyJSON() {
+        const input = this.elements.jsonListInput?.value?.trim();
 
-            const parsed = JSON.parse(inputText);
+        if (!input) {
+            window.NotifyService?.error('❌ Nessun contenuto da comprimere');
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(input);
             const minified = JSON.stringify(parsed);
             this.elements.jsonListInput.value = minified;
             this.updateStats();
-            this.validateInput();
-            this.showStatus('✅ JSON minified!', 'success');
+            window.NotifyService?.success('✅ JSON compresso');
 
         } catch (error) {
-            this.showStatus('❌ Invalid JSON for minifying', 'error');
+            window.NotifyService?.error('❌ JSON non valido per la compressione');
         }
     }
 
@@ -513,12 +316,14 @@ Esempio:
      * Clear input
      */
     clearInput() {
-        this.elements.jsonListInput.value = '';
-        this.updateStats();
-        this.clearValidationStatus();
-        this.hideOutput();
-        this.showStatus('✅ Input cleared', 'success');
-        this.elements.jsonListInput.focus();
+        if (this.elements.jsonListInput) {
+            this.elements.jsonListInput.value = '';
+            this.updateStats();
+            this.clearValidationStatus();
+            this.hideOutput();
+            this.elements.jsonListInput.focus();
+            window.NotifyService?.success('✅ Campo pulito');
+        }
     }
 
     /**
@@ -526,10 +331,12 @@ Esempio:
      */
     loadExample() {
         const exampleJSON = this.getExampleJSON();
-        this.elements.jsonListInput.value = exampleJSON;
-        this.updateStats();
-        this.validateInput();
-        this.showStatus('✅ Example loaded', 'success');
+        if (this.elements.jsonListInput) {
+            this.elements.jsonListInput.value = exampleJSON;
+            this.updateStats();
+            this.validateInput();
+            window.NotifyService?.success('✅ Esempio caricato');
+        }
     }
 
     /**
@@ -588,169 +395,132 @@ Esempio:
         "shout": ""
       }
     }
-  },
-  {
-    "Id": 128,
-    "Name": "Test Movement Down",
-    "Expected": 2,
-    "MoveRequest": {
-      "game": {
-        "id": "test-game-id-2",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 1,
-      "board": {
-        "height": 11,
-        "width": 11,
-        "food": [
-          {"x": 5, "y": 6}
-        ],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "snake-2",
-            "name": "Test Snake 2",
-            "health": 100,
-            "body": [
-              {"x": 5, "y": 5},
-              {"x": 5, "y": 4}
-            ],
-            "head": {"x": 5, "y": 5},
-            "length": 2,
-            "latency": "0",
-            "shout": ""
-          }
-        ]
-      },
-      "you": {
-        "id": "snake-2",
-        "name": "Test Snake 2",
-        "health": 100,
-        "body": [
-          {"x": 5, "y": 5},
-          {"x": 5, "y": 4}
-        ],
-        "head": {"x": 5, "y": 5},
-        "length": 2,
-        "latency": "0",
-        "shout": ""
-      }
-    }
   }
 ]`;
     }
 
     /**
-     * Update input statistics
+     * Update statistics
      */
     updateStats() {
-        const text = this.elements.jsonListInput.value;
-        const stats = this.getInputStats(text);
-
-        this.elements.jsonLineCount.textContent = stats.lines;
-        this.elements.jsonCharCount.textContent = stats.chars;
-        this.elements.jsonItemCount.textContent = stats.items;
-
-        // Update status with color coding
-        const statusElement = this.elements.jsonValidStatus;
-        if (stats.valid) {
-            statusElement.textContent = 'Valid';
-            statusElement.className = 'stat-number stat-valid';
-        } else if (text.trim()) {
-            statusElement.textContent = 'Invalid';
-            statusElement.className = 'stat-number stat-invalid';
-        } else {
-            statusElement.textContent = '-';
-            statusElement.className = 'stat-number';
-        }
-    }
-
-    /**
-     * Get input statistics
-     */
-    getInputStats(text) {
-        const lines = text.split('\n').length;
-        const chars = text.length;
+        const input = this.elements.jsonListInput?.value || '';
+        const lines = input.split('\n').length;
+        const chars = input.length;
+        let itemCount = 0;
 
         try {
-            const parsed = JSON.parse(text);
-            const items = Array.isArray(parsed) ? parsed.length : 1;
-            return { lines, chars, items, valid: true };
-        } catch {
-            return { lines, chars, items: 0, valid: false };
+            if (input.trim()) {
+                const parsed = JSON.parse(input);
+                itemCount = Array.isArray(parsed) ? parsed.length : 1;
+            }
+        } catch (error) {
+            // Invalid JSON, keep count at 0
+        }
+
+        if (this.elements.jsonLineCount) {
+            this.elements.jsonLineCount.textContent = lines;
+        }
+        if (this.elements.jsonCharCount) {
+            this.elements.jsonCharCount.textContent = chars;
+        }
+        if (this.elements.jsonItemCount) {
+            this.elements.jsonItemCount.textContent = itemCount;
+        }
+        if (this.elements.jsonStatus) {
+            this.elements.jsonStatus.textContent = input.trim() ? 'Contenuto presente' : 'Vuoto';
         }
     }
 
     /**
-     * Validate input and show status
+     * Show output section
      */
-    validateInput() {
-        const inputText = this.elements.jsonListInput.value.trim();
+    showOutput(content) {
+        if (this.elements.formatterOutput && this.elements.formatterCode) {
+            this.elements.formatterCode.textContent = content;
+            this.elements.formatterOutput.style.display = 'block';
 
-        if (!inputText) {
-            this.clearValidationStatus();
-            this.updateInputStyle('normal');
+            // Scroll to output
+            this.elements.formatterOutput.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    }
+
+    /**
+     * Hide output section
+     */
+    hideOutput() {
+        if (this.elements.formatterOutput) {
+            this.elements.formatterOutput.style.display = 'none';
+        }
+    }
+
+    /**
+     * Copy formatted JSON to clipboard
+     */
+    async copyToClipboard() {
+        const content = this.elements.formatterCode?.textContent;
+
+        if (!content) {
+            window.NotifyService?.error('❌ Nessun contenuto da copiare');
             return;
         }
 
         try {
-            const parsed = JSON.parse(inputText);
+            await navigator.clipboard.writeText(content);
 
-            if (!Array.isArray(parsed)) {
-                this.showValidationError('Must be a JSON array');
-                this.updateInputStyle('error');
-                return;
-            }
-
-            this.showValidationSuccess(`Valid array with ${parsed.length} items`);
-            this.updateInputStyle('valid');
+            // Animate button
+            this.animateButton(this.elements.copyFormatterBtn, '✅ Copiato!');
+            window.NotifyService?.success('✅ JSON copiato negli appunti');
 
         } catch (error) {
-            this.showValidationError(`Invalid JSON: ${error.message}`);
-            this.updateInputStyle('error');
+            console.error('Failed to copy:', error);
+            window.NotifyService?.error('❌ Errore durante la copia');
         }
     }
 
     /**
-     * Update input styling based on validation
+     * Export JSON as file
      */
-    updateInputStyle(type) {
-        const input = this.elements.jsonListInput;
-        input.classList.remove('error', 'valid');
+    exportJSON() {
+        const content = this.elements.formatterCode?.textContent;
 
-        if (type === 'error') {
-            input.classList.add('error');
-        } else if (type === 'valid') {
-            input.classList.add('valid');
+        if (!content) {
+            window.NotifyService?.error('❌ Nessun contenuto da esportare');
+            return;
         }
-    }
 
-    /**
-     * Show validation success message
-     */
-    showValidationSuccess(message) {
-        this.updateValidationStatus(message, 'success');
-    }
+        try {
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
 
-    /**
-     * Show validation error message
-     */
-    showValidationError(message) {
-        this.updateValidationStatus(message, 'error');
+            link.href = url;
+            link.download = `battlesnake-tests-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(url);
+
+            window.NotifyService?.success('✅ File esportato');
+
+        } catch (error) {
+            console.error('Export error:', error);
+            window.NotifyService?.error('❌ Errore durante l\'esportazione');
+        }
     }
 
     /**
      * Update validation status display
      */
     updateValidationStatus(message, type) {
-        const statusElement = this.elements.jsonValidation;
-        statusElement.textContent = message;
-        statusElement.className = `validation-status validation-${type}`;
-        statusElement.style.display = 'block';
+        if (this.elements.jsonValidation) {
+            this.elements.jsonValidation.textContent = message;
+            this.elements.jsonValidation.className = `validation-status validation-${type}`;
+            this.elements.jsonValidation.style.display = 'block';
+        }
     }
 
     /**
@@ -777,19 +547,6 @@ Esempio:
     }
 
     /**
-     * Show status message
-     */
-    showStatus(message, type = 'success') {
-        // Use BattlesnakeCommon if available
-        if (window.BattlesnakeCommon && window.BattlesnakeCommon.showStatus) {
-            window.BattlesnakeCommon.showStatus(message, type === 'error');
-        } else {
-            // Fallback to console
-            console.log(`${type.toUpperCase()}: ${message}`);
-        }
-    }
-
-    /**
      * Animate button with temporary text
      */
     animateButton(button, tempText) {
@@ -804,61 +561,19 @@ Esempio:
             button.style.background = '';
         }, 2000);
     }
-
-    /**
-     * Called when tab becomes active
-     */
-    onActivate() {
-        // Focus on input if empty
-        if (this.elements.jsonListInput && !this.elements.jsonListInput.value.trim()) {
-            setTimeout(() => this.elements.jsonListInput.focus(), 100);
-        }
-    }
-
-    /**
-     * Called when tab becomes inactive
-     */
-    onDeactivate() {
-        // Clear any visible status messages
-        this.clearValidationStatus();
-    }
-
-    /**
-     * Get current formatter state
-     */
-    getFormatterState() {
-        return {
-            hasInput: this.elements.jsonListInput.value.trim().length > 0,
-            hasOutput: this.elements.formatterOutput.style.display !== 'none',
-            isValid: this.getInputStats(this.elements.jsonListInput.value).valid,
-            stats: this.getInputStats(this.elements.jsonListInput.value)
-        };
-    }
 }
 
-// Create global instance
+// Create and register the formatter tab
 const formatterTab = new FormatterTab();
 
-// Initialize when DOM is ready
+// Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => formatterTab.init());
+    document.addEventListener('DOMContentLoaded', () => {
+        formatterTab.init();
+    });
 } else {
     formatterTab.init();
 }
 
-// Global functions for backward compatibility
-window.formatJSONList = () => formatterTab.formatJSONList();
-window.copyFormatterOutput = () => formatterTab.copyFormatterOutput();
-
-// Export for module use and integration
-window.BattlesnakeFormatterTab = {
-    instance: formatterTab,
-    FormatterTab: FormatterTab
-};
-
-// Auto-register with tab manager when available
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.BattlesnakeTabManager) {
-        window.BattlesnakeTabManager.registerTab('formatter', formatterTab);
-    }
-});
+// Export for global access
+window.BattlesnakeFormatterTab = formatterTab;
