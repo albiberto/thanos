@@ -5,6 +5,9 @@
         this._input = null;
         this._eventListener = null;
         this.initialized = false;
+
+        // JSON formatter instance
+        this.jsonFormatter = null;
     }
 
     // Getter che trova l'elemento quando necessario
@@ -87,6 +90,11 @@
             return;
         }
 
+        if (!this.jsonFormatter) {
+            this.notify.error('JSON Formatter non inizializzato');
+            return;
+        }
+
         try {
             // Parse JSON
             const jsonList = JSON.parse(this.input.value);
@@ -95,11 +103,11 @@
                 throw new Error('Input deve essere un array di oggetti JSON');
             }
 
-            // Format each item with inline body per Battlesnake
-            const formattedList = jsonList.map(item => this.formatItemWithInlineBody(item));
+            // Format each item with inline body using shared formatter
+            const formattedList = this.jsonFormatter.formatTests(jsonList);
 
             // Generate output
-            const formattedJSON = JSON.stringify(formattedList, null, 2);
+            const formattedJSON = this.jsonFormatter.toJSON(formattedList);
 
             // Show output
             this.showOutput(formattedJSON);
@@ -110,28 +118,6 @@
             console.error('Format error:', error);
             this.notify.error(`Errore nella formattazione: ${error.message}`);
         }
-    }
-
-    // Format item with inline body for Battlesnake tests
-    formatItemWithInlineBody(item) {
-        if (!item.MoveRequest?.board?.snakes) {
-            return item;
-        }
-
-        const formatted = JSON.parse(JSON.stringify(item)); // Deep clone
-
-        // Format snakes with inline body
-        formatted.MoveRequest.board.snakes = formatted.MoveRequest.board.snakes.map(snake => ({
-            ...snake,
-            body: snake.body ? JSON.stringify(snake.body) : "[]"
-        }));
-
-        // Format 'you' snake if exists
-        if (formatted.MoveRequest.you?.body) {
-            formatted.MoveRequest.you.body = JSON.stringify(formatted.MoveRequest.you.body);
-        }
-
-        return formatted;
     }
 
     // Validate JSON
@@ -424,6 +410,14 @@
     // Initialize
     initialize() {
         console.log('🔧 Inizializzazione FormatterTabManager...');
+
+        // Initialize JSON formatter
+        if (window.BattlesnakeJsonFormatter) {
+            this.jsonFormatter = new window.BattlesnakeJsonFormatter();
+            console.log('✅ JSON Formatter initialized');
+        } else {
+            console.error('❌ BattlesnakeJsonFormatter not found');
+        }
 
         this.resetCache();
 
