@@ -1,20 +1,29 @@
 ﻿/**
- * Process Tab - Unobtrusive JavaScript
- * Works with existing HTML structure without creating DOM elements
- * Updated: Uses global NotifyService, no individual notifications
+ * Process Tab - Complete Grid Processing and Display
+ * File: js/tabs/process-tab.js
+ * Loads grids from localStorage and displays them in a structured way
  */
-class ProcessTab {
-    constructor() {
-        this.processors = [];
-        this.filteredProcessors = [];
-        this.currentProcessor = null;
-        this.refreshInterval = null;
-        this.autoRefreshEnabled = true;
+class ProcessTabManager {
+    constructor(containerId, notifyService) {
+        this.containerId = containerId;
+        this.notify = notifyService;
+        this.grids = [];
+        this.filteredGrids = [];
+        this.currentFilter = { status: '', size: '', search: '' };
         this.initialized = false;
+        this.processingQueue = [];
+
+        // Storage key per le griglie (deve essere uguale a ImportTabManager)
+        this.STORAGE_KEY = 'battlesnake_grids';
+    }
+
+    // Getter per il container
+    get container() {
+        return document.getElementById(this.containerId);
     }
 
     /**
-     * Initialize the process tab - unobtrusive approach
+     * Initialize the process tab
      */
     init() {
         if (this.initialized) return;
@@ -33,285 +42,237 @@ class ProcessTab {
     doInit() {
         try {
             this.setupEventListeners();
-            this.loadProcessors();
             this.initialized = true;
-            console.log('ProcessTab initialized (unobtrusive)');
+            console.log('✅ ProcessTabManager initialized');
         } catch (error) {
-            console.error('Failed to initialize ProcessTab:', error);
+            console.error('Failed to initialize ProcessTabManager:', error);
+            this.notify.error('Errore nell\'inizializzazione del Process Tab');
         }
     }
 
     /**
-     * Setup event listeners - unobtrusive approach
+     * Setup event listeners
      */
     setupEventListeners() {
-        // Header controls
-        this.bindEvent('addProcessorBtn', 'click', () => this.showAddProcessorModal());
-        this.bindEvent('refreshBtn', 'click', () => this.refreshProcessors());
+        console.log('✅ Event listeners setup per process tab');
+    }
 
-        // Filters
-        this.bindEvent('statusFilter', 'change', () => this.applyFilters());
-        this.bindEvent('typeFilter', 'change', () => this.applyFilters());
-        this.bindEvent('searchFilter', 'input', () => this.applyFilters());
+    /**
+     * Load grids from localStorage
+     */
+    loadGridsFromStorage() {
+        console.log('📂 Caricamento griglie dal localStorage...');
 
-        // Modal controls
-        this.bindEvent('closeModal', 'click', () => this.hideModal('processorModal'));
-        this.bindEvent('cancelBtn', 'click', () => this.hideModal('processorModal'));
-        this.bindEvent('saveBtn', 'click', () => this.saveProcessor());
-        this.bindEvent('closeDetailsModal', 'click', () => this.hideModal('detailsModal'));
-        this.bindEvent('closeDetailsBtn', 'click', () => this.hideModal('detailsModal'));
+        try {
+            const data = localStorage.getItem(this.STORAGE_KEY);
 
-        // Form submission
-        this.bindEvent('processorForm', 'submit', (e) => {
-            e.preventDefault();
-            this.saveProcessor();
-        });
-
-        // Close modals on backdrop click
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                this.hideModal(e.target.id);
+            if (!data) {
+                this.showNoGridsMessage();
+                return;
             }
-        });
 
-        // Escape key to close modals
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.hideModal('processorModal');
-                this.hideModal('detailsModal');
+            const parsedData = JSON.parse(data);
+
+            if (!parsedData.grids || !Array.isArray(parsedData.grids)) {
+                this.showNoGridsMessage();
+                return;
             }
-        });
 
-        // Register tab with tab manager
-        if (window.BattlesnakeTabManager) {
-            window.BattlesnakeTabManager.registerTab('process', {
-                onActivate: () => this.onTabActivate(),
-                onDeactivate: () => this.onTabDeactivate()
-            });
-        }
-    }
+            this.grids = parsedData.grids;
+            this.filteredGrids = [...this.grids];
 
-    /**
-     * Tab activation handler
-     */
-    onTabActivate() {
-        this.refreshProcessors();
-    }
+            console.log(`✅ ${this.grids.length} griglie caricate`);
+            this.notify.success(`${this.grids.length} griglie caricate dal localStorage`);
 
-    /**
-     * Tab deactivation handler
-     */
-    onTabDeactivate() {
-        this.stopAutoRefresh();
-    }
-
-    /**
-     * Bind event with null safety
-     */
-    bindEvent(elementId, event, handler) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.addEventListener(event, handler);
-        } else {
-            console.warn(`Element not found: ${elementId}`);
-        }
-    }
-
-    /**
-     * Update element text content with null safety
-     */
-    updateText(elementId, text) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.textContent = text;
-        }
-    }
-
-    /**
-     * Update element innerHTML with null safety
-     */
-    updateHTML(elementId, html) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.innerHTML = html;
-        }
-    }
-
-    /**
-     * Show/hide element with null safety
-     */
-    toggleElement(elementId, show) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.style.display = show ? 'block' : 'none';
-        }
-    }
-
-    /**
-     * Load processors data
-     */
-    loadProcessors() {
-        this.showLoading();
-        window.NotifyService?.info('🔄 Caricamento processori...');
-
-        // Simulate API call
-        setTimeout(() => {
-            this.processors = this.generateMockProcessors();
-            this.filteredProcessors = [...this.processors];
-            this.renderProcessors();
+            this.renderGrids();
             this.updateStats();
-            this.hideLoading();
-            this.startAutoRefresh();
 
-            window.NotifyService?.success(`✅ ${this.processors.length} processori caricati`);
-        }, 1000);
+        } catch (error) {
+            console.error('Errore nel caricamento delle griglie:', error);
+            this.notify.error('Errore nel caricamento delle griglie');
+            this.showNoGridsMessage();
+        }
     }
 
     /**
-     * Generate mock processor data
+     * Show message when no grids are available
      */
-    generateMockProcessors() {
-        const types = ['data', 'image', 'text', 'queue'];
-        const statuses = ['active', 'idle', 'processing', 'error'];
-        const priorities = ['low', 'medium', 'high'];
-
-        const processorNames = [
-            'Data Aggregator', 'Image Optimizer', 'Text Analyzer', 'Queue Manager',
-            'File Processor', 'Media Converter', 'Log Parser', 'Cache Handler',
-            'Backup Service', 'Index Builder', 'Report Generator', 'Sync Engine'
-        ];
-
-        const descriptions = [
-            'Elabora e aggrega dati da multiple sorgenti',
-            'Ottimizza e ridimensiona immagini automaticamente',
-            'Analizza contenuti testuali e estrae metadati',
-            'Gestisce code di elaborazione distribuita',
-            'Processa file caricati dagli utenti',
-            'Converte file multimediali in diversi formati',
-            'Analizza log di sistema e genera report',
-            'Gestisce cache distribuita per performance',
-            'Esegue backup automatici del sistema',
-            'Costruisce indici per ricerca full-text',
-            'Genera report periodici automatizzati',
-            'Sincronizza dati tra sistemi esterni'
-        ];
-
-        return processorNames.map((name, index) => ({
-            id: index + 1,
-            name,
-            type: types[index % types.length],
-            status: statuses[Math.floor(Math.random() * statuses.length)],
-            description: descriptions[index],
-            priority: priorities[Math.floor(Math.random() * priorities.length)],
-            autoStart: Math.random() > 0.3,
-            metrics: {
-                cpu: Math.floor(Math.random() * 100),
-                memory: Math.floor(Math.random() * 100),
-                tasks: Math.floor(Math.random() * 50)
-            },
-            created: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-            lastActive: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000)
-        }));
-    }
-
-    /**
-     * Render processors list
-     */
-    renderProcessors() {
-        const container = document.getElementById('processorsContainer');
+    showNoGridsMessage() {
+        const container = document.getElementById('processorsList');
         if (!container) return;
 
-        if (this.filteredProcessors.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <h4 class="alert-heading">📭 Nessuna griglia trovata</h4>
+                    <p>Non ci sono griglie da processare. Vai al tab Import per importare delle griglie.</p>
+                    <hr>
+                    <button class="btn btn-outline-primary" onclick="window.snake.tabManager.switchTab('import')">
+                        📥 Vai al Tab Import
+                    </button>
+                </div>
+            </div>
+        `;
+
+        this.updateStatsEmpty();
+    }
+
+    /**
+     * Render grids in the UI
+     */
+    renderGrids() {
+        const container = document.getElementById('processorsList');
+        if (!container) return;
+
+        if (this.filteredGrids.length === 0) {
             container.innerHTML = `
-                <div class="no-processors">
-                    <div class="no-processors-icon">📭</div>
-                    <div class="no-processors-text">Nessun processore trovato</div>
+                <div class="col-12">
+                    <div class="alert alert-warning text-center">
+                        <h5>🔍 Nessuna griglia trovata con i filtri correnti</h5>
+                        <button class="btn btn-outline-secondary" onclick="window.snake.processTabManager.clearFilters()">
+                            🗑️ Pulisci Filtri
+                        </button>
+                    </div>
                 </div>
             `;
             return;
         }
 
-        const typeLabels = {
-            data: 'Data Processor',
-            image: 'Image Processor',
-            text: 'Text Processor',
-            queue: 'Queue Processor'
-        };
+        const gridsHTML = this.filteredGrids.map(grid => this.renderGridCard(grid)).join('');
+        container.innerHTML = gridsHTML;
 
-        const statusLabels = {
-            active: 'Attivo',
-            idle: 'Inattivo',
-            processing: 'In Elaborazione',
-            error: 'Errore'
-        };
+        // Bind grid actions after rendering
+        this.bindGridActions();
+    }
 
-        const processorsHTML = this.filteredProcessors.map(processor => `
-            <div class="processor-card" data-status="${processor.status}" data-id="${processor.id}">
-                <div class="processor-header">
-                    <div class="processor-info">
-                        <h3 class="processor-name">${this.escapeHtml(processor.name)}</h3>
-                        <div class="processor-type">${typeLabels[processor.type]}</div>
+    /**
+     * Render a single grid card
+     */
+    renderGridCard(grid) {
+        const statusBadge = this.getStatusBadge(grid.status);
+        const sizeLabel = this.getSizeLabel(grid.width, grid.height);
+        const analysisText = this.getAnalysisText(grid.analysis);
+
+        return `
+            <div class="col-lg-6 col-xl-4">
+                <div class="card h-100 border-2 grid-card" data-status="${grid.status}" data-id="${grid.id}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0 fw-semibold">Griglia ${grid.index}</h6>
+                        ${statusBadge}
                     </div>
-                    <div class="processor-status ${processor.status}">
-                        ${statusLabels[processor.status]}
+                    <div class="card-body d-flex flex-column">
+                        <p class="card-text small text-muted mb-2">${sizeLabel}</p>
+                        <p class="card-text small mb-3">${analysisText}</p>
+
+                        <!-- Grid Preview -->
+                        <div class="mb-3 p-2 bg-light border rounded">
+                            <div class="small text-muted mb-1">Anteprima:</div>
+                            <div class="grid-preview" style="font-family: monospace; font-size: 10px; line-height: 1.2; max-height: 80px; overflow: hidden;">
+                                ${this.renderGridPreview(grid.cells)}
+                            </div>
+                        </div>
+
+                        <!-- Metrics -->
+                        <div class="row g-2 mb-3 text-center">
+                            <div class="col-4">
+                                <div class="fw-semibold">${grid.width}×${grid.height}</div>
+                                <div class="small text-muted">Dimensioni</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-semibold">${grid.analysis.mySnakeLength || 0}</div>
+                                <div class="small text-muted">Mio Snake</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-semibold">${grid.analysis.totalEnemies || 0}</div>
+                                <div class="small text-muted">Nemici</div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex flex-wrap gap-1 mt-auto">
+                            <button class="btn btn-outline-info btn-sm" data-action="view" data-id="${grid.id}">
+                                👁️ Dettagli
+                            </button>
+                            ${this.getActionButtons(grid)}
+                        </div>
                     </div>
-                </div>
-                
-                <div class="processor-description">
-                    ${this.escapeHtml(processor.description)}
-                </div>
-                
-                <div class="processor-metrics">
-                    <div class="metric">
-                        <div class="metric-value">${processor.metrics.cpu}%</div>
-                        <div class="metric-label">CPU</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">${processor.metrics.memory}%</div>
-                        <div class="metric-label">Memoria</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-value">${processor.metrics.tasks}</div>
-                        <div class="metric-label">Tasks</div>
-                    </div>
-                </div>
-                
-                <div class="processor-actions">
-                    ${this.getProcessorActionsHTML(processor)}
                 </div>
             </div>
-        `).join('');
-
-        container.innerHTML = processorsHTML;
-
-        // Bind action buttons after rendering
-        this.bindProcessorActions();
+        `;
     }
 
     /**
-     * Generate processor action buttons HTML
+     * Get action buttons based on grid status
      */
-    getProcessorActionsHTML(processor) {
-        const actions = [];
+    getActionButtons(grid) {
+        let buttons = '';
 
-        if (processor.status === 'idle') {
-            actions.push(`<button class="btn btn-success" data-action="start" data-id="${processor.id}">▶️ Avvia</button>`);
-        } else if (processor.status === 'active' || processor.status === 'processing') {
-            actions.push(`<button class="btn btn-warning" data-action="pause" data-id="${processor.id}">⏸️ Pausa</button>`);
-            actions.push(`<button class="btn btn-danger" data-action="stop" data-id="${processor.id}">⏹️ Stop</button>`);
+        if (grid.status === 'imported') {
+            buttons += `<button class="btn btn-outline-success btn-sm" data-action="process" data-id="${grid.id}">⚙️ Processa</button>`;
+        } else if (grid.status === 'processing') {
+            buttons += `<button class="btn btn-outline-warning btn-sm" disabled>⏳ In corso...</button>`;
+        } else if (grid.status === 'processed') {
+            buttons += `<button class="btn btn-outline-primary btn-sm" data-action="reprocess" data-id="${grid.id}">🔄 Riprocessa</button>`;
         }
 
-        actions.push(`<button class="btn btn-info" data-action="details" data-id="${processor.id}">ℹ️ Dettagli</button>`);
-        actions.push(`<button class="btn btn-secondary" data-action="edit" data-id="${processor.id}">✏️ Modifica</button>`);
+        buttons += `
+            <button class="btn btn-outline-secondary btn-sm" data-action="export" data-id="${grid.id}">💾 Esporta</button>
+            <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${grid.id}">🗑️ Elimina</button>
+        `;
 
-        return actions.join('');
+        return buttons;
     }
 
     /**
-     * Bind processor action buttons
+     * Render grid preview (first 4 rows max)
      */
-    bindProcessorActions() {
-        const container = document.getElementById('processorsContainer');
+    renderGridPreview(cells) {
+        const previewRows = cells.slice(0, 4);
+        return previewRows.map(row => row.join(' ')).join('<br>') +
+            (cells.length > 4 ? '<br>...' : '');
+    }
+
+    /**
+     * Get status badge HTML
+     */
+    getStatusBadge(status) {
+        const badges = {
+            imported: '<span class="badge bg-primary">📥 Importata</span>',
+            processing: '<span class="badge bg-warning text-dark">⚙️ In Elaborazione</span>',
+            processed: '<span class="badge bg-success">✅ Processata</span>',
+            error: '<span class="badge bg-danger">❌ Errore</span>'
+        };
+        return badges[status] || '<span class="badge bg-secondary">❓ Sconosciuto</span>';
+    }
+
+    /**
+     * Get size label
+     */
+    getSizeLabel(width, height) {
+        const size = width * height;
+        if (size <= 100) return `📏 Piccola (${width}×${height})`;
+        if (size <= 400) return `📏 Media (${width}×${height})`;
+        return `📏 Grande (${width}×${height})`;
+    }
+
+    /**
+     * Get analysis text
+     */
+    getAnalysisText(analysis) {
+        const parts = [];
+        if (analysis.myHead) parts.push('👽 Mio snake');
+        if (analysis.totalEnemies > 0) parts.push(`😈 ${analysis.totalEnemies} nemici`);
+        if (analysis.food && analysis.food.length > 0) parts.push(`🍎 ${analysis.food.length} cibo`);
+        if (analysis.hazards && analysis.hazards.length > 0) parts.push(`💀 ${analysis.hazards.length} pericoli`);
+
+        return parts.length > 0 ? parts.join(', ') : 'Griglia vuota';
+    }
+
+    /**
+     * Bind grid action buttons
+     */
+    bindGridActions() {
+        const container = document.getElementById('processorsList');
         if (!container) return;
 
         container.addEventListener('click', (e) => {
@@ -319,102 +280,302 @@ class ProcessTab {
             if (!button) return;
 
             const action = button.getAttribute('data-action');
-            const id = parseInt(button.getAttribute('data-id'));
+            const id = button.getAttribute('data-id');
 
-            this.handleProcessorAction(action, id);
+            this.handleGridAction(action, id);
         });
     }
 
     /**
-     * Handle processor actions
+     * Handle grid actions
      */
-    handleProcessorAction(action, id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (!processor) return;
+    handleGridAction(action, gridId) {
+        const grid = this.grids.find(g => g.id === gridId);
+        if (!grid) {
+            this.notify.error('Griglia non trovata');
+            return;
+        }
+
+        console.log(`🎯 Azione "${action}" su griglia ${grid.index}`);
 
         switch (action) {
-            case 'start':
-                this.startProcessor(id);
+            case 'view':
+                this.viewGridDetails(grid);
                 break;
-            case 'pause':
-                this.pauseProcessor(id);
+            case 'process':
+                this.processGrid(grid);
                 break;
-            case 'stop':
-                this.stopProcessor(id);
+            case 'reprocess':
+                this.reprocessGrid(grid);
                 break;
-            case 'details':
-                this.showProcessorDetails(id);
+            case 'export':
+                this.exportGrid(grid);
                 break;
-            case 'edit':
-                this.editProcessor(id);
+            case 'delete':
+                this.deleteGrid(grid);
                 break;
         }
     }
 
     /**
-     * Start processor
+     * View grid details
      */
-    startProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (processor) {
-            processor.status = 'active';
-            processor.lastActive = new Date();
-            this.renderProcessors();
+    viewGridDetails(grid) {
+        const analysis = grid.analysis;
+        const details = `
+GRIGLIA ${grid.index} - DETTAGLI COMPLETI
+${'='.repeat(40)}
+
+📏 DIMENSIONI:
+• Larghezza: ${grid.width} celle
+• Altezza: ${grid.height} celle  
+• Totale celle: ${analysis.totalCells || (grid.width * grid.height)}
+
+📊 STATUS:
+• Stato: ${this.getStatusText(grid.status)}
+• Importata: ${new Date(grid.importedAt || grid.timestamp).toLocaleString()}
+${grid.processedAt ? `• Processata: ${new Date(grid.processedAt).toLocaleString()}` : ''}
+
+🐍 ANALISI SNAKE:
+• Mia testa: ${analysis.myHead ? `(${analysis.myHead.x}, ${analysis.myHead.y})` : 'Non trovata'}
+• Mio corpo: ${analysis.myBody ? analysis.myBody.length : 0} segmenti
+• Lunghezza totale: ${analysis.mySnakeLength || 0}
+
+😈 NEMICI:
+• Teste nemiche: ${analysis.totalEnemies || 0}
+• Corpi nemici: ${analysis.totalEnemyBodies || 0}
+
+🍎 RISORSE:
+• Cibo disponibile: ${analysis.food ? analysis.food.length : 0}
+• Pericoli: ${analysis.hazards ? analysis.hazards.length : 0}
+• Celle vuote: ${analysis.empty ? analysis.empty.length : 0} (${analysis.emptyPercentage || 0}%)
+
+🎯 DIREZIONI:
+• Indicazioni movimento: ${analysis.directions ? analysis.directions.length : 0}
+
+📝 GRIGLIA COMPLETA:
+${grid.rawText}
+        `;
+
+        // Crea un modal o alert migliorato
+        this.showModal('Dettagli Griglia', details);
+        this.notify.info(`Dettagli griglia ${grid.index} visualizzati`);
+    }
+
+    /**
+     * Show modal with content
+     */
+    showModal(title, content) {
+        // Fallback con alert per ora, in futuro si potrebbe usare un modal Bootstrap
+        alert(`${title}\n\n${content}`);
+    }
+
+    /**
+     * Get status text
+     */
+    getStatusText(status) {
+        const statusTexts = {
+            imported: '📥 Importata',
+            processing: '⚙️ In elaborazione',
+            processed: '✅ Processata',
+            error: '❌ Errore'
+        };
+        return statusTexts[status] || '❓ Sconosciuto';
+    }
+
+    /**
+     * Process grid
+     */
+    processGrid(grid) {
+        if (grid.status === 'processing') {
+            this.notify.warning('Griglia già in elaborazione');
+            return;
+        }
+
+        grid.status = 'processing';
+        this.notify.info(`⚙️ Elaborazione griglia ${grid.index} avviata...`);
+
+        // Simula elaborazione
+        setTimeout(() => {
+            // Simula elaborazione con possibilità di errore (5% di probabilità)
+            if (Math.random() < 0.05) {
+                grid.status = 'error';
+                grid.errorMessage = 'Errore simulato durante l\'elaborazione';
+                this.notify.error(`❌ Errore nell'elaborazione della griglia ${grid.index}`);
+            } else {
+                grid.status = 'processed';
+                grid.processedAt = new Date().toISOString();
+                grid.processingResult = this.generateProcessingResult(grid);
+                this.notify.success(`✅ Griglia ${grid.index} processata con successo`);
+            }
+
+            this.renderGrids();
             this.updateStats();
-            window.NotifyService?.success(`✅ Processore "${processor.name}" avviato`);
+            this.saveGridsToStorage();
+        }, Math.random() * 2000 + 1000); // 1-3 secondi
+
+        this.renderGrids();
+        this.updateStats();
+    }
+
+    /**
+     * Reprocess grid
+     */
+    reprocessGrid(grid) {
+        grid.status = 'imported';
+        delete grid.processedAt;
+        delete grid.processingResult;
+        delete grid.errorMessage;
+
+        this.notify.info(`🔄 Griglia ${grid.index} reimpostata per riprocessamento`);
+        this.processGrid(grid);
+    }
+
+    /**
+     * Generate mock processing result
+     */
+    generateProcessingResult(grid) {
+        return {
+            processedAt: new Date().toISOString(),
+            bestMove: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)],
+            confidence: Math.floor(Math.random() * 100),
+            analysisTime: Math.floor(Math.random() * 500) + 50,
+            strategicValue: Math.floor(Math.random() * 10) + 1
+        };
+    }
+
+    /**
+     * Export grid
+     */
+    exportGrid(grid) {
+        try {
+            const exportData = {
+                ...grid,
+                exportedAt: new Date().toISOString(),
+                exportVersion: '1.0'
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = `battlesnake_grid_${grid.index}_${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(url);
+
+            this.notify.success(`💾 Griglia ${grid.index} esportata con successo`);
+
+        } catch (error) {
+            console.error('Export error:', error);
+            this.notify.error('Errore durante l\'esportazione');
         }
     }
 
     /**
-     * Pause processor
+     * Delete grid
      */
-    pauseProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (processor) {
-            processor.status = 'idle';
-            this.renderProcessors();
+    deleteGrid(grid) {
+        if (confirm(`Sei sicuro di voler eliminare la griglia ${grid.index}?\n\nQuesta azione non può essere annullata.`)) {
+            this.grids = this.grids.filter(g => g.id !== grid.id);
+            this.applyFilters();
             this.updateStats();
-            window.NotifyService?.info(`⏸️ Processore "${processor.name}" in pausa`);
+            this.saveGridsToStorage();
+            this.notify.success(`🗑️ Griglia ${grid.index} eliminata`);
         }
     }
 
     /**
-     * Stop processor
+     * Process all grids
      */
-    stopProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (processor) {
-            processor.status = 'idle';
-            processor.metrics.cpu = 0;
-            processor.metrics.memory = 0;
-            processor.metrics.tasks = 0;
-            this.renderProcessors();
-            this.updateStats();
-            window.NotifyService?.warning(`⏹️ Processore "${processor.name}" fermato`);
+    processAllGrids() {
+        const pendingGrids = this.grids.filter(g => g.status === 'imported');
+
+        if (pendingGrids.length === 0) {
+            this.notify.warning('Nessuna griglia da processare');
+            return;
+        }
+
+        if (!confirm(`Vuoi processare tutte le ${pendingGrids.length} griglie in attesa?\n\nQuesta operazione potrebbe richiedere alcuni minuti.`)) {
+            return;
+        }
+
+        this.notify.info(`⚙️ Avvio elaborazione di ${pendingGrids.length} griglie...`);
+
+        // Mostra progress bar
+        this.showProgressBar(true);
+
+        let processed = 0;
+        const total = pendingGrids.length;
+
+        // Aggiorna progress bar
+        this.updateProgress(0, total);
+
+        pendingGrids.forEach((grid, index) => {
+            setTimeout(() => {
+                // Simula elaborazione
+                if (Math.random() < 0.05) {
+                    grid.status = 'error';
+                    grid.errorMessage = 'Errore durante elaborazione batch';
+                } else {
+                    grid.status = 'processed';
+                    grid.processedAt = new Date().toISOString();
+                    grid.processingResult = this.generateProcessingResult(grid);
+                }
+
+                processed++;
+                this.updateProgress(processed, total);
+
+                if (processed === total) {
+                    const successful = pendingGrids.filter(g => g.status === 'processed').length;
+                    const errors = pendingGrids.filter(g => g.status === 'error').length;
+
+                    this.renderGrids();
+                    this.updateStats();
+                    this.saveGridsToStorage();
+                    this.showProgressBar(false);
+
+                    this.notify.success(`✅ Elaborazione completata: ${successful} successi, ${errors} errori`);
+                }
+            }, index * 500); // Stagger processing
+        });
+
+        // Update UI immediately to show processing status
+        pendingGrids.forEach(grid => grid.status = 'processing');
+        this.renderGrids();
+        this.updateStats();
+    }
+
+    /**
+     * Show/hide progress bar
+     */
+    showProgressBar(show) {
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.style.display = show ? 'block' : 'none';
         }
     }
 
     /**
-     * Edit processor
+     * Update progress bar
      */
-    editProcessor(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (!processor) return;
+    updateProgress(current, total) {
+        const percentage = Math.round((current / total) * 100);
 
-        this.currentProcessor = processor;
-        this.updateText('modalTitle', 'Modifica Processore');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
 
-        // Populate form
-        const form = document.getElementById('processorForm');
-        if (form) {
-            form.querySelector('#processorName').value = processor.name;
-            form.querySelector('#processorType').value = processor.type;
-            form.querySelector('#processorDescription').value = processor.description;
-            form.querySelector('#processorPriority').value = processor.priority;
-            form.querySelector('#processorAutoStart').checked = processor.autoStart;
+        if (progressBar) {
+            progressBar.style.width = `${percentage}%`;
+            progressBar.setAttribute('aria-valuenow', percentage);
         }
 
-        this.showModal('processorModal');
+        if (progressText) {
+            progressText.textContent = `${current}/${total} (${percentage}%)`;
+        }
     }
 
     /**
@@ -422,20 +583,72 @@ class ProcessTab {
      */
     applyFilters() {
         const statusFilter = document.getElementById('statusFilter')?.value || '';
-        const typeFilter = document.getElementById('typeFilter')?.value || '';
+        const sizeFilter = document.getElementById('sizeFilter')?.value || '';
         const searchFilter = document.getElementById('searchFilter')?.value.toLowerCase() || '';
 
-        this.filteredProcessors = this.processors.filter(processor => {
-            const matchesStatus = !statusFilter || processor.status === statusFilter;
-            const matchesType = !typeFilter || processor.type === typeFilter;
-            const matchesSearch = !searchFilter ||
-                processor.name.toLowerCase().includes(searchFilter) ||
-                processor.description.toLowerCase().includes(searchFilter);
+        this.currentFilter = { status: statusFilter, size: sizeFilter, search: searchFilter };
 
-            return matchesStatus && matchesType && matchesSearch;
+        this.filteredGrids = this.grids.filter(grid => {
+            // Status filter
+            if (statusFilter && grid.status !== statusFilter) return false;
+
+            // Size filter
+            if (sizeFilter) {
+                const size = grid.width * grid.height;
+                switch (sizeFilter) {
+                    case 'small':
+                        if (size > 100) return false;
+                        break;
+                    case 'medium':
+                        if (size <= 100 || size > 400) return false;
+                        break;
+                    case 'large':
+                        if (size <= 400) return false;
+                        break;
+                }
+            }
+
+            // Search filter
+            if (searchFilter) {
+                const searchText = `griglia ${grid.index} ${grid.width}x${grid.height}`.toLowerCase();
+                if (!searchText.includes(searchFilter)) return false;
+            }
+
+            return true;
         });
 
-        this.renderProcessors();
+        this.renderGrids();
+
+        if (searchFilter || statusFilter || sizeFilter) {
+            this.notify.info(`🔍 Filtri applicati: ${this.filteredGrids.length}/${this.grids.length} griglie`);
+        }
+    }
+
+    /**
+     * Clear filters
+     */
+    clearFilters() {
+        const statusFilter = document.getElementById('statusFilter');
+        const sizeFilter = document.getElementById('sizeFilter');
+        const searchFilter = document.getElementById('searchFilter');
+
+        if (statusFilter) statusFilter.value = '';
+        if (sizeFilter) sizeFilter.value = '';
+        if (searchFilter) searchFilter.value = '';
+
+        this.currentFilter = { status: '', size: '', search: '' };
+        this.filteredGrids = [...this.grids];
+        this.renderGrids();
+
+        this.notify.success('🗑️ Filtri cancellati');
+    }
+
+    /**
+     * Refresh grids
+     */
+    refreshGrids() {
+        this.notify.info('🔄 Aggiornamento griglie...');
+        this.loadGridsFromStorage();
     }
 
     /**
@@ -443,267 +656,121 @@ class ProcessTab {
      */
     updateStats() {
         const stats = {
-            active: this.processors.filter(p => p.status === 'active').length,
-            processing: this.processors.filter(p => p.status === 'processing').length,
-            idle: this.processors.filter(p => p.status === 'idle').length,
-            error: this.processors.filter(p => p.status === 'error').length
+            total: this.grids.length,
+            processed: this.grids.filter(g => g.status === 'processed').length,
+            pending: this.grids.filter(g => g.status === 'imported').length,
+            error: this.grids.filter(g => g.status === 'error').length
         };
 
-        this.updateText('activeCount', stats.active);
-        this.updateText('processingCount', stats.processing);
-        this.updateText('idleCount', stats.idle);
-        this.updateText('errorCount', stats.error);
+        this.updateStatElement('totalBoards', stats.total);
+        this.updateStatElement('processedBoards', stats.processed);
+        this.updateStatElement('pendingBoards', stats.pending);
+        this.updateStatElement('errorBoards', stats.error);
     }
 
     /**
-     * Show loading state
+     * Update stats when empty
      */
-    showLoading() {
-        this.toggleElement('loadingIndicator', true);
-        const container = document.getElementById('processorsContainer');
-        if (container) container.style.opacity = '0.5';
+    updateStatsEmpty() {
+        this.updateStatElement('totalBoards', 0);
+        this.updateStatElement('processedBoards', 0);
+        this.updateStatElement('pendingBoards', 0);
+        this.updateStatElement('errorBoards', 0);
     }
 
     /**
-     * Hide loading state
+     * Update stat element
      */
-    hideLoading() {
-        this.toggleElement('loadingIndicator', false);
-        const container = document.getElementById('processorsContainer');
-        if (container) container.style.opacity = '1';
+    updateStatElement(elementId, value) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = value;
+        }
     }
 
     /**
-     * Show modal
+     * Save grids back to localStorage
      */
-    showModal(modalId) {
-        this.toggleElement(modalId, true);
-        const modal = document.getElementById(modalId);
-        if (modal) modal.style.display = 'flex';
+    saveGridsToStorage() {
+        try {
+            const data = {
+                grids: this.grids,
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                totalGrids: this.grids.length
+            };
+
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+            console.log('✅ Griglie aggiornate nel localStorage');
+
+            // Aggiorna il badge nel tab
+            if (window.snake?.updateGridsBadge) {
+                window.snake.updateGridsBadge();
+            }
+
+        } catch (error) {
+            console.error('Errore nel salvataggio:', error);
+            this.notify.error('Errore nel salvataggio delle griglie');
+        }
     }
 
     /**
-     * Hide modal
+     * Clear all grids
      */
-    hideModal(modalId) {
-        this.toggleElement(modalId, false);
-    }
-
-    /**
-     * Refresh processors
-     */
-    refreshProcessors() {
-        this.loadProcessors();
-    }
-
-    /**
-     * Show add processor modal
-     */
-    showAddProcessorModal() {
-        this.updateText('modalTitle', 'Aggiungi Processore');
-        const form = document.getElementById('processorForm');
-        if (form) form.reset();
-        this.currentProcessor = null;
-        this.showModal('processorModal');
-    }
-
-    /**
-     * Save processor
-     */
-    saveProcessor() {
-        const form = document.getElementById('processorForm');
-        if (!form) return;
-
-        const formData = new FormData(form);
-        const name = formData.get('processorName') || form.querySelector('#processorName')?.value;
-        const type = formData.get('processorType') || form.querySelector('#processorType')?.value;
-        const description = formData.get('processorDescription') || form.querySelector('#processorDescription')?.value;
-        const priority = formData.get('processorPriority') || form.querySelector('#processorPriority')?.value;
-        const autoStart = form.querySelector('#processorAutoStart')?.checked;
-
-        if (!name || !type) {
-            window.NotifyService?.error('❌ Nome e tipo sono obbligatori');
+    clearAllGrids() {
+        if (!confirm('Sei sicuro di voler eliminare TUTTE le griglie?\n\nQuesta azione non può essere annullata.')) {
             return;
         }
 
-        if (this.currentProcessor) {
-            // Update existing processor
-            this.currentProcessor.name = name;
-            this.currentProcessor.type = type;
-            this.currentProcessor.description = description;
-            this.currentProcessor.priority = priority;
-            this.currentProcessor.autoStart = autoStart;
+        try {
+            localStorage.removeItem(this.STORAGE_KEY);
+            this.grids = [];
+            this.filteredGrids = [];
+            this.showNoGridsMessage();
+            this.notify.success('🗑️ Tutte le griglie sono state eliminate');
 
-            window.NotifyService?.success('✅ Processore aggiornato');
-        } else {
-            // Add new processor
-            const newProcessor = {
-                id: Math.max(...this.processors.map(p => p.id)) + 1,
-                name,
-                type,
-                description,
-                priority,
-                autoStart,
-                status: autoStart ? 'active' : 'idle',
-                metrics: { cpu: 0, memory: 0, tasks: 0 },
-                created: new Date(),
-                lastActive: new Date()
-            };
-
-            this.processors.push(newProcessor);
-            window.NotifyService?.success('✅ Processore aggiunto');
-        }
-
-        this.applyFilters();
-        this.updateStats();
-        this.hideModal('processorModal');
-    }
-
-    /**
-     * Show processor details
-     */
-    showProcessorDetails(id) {
-        const processor = this.processors.find(p => p.id === id);
-        if (!processor) return;
-
-        const typeLabels = {
-            data: 'Data Processor',
-            image: 'Image Processor',
-            text: 'Text Processor',
-            queue: 'Queue Processor'
-        };
-
-        const priorityLabels = {
-            low: 'Bassa',
-            medium: 'Media',
-            high: 'Alta'
-        };
-
-        const statusLabels = {
-            active: 'Attivo',
-            idle: 'Inattivo',
-            processing: 'In Elaborazione',
-            error: 'Errore'
-        };
-
-        this.updateText('detailsTitle', `Dettagli - ${processor.name}`);
-        this.updateHTML('detailsContent', `
-            <div class="detail-section">
-                <h3>Informazioni Generali</h3>
-                <div class="detail-item">
-                    <span class="detail-label">Nome:</span>
-                    <span class="detail-value">${this.escapeHtml(processor.name)}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Tipo:</span>
-                    <span class="detail-value">${typeLabels[processor.type]}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Stato:</span>
-                    <span class="detail-value">${statusLabels[processor.status]}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Priorità:</span>
-                    <span class="detail-value">${priorityLabels[processor.priority]}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Avvio Automatico:</span>
-                    <span class="detail-value">${processor.autoStart ? 'Sì' : 'No'}</span>
-                </div>
-            </div>
-            
-            <div class="detail-section">
-                <h3>Metriche</h3>
-                <div class="detail-item">
-                    <span class="detail-label">CPU:</span>
-                    <span class="detail-value">${processor.metrics.cpu}%</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Memoria:</span>
-                    <span class="detail-value">${processor.metrics.memory}%</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Tasks:</span>
-                    <span class="detail-value">${processor.metrics.tasks}</span>
-                </div>
-            </div>
-            
-            <div class="detail-section">
-                <h3>Timestamp</h3>
-                <div class="detail-item">
-                    <span class="detail-label">Creato:</span>
-                    <span class="detail-value">${processor.created.toLocaleString()}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Ultima Attività:</span>
-                    <span class="detail-value">${processor.lastActive.toLocaleString()}</span>
-                </div>
-            </div>
-            
-            <div class="detail-section">
-                <h3>Descrizione</h3>
-                <p>${this.escapeHtml(processor.description)}</p>
-            </div>
-        `);
-
-        this.showModal('detailsModal');
-    }
-
-    /**
-     * Start auto refresh
-     */
-    startAutoRefresh() {
-        if (this.refreshInterval) {
-            clearInterval(this.refreshInterval);
-        }
-
-        this.refreshInterval = setInterval(() => {
-            if (this.autoRefreshEnabled) {
-                // Update metrics randomly
-                this.processors.forEach(processor => {
-                    if (processor.status === 'active' || processor.status === 'processing') {
-                        processor.metrics.cpu = Math.max(0, processor.metrics.cpu + (Math.random() - 0.5) * 10);
-                        processor.metrics.memory = Math.max(0, processor.metrics.memory + (Math.random() - 0.5) * 5);
-                        processor.metrics.tasks = Math.max(0, processor.metrics.tasks + Math.floor((Math.random() - 0.5) * 3));
-                    }
-                });
-
-                this.renderProcessors();
+            // Aggiorna il badge nel tab
+            if (window.snake?.updateGridsBadge) {
+                window.snake.updateGridsBadge();
             }
-        }, 5000);
-    }
-
-    /**
-     * Stop auto refresh
-     */
-    stopAutoRefresh() {
-        if (this.refreshInterval) {
-            clearInterval(this.refreshInterval);
-            this.refreshInterval = null;
+        } catch (error) {
+            this.notify.error('Errore nell\'eliminazione delle griglie');
         }
     }
 
     /**
-     * Escape HTML for safety
+     * Tab activation handler
      */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    onTabActivate() {
+        console.log('🔄 Process tab attivato');
+        this.loadGridsFromStorage();
+    }
+
+    /**
+     * Tab deactivation handler
+     */
+    onTabDeactivate() {
+        console.log('🔄 Process tab disattivato');
+        this.showProgressBar(false);
+    }
+
+    /**
+     * Initialize
+     */
+    initialize() {
+        console.log('🔧 Inizializzazione ProcessTabManager...');
+        this.loadGridsFromStorage();
+    }
+
+    /**
+     * Check if initialized
+     */
+    isInitialized() {
+        return this.initialized;
     }
 }
 
-// Create and register the process tab
-const processTab = new ProcessTab();
-
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        processTab.init();
-    });
-} else {
-    processTab.init();
+// Export for global access if needed
+if (typeof window !== 'undefined') {
+    window.ProcessTabManager = ProcessTabManager;
 }
-
-// Export for global access
-window.BattlesnakeProcessTab = processTab;

@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
     <link href="css/styles.css" rel="stylesheet">
     <link rel="stylesheet" href="css/import-tab.css">
+    <link rel="stylesheet" href="css/processor-tab.css">
 </head>
 <body class="bg-light">
 
@@ -21,6 +22,9 @@
                 </div>
                 <div class="col-auto">
                     <span class="badge bg-success">v1.0</span>
+                    <button class="btn btn-outline-secondary btn-sm ms-2" onclick="window.debugSnake()">
+                        🐛 Debug
+                    </button>
                 </div>
             </div>
         </div>
@@ -46,6 +50,7 @@
                             id="process-tab-btn" role="tab" type="button"
                             onclick="snake.tabManager.switchTab('process')">
                         ⚙️ Process Boards
+                        <span class="badge bg-info ms-1" id="gridsBadge" style="display: none;">0</span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -66,10 +71,14 @@
         <div class="container-xxl h-100">
             <div class="tab-content h-100 py-3" id="mainTabContent">
 
-                <div class="alert alert-warning">
-                    Quick note: The content for each tab (import, process, formatter) should be loaded dynamically
+                <div class="alert alert-info text-center">
+                    <h4 class="alert-heading">🚀 Inizializzazione in corso...</h4>
+                    <p class="mb-0">L'applicazione si sta caricando. Attendere prego...</p>
+                    <div class="spinner-border spinner-border-sm mt-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
-                
+
             </div>
         </div>
     </main>
@@ -114,22 +123,23 @@
             const tabManager = new TabManager('mainTabContent', notifyService);
             const importTabManager = new ImportTabManager('boardInput', notifyService);
             const formatterTabManager = new FormatterTabManager('jsonListInput', notifyService);
+            const processTabManager = new ProcessTabManager('processorsList', notifyService);
 
             // 2. Registra callback per quando i tab vengono caricati
             tabManager.registerTabCallback('import', () => {
                 console.log('📥 Inizializzazione tab import...');
-                // Assicurati che l'ImportTabManager si inizializzi quando il tab viene caricato
                 setTimeout(() => {
                     importTabManager.initialize();
-                }, 100); // Piccolo delay per essere sicuri che il DOM sia pronto
+                    updateGridsBadge();
+                }, 100);
             });
 
             tabManager.registerTabCallback('process', () => {
                 console.log('⚙️ Inizializzazione tab process...');
-                // Inizializza il ProcessTab se è disponibile
-                if (window.BattlesnakeProcessTab) {
-                    window.BattlesnakeProcessTab.init();
-                }
+                setTimeout(() => {
+                    processTabManager.initialize();
+                    updateGridsBadge();
+                }, 100);
             });
 
             tabManager.registerTabCallback('formatter', () => {
@@ -139,16 +149,50 @@
                 }, 100);
             });
 
-            // 3. Esponi globalmente l'oggetto snake
+            // 3. Funzione per aggiornare il badge del numero di griglie
+            function updateGridsBadge() {
+                try {
+                    const data = localStorage.getItem('battlesnake_grids');
+                    const badge = document.getElementById('gridsBadge');
+
+                    if (data && badge) {
+                        const parsedData = JSON.parse(data);
+                        const count = parsedData.grids ? parsedData.grids.length : 0;
+
+                        if (count > 0) {
+                            badge.textContent = count;
+                            badge.style.display = 'inline';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Errore aggiornamento badge:', error);
+                }
+            }
+
+            // 4. Esponi globalmente l'oggetto snake
             window.snake = {
                 notifyService,
                 tabManager,
                 importTabManager,
-                formatterTabManager
+                formatterTabManager,
+                processTabManager,
+                updateGridsBadge
             };
 
-            // 4. Carica il tab iniziale
+            // 5. Override del metodo switchTab per aggiornare il badge
+            const originalSwitchTab = tabManager.switchTab.bind(tabManager);
+            tabManager.switchTab = function(name) {
+                originalSwitchTab(name);
+                setTimeout(updateGridsBadge, 500);
+            };
+
+            // 6. Carica il tab iniziale
             tabManager.switchTab('import');
+
+            // 7. Aggiorna badge iniziale
+            setTimeout(updateGridsBadge, 1000);
 
             console.log('✅ App inizializzata con successo');
 
@@ -156,9 +200,13 @@
             console.error('❌ Errore durante l\'inizializzazione:', error);
             document.getElementById('mainTabContent').innerHTML = `
                 <div class="alert alert-danger" role="alert">
-                    <h4 class="alert-heading">Errore di inizializzazione</h4>
+                    <h4 class="alert-heading">❌ Errore di inizializzazione</h4>
                     <p>Si è verificato un errore durante l'avvio dell'applicazione.</p>
                     <p class="mb-0"><strong>Errore:</strong> ${error.message}</p>
+                    <hr>
+                    <button class="btn btn-outline-danger" onclick="location.reload()">
+                        🔄 Ricarica Pagina
+                    </button>
                 </div>
             `;
         }
@@ -172,13 +220,143 @@
         }
     });
 
+    // === GESTIONE PROMISE REJECTION ===
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('Promise rejection non gestita:', event.reason);
+        if (window.snake?.notifyService) {
+            window.snake.notifyService.error('Errore asincrono nell\'applicazione');
+        }
+    });
+
     // === HELPER PER DEBUG ===
     window.debugSnake = function() {
-        console.log('=== DEBUG SNAKE APP ===');
+        console.clear();
+        console.log('🐍 === DEBUG BATTLESNAKE APP ===');
         console.log('snake object:', window.snake);
         console.log('Current tab:', window.snake?.tabManager?.getCurrentTab());
         console.log('Available tabs:', Object.keys(window.snake?.tabManager?.callbacks || {}));
+
+        // Debug localStorage
+        try {
+            const grids = localStorage.getItem('battlesnake_grids');
+            const parsedGrids = grids ? JSON.parse(grids) : null;
+            console.log('📊 Stored grids data:', parsedGrids);
+            console.log('📈 Total grids:', parsedGrids?.grids?.length || 0);
+
+            if (parsedGrids?.grids?.length > 0) {
+                console.log('📋 Grid statuses:',
+                    parsedGrids.grids.reduce((acc, grid) => {
+                        acc[grid.status] = (acc[grid.status] || 0) + 1;
+                        return acc;
+                    }, {})
+                );
+            }
+        } catch (e) {
+            console.log('❌ Error reading stored grids:', e);
+        }
+
+        // Debug inizializzazione tabs
+        console.log('🔧 Tab initialization status:');
+        console.log('- ImportTab:', window.snake?.importTabManager?.isInitialized());
+        console.log('- ProcessTab:', window.snake?.processTabManager?.isInitialized());
+        console.log('- FormatterTab:', window.snake?.formatterTabManager?.isInitialized());
+
+        // Test localStorage
+        console.log('💾 LocalStorage test:');
+        try {
+            localStorage.setItem('test', 'ok');
+            localStorage.removeItem('test');
+            console.log('✅ LocalStorage working');
+        } catch (e) {
+            console.log('❌ LocalStorage error:', e);
+        }
+
+        // Mostra dimensioni localStorage
+        try {
+            let total = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    total += localStorage[key].length;
+                }
+            }
+            console.log(`📏 LocalStorage usage: ~${Math.round(total/1024)}KB`);
+        } catch (e) {
+            console.log('❌ Cannot calculate localStorage size:', e);
+        }
+
+        return 'Debug completato! Controlla la console per i dettagli.';
     };
+
+    // === UTILITY FUNCTIONS ===
+    window.clearAllData = function() {
+        if (confirm('⚠️ ATTENZIONE!\n\nQuesto cancellerà TUTTI i dati salvati incluse le griglie importate.\n\nSei sicuro di voler continuare?')) {
+            try {
+                localStorage.clear();
+                location.reload();
+            } catch (e) {
+                alert('Errore nella cancellazione dei dati: ' + e.message);
+            }
+        }
+    };
+
+    window.exportAllData = function() {
+        try {
+            const data = {};
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    data[key] = localStorage[key];
+                }
+            }
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+
+            link.href = url;
+            link.download = `battlesnake_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(url);
+
+            if (window.snake?.notifyService) {
+                window.snake.notifyService.success('📦 Backup esportato con successo');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            if (window.snake?.notifyService) {
+                window.snake.notifyService.error('❌ Errore nell\'esportazione del backup');
+            }
+        }
+    };
+
+    // === KEYBOARD SHORTCUTS ===
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+1, Ctrl+2, Ctrl+3 per cambiare tab
+        if (e.ctrlKey && !e.shiftKey && !e.altKey) {
+            switch (e.key) {
+                case '1':
+                    e.preventDefault();
+                    window.snake?.tabManager?.switchTab('import');
+                    break;
+                case '2':
+                    e.preventDefault();
+                    window.snake?.tabManager?.switchTab('process');
+                    break;
+                case '3':
+                    e.preventDefault();
+                    window.snake?.tabManager?.switchTab('formatter');
+                    break;
+            }
+        }
+    });
+
+    console.log('📚 Suggerimenti:');
+    console.log('- Usa Ctrl+1/2/3 per cambiare tab rapidamente');
+    console.log('- Chiama debugSnake() nella console per informazioni di debug');
+    console.log('- Chiama clearAllData() per cancellare tutti i dati');
+    console.log('- Chiama exportAllData() per esportare un backup');
 </script>
 
 </body>
