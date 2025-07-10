@@ -6,6 +6,7 @@
     <title>BattleSnake Board Converter</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
     <link href="css/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/import-tab.css">
 </head>
 <body class="bg-light">
 
@@ -94,25 +95,25 @@
 <script src="js/tabs/import-tab.js"></script>
 
 <script>
-    // Aspetta che il DOM sia completamente caricato
-    document.addEventListener('DOMContentLoaded', function () {
-        console.log('🚀 DOM loaded, inizializzando TabManager...');
+    // === IOC CONTAINER ===
+    document.addEventListener('DOMContentLoaded', function() {
 
-        const content = document.querySelector('.tab-content');
-        const tabManager = new TabManager(content);
-
-        let toastElement = document.getElementById('statusToast');
-        let toastBody = document.getElementById('toastMessage');
-        const notifyService = new NotifyService(toastElement, toastBody);
-
-        window.snake = 
-        {
-            tabManager,
+        // 1. Istanzia in ordine di dipendenza (come C# IoC)
+        const notifyService = new NotifyService('statusToast');
+        const tabManager = new TabManager('mainTabContent', notifyService);
+        const importTabManager = new ImportTabManager('boardInput', notifyService);
+        
+        // 3. Esponi globalmente
+        window.snake = {
             notifyService,
-        } 
+            tabManager,
+            importTabManager
+        };
 
-        window.snake.tabManager.switchTab('import');
-        window.snake.notifyService.show("Benvenuto nel BattleSnake Board Converter!", "info");
+        // 4. Carica tab iniziale
+        tabManager.switchTab('import');
+
+        console.log('✅ App inizializzata');
     });
 </script>
 

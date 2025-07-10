@@ -1,16 +1,22 @@
-﻿// Battlesnake Board Converter - Tab Manager Semplificato per Bootstrap
-
-class TabManager {
-    constructor(contentDiv) {
-        this.contentDiv = contentDiv;
+﻿class TabManager {
+    constructor(contentId, notifyService) {
+        this.content = document.getElementById(contentId);
+        this.notify = notifyService;
+        this.callbacks = {};
     }
 
-    async switchTab(tabName) {
-        const fileName = `${tabName}-tab.html`;
+    async switchTab(name) {
+        try {
+            const response = await fetch(`${name}-tab.html`);
+            this.content.innerHTML = await response.text();
 
-        const response = await fetch(fileName);
-        this.contentDiv.innerHTML = response.ok
-            ? await response.text()
-            : `<div class='alert alert-danger'>Errore caricamento ${fileName}</div>`;
+            if (this.callbacks[name]) {
+                this.callbacks[name]();
+            }
+
+            this.notify.success(`Tab ${name} caricato`);
+        } catch (error) {
+            this.notify.error(`Errore caricamento ${name}`);
+        }
     }
 }
