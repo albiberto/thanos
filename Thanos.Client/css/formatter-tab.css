@@ -1,6 +1,6 @@
-﻿/* Formatter Tab Specific Styles */
+﻿/* Formatter Tab Specific Styles - Improved Contrast */
 
-/* Main layout for formatter tab */
+/* === MAIN LAYOUT === */
 .formatter-content {
     display: flex;
     flex-direction: column;
@@ -9,9 +9,9 @@
     gap: 15px;
 }
 
-/* Input section */
+/* === INPUT SECTION === */
 .formatter-section {
-    background: #f8f9fa;
+    background: #ffffff;
     border: 2px solid #e5e7eb;
     border-radius: 12px;
     padding: 15px;
@@ -19,25 +19,28 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .formatter-section h2 {
     margin-bottom: 12px;
-    color: #22c55e;
+    color: #198754;
     font-size: 1.2em;
-    border-bottom: 2px solid #22c55e;
+    border-bottom: 2px solid #198754;
     padding-bottom: 5px;
+    font-weight: 600;
 }
 
-/* Controls section */
+/* === CONTROLS SECTION === */
 .formatter-controls {
-    background: #f8f9fa;
+    background: #ffffff;
     border: 2px solid #e5e7eb;
     border-radius: 12px;
     padding: 15px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .formatter-controls h3 {
@@ -59,7 +62,7 @@
     margin-bottom: 0;
 }
 
-/* JSON input area */
+/* === JSON INPUT AREA === */
 .json-input-container {
     position: relative;
     flex: 1;
@@ -75,36 +78,41 @@
     border-radius: 8px;
     padding: 12px;
     font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: #333;
+    font-size: 12px;
+    color: #1f2937;
     resize: none;
-    line-height: 1.4;
+    line-height: 1.5;
     min-height: 200px;
+    transition: all 0.2s ease;
 }
 
 .json-input:focus {
     outline: none;
-    border-color: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
 }
 
 .json-input.error {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    background-color: #fef2f2;
 }
 
 .json-input.valid {
-    border-color: #22c55e;
-    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
+    border-color: #198754;
+    box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.1);
+    background-color: #f0fdf4;
 }
 
-/* Input statistics */
+/* === INPUT STATISTICS === */
 .input-stats {
     display: flex;
     gap: 15px;
     margin-top: 8px;
-    font-size: 11px;
+    font-size: 12px;
     color: #6b7280;
+    padding: 8px 0;
+    border-top: 1px solid #e5e7eb;
 }
 
 .input-stats span {
@@ -119,74 +127,93 @@
 }
 
 .stat-valid {
-    color: #22c55e;
+    color: #198754;
+    font-weight: 600;
 }
 
 .stat-invalid {
-    color: #ef4444;
+    color: #dc3545;
+    font-weight: 600;
 }
 
-/* Validation status */
+/* === VALIDATION STATUS === */
 .validation-status {
     margin-top: 8px;
-    padding: 6px 10px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
+    border: 1px solid;
 }
 
 .validation-success {
-    background: #dcfce7;
-    color: #15803d;
-    border: 1px solid #22c55e;
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #198754;
 }
 
 .validation-error {
     background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #ef4444;
+    color: #991b1b;
+    border-color: #dc3545;
 }
 
-/* Output sections */
+/* === OUTPUT SECTIONS === */
 .formatter-output {
-    background: #f8f9fa;
-    border: 2px solid #22c55e;
+    background: #ffffff;
+    border: 2px solid #198754;
     border-radius: 12px;
     padding: 15px;
     margin-top: 15px;
     display: flex;
     flex-direction: column;
     max-height: 50vh;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .formatter-output h2 {
     margin-bottom: 12px;
-    color: #22c55e;
+    color: #198754;
     font-size: 1.1em;
-    border-bottom: 2px solid #22c55e;
+    border-bottom: 2px solid #198754;
     padding-bottom: 5px;
+    font-weight: 600;
 }
 
+/* === FORMATTER CODE OUTPUT - TEMA CHIARO MIGLIORATO === */
 .formatter-output-code {
-    background: #1f2937;
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6;
     border-radius: 8px;
-    padding: 12px;
+    padding: 16px;
     font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: #22c55e;
+    font-size: 12px;
+    color: #198754 !important;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-y: auto;
     flex: 1;
     min-height: 150px;
     max-height: 400px;
+    line-height: 1.6;
+    font-weight: 500;
 }
 
+/* === TEMA SCURO OPZIONALE === */
+.formatter-output-code.dark-theme {
+    background: #1e293b !important;
+    color: #10b981 !important;
+    border-color: #334155;
+}
+
+/* === OUTPUT ACTIONS === */
 .formatter-output-actions {
     display: flex;
     gap: 10px;
-    margin-top: 10px;
+    margin-top: 12px;
     flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
 }
 
 .formatter-output-actions .button {
@@ -195,17 +222,24 @@
     margin-bottom: 0;
 }
 
-/* Export button specific styling */
+/* === EXPORT BUTTON STYLING === */
 .button.export {
     background: linear-gradient(45deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .button.export:hover {
     background: linear-gradient(45deg, #2563eb, #1d4ed8);
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
 }
 
-/* Quick actions */
+/* === QUICK ACTIONS === */
 .quick-actions {
     display: flex;
     gap: 8px;
@@ -218,24 +252,27 @@
     color: white;
     border: none;
     border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: 6px 12px;
+    font-size: 11px;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-weight: 500;
 }
 
 .quick-action-btn:hover {
     background: #4b5563;
     transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Progress indicator */
+/* === PROGRESS INDICATOR === */
 .format-progress {
     display: none;
     margin: 10px 0;
-    padding: 8px;
+    padding: 10px;
     background: #f3f4f6;
-    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
     font-size: 12px;
     color: #6b7280;
     text-align: center;
@@ -245,7 +282,7 @@
     display: block;
 }
 
-/* Responsive design */
+/* === RESPONSIVE DESIGN === */
 @media (max-width: 1024px) {
     .formatter-content {
         gap: 10px;
@@ -283,32 +320,36 @@
     }
 
     .formatter-output-code {
-        font-size: 10px;
+        font-size: 11px;
         min-height: 120px;
         max-height: 300px;
+        padding: 12px;
+    }
+
+    .formatter-section,
+    .formatter-controls,
+    .formatter-output {
+        padding: 12px;
     }
 }
 
-/* Dark mode support for JSON output */
-@media (prefers-color-scheme: dark) {
-    .formatter-output-code {
-        background: #0f172a;
-        color: #10b981;
-        border: 1px solid #374151;
-    }
-}
-
-/* Animation for status changes */
+/* === ANIMAZIONI === */
 @keyframes fadeInStatus {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .validation-status {
     animation: fadeInStatus 0.3s ease;
 }
 
-/* Loading state */
+/* === LOADING STATE === */
 .button.loading {
     position: relative;
     color: transparent;
@@ -330,5 +371,33 @@
 }
 
 @keyframes spin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* === ACCESSIBILITÀ === */
+.json-input:focus,
+.button:focus,
+.quick-action-btn:focus {
+    outline: 2px solid #198754;
+    outline-offset: 2px;
+}
+
+/* === HIGH CONTRAST SUPPORT === */
+@media (prefers-contrast: high) {
+    .formatter-section,
+    .formatter-controls,
+    .formatter-output {
+        border-width: 3px;
+    }
+
+    .json-input {
+        border-width: 3px;
+    }
+
+    .validation-status {
+        border-width: 2px;
+        font-weight: 600;
+    }
 }
