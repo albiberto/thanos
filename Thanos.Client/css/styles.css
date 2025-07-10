@@ -1,238 +1,32 @@
-﻿/* BattleSnake Board Converter - Minimal Custom CSS with Bootstrap */
+﻿/* BattleSnake Board Converter - CSS Minimale con solo Bootstrap */
 
-/* Reset e base */
-* {
-    box-sizing: border-box;
-}
+/* 
+   Questo file contiene SOLO gli stili strettamente necessari
+   che non possono essere ottenuti con le classi Bootstrap standard
+*/
 
-/* Colori personalizzati per il tema success */
-:root {
-    --bs-success: #22c55e;
-    --bs-success-rgb: 34, 197, 94;
-}
-
-/* Override Bootstrap per i tab */
-.nav-tabs {
-    --bs-nav-tabs-border-color: var(--bs-success);
-    --bs-nav-tabs-link-hover-border-color: var(--bs-success);
-    --bs-nav-tabs-link-active-color: var(--bs-success);
-    --bs-nav-tabs-link-active-border-color: var(--bs-success) var(--bs-success) transparent;
-}
-
-.nav-tabs .nav-link {
-    border: none;
-    border-bottom: 3px solid transparent;
-    color: #6b7280;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-.nav-tabs .nav-link:hover {
-    background: #f3f4f6;
-    color: #374151;
-    border-color: transparent transparent var(--bs-success);
-}
-
-.nav-tabs .nav-link.active {
-    background: #ffffff;
-    color: var(--bs-success);
-    border-color: transparent transparent var(--bs-success);
-}
-
-/* Stili personalizzati per le textarea */
+/* Font monospace per textarea e codice */
 .font-monospace {
-    font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
+    font-family: 'Courier New', Monaco, Menlo, monospace !important;
 }
 
-/* Stili per i bottoni icona del tab Import */
+/* Stati dei badge per i processori (se necessari) */
+.badge.bg-pending { background-color: #f59e0b !important; }
+.badge.bg-processing { background-color: #3b82f6 !important; }
+.badge.bg-completed { background-color: #10b981 !important; }
+.badge.bg-error { background-color: #ef4444 !important; }
+.badge.bg-idle { background-color: #6b7280 !important; }
+
+/* Altezza minima per i pulsanti icona */
 .icon-btn {
     min-height: 70px;
-    transition: all 0.2s ease;
 }
 
-.icon-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
-}
-
-.icon-btn:active {
-    transform: translateY(0);
-}
-
-/* Stili per le card del Process tab */
-.processor-card {
-    transition: all 0.2s ease;
-}
-
-.processor-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Stati dei badge per i processori */
-.badge.bg-pending {
-    background-color: #f59e0b !important;
-}
-
-.badge.bg-processing {
-    background-color: #3b82f6 !important;
-}
-
-.badge.bg-completed {
-    background-color: #10b981 !important;
-}
-
-.badge.bg-error {
-    background-color: #ef4444 !important;
-}
-
-.badge.bg-idle {
-    background-color: #6b7280 !important;
-}
-
-/* Animazioni per il loading overlay */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-#loadingOverlay {
-    animation: fadeIn 0.3s ease;
-}
-
-/* Stili per il syntax highlighting nel JSON formatter */
-.json-key {
-    color: #0969da;
-    font-weight: 600;
-}
-
-.json-string {
-    color: #0a3069;
-}
-
-.json-number {
-    color: #0550ae;
-}
-
-.json-boolean {
-    color: #8250df;
-    font-weight: 600;
-}
-
-.json-null {
-    color: #656d76;
-    font-style: italic;
-}
-
-/* Hover effects per i bottoni custom */
-.btn:not(.btn-outline-*):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.btn:not(.btn-outline-*):active {
-    transform: translateY(0);
-}
-
-/* Stili per le card statistiche con gradiente */
-.card.text-white {
-    transition: all 0.2s ease;
-}
-
-.card.text-white:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Progress bar personalizzata */
-.progress {
-    height: 8px;
-}
-
-.progress-bar {
-    transition: width 0.3s ease;
-}
-
-/* Stili per le notifiche toast */
-.toast {
-    --bs-toast-max-width: 350px;
-}
-
-.toast-header.bg-success,
-.toast-header.bg-danger {
-    border: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .container-fluid {
-        padding: 1rem;
-    }
-
-    h1 {
-        font-size: 1.5rem;
-    }
-
-    .nav-tabs .nav-link {
-        padding: 8px 12px;
-        font-size: 14px;
-    }
-
-    .card-header h2,
-    .card-header h5 {
-        font-size: 1rem;
-    }
-
-    .btn {
-        font-size: 0.875rem;
-        padding: 0.5rem 1rem;
-    }
-
-    .icon-btn {
-        min-height: 60px;
-        padding: 0.5rem;
-    }
-
-    .icon-btn .fs-4 {
-        font-size: 1.25rem !important;
-    }
-}
-
-/* Accessibilità */
-@media (prefers-reduced-motion: reduce) {
-    .icon-btn,
-    .processor-card,
-    .card.text-white,
-    .btn {
-        transition: none;
-    }
-
-    .icon-btn:hover,
-    .processor-card:hover,
-    .card.text-white:hover,
-    .btn:hover {
-        transform: none;
-    }
-}
-
-/* Focus states per accessibilità */
-.btn:focus,
-.form-control:focus,
-.form-select:focus {
-    box-shadow: 0 0 0 0.2rem rgba(34, 197, 94, 0.25);
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    .card {
-        border-width: 2px;
-    }
-
-    .nav-tabs .nav-link {
-        border-bottom-width: 4px;
-    }
-}
+/* 
+   NOTA: Tutto il resto è gestito con classi Bootstrap:
+   - Layout: d-flex, flex-column, flex-grow-1, vh-100
+   - Spacing: p-*, m-*, gap-*
+   - Colori: text-*, bg-*, border-*
+   - Componenti: card, nav-tabs, btn, form-control, alert
+   - Utilities: shadow-sm, rounded, overflow-auto
+*/
