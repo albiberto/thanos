@@ -1,19 +1,15 @@
 ﻿/**
- * Process Tab - Complete Grid Processing and Display
+ * Process Tab Manager - Simplified and Fixed
  * File: js/tabs/process-tab.js
- * Loads grids from localStorage and displays them in a structured way
  */
 class ProcessTabManager {
     constructor(containerId, notifyService) {
         this.containerId = containerId;
         this.notify = notifyService;
         this.grids = [];
-        this.filteredGrids = [];
-        this.currentFilter = { status: '', size: '', search: '' };
         this.initialized = false;
-        this.processingQueue = [];
 
-        // Storage key per le griglie (deve essere uguale a ImportTabManager)
+        // Storage key per le griglie
         this.STORAGE_KEY = 'battlesnake_grids';
     }
 
@@ -23,38 +19,25 @@ class ProcessTabManager {
     }
 
     /**
-     * Initialize the process tab
+     * Initialize
      */
-    init() {
-        if (this.initialized) return;
-
-        // Wait for DOM to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.doInit());
-        } else {
-            this.doInit();
-        }
+    initialize() {
+        console.log('🔧 Inizializzazione ProcessTabManager...');
+        this.doInit();
+        this.loadGridsFromStorage();
     }
 
     /**
-     * Actual initialization after DOM is ready
+     * Actual initialization
      */
     doInit() {
         try {
-            this.setupEventListeners();
             this.initialized = true;
             console.log('✅ ProcessTabManager initialized');
         } catch (error) {
             console.error('Failed to initialize ProcessTabManager:', error);
             this.notify.error('Errore nell\'inizializzazione del Process Tab');
         }
-    }
-
-    /**
-     * Setup event listeners
-     */
-    setupEventListeners() {
-        console.log('✅ Event listeners setup per process tab');
     }
 
     /**
@@ -79,10 +62,9 @@ class ProcessTabManager {
             }
 
             this.grids = parsedData.grids;
-            this.filteredGrids = [...this.grids];
 
             console.log(`✅ ${this.grids.length} griglie caricate`);
-            this.notify.success(`${this.grids.length} griglie caricate dal localStorage`);
+            this.notify.success(`${this.grids.length} griglie caricate`);
 
             this.renderGrids();
             this.updateStats();
@@ -124,21 +106,12 @@ class ProcessTabManager {
         const container = document.getElementById('processorsList');
         if (!container) return;
 
-        if (this.filteredGrids.length === 0) {
-            container.innerHTML = `
-                <div class="col-12">
-                    <div class="alert alert-warning text-center">
-                        <h5>🔍 Nessuna griglia trovata con i filtri correnti</h5>
-                        <button class="btn btn-outline-secondary" onclick="window.snake.processTabManager.clearFilters()">
-                            🗑️ Pulisci Filtri
-                        </button>
-                    </div>
-                </div>
-            `;
+        if (this.grids.length === 0) {
+            this.showNoGridsMessage();
             return;
         }
 
-        const gridsHTML = this.filteredGrids.map(grid => this.renderGridCard(grid)).join('');
+        const gridsHTML = this.grids.map(grid => this.renderGridCard(grid)).join('');
         container.innerHTML = gridsHTML;
 
         // Bind grid actions after rendering
@@ -146,12 +119,11 @@ class ProcessTabManager {
     }
 
     /**
-     * Render a single grid card
+     * Render a single grid card - SEMPLIFICATA
      */
     renderGridCard(grid) {
         const statusBadge = this.getStatusBadge(grid.status);
         const sizeLabel = this.getSizeLabel(grid.width, grid.height);
-        const analysisText = this.getAnalysisText(grid.analysis);
 
         return `
             <div class="col-lg-6 col-xl-4">
@@ -162,30 +134,19 @@ class ProcessTabManager {
                     </div>
                     <div class="card-body d-flex flex-column">
                         <p class="card-text small text-muted mb-2">${sizeLabel}</p>
-                        <p class="card-text small mb-3">${analysisText}</p>
 
                         <!-- Grid Preview -->
                         <div class="mb-3 p-2 bg-light border rounded">
                             <div class="small text-muted mb-1">Anteprima:</div>
-                            <div class="grid-preview" style="font-family: monospace; font-size: 10px; line-height: 1.2; max-height: 80px; overflow: hidden;">
+                            <div class="grid-preview" style="font-family: monospace; font-size: 10px; line-height: 1.2; max-height: 100px; overflow: hidden;">
                                 ${this.renderGridPreview(grid.cells)}
                             </div>
                         </div>
 
-                        <!-- Metrics -->
-                        <div class="row g-2 mb-3 text-center">
-                            <div class="col-4">
-                                <div class="fw-semibold">${grid.width}×${grid.height}</div>
-                                <div class="small text-muted">Dimensioni</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="fw-semibold">${grid.analysis.mySnakeLength || 0}</div>
-                                <div class="small text-muted">Mio Snake</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="fw-semibold">${grid.analysis.totalEnemies || 0}</div>
-                                <div class="small text-muted">Nemici</div>
-                            </div>
+                        <!-- Metrics - Solo dimensioni -->
+                        <div class="text-center mb-3">
+                            <div class="fw-semibold">${grid.width}×${grid.height}</div>
+                            <div class="small text-muted">Dimensioni griglia</div>
                         </div>
 
                         <!-- Actions -->
@@ -256,19 +217,6 @@ class ProcessTabManager {
     }
 
     /**
-     * Get analysis text
-     */
-    getAnalysisText(analysis) {
-        const parts = [];
-        if (analysis.myHead) parts.push('👽 Mio snake');
-        if (analysis.totalEnemies > 0) parts.push(`😈 ${analysis.totalEnemies} nemici`);
-        if (analysis.food && analysis.food.length > 0) parts.push(`🍎 ${analysis.food.length} cibo`);
-        if (analysis.hazards && analysis.hazards.length > 0) parts.push(`💀 ${analysis.hazards.length} pericoli`);
-
-        return parts.length > 0 ? parts.join(', ') : 'Griglia vuota';
-    }
-
-    /**
      * Bind grid action buttons
      */
     bindGridActions() {
@@ -323,51 +271,28 @@ class ProcessTabManager {
     viewGridDetails(grid) {
         const analysis = grid.analysis;
         const details = `
-GRIGLIA ${grid.index} - DETTAGLI COMPLETI
-${'='.repeat(40)}
+GRIGLIA ${grid.index} - DETTAGLI
+${'='.repeat(30)}
 
-📏 DIMENSIONI:
-• Larghezza: ${grid.width} celle
-• Altezza: ${grid.height} celle  
-• Totale celle: ${analysis.totalCells || (grid.width * grid.height)}
+📏 DIMENSIONI: ${grid.width}×${grid.height} (${analysis.totalCells || (grid.width * grid.height)} celle)
 
-📊 STATUS:
-• Stato: ${this.getStatusText(grid.status)}
-• Importata: ${new Date(grid.importedAt || grid.timestamp).toLocaleString()}
-${grid.processedAt ? `• Processata: ${new Date(grid.processedAt).toLocaleString()}` : ''}
+📊 STATUS: ${this.getStatusText(grid.status)}
+📅 Importata: ${new Date(grid.importedAt || grid.timestamp).toLocaleString()}
+${grid.processedAt ? `📅 Processata: ${new Date(grid.processedAt).toLocaleString()}` : ''}
 
-🐍 ANALISI SNAKE:
+🐍 ANALISI:
 • Mia testa: ${analysis.myHead ? `(${analysis.myHead.x}, ${analysis.myHead.y})` : 'Non trovata'}
 • Mio corpo: ${analysis.myBody ? analysis.myBody.length : 0} segmenti
-• Lunghezza totale: ${analysis.mySnakeLength || 0}
-
-😈 NEMICI:
 • Teste nemiche: ${analysis.totalEnemies || 0}
-• Corpi nemici: ${analysis.totalEnemyBodies || 0}
-
-🍎 RISORSE:
-• Cibo disponibile: ${analysis.food ? analysis.food.length : 0}
+• Cibo: ${analysis.food ? analysis.food.length : 0}
 • Pericoli: ${analysis.hazards ? analysis.hazards.length : 0}
-• Celle vuote: ${analysis.empty ? analysis.empty.length : 0} (${analysis.emptyPercentage || 0}%)
 
-🎯 DIREZIONI:
-• Indicazioni movimento: ${analysis.directions ? analysis.directions.length : 0}
-
-📝 GRIGLIA COMPLETA:
+📝 GRIGLIA:
 ${grid.rawText}
         `;
 
-        // Crea un modal o alert migliorato
-        this.showModal('Dettagli Griglia', details);
+        alert(details);
         this.notify.info(`Dettagli griglia ${grid.index} visualizzati`);
-    }
-
-    /**
-     * Show modal with content
-     */
-    showModal(title, content) {
-        // Fallback con alert per ora, in futuro si potrebbe usare un modal Bootstrap
-        alert(`${title}\n\n${content}`);
     }
 
     /**
@@ -481,7 +406,7 @@ ${grid.rawText}
     deleteGrid(grid) {
         if (confirm(`Sei sicuro di voler eliminare la griglia ${grid.index}?\n\nQuesta azione non può essere annullata.`)) {
             this.grids = this.grids.filter(g => g.id !== grid.id);
-            this.applyFilters();
+            this.renderGrids();
             this.updateStats();
             this.saveGridsToStorage();
             this.notify.success(`🗑️ Griglia ${grid.index} eliminata`);
@@ -489,7 +414,7 @@ ${grid.rawText}
     }
 
     /**
-     * Process all grids
+     * Process all grids - CORRETTO
      */
     processAllGrids() {
         const pendingGrids = this.grids.filter(g => g.status === 'imported');
@@ -550,6 +475,14 @@ ${grid.rawText}
     }
 
     /**
+     * Refresh grids - CORRETTO
+     */
+    refreshGrids() {
+        this.notify.info('🔄 Aggiornamento griglie...');
+        this.loadGridsFromStorage();
+    }
+
+    /**
      * Show/hide progress bar
      */
     showProgressBar(show) {
@@ -576,79 +509,6 @@ ${grid.rawText}
         if (progressText) {
             progressText.textContent = `${current}/${total} (${percentage}%)`;
         }
-    }
-
-    /**
-     * Apply filters
-     */
-    applyFilters() {
-        const statusFilter = document.getElementById('statusFilter')?.value || '';
-        const sizeFilter = document.getElementById('sizeFilter')?.value || '';
-        const searchFilter = document.getElementById('searchFilter')?.value.toLowerCase() || '';
-
-        this.currentFilter = { status: statusFilter, size: sizeFilter, search: searchFilter };
-
-        this.filteredGrids = this.grids.filter(grid => {
-            // Status filter
-            if (statusFilter && grid.status !== statusFilter) return false;
-
-            // Size filter
-            if (sizeFilter) {
-                const size = grid.width * grid.height;
-                switch (sizeFilter) {
-                    case 'small':
-                        if (size > 100) return false;
-                        break;
-                    case 'medium':
-                        if (size <= 100 || size > 400) return false;
-                        break;
-                    case 'large':
-                        if (size <= 400) return false;
-                        break;
-                }
-            }
-
-            // Search filter
-            if (searchFilter) {
-                const searchText = `griglia ${grid.index} ${grid.width}x${grid.height}`.toLowerCase();
-                if (!searchText.includes(searchFilter)) return false;
-            }
-
-            return true;
-        });
-
-        this.renderGrids();
-
-        if (searchFilter || statusFilter || sizeFilter) {
-            this.notify.info(`🔍 Filtri applicati: ${this.filteredGrids.length}/${this.grids.length} griglie`);
-        }
-    }
-
-    /**
-     * Clear filters
-     */
-    clearFilters() {
-        const statusFilter = document.getElementById('statusFilter');
-        const sizeFilter = document.getElementById('sizeFilter');
-        const searchFilter = document.getElementById('searchFilter');
-
-        if (statusFilter) statusFilter.value = '';
-        if (sizeFilter) sizeFilter.value = '';
-        if (searchFilter) searchFilter.value = '';
-
-        this.currentFilter = { status: '', size: '', search: '' };
-        this.filteredGrids = [...this.grids];
-        this.renderGrids();
-
-        this.notify.success('🗑️ Filtri cancellati');
-    }
-
-    /**
-     * Refresh grids
-     */
-    refreshGrids() {
-        this.notify.info('🔄 Aggiornamento griglie...');
-        this.loadGridsFromStorage();
     }
 
     /**
@@ -712,54 +572,6 @@ ${grid.rawText}
             console.error('Errore nel salvataggio:', error);
             this.notify.error('Errore nel salvataggio delle griglie');
         }
-    }
-
-    /**
-     * Clear all grids
-     */
-    clearAllGrids() {
-        if (!confirm('Sei sicuro di voler eliminare TUTTE le griglie?\n\nQuesta azione non può essere annullata.')) {
-            return;
-        }
-
-        try {
-            localStorage.removeItem(this.STORAGE_KEY);
-            this.grids = [];
-            this.filteredGrids = [];
-            this.showNoGridsMessage();
-            this.notify.success('🗑️ Tutte le griglie sono state eliminate');
-
-            // Aggiorna il badge nel tab
-            if (window.snake?.updateGridsBadge) {
-                window.snake.updateGridsBadge();
-            }
-        } catch (error) {
-            this.notify.error('Errore nell\'eliminazione delle griglie');
-        }
-    }
-
-    /**
-     * Tab activation handler
-     */
-    onTabActivate() {
-        console.log('🔄 Process tab attivato');
-        this.loadGridsFromStorage();
-    }
-
-    /**
-     * Tab deactivation handler
-     */
-    onTabDeactivate() {
-        console.log('🔄 Process tab disattivato');
-        this.showProgressBar(false);
-    }
-
-    /**
-     * Initialize
-     */
-    initialize() {
-        console.log('🔧 Inizializzazione ProcessTabManager...');
-        this.loadGridsFromStorage();
     }
 
     /**
