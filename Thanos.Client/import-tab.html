@@ -1,113 +1,154 @@
-﻿<!-- Import Tab HTML Structure -->
-<div id="import-tab" class="tab-content active">
-    <div class="import-content">
-        <!-- Board Input Section (Left side - grows) -->
-        <div class="board-input-section">
-            <h2>📝 Board Input</h2>
+﻿<!-- Import Tab Content -->
+<div class="h-100 d-flex flex-column">
+    <div class="row flex-fill g-3">
+        <!-- Board Input Section (Left - Grows) -->
+        <div class="col-lg-8 d-flex flex-column">
+            <div class="card h-100 border-2 border-success-subtle">
+                <div class="card-header bg-success-subtle">
+                    <h2 class="card-title h5 mb-0 text-success fw-bold">📝 Board Input</h2>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <!-- Textarea -->
+                    <!--suppress HtmlFormInputWithoutLabel -->
+                    <textarea
+                            id="boardInput"
+                            class="form-control flex-fill font-monospace border-2"
+                            placeholder="Incolla qui la griglia o liste di griglie..."
+                            style="font-size: 11px; line-height: 1.1; resize: none;">
+                    </textarea>
 
-            <!--suppress HtmlFormInputWithoutLabel -->
-            <textarea
-                    id="boardInput"
-                    class="board-input"
-                    placeholder="Incolla qui la griglia o liste di griglie...">
-            </textarea>
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button class="btn btn-success flex-fill" id="importBtn">
+                            📥 Import Boards
+                        </button>
+                        <button class="btn btn-outline-secondary" id="clearBtn">
+                            🗑️ Clear
+                        </button>
+                        <button class="btn btn-outline-info" id="exampleBtn">
+                            📋 Example
+                        </button>
+                    </div>
 
-            <div class="input-actions">
-                <button class="button" id="importBtn">
-                    📥 Import Boards
-                </button>
-                <button class="button secondary" id="clearBtn">
-                    🗑️ Clear
-                </button>
-                <button class="button secondary" id="exampleBtn">
-                    📋 Example
-                </button>
+                    <!-- Input Statistics -->
+                    <div class="d-flex justify-content-between mt-2 small text-muted">
+                        <span>Lines: <span id="lineCount" class="fw-semibold">0</span></span>
+                        <span>Characters: <span id="charCount" class="fw-semibold">0</span></span>
+                        <span>Grids detected: <span id="gridCount" class="fw-semibold">0</span></span>
+                    </div>
+                </div>
             </div>
-
-            <div class="input-stats" id="inputStats">
-                <span>Lines: <span id="lineCount">0</span></span>
-                <span>Characters: <span id="charCount">0</span></span>
-                <span>Grids detected: <span id="gridCount">0</span></span>
-            </div>
-
-            <div class="status-message" id="statusMessage"></div>
         </div>
 
-        <!-- Icons Section (Right side - fixed width) -->
-        <div class="icons-section">
-            <h2>🎯 Quick Icons</h2>
+        <!-- Icons Section (Right - Fixed Width) -->
+        <div class="col-lg-4 d-flex flex-column">
+            <div class="card h-100 border-2 border-success-subtle">
+                <div class="card-header bg-success-subtle">
+                    <h2 class="card-title h5 mb-0 text-success fw-bold">🎯 Quick Icons</h2>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <!-- Icons Grid -->
+                    <div class="row g-2 mb-3" id="iconsGrid">
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="👽">
+                                <span class="fs-4">👽</span>
+                                <small class="text-muted">Alien</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="🐍">
+                                <span class="fs-4">🐍</span>
+                                <small class="text-muted">Snake</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="🍎">
+                                <span class="fs-4">🍎</span>
+                                <small class="text-muted">Apple</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="💀">
+                                <span class="fs-4">💀</span>
+                                <small class="text-muted">Death</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="⭐">
+                                <span class="fs-4">⭐</span>
+                                <small class="text-muted">Star</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="🔥">
+                                <span class="fs-4">🔥</span>
+                                <small class="text-muted">Fire</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="💎">
+                                <span class="fs-4">💎</span>
+                                <small class="text-muted">Diamond</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="🏆">
+                                <span class="fs-4">🏆</span>
+                                <small class="text-muted">Trophy</small>
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-success w-100 d-flex flex-column align-items-center p-2 icon-btn" data-icon="⚡">
+                                <span class="fs-4">⚡</span>
+                                <small class="text-muted">Lightning</small>
+                            </button>
+                        </div>
+                    </div>
 
-            <div class="icons-grid">
-                <button class="icon-btn" data-icon="👽">
-                    <span class="icon-emoji">👽</span>
-                    <span class="icon-label">Snake Head</span>
-                </button>
-                <button class="icon-btn" data-icon="💲">
-                    <span class="icon-emoji">💲</span>
-                    <span class="icon-label">Snake Body</span>
-                </button>
-                <button class="icon-btn" data-icon="⬛">
-                    <span class="icon-emoji">⬛</span>
-                    <span class="icon-label">Empty</span>
-                </button>
-                <button class="icon-btn" data-icon="🍎">
-                    <span class="icon-emoji">🍎</span>
-                    <span class="icon-label">Food</span>
-                </button>
-                <button class="icon-btn" data-icon="💀">
-                    <span class="icon-emoji">💀</span>
-                    <span class="icon-label">Hazard</span>
-                </button>
-                <button class="icon-btn" data-icon="⬆️">
-                    <span class="icon-emoji">⬆️</span>
-                    <span class="icon-label">Up</span>
-                </button>
-                <button class="icon-btn" data-icon="⬇️">
-                    <span class="icon-emoji">⬇️</span>
-                    <span class="icon-label">Down</span>
-                </button>
-                <button class="icon-btn" data-icon="⬅️">
-                    <span class="icon-emoji">⬅️</span>
-                    <span class="icon-label">Left</span>
-                </button>
-                <button class="icon-btn" data-icon="➡️">
-                    <span class="icon-emoji">➡️</span>
-                    <span class="icon-label">Right</span>
-                </button>
-            </div>
-
-            <div class="legend">
-                <h3>📚 Legend</h3>
-                <div class="legend-items">
-                    <div class="legend-item">
-                        <span class="legend-emoji">👽</span>
-                        <span>Snake Head</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-emoji">💲</span>
-                        <span>Snake Body</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-emoji">⬛</span>
-                        <span>Empty Space</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-emoji">🍎</span>
-                        <span>Food</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-emoji">💀</span>
-                        <span>Hazard</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-emoji">⬆️⬇️⬅️➡️</span>
-                        <span>Directions</span>
+                    <!-- Legend -->
+                    <div class="card border-1 border-secondary-subtle mt-auto">
+                        <div class="card-header py-2">
+                            <h6 class="card-title mb-0 small fw-semibold">Legend</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-1 small">
+                                <div class="col-6 d-flex align-items-center">
+                                    <span class="me-1">⬜</span>
+                                    <span class="text-muted">Empty</span>
+                                </div>
+                                <div class="col-6 d-flex align-items-center">
+                                    <span class="me-1">⬛</span>
+                                    <span class="text-muted">Wall</span>
+                                </div>
+                                <div class="col-6 d-flex align-items-center">
+                                    <span class="me-1">🐍</span>
+                                    <span class="text-muted">Snake</span>
+                                </div>
+                                <div class="col-6 d-flex align-items-center">
+                                    <span class="me-1">🍎</span>
+                                    <span class="text-muted">Food</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Status Message Area -->
+    <div id="statusMessage" class="mt-3"></div>
 </div>
 
-<!-- Copy Feedback Element -->
-<div class="copy-feedback" id="copyFeedback"></div>
+<!-- Copy Feedback Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="copyToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <strong class="me-auto">✅ Copied!</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Icon copied to clipboard
+        </div>
+    </div>
+</div>

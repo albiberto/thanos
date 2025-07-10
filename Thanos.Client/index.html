@@ -4,50 +4,79 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>BattleSnake Board Converter</title>
+    <!-- Bootstrap CSS -->
+    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+          integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" rel="stylesheet">
+    <!-- Custom CSS minimo -->
     <link href="css/styles.css" rel="stylesheet">
-    <link href="css/import-tab.css" rel="stylesheet">
-    <link href="css/formatter-tab.css" rel="stylesheet">
-    <link href="css/processor-tab.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
 </head>
-<body>
-<div class="container">
-    <h1>🐍 BattleSnake Board Converter 🐍</h1>
-
-    <div class="tabs">
-        <button class="tab-button active" onclick="switchTab('import')">Import Boards</button>
-        <button class="tab-button" onclick="switchTab('process')">Process Boards</button>
-        <button class="tab-button" onclick="switchTab('formatter')">JSON Formatter</button>
+<body class="vh-100">
+<div class="container-fluid h-100 d-flex flex-column p-3">
+    <!-- Header -->
+    <div class="text-center mb-3">
+        <h1 class="text-success fw-bold">🐍 BattleSnake Board Converter 🐍</h1>
     </div>
 
-    <!-- Import Tab - Content loaded from import-tab.js -->
-    <div class="tab-content active" id="import-tab">
-        <!-- Content will be loaded by import-tab.js -->
-    </div>
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs border-bottom border-success border-2 mb-3" id="mainTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button aria-controls="import-tab" aria-selected="true" class="nav-link active fw-semibold"
+                    data-bs-target="#import-tab" data-bs-toggle="tab" id="import-tab-btn" role="tab"
+                    type="button">
+                📥 Import Boards
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button aria-controls="process-tab" aria-selected="false" class="nav-link fw-semibold" data-bs-target="#process-tab"
+                    data-bs-toggle="tab" id="process-tab-btn" role="tab" type="button">
+                ⚙️ Process Boards
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button aria-controls="formatter-tab" aria-selected="false" class="nav-link fw-semibold"
+                    data-bs-target="#formatter-tab" data-bs-toggle="tab" id="formatter-tab-btn" role="tab"
+                    type="button">
+                📝 JSON Formatter
+            </button>
+        </li>
+    </ul>
 
-    <!-- Processor Tab - Content loaded from processor-tab.js -->
-    <div class="tab-content" id="processor-tab">
-        <!-- Processor will be loaded by formatter-tab.js -->
-    </div>
+    <!-- Tab Content -->
+    <div class="tab-content flex-fill d-flex flex-column" id="mainTabContent">
+        <!-- Import Tab -->
+        <div aria-labelledby="import-tab-btn" class="tab-pane fade show active h-100 d-flex flex-column" id="import-tab"
+             role="tabpanel">
+            <!-- Content will be loaded from import-tab.html -->
+        </div>
 
-    <!-- Formatter Tab - Content loaded from formatter-tab.js -->
-    <div class="tab-content" id="formatter-tab">
-        <!-- Content will be loaded by formatter-tab.js -->
+        <!-- Process Tab -->
+        <div aria-labelledby="process-tab-btn" class="tab-pane fade h-100 d-flex flex-column" id="process-tab"
+             role="tabpanel">
+            <!-- Content will be loaded from process-tab.html -->
+        </div>
+
+        <!-- Formatter Tab -->
+        <div aria-labelledby="formatter-tab-btn" class="tab-pane fade h-100 d-flex flex-column" id="formatter-tab"
+             role="tabpanel">
+            <!-- Content will be loaded from formatter-tab.html -->
+        </div>
     </div>
 
     <!-- Status Messages -->
-    <div id="statusMessage"></div>
-    
+    <div class="mt-2" id="statusMessage"></div>
 </div>
 
-<!-- Load JavaScript modules in correct order -->
+<!-- Bootstrap JS -->
+<script crossorigin="anonymous"
+        integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Load JavaScript modules -->
 <script src="js/common.js"></script>
-<script src="js/tab-manager.js"></script>
-<script src="js/tabs/process-tab.js"></script>
+<script src="js/tab-loader.js"></script>
 <script src="js/tabs/import-tab.js"></script>
+<script src="js/tabs/process-tab.js"></script>
 <script src="js/tabs/formatter-tab.js"></script>
 <script src="js/main.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js" integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q" crossorigin="anonymous"></script>
-
 </body>
 </html>

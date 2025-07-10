@@ -1,12 +1,18 @@
-﻿// Battlesnake Board Converter - Main Entry Point
+﻿/**
+ * Battlesnake Board Converter - Main Entry Point
+ * Updated: Integrates with global NotifyService, removed individual messaging
+ */
 
 class BattlesnakeApp {
     constructor() {
         this.initialized = false;
         this.version = '2.0.0';
+        this.boards = [];
     }
 
-    // Initialize the entire application
+    /**
+     * Initialize the entire application
+     */
     async init() {
         if (this.initialized) return;
 
@@ -15,6 +21,9 @@ class BattlesnakeApp {
         try {
             // Wait for DOM to be ready
             await this.waitForDOM();
+
+            // Initialize notification service first
+            this.initializeNotificationService();
 
             // Initialize core systems
             this.initializeTabManager();
@@ -39,7 +48,9 @@ class BattlesnakeApp {
         }
     }
 
-    // Wait for DOM to be fully loaded
+    /**
+     * Wait for DOM to be fully loaded
+     */
     waitForDOM() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
@@ -50,7 +61,21 @@ class BattlesnakeApp {
         });
     }
 
-    // Initialize tab manager
+    /**
+     * Initialize notification service
+     */
+    initializeNotificationService() {
+        if (window.NotifyService) {
+            window.NotifyService.init();
+            console.log('✅ Notification service initialized');
+        } else {
+            console.warn('⚠️ Notification service not available');
+        }
+    }
+
+    /**
+     * Initialize tab manager
+     */
     initializeTabManager() {
         if (window.BattlesnakeTabManager) {
             window.BattlesnakeTabManager.tabManager.init();
@@ -60,7 +85,9 @@ class BattlesnakeApp {
         }
     }
 
-    // Initialize all tabs
+    /**
+     * Initialize all tabs
+     */
     async initializeTabs() {
         const tabs = ['import', 'process', 'formatter'];
 
@@ -75,42 +102,32 @@ class BattlesnakeApp {
         }
     }
 
-    // Wait for tab to be initialized
-    waitForTabInitialization(tabName, timeout = 2000) {
-        return new Promise((resolve, reject) => {
-            const startTime = Date.now();
-
-            const checkTab = () => {
-                if (window.BattlesnakeTabManager?.tabManager.hasTab(tabName)) {
+    /**
+     * Wait for tab to be initialized
+     */
+    waitForTabInitialization(tabName) {
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                const tabManager = window.BattlesnakeTabManager?.tabManager;
+                if (tabManager && tabManager.hasTab && tabManager.hasTab(tabName)) {
+                    clearInterval(checkInterval);
                     resolve();
-                } else if (Date.now() - startTime > timeout) {
-                    reject(new Error(`Tab ${tabName} initialization timeout`));
-                } else {
-                    setTimeout(checkTab, 50);
                 }
-            };
+            }, 100);
 
-            checkTab();
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                resolve();
+            }, 5000);
         });
     }
 
-    // Setup global event listeners
+    /**
+     * Setup global event listeners
+     */
     setupGlobalEventListeners() {
-        // Handle board import events
-        document.addEventListener('boardsImported', (event) => {
-            console.log(`📥 Boards imported: ${event.detail.count} boards`);
-        });
-
-        // Handle window beforeunload
-        window.addEventListener('beforeunload', (event) => {
-            const boards = window.BattlesnakeCommon?.getImportedBoards() || [];
-            if (boards.length > 0) {
-                event.preventDefault();
-                event.returnValue = 'Hai delle board caricate. Sei sicuro di voler uscire?';
-            }
-        });
-
-        // Handle errors
+        // Global error handler
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
             this.showErrorMessage('Si è verificato un errore imprevisto');
@@ -119,17 +136,31 @@ class BattlesnakeApp {
         // Handle unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
-            this.showErrorMessage('Errore durante un\'operazione asincrona');
+            this.showErrorMessage('Errore durante l\'elaborazione');
         });
 
-        console.log('✅ Global event listeners setup');
+        // Handle beforeunload to save state
+        window.addEventListener('beforeunload', () => {
+            this.saveApplicationState();
+        });
+
+        // Handle visibility change to pause/resume operations
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.onApplicationPause();
+            } else {
+                this.onApplicationResume();
+            }
+        });
     }
 
-    // Setup keyboard shortcuts
+    /**
+     * Setup keyboard shortcuts
+     */
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
-            // Ctrl/Cmd + Tab numbers for quick tab switching
-            if ((event.ctrlKey || event.metaKey) && !event.shiftKey) {
+            // Ctrl/Cmd + 1, 2, 3 for tab switching
+            if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
                 switch (event.key) {
                     case '1':
                         event.preventDefault();
@@ -143,148 +174,249 @@ class BattlesnakeApp {
                         event.preventDefault();
                         this.switchToTab('formatter');
                         break;
-                    case 'Enter':
-                        // Quick actions based on current tab
+                    case 's':
+                        // Ctrl/Cmd + S to save/export
                         event.preventDefault();
-                        this.handleQuickAction();
+                        this.handleQuickSave();
+                        break;
+                    case 'h':
+                        // Ctrl/Cmd + H for help
+                        event.preventDefault();
+                        this.showHelp();
                         break;
                 }
             }
 
-            // ESC to clear status messages
+            // Escape to close notifications
             if (event.key === 'Escape') {
-                this.clearStatusMessage();
+                this.hideNotifications();
             }
         });
-
-        console.log('✅ Keyboard shortcuts setup');
     }
 
-    // Setup clipboard handlers
+    /**
+     * Setup clipboard handlers
+     */
     setupClipboardHandlers() {
-        // Main JSON output copy button
-        const copyButton = document.getElementById('copyButton');
-        if (copyButton) {
-            copyButton.addEventListener('click', () => {
-                window.BattlesnakeCommon?.copyToClipboard('jsonCode', 'copyButton');
-            });
-        }
+        // Global copy handler
+        document.addEventListener('copy', (event) => {
+            // Custom copy logic can be added here
+        });
 
-        // Formatter output copy button
-        const copyFormatterBtn = document.querySelector('[onclick*="copyFormatterOutput"]');
-        if (copyFormatterBtn) {
-            copyFormatterBtn.addEventListener('click', () => {
-                window.BattlesnakeFormatterTab?.copyFormatterOutput();
-            });
-        }
-
-        console.log('✅ Clipboard handlers setup');
+        // Handle paste events globally
+        document.addEventListener('paste', (event) => {
+            // Handle global paste operations
+            this.handleGlobalPaste(event);
+        });
     }
 
-    // Switch to a specific tab
+    /**
+     * Handle global paste operations
+     */
+    handleGlobalPaste(event) {
+        const activeElement = document.activeElement;
+        const pastedData = event.clipboardData?.getData('text');
+
+        if (!pastedData) return;
+
+        // Check if pasted data looks like JSON
+        if (this.looksLikeJSON(pastedData)) {
+            // If we're in import tab, suggest switching to formatter
+            const currentTab = window.BattlesnakeTabManager?.tabManager?.getCurrentTab();
+            if (currentTab === 'import') {
+                setTimeout(() => {
+                    window.NotifyService?.info('💡 Sembra JSON! Considera di usare il tab Formatter');
+                }, 1000);
+            }
+        }
+    }
+
+    /**
+     * Check if text looks like JSON
+     */
+    looksLikeJSON(text) {
+        const trimmed = text.trim();
+        return (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+            (trimmed.startsWith('[') && trimmed.endsWith(']'));
+    }
+
+    /**
+     * Switch to specific tab
+     */
     switchToTab(tabName) {
-        if (window.BattlesnakeTabManager) {
-            window.BattlesnakeTabManager.switchTab(tabName);
+        if (window.BattlesnakeTabManager?.tabManager?.switchTab) {
+            window.BattlesnakeTabManager.tabManager.switchTab(tabName);
         }
     }
 
-    // Handle quick actions based on current tab
-    handleQuickAction() {
-        const currentTab = window.BattlesnakeTabManager?.tabManager.getCurrentTab();
+    /**
+     * Show welcome message
+     */
+    showWelcomeMessage() {
+        setTimeout(() => {
+            window.NotifyService?.success('🐍 Battlesnake Board Converter caricato!', 2000);
+        }, 500);
+    }
+
+    /**
+     * Show error message
+     */
+    showErrorMessage(message) {
+        window.NotifyService?.error(message);
+    }
+
+    /**
+     * Show success message
+     */
+    showSuccessMessage(message) {
+        window.NotifyService?.success(message);
+    }
+
+    /**
+     * Handle quick save (Ctrl+S)
+     */
+    handleQuickSave() {
+        const currentTab = window.BattlesnakeTabManager?.tabManager?.getCurrentTab();
 
         switch (currentTab) {
+            case 'formatter':
+                // Trigger formatter export
+                const formatterTab = window.BattlesnakeFormatterTab;
+                if (formatterTab && formatterTab.exportJSON) {
+                    formatterTab.exportJSON();
+                }
+                break;
             case 'import':
-                window.BattlesnakeImportTab?.importBoards();
+                // Trigger import
+                const importTab = window.BattlesnakeImportTab;
+                if (importTab && importTab.importBoards) {
+                    importTab.importBoards();
+                }
                 break;
             case 'process':
-                window.BattlesnakeProcessTab?.generateAllJSON();
+                // Save current processor state
+                window.NotifyService?.info('💾 Stato processori salvato');
                 break;
-            case 'formatter':
-                window.BattlesnakeFormatterTab?.formatJSONList();
-                break;
+            default:
+                window.NotifyService?.info('💾 Nessuna azione di salvataggio disponibile per questo tab');
         }
     }
 
-    // Show welcome message
-    showWelcomeMessage() {
-        if (window.BattlesnakeCommon) {
-            window.BattlesnakeCommon.showStatus(
-                '🐍 Benvenuto in Battlesnake Board Converter! Inizia importando le tue griglie.'
-            );
+    /**
+     * Show help
+     */
+    showHelp() {
+        const helpMessage = `
+🔤 Scorciatoie da tastiera:
+• Ctrl/Cmd + 1: Tab Import
+• Ctrl/Cmd + 2: Tab Process  
+• Ctrl/Cmd + 3: Tab Formatter
+• Ctrl/Cmd + S: Salva/Esporta
+• Ctrl/Cmd + H: Mostra aiuto
+• Esc: Chiudi notifiche
+        `.trim();
+
+        window.NotifyService?.info(helpMessage, 8000);
+    }
+
+    /**
+     * Hide notifications
+     */
+    hideNotifications() {
+        window.NotifyService?.hide();
+    }
+
+    /**
+     * Save application state
+     */
+    saveApplicationState() {
+        try {
+            const state = {
+                version: this.version,
+                timestamp: Date.now(),
+                currentTab: window.BattlesnakeTabManager?.tabManager?.getCurrentTab(),
+                boards: this.boards
+            };
+
+            localStorage.setItem('battlesnake-app-state', JSON.stringify(state));
+        } catch (error) {
+            console.warn('Failed to save application state:', error);
         }
     }
 
-    // Show error message
-    showErrorMessage(message) {
-        if (window.BattlesnakeCommon) {
-            window.BattlesnakeCommon.showStatus(message, true);
-        } else {
-            console.error(message);
+    /**
+     * Load application state
+     */
+    loadApplicationState() {
+        try {
+            const savedState = localStorage.getItem('battlesnake-app-state');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+
+                // Restore boards if available
+                if (state.boards && Array.isArray(state.boards)) {
+                    this.boards = state.boards;
+                    window.NotifyService?.info(`📁 ${state.boards.length} board caricate dallo stato precedente`);
+                }
+
+                // Switch to previous tab
+                if (state.currentTab) {
+                    setTimeout(() => {
+                        this.switchToTab(state.currentTab);
+                    }, 1000);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to load application state:', error);
         }
     }
 
-    // Clear status message
-    clearStatusMessage() {
-        const statusDiv = document.getElementById('statusMessage');
-        if (statusDiv) {
-            statusDiv.innerHTML = '';
+    /**
+     * Handle application pause (tab hidden)
+     */
+    onApplicationPause() {
+        // Pause auto-refresh in process tab
+        if (window.BattlesnakeProcessTab && window.BattlesnakeProcessTab.stopAutoRefresh) {
+            window.BattlesnakeProcessTab.stopAutoRefresh();
         }
     }
 
-    // Get application info
-    getInfo() {
-        return {
-            version: this.version,
-            initialized: this.initialized,
-            currentTab: window.BattlesnakeTabManager?.tabManager.getCurrentTab(),
-            boardsLoaded: window.BattlesnakeCommon?.getImportedBoards().length || 0,
-            registeredTabs: window.BattlesnakeTabManager?.tabManager.getRegisteredTabs() || []
-        };
+    /**
+     * Handle application resume (tab visible)
+     */
+    onApplicationResume() {
+        // Resume auto-refresh in process tab
+        if (window.BattlesnakeProcessTab && window.BattlesnakeProcessTab.startAutoRefresh) {
+            window.BattlesnakeProcessTab.startAutoRefresh();
+        }
     }
 
-    // Export current state
-    exportState() {
-        const boards = window.BattlesnakeCommon?.getImportedBoards() || [];
-        const expectedValues = window.BattlesnakeCommon?.getBoardExpectedValues() || [];
-
-        return {
-            version: this.version,
-            timestamp: new Date().toISOString(),
-            boards: boards,
-            expectedValues: expectedValues,
-            configuration: window.BattlesnakeProcessTab?.processTab.getConfiguration() || {}
-        };
-    }
-
-    // Import state
+    /**
+     * Import state from external source
+     */
     importState(state) {
         try {
             if (state.boards && Array.isArray(state.boards)) {
-                window.BattlesnakeCommon?.setImportedBoards(state.boards);
-
-                if (state.expectedValues && Array.isArray(state.expectedValues)) {
-                    state.expectedValues.forEach((value, index) => {
-                        window.BattlesnakeCommon?.setBoardExpectedValue(index, value);
-                    });
-                }
-
-                // Update UI
-                window.BattlesnakeProcessTab?.processTab.updateUI();
-
-                this.showSuccessMessage(`Stato importato: ${state.boards.length} board caricate`);
+                this.boards = state.boards;
+                window.NotifyService?.success(`✅ ${state.boards.length} board importate`);
                 this.switchToTab('process');
             }
         } catch (error) {
-            this.showErrorMessage('Errore durante l\'importazione dello stato');
+            window.NotifyService?.error('❌ Errore durante l\'importazione dello stato');
             console.error('Import state error:', error);
         }
     }
 
-    // Show success message
-    showSuccessMessage(message) {
-        if (window.BattlesnakeCommon) {
-            window.BattlesnakeCommon.showStatus(message);
-        }
+    /**
+     * Get current application state
+     */
+    getState() {
+        return {
+            version: this.version,
+            initialized: this.initialized,
+            boards: this.boards,
+            currentTab: window.BattlesnakeTabManager?.tabManager?.getCurrentTab()
+        };
     }
 }
 
@@ -294,6 +426,11 @@ const battlesnakeApp = new BattlesnakeApp();
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     battlesnakeApp.init();
+
+    // Load previous state after initialization
+    setTimeout(() => {
+        battlesnakeApp.loadApplicationState();
+    }, 1000);
 });
 
 // Make app globally available for debugging
