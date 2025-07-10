@@ -1,5 +1,8 @@
 ﻿/* Formatter Tab Specific Styles - Improved Contrast */
 
+/* Import delle variabili CSS */
+@import url('variables.css');
+
 /* === MAIN LAYOUT === */
 .formatter-content {
     display: flex;
@@ -11,41 +14,41 @@
 
 /* === INPUT SECTION === */
 .formatter-section {
-    background: #ffffff;
-    border: 2px solid #e5e7eb;
+    background: var(--color-white);
+    border: 2px solid var(--color-border-light);
     border-radius: 12px;
     padding: 15px;
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .formatter-section h2 {
     margin-bottom: 12px;
-    color: #198754;
+    color: var(--color-success);
     font-size: 1.2em;
-    border-bottom: 2px solid #198754;
+    border-bottom: 2px solid var(--color-success);
     padding-bottom: 5px;
     font-weight: 600;
 }
 
 /* === CONTROLS SECTION === */
 .formatter-controls {
-    background: #ffffff;
-    border: 2px solid #e5e7eb;
+    background: var(--color-white);
+    border: 2px solid var(--color-border-light);
     border-radius: 12px;
     padding: 15px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .formatter-controls h3 {
     margin-bottom: 10px;
-    color: #374151;
+    color: var(--color-gray-800);
     font-size: 14px;
     font-weight: 600;
 }
@@ -73,13 +76,13 @@
 
 .json-input {
     flex: 1;
-    background: #ffffff;
-    border: 2px solid #d1d5db;
+    background: var(--color-white);
+    border: 2px solid var(--color-gray-300);
     border-radius: 8px;
     padding: 12px;
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    color: #1f2937;
+    color: var(--color-text-heading);
     resize: none;
     line-height: 1.5;
     min-height: 200px;
@@ -88,19 +91,19 @@
 
 .json-input:focus {
     outline: none;
-    border-color: #198754;
-    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.1);
+    border-color: var(--color-success);
+    box-shadow: var(--shadow-focus-success);
 }
 
 .json-input.error {
-    border-color: #dc3545;
-    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    border-color: var(--color-danger);
+    box-shadow: var(--shadow-focus-danger);
     background-color: #fef2f2;
 }
 
 .json-input.valid {
-    border-color: #198754;
-    box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.1);
+    border-color: var(--color-success);
+    box-shadow: 0 0 0 2px rgba(var(--color-success-rgb), 0.1);
     background-color: #f0fdf4;
 }
 
@@ -110,9 +113,9 @@
     gap: 15px;
     margin-top: 8px;
     font-size: 12px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     padding: 8px 0;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--color-border-light);
 }
 
 .input-stats span {
@@ -123,16 +126,16 @@
 
 .stat-number {
     font-weight: 600;
-    color: #374151;
+    color: var(--color-gray-800);
 }
 
 .stat-valid {
-    color: #198754;
+    color: var(--color-success);
     font-weight: 600;
 }
 
 .stat-invalid {
-    color: #dc3545;
+    color: var(--color-danger);
     font-weight: 600;
 }
 
@@ -148,47 +151,47 @@
 
 .validation-success {
     background: #f0fdf4;
-    color: #166534;
-    border-color: #198754;
+    color: var(--color-validation-success);
+    border-color: var(--color-success);
 }
 
 .validation-error {
     background: #fef2f2;
-    color: #991b1b;
-    border-color: #dc3545;
+    color: var(--color-validation-error);
+    border-color: var(--color-danger);
 }
 
 /* === OUTPUT SECTIONS === */
 .formatter-output {
-    background: #ffffff;
-    border: 2px solid #198754;
+    background: var(--color-white);
+    border: 2px solid var(--color-success);
     border-radius: 12px;
     padding: 15px;
     margin-top: 15px;
     display: flex;
     flex-direction: column;
     max-height: 50vh;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-xl);
 }
 
 .formatter-output h2 {
     margin-bottom: 12px;
-    color: #198754;
+    color: var(--color-success);
     font-size: 1.1em;
-    border-bottom: 2px solid #198754;
+    border-bottom: 2px solid var(--color-success);
     padding-bottom: 5px;
     font-weight: 600;
 }
 
 /* === FORMATTER CODE OUTPUT - TEMA CHIARO MIGLIORATO === */
 .formatter-output-code {
-    background: #f8f9fa !important;
-    border: 1px solid #dee2e6;
+    background: var(--color-code-bg-light) !important;
+    border: 1px solid var(--color-border-default);
     border-radius: 8px;
     padding: 16px;
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    color: #198754 !important;
+    color: var(--color-code-text-light) !important;
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-y: auto;
@@ -201,8 +204,8 @@
 
 /* === TEMA SCURO OPZIONALE === */
 .formatter-output-code.dark-theme {
-    background: #1e293b !important;
-    color: #10b981 !important;
+    background: var(--color-code-bg-terminal) !important;
+    color: var(--color-code-text-success) !important;
     border-color: #334155;
 }
 
@@ -213,7 +216,7 @@
     margin-top: 12px;
     flex-wrap: wrap;
     padding-top: 12px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--color-border-light);
 }
 
 .formatter-output-actions .button {
@@ -224,8 +227,8 @@
 
 /* === EXPORT BUTTON STYLING === */
 .button.export {
-    background: linear-gradient(45deg, #3b82f6, #2563eb);
-    color: white;
+    background: var(--gradient-primary);
+    color: var(--color-white);
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
@@ -234,8 +237,8 @@
 }
 
 .button.export:hover {
-    background: linear-gradient(45deg, #2563eb, #1d4ed8);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    background: var(--gradient-primary-hover);
+    box-shadow: var(--shadow-hover-primary);
     transform: translateY(-1px);
 }
 
@@ -248,8 +251,8 @@
 }
 
 .quick-action-btn {
-    background: #6b7280;
-    color: white;
+    background: var(--color-gray-600);
+    color: var(--color-white);
     border: none;
     border-radius: 4px;
     padding: 6px 12px;
@@ -260,9 +263,9 @@
 }
 
 .quick-action-btn:hover {
-    background: #4b5563;
+    background: var(--color-gray-700);
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-button);
 }
 
 /* === PROGRESS INDICATOR === */
@@ -270,11 +273,11 @@
     display: none;
     margin: 10px 0;
     padding: 10px;
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
+    background: var(--color-lightest);
+    border: 1px solid var(--color-gray-300);
     border-radius: 6px;
     font-size: 12px;
-    color: #6b7280;
+    color: var(--color-gray-600);
     text-align: center;
 }
 
@@ -367,7 +370,7 @@
     border-top-color: currentColor;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    color: white;
+    color: var(--color-white);
 }
 
 @keyframes spin {
@@ -380,12 +383,12 @@
 .json-input:focus,
 .button:focus,
 .quick-action-btn:focus {
-    outline: 2px solid #198754;
+    outline: 2px solid var(--color-success);
     outline-offset: 2px;
 }
 
 /* === HIGH CONTRAST SUPPORT === */
-@media (prefers-contrast: high) {
+@media (prefers-contrast: more) {
     .formatter-section,
     .formatter-controls,
     .formatter-output {

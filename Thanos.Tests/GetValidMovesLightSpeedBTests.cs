@@ -39,7 +39,7 @@ public class GetValidMovesTests
         // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
         // scenarios = scenarios.Where(a => a.Id is >= 500 and < 600); // Combat
         // scenarios = scenarios.Where(a => a.Id is >= 1000);          // Complex 
-        // scenarios = complex;
+        scenarios = complex;
         
         // Debug.PrintHeader();
         foreach (var scenario in scenarios)

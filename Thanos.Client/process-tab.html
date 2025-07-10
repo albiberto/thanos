@@ -1,89 +1,117 @@
-﻿<!-- Process Tab Content - Simplified -->
+﻿<!-- Process Tab - Grid Matrix Visualization -->
 <div class="h-100 d-flex flex-column">
-    <!-- Header with Controls -->
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-success border-2">
-        <h2 class="h4 mb-0 text-success fw-bold">⚙️ Process Boards</h2>
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-success btn-sm" id="refreshBtn" onclick="window.snake.processTabManager.refreshGrids()">
-                🔄 Refresh
-            </button>
-            <button class="btn btn-success btn-sm" id="processAllBtn" onclick="window.snake.processTabManager.processAllGrids()">
-                ⚡ Process All
-            </button>
+        <h2 class="h4 mb-0 text-success fw-bold">⚙️ Process & Generate Tests</h2>
+        <div class="d-flex gap-2 align-items-center">
+            <!-- ID Start Selector -->
+            <div class="d-flex align-items-center gap-2">
+                <label class="small fw-semibold">Start ID:</label>
+                <div class="input-group" style="width: 120px;">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.snake.processTabManager.changeStartId(-1)">−</button>
+                    <input type="number" class="form-control form-control-sm text-center" id="startIdInput" value="101" min="1" max="9999" onchange="window.snake.processTabManager.updateStartId()">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.snake.processTabManager.changeStartId(1)">+</button>
+                </div>
         </div>
     </div>
+    <div class="vr"></div>
+    <button class="btn btn-outline-success btn-sm" onclick="window.snake.processTabManager.refreshGrids()">
+        🔄 Refresh
+    </button>
+    <button class="btn btn-success btn-sm" onclick="window.snake.processTabManager.generateAllTests()">
+        📋 Generate JSON
+    </button>
+</div>
 
-    <!-- Stats Section - Compatta -->
-    <div class="row g-2 mb-3" id="statsSection">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body text-center py-2">
-                    <div class="h4 mb-1" id="totalBoards">0</div>
-                    <div class="small">Total Boards</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body text-center py-2">
-                    <div class="h4 mb-1" id="processedBoards">0</div>
-                    <div class="small">Processed</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-warning">
-                <div class="card-body text-center py-2">
-                    <div class="h4 mb-1" id="pendingBoards">0</div>
-                    <div class="small">Pending</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-danger">
-                <div class="card-body text-center py-2">
-                    <div class="h4 mb-1" id="errorBoards">0</div>
-                    <div class="small">Errors</div>
-                </div>
+<!-- Quick Stats -->
+<div class="row g-2 mb-3">
+    <div class="col-3">
+        <div class="card border-primary">
+            <div class="card-body py-1 text-center">
+                <div class="small text-muted">Total</div>
+                <div class="fw-bold" id="totalGrids">0</div>
             </div>
         </div>
     </div>
+    <div class="col-3">
+        <div class="card border-warning">
+            <div class="card-body py-1 text-center">
+                <div class="small text-muted">Pending</div>
+                <div class="fw-bold text-warning" id="pendingGrids">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card border-success">
+            <div class="card-body py-1 text-center">
+                <div class="small text-muted">Ready</div>
+                <div class="fw-bold text-success" id="readyGrids">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card border-danger">
+            <div class="card-body py-1 text-center">
+                <div class="small text-muted">Failed</div>
+                <div class="fw-bold text-danger" id="failedGrids">0</div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Grids List - Spazio massimo disponibile -->
-    <div class="flex-fill overflow-auto">
-        <div class="row g-3" id="processorsList">
-            <!-- Grids will be dynamically loaded here -->
-            <div class="col-12">
-                <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+<!-- Grids Container -->
+<div class="flex-fill overflow-auto">
+    <div class="row g-3" id="gridsContainer">
+        <!-- Grid cards will be generated here -->
+    </div>
+</div>
+
+<!-- JSON Output Modal -->
+    <div class="modal fade" id="jsonOutputModal" tabindex="-1" onclick="window.snake.processTabManager.closeJsonModal()">
+        <div class="modal-dialog modal-xl" onclick="event.stopPropagation()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generated Test JSON</h5>
+                <button type="button" class="btn-close" onclick="window.snake.processTabManager.closeJsonModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Generated <span id="jsonTestCount">0</span> test cases</span>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm" onclick="window.snake.processTabManager.copyJsonToClipboard()">
+                            📋 Copy to Clipboard
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="window.snake.processTabManager.downloadJson()">
+                            💾 Download JSON
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Progress Section -->
-    <div class="mt-2" id="progressSection" style="display: none;">
-        <div class="card border-info">
-            <div class="card-body py-2">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-semibold small">Processing Progress</span>
-                    <span id="progressText" class="small">0%</span>
-                </div>
-                <div class="progress" style="height: 0.5rem;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="progressBar" style="width: 0%"></div>
-                </div>
+                <pre id="jsonOutput" class="bg-light border rounded p-3" style="max-height: 60vh; overflow-y: auto; font-size: 12px;"></pre>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center bg-white bg-opacity-75" style="display: none !important; z-index: 1050;">
-    <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">Loading...</span>
+<!-- Expected Value Selection Template -->
+<template id="expectedSelectorTemplate">
+    <div class="expected-selector">
+        <div class="small text-muted mb-2">Expected Direction:</div>
+        <div class="btn-group-vertical btn-group-sm w-100" role="group">
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="1" data-label="⬆️ UP">1 - ⬆️ UP</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="2" data-label="⬇️ DOWN">2 - ⬇️ DOWN</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="3" data-label="⬆️⬇️ UP|DOWN">3 - ⬆️⬇️ UP|DOWN</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="4" data-label="⬅️ LEFT">4 - ⬅️ LEFT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="5" data-label="⬆️⬅️ UP|LEFT">5 - ⬆️⬅️ UP|LEFT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="6" data-label="⬇️⬅️ DOWN|LEFT">6 - ⬇️⬅️ DOWN|LEFT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="7" data-label="⬆️⬇️⬅️ UP|DOWN|LEFT">7 - ⬆️⬇️⬅️ UP|DOWN|LEFT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="8" data-label="➡️ RIGHT">8 - ➡️ RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="9" data-label="⬆️➡️ UP|RIGHT">9 - ⬆️➡️ UP|RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="10" data-label="⬇️➡️ DOWN|RIGHT">10 - ⬇️➡️ DOWN|RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="11" data-label="⬆️⬇️➡️ UP|DOWN|RIGHT">11 - ⬆️⬇️➡️ UP|DOWN|RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="12" data-label="⬅️➡️ LEFT|RIGHT">12 - ⬅️➡️ LEFT|RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="13" data-label="⬆️⬅️➡️ UP|LEFT|RIGHT">13 - ⬆️⬅️➡️ UP|LEFT|RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="14" data-label="⬇️⬅️➡️ DOWN|LEFT|RIGHT">14 - ⬇️⬅️➡️ DOWN|LEFT|RIGHT</button>
+            <button type="button" class="btn btn-outline-primary expected-btn" data-value="15" data-label="⬆️⬇️⬅️➡️ ALL">15 - ⬆️⬇️⬅️➡️ ALL</button>
+        </div>
     </div>
-    <h5 class="text-success">Processing...</h5>
-    <p class="text-muted">Please wait while we process your boards</p>
-</div>
+</template>
