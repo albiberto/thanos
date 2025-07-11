@@ -33,13 +33,13 @@ public class GetValidMovesTests
         // const bool onlyBoards = false;
         
         // For testing specific scenarios, uncomment and modify as needed:
-        scenarios = scenarios.Where(a => a.Id is >= 100 and < 104); // Basic movements
+        scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
         // scenarios = scenarios.Where(a => a.Id is >= 200 and < 300); // Borders
         // scenarios = scenarios.Where(a => a.Id is >= 300 and < 400); // Hazards
         // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
         // scenarios = scenarios.Where(a => a.Id is >= 500 and < 600); // Combat
         // scenarios = scenarios.Where(a => a.Id is >= 1000);          // Complex 
-        scenarios = complex;
+        // scenarios = complex;
         
         // Debug.PrintHeader();
         foreach (var scenario in scenarios)

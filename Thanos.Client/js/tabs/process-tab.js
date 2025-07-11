@@ -159,6 +159,7 @@ class ProcessTabManager {
                         </div>
                         ${statusBadge}
                     </div>
+                    </div>
                     
                     <div class="card-body d-flex flex-column p-2">
                         <!-- Grid Matrix -->
@@ -398,6 +399,16 @@ class ProcessTabManager {
     /**
      * Delete grid
      */
+    deleteGrids() {
+        if (confirm('Sei sicuro di voler eliminare questa griglia?')) {
+            this.grids = [];
+            this.renderGrids();
+            this.updateStats();
+            this.saveGridsToStorage();
+            this.notify.success('Griglia eliminata');
+        }
+    }
+
     deleteGrid(gridId) {
         if (confirm('Sei sicuro di voler eliminare questa griglia?')) {
             this.grids = this.grids.filter(g => g.id !== gridId);

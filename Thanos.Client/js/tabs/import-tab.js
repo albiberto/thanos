@@ -7,7 +7,7 @@
         this.initialized = false;
 
         // Caratteri validi per le griglie BattleSnake
-        this.VALID_CHARACTERS = ['👽', '💲', '😈', '⛔', '🍎', '💀', '⬛', '⬆️', '⬇️', '⬅️', '➡️', ' ', '\t', '\n', '\r'];
+        this.VALID_CHARACTERS = ['👽', '💲', '😈', '⛔', '🍎', '💀', '⬛', '⬆', '➡', '⬅', '⬇', ' ', '\t', '\n', '\r'];
 
         // Storage key per le griglie
         this.STORAGE_KEY = 'battlesnake_grids';
@@ -70,6 +70,7 @@
     }
 
     // Metodo principale per importare le boards
+    // Modifica il metodo importBoards
     importBoards() {
         console.log('📥 Tentativo di importazione boards...');
 
@@ -84,15 +85,11 @@
         }
 
         try {
-            // Validazione caratteri
-            const invalidChars = this.findInvalidCharacters(this.input.value);
-            if (invalidChars.length > 0) {
-                this.notify.error(`Caratteri non validi trovati: ${invalidChars.join(', ')}`);
-                return;
-            }
+            // Sanifica il contenuto rimuovendo i caratteri non validi
+            const sanitizedContent = this.sanitizeGridContent(this.input.value);
 
             // Parsing delle griglie
-            const gridTexts = this.input.value
+            const gridTexts = sanitizedContent
             .split(/\n\s*\n/)
             .filter(grid => grid.trim())
             .map(grid => grid.trim());
@@ -294,7 +291,13 @@
         }
     }
 
-    // Trova caratteri non validi
+    sanitizeGridContent(content) {
+        return Array.from(content)
+        .map(char => this.VALID_CHARACTERS.includes(char) ? char : '')
+        .join('');
+    }
+
+        // Trova caratteri non validi
     findInvalidCharacters(content) {
         const invalidChars = new Set();
         for (const char of content) {

@@ -15,12 +15,28 @@
         </div>
     </div>
     <div class="vr"></div>
+        <div class="d-flex align-items-end gap-2">
+        <button class="btn btn-outline-danger btn-sm d-flex align-items-center" onclick="window.snake.processTabManager.deleteGrids()">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke-width="1.5"
+                 stroke="currentColor"
+                 class="me-2"
+                 style="width: 18px; height: 18px;">
+                <path stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M6 7h12M9 7v10m6-10v10M4 7h16M4 7l1 12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2l1-12" />
+            </svg>
+            Delete Grids
+        </button>
     <button class="btn btn-outline-success btn-sm" onclick="window.snake.processTabManager.refreshGrids()">
         🔄 Refresh
     </button>
     <button class="btn btn-success btn-sm" onclick="window.snake.processTabManager.generateAllTests()">
         📋 Generate JSON
     </button>
+</div>
 </div>
 
 <!-- Quick Stats -->
