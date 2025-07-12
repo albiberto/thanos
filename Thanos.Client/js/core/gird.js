@@ -46,6 +46,162 @@ class GridMatrixComponent {
     }
 
     /**
+     * Get CSS class for cell type
+     * @param {string} cell - Cell character
+     * @returns {string} - CSS class name
+     */
+    getCellClass(cell) {
+        return this.cellClassMap[cell] || 'empty';
+    }
+
+    /**
+     * Get display character for cell
+     * @param {string} cell - Cell character
+     * @returns {string} - Display character
+     */
+    getCellDisplay(cell) {
+        return this.charDisplayMap[cell] || cell || '·';
+    }
+
+    /**
+     * Get direction overlay for a cell based on expected value
+     * @param {number} row - Cell row
+     * @param {number} col - Cell column
+     * @param {number} expectedValue - Expected direction value (1-15)
+     * @param {Object} myHead - Snake head position {x, y}
+     * @returns {Object} - Overlay information {class, html}
+     */
+    getDirectionOverlay(row, col, expectedValue, myHead) {
+        if (!expectedValue || !myHead) {
+            return { class: '', html: '' };
+        }
+
+        // Convert expectedValue to direction flags
+        const directions = this.expectedValueToDirections(expectedValue);
+
+        // Check if this cell is adjacent to snake head
+        const isAdjacent = this.isAdjacentToHead(row, col, myHead);
+
+        if (!isAdjacent) {
+            return { class: '', html: '' };
+        }
+
+        // Determine which direction this cell represents relative to head
+        const direction = this.getDirectionFromHead(row, col, myHead);
+
+        if (directions.includes(direction)) {
+            return {
+                class: 'direction-overlay',
+                html: `<div class="direction-arrow">${this.getDirectionArrow(direction)}</div>`
+            };
+        }
+
+        return { class: '', html: '' };
+    }
+
+    /**
+     * Convert expected value to array of directions
+     * @param {number} expectedValue - Expected value (1-15)
+     * @returns {Array} - Array of direction strings ['up', 'down', 'left', 'right']
+     */
+    expectedValueToDirections(expectedValue) {
+        const directionMap = {
+            1: ['up'],
+            2: ['down'],
+            3: ['up', 'down'],
+            4: ['left'],
+            5: ['up', 'left'],
+            6: ['down', 'left'],
+            7: ['up', 'down', 'left'],
+            8: ['right'],
+            9: ['up', 'right'],
+            10: ['down', 'right'],
+            11: ['up', 'down', 'right'],
+            12: ['left', 'right'],
+            13: ['up', 'left', 'right'],
+            14: ['down', 'left', 'right'],
+            15: ['up', 'down', 'left', 'right']
+        };
+
+        return directionMap[expectedValue] || [];
+    }
+
+    /**
+     * Check if cell is adjacent to snake head
+     * @param {number} row - Cell row
+     * @param {number} col - Cell column
+     * @param {Object} myHead - Snake head position {x, y}
+     * @returns {boolean} - True if adjacent
+     */
+    isAdjacentToHead(row, col, myHead) {
+        const dx = Math.abs(col - myHead.x);
+        const dy = Math.abs(row - myHead.y);
+        return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
+    }
+
+    /**
+     * Get direction from head to cell
+     * @param {number} row - Cell row
+     * @param {number} col - Cell column
+     * @param {Object} myHead - Snake head position {x, y}
+     * @returns {string} - Direction string
+     */
+    getDirectionFromHead(row, col, myHead) {
+        if (row < myHead.y) return 'up';
+        if (row > myHead.y) return 'down';
+        if (col < myHead.x) return 'left';
+        if (col > myHead.x) return 'right';
+        return '';
+    }
+
+    /**
+     * Get arrow character for direction
+     * @param {string} direction - Direction string
+     * @returns {string} - Arrow character
+     */
+    getDirectionArrow(direction) {
+        const arrows = {
+            'up': '↑',
+            'down': '↓',
+            'left': '←',
+            'right': '→'
+        };
+        return arrows[direction] || '';
+    }
+
+    /**
+     * Render matrix cells
+     * @param {Array} cells - 2D array of cell characters
+     * @param {string} instanceId - Unique instance identifier
+     * @param {number} expectedValue - Expected direction value (1-15)
+     * @param {Object} myHead - Snake head position {x, y}
+     * @returns {string} - HTML for matrix cells
+     */
+    renderMatrixCells(cells, instanceId, expectedValue, myHead) {
+        const rows = cells.map((row, rowIndex) => {
+            const cellsHTML = row.map((cell, colIndex) => {
+                const cellClass = this.getCellClass(cell);
+                const cellContent = this.getCellDisplay(cell);
+
+                // Check if this cell should show direction overlay
+                const directionOverlay = this.getDirectionOverlay(rowIndex, colIndex, expectedValue, myHead);
+
+                return `<span class="matrix-cell ${cellClass} ${directionOverlay.class}" 
+                             data-row="${rowIndex}" 
+                             data-col="${colIndex}"
+                             data-value="${cell}">
+                             ${cellContent}
+                             ${directionOverlay.html}
+                         </span>`;
+            }).join('');
+
+            return `<div class="matrix-row" data-row="${rowIndex}">${cellsHTML}</div>`;
+        }).join('');
+
+        return rows;
+    }
+
+    /**
      * Render grid matrix from grid data
      * @param {Object} grid - Grid object with cells array
      * @param {Object} options - Rendering options
@@ -67,8 +223,8 @@ class GridMatrixComponent {
         const instanceId = `grid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const css = this.generateCSS(instanceId, mergedOptions);
 
-        // Generate matrix HTML
-        const matrixHTML = this.renderMatrixCells(grid.cells, instanceId);
+        // Generate matrix HTML with direction overlays
+        const matrixHTML = this.renderMatrixCells(grid.cells, instanceId, options.expectedValue, options.myHead);
 
         return `
             <style>${css}</style>
@@ -78,48 +234,6 @@ class GridMatrixComponent {
                 ${matrixHTML}
             </div>
         `;
-    }
-
-    /**
-     * Render matrix cells
-     * @param {Array} cells - 2D array of cell characters
-     * @param {string} instanceId - Unique instance identifier
-     * @returns {string} - HTML for matrix cells
-     */
-    renderMatrixCells(cells, instanceId) {
-        const rows = cells.map((row, rowIndex) => {
-            const cellsHTML = row.map((cell, colIndex) => {
-                const cellClass = this.getCellClass(cell);
-                const cellContent = this.getCellDisplay(cell);
-
-                return `<span class="matrix-cell ${cellClass}" 
-                             data-row="${rowIndex}" 
-                             data-col="${colIndex}"
-                             data-value="${cell}">${cellContent}</span>`;
-            }).join('');
-
-            return `<div class="matrix-row" data-row="${rowIndex}">${cellsHTML}</div>`;
-        }).join('');
-
-        return rows;
-    }
-
-    /**
-     * Get CSS class for cell type
-     * @param {string} cell - Cell character
-     * @returns {string} - CSS class name
-     */
-    getCellClass(cell) {
-        return this.cellClassMap[cell] || 'empty';
-    }
-
-    /**
-     * Get display character for cell
-     * @param {string} cell - Cell character
-     * @returns {string} - Display character
-     */
-    getCellDisplay(cell) {
-        return this.charDisplayMap[cell] || cell || '·';
     }
 
     /**
@@ -165,6 +279,7 @@ class GridMatrixComponent {
                 font-family: monospace;
                 cursor: default;
                 user-select: none;
+                position: relative;
             }
 
             /* Cell type styles */
@@ -206,6 +321,32 @@ class GridMatrixComponent {
             #${instanceId} .matrix-cell.direction {
                 background: var(--color-info-light, #3b82f6);
                 color: var(--color-white, #ffffff);
+            }
+
+            /* Direction overlay styles */
+            #${instanceId} .matrix-cell.direction-overlay {
+                border: 3px solid #00ff00 !important;
+                background-color: rgba(0, 255, 0, 0.1) !important;
+                animation: pulse 1.5s infinite;
+            }
+
+            #${instanceId} .direction-arrow {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: ${Math.floor(fontSize * 1.2)}px;
+                font-weight: bold;
+                color: #00ff00;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+                z-index: 10;
+                pointer-events: none;
+            }
+
+            @keyframes pulse {
+                0% { border-color: #00ff00; }
+                50% { border-color: #33ff33; }
+                100% { border-color: #00ff00; }
             }
 
             /* Responsive sizing */

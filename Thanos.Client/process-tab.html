@@ -171,41 +171,17 @@
                             </div>
 
                             <!-- Calculate Expected Button -->
-                            <div class="text-center mb-3">
+                            <div class="text-center">
                                 <button class="btn btn-outline-primary btn-sm w-100" id="calculateExpectedBtn"
                                         onclick="window.snake.processTabManager.calculateExpected()">
                                     🧮 Calculate Expected
                                 </button>
                             </div>
-
-                            <!-- Expected Value Quick Set Buttons -->
-                            <div class="row g-1">
-                                <div class="col-6">
-                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(1)">
-                                        1 - ⬆️
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(2)">
-                                        2 - ⬇️
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(4)">
-                                        4 - ⬅️
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(8)">
-                                        8 - ➡️
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
                     <!-- Expected Value Override -->
-                    <div class="card mb-3">
+                    <div class="card flex-fill">
                         <div class="card-header bg-warning-subtle">
                             <h6 class="card-title mb-0 fw-semibold">⚙️ Override Expected</h6>
                         </div>
@@ -215,11 +191,9 @@
                                 <!-- Buttons will be rendered here -->
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Actions -->
-                    <div class="card mt-auto">
-                        <div class="card-body py-2">
+                        <!-- Card Footer with Action Buttons -->
+                        <div class="card-footer bg-light">
                             <div class="d-grid gap-2">
                                 <button class="btn btn-outline-info btn-sm" onclick="window.snake.processTabManager.previewCurrentTest()">
                                     👁️ Preview JSON
