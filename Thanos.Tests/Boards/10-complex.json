@@ -2,56 +2,34 @@
   {
     "Id": 101,
     "Name": "Test-101",
-    "Expected": 11,
+    "Expected": 1,
     "MoveRequest": {
       "game": {
         "id": "game-101",
         "ruleset": {
-          "name": "standard"
+          "name": "standard",
+          "version": "v1.0.0"
         },
         "timeout": 500
       },
       "turn": 5,
       "board": {
-        "height": 5,
-        "width": 5,
-        "food": [
-          {
-            "x": 4,
-            "y": 1
-          }
-        ],
-        "hazards": [
-          {
-            "x": 0,
-            "y": 3
-          }
-        ],
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
         "snakes": [
           {
             "id": "thanos",
             "name": "Thanos",
             "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 1,
-                "y": 0
-              },
-              {
-                "x": 2,
-                "y": 0
-              }
-            ],
+            "body": "[{\"x\":5,\"y\":3},{\"x\":5,\"y\":4},{\"x\":5,\"y\":5}]",
             "head": {
-              "x": 0,
-              "y": 0
+              "x": 5,
+              "y": 3
             },
             "length": 3,
-            "latency": 50,
+            "latency": "50",
             "shout": "",
             "squad": "",
             "customizations": {
@@ -59,100 +37,61 @@
               "head": "default",
               "tail": "default"
             }
-          },
-          {
-            "id": "enemy-1",
-            "name": "Enemy 1",
-            "health": 100,
-            "body": [
-              {
-                "x": 2,
-                "y": 2
-              },
-              {
-                "x": 3,
-                "y": 2
-              },
-              {
-                "x": 3,
-                "y": 3
-              },
-              {
-                "x": 4,
-                "y": 3
-              }
-            ],
-            "head": {
-              "x": 2,
-              "y": 2
-            },
-            "length": 4,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#0000FF",
-              "head": "default",
-              "tail": "default"
-            }
           }
         ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": "[{\"x\":5,\"y\":3},{\"x\":5,\"y\":4},{\"x\":5,\"y\":5}]",
+        "head": {
+          "x": 5,
+          "y": 3
+        },
+        "length": 3,
+        "latency": "50",
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
       }
     }
   },
   {
     "Id": 102,
     "Name": "Test-102",
-    "Expected": 10,
+    "Expected": 2,
     "MoveRequest": {
       "game": {
         "id": "game-102",
         "ruleset": {
-          "name": "standard"
+          "name": "standard",
+          "version": "v1.0.0"
         },
         "timeout": 500
       },
       "turn": 5,
       "board": {
-        "height": 5,
-        "width": 5,
-        "food": [
-          {
-            "x": 3,
-            "y": 2
-          }
-        ],
-        "hazards": [
-          {
-            "x": 0,
-            "y": 4
-          }
-        ],
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
         "snakes": [
           {
             "id": "thanos",
             "name": "Thanos",
             "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 2
-              },
-              {
-                "x": 1,
-                "y": 2
-              },
-              {
-                "x": 2,
-                "y": 2
-              }
-            ],
+            "body": "[{\"x\":7,\"y\":5},{\"x\":5,\"y\":5},{\"x\":6,\"y\":5}]",
             "head": {
-              "x": 0,
-              "y": 2
+              "x": 7,
+              "y": 5
             },
             "length": 3,
-            "latency": 50,
+            "latency": "50",
             "shout": "",
             "squad": "",
             "customizations": {
@@ -160,448 +99,27 @@
               "head": "default",
               "tail": "default"
             }
-          },
-          {
-            "id": "enemy-1",
-            "name": "Enemy 1",
-            "health": 100,
-            "body": [
-              {
-                "x": 2,
-                "y": 0
-              },
-              {
-                "x": 3,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 1
-              }
-            ],
-            "head": {
-              "x": 2,
-              "y": 0
-            },
-            "length": 4,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#0000FF",
-              "head": "default",
-              "tail": "default"
-            }
           }
         ]
-      }
-    }
-  },
-  {
-    "Id": 103,
-    "Name": "Test-103",
-    "Expected": 10,
-    "MoveRequest": {
-      "game": {
-        "id": "game-103",
-        "ruleset": {
-          "name": "standard"
-        },
-        "timeout": 500
       },
-      "turn": 5,
-      "board": {
-        "height": 6,
-        "width": 6,
-        "food": [
-          {
-            "x": 0,
-            "y": 0
-          }
-        ],
-        "hazards": [
-          {
-            "x": 4,
-            "y": 4
-          }
-        ],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 3
-              },
-              {
-                "x": 1,
-                "y": 3
-              },
-              {
-                "x": 2,
-                "y": 3
-              },
-              {
-                "x": 3,
-                "y": 3
-              }
-            ],
-            "head": {
-              "x": 0,
-              "y": 3
-            },
-            "length": 4,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          },
-          {
-            "id": "enemy-1",
-            "name": "Enemy 1",
-            "health": 100,
-            "body": [
-              {
-                "x": 1,
-                "y": 1
-              },
-              {
-                "x": 2,
-                "y": 1
-              },
-              {
-                "x": 3,
-                "y": 1
-              }
-            ],
-            "head": {
-              "x": 1,
-              "y": 1
-            },
-            "length": 3,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#0000FF",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "Id": 104,
-    "Name": "Test-104",
-    "Expected": 2,
-    "MoveRequest": {
-      "game": {
-        "id": "game-104",
-        "ruleset": {
-          "name": "standard"
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": "[{\"x\":7,\"y\":5},{\"x\":5,\"y\":5},{\"x\":6,\"y\":5}]",
+        "head": {
+          "x": 7,
+          "y": 5
         },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 5,
-        "width": 5,
-        "food": [
-          {
-            "x": 4,
-            "y": 1
-          }
-        ],
-        "hazards": [
-          {
-            "x": 0,
-            "y": 3
-          }
-        ],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 1,
-                "y": 0
-              },
-              {
-                "x": 2,
-                "y": 0
-              }
-            ],
-            "head": {
-              "x": 0,
-              "y": 0
-            },
-            "length": 3,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          },
-          {
-            "id": "enemy-1",
-            "name": "Enemy 1",
-            "health": 100,
-            "body": [
-              {
-                "x": 2,
-                "y": 2
-              },
-              {
-                "x": 3,
-                "y": 2
-              },
-              {
-                "x": 3,
-                "y": 3
-              },
-              {
-                "x": 4,
-                "y": 3
-              }
-            ],
-            "head": {
-              "x": 2,
-              "y": 2
-            },
-            "length": 4,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#0000FF",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "Id": 105,
-    "Name": "Test-105",
-    "Expected": 2,
-    "MoveRequest": {
-      "game": {
-        "id": "game-105",
-        "ruleset": {
-          "name": "standard"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 5,
-        "width": 5,
-        "food": [
-          {
-            "x": 3,
-            "y": 2
-          }
-        ],
-        "hazards": [
-          {
-            "x": 0,
-            "y": 4
-          }
-        ],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 2
-              },
-              {
-                "x": 1,
-                "y": 2
-              },
-              {
-                "x": 2,
-                "y": 2
-              }
-            ],
-            "head": {
-              "x": 0,
-              "y": 2
-            },
-            "length": 3,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          },
-          {
-            "id": "enemy-1",
-            "name": "Enemy 1",
-            "health": 100,
-            "body": [
-              {
-                "x": 2,
-                "y": 0
-              },
-              {
-                "x": 3,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 1
-              }
-            ],
-            "head": {
-              "x": 2,
-              "y": 0
-            },
-            "length": 4,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#0000FF",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "Id": 106,
-    "Name": "Test-106",
-    "Expected": 2,
-    "MoveRequest": {
-      "game": {
-        "id": "game-106",
-        "ruleset": {
-          "name": "standard"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 6,
-        "width": 6,
-        "food": [
-          {
-            "x": 0,
-            "y": 0
-          }
-        ],
-        "hazards": [
-          {
-            "x": 4,
-            "y": 4
-          }
-        ],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 3
-              },
-              {
-                "x": 1,
-                "y": 3
-              },
-              {
-                "x": 2,
-                "y": 3
-              },
-              {
-                "x": 3,
-                "y": 3
-              }
-            ],
-            "head": {
-              "x": 0,
-              "y": 3
-            },
-            "length": 4,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          },
-          {
-            "id": "enemy-1",
-            "name": "Enemy 1",
-            "health": 100,
-            "body": [
-              {
-                "x": 1,
-                "y": 1
-              },
-              {
-                "x": 2,
-                "y": 1
-              },
-              {
-                "x": 3,
-                "y": 1
-              }
-            ],
-            "head": {
-              "x": 1,
-              "y": 1
-            },
-            "length": 3,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#0000FF",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
+        "length": 3,
+        "latency": "50",
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
       }
     }
   }
