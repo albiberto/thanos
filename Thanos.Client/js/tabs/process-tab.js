@@ -215,31 +215,31 @@ class ProcessTabManager {
                 let cellContent = '·';
 
                 switch (cell) {
-                    case '👽':
+                    case 'H':
                         cellClass += ' my-head';
                         cellContent = 'H';
                         break;
-                    case '💲':
+                    case 'B':
                         cellClass += ' my-body';
                         cellContent = 'B';
                         break;
-                    case '😈':
+                    case 'E':
                         cellClass += ' enemy-head';
                         cellContent = 'E';
                         break;
-                    case '⛔':
+                    case 'b':
                         cellClass += ' enemy-body';
                         cellContent = 'e';
                         break;
-                    case '🍎':
+                    case 'F':
                         cellClass += ' food';
                         cellContent = 'F';
                         break;
-                    case '💀':
+                    case '#':
                         cellClass += ' hazard';
                         cellContent = 'X';
                         break;
-                    case '⬛':
+                    case '.':
                     default:
                         cellClass += ' empty';
                         cellContent = '·';
