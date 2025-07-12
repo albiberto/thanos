@@ -1,6 +1,6 @@
 ﻿/**
- * Process Tab Manager - JSON Test Generation
- * Completely rewritten for matrix visualization and JSON generation
+ * Process Tab Manager - Enhanced with Auto-Calculate Expected Values
+ * Automatically calculates expected values based on snake head position and safe moves
  */
 class ProcessTabManager {
     constructor(containerId, notifyService) {
@@ -15,6 +15,22 @@ class ProcessTabManager {
 
         // JSON formatter instance
         this.jsonFormatter = new BattlesnakeJsonFormatter();
+
+        // Direction constants matching C# code
+        this.DIRECTIONS = {
+            UP: 0,
+            DOWN: 1,
+            LEFT: 2,
+            RIGHT: 3
+        };
+
+        // Direction values for expected calculation
+        this.DIRECTION_VALUES = {
+            UP: 1,      // 2^0 = 1
+            DOWN: 2,    // 2^1 = 2
+            LEFT: 4,    // 2^2 = 4
+            RIGHT: 8    // 2^3 = 8
+        };
 
         // Expected values mapping
         this.expectedLabels = {
@@ -52,6 +68,109 @@ class ProcessTabManager {
 
         this.initialized = true;
         this.loadGridsFromStorage();
+    }
+
+    /**
+     * Calculate expected value for a grid based on safe moves
+     * @param {Object} grid - Grid object
+     * @returns {number} - Expected value (sum of direction values)
+     */
+    calculateExpectedValue(grid) {
+        // Find my head position
+        const myHead = grid.analysis?.myHead;
+        if (!myHead) {
+            console.log('No head found in grid');
+            return 0;
+        }
+
+        let expectedValue = 0;
+        const safeMoves = [];
+
+        // Check each direction
+        const directions = [
+            { name: 'UP', dx: 0, dy: -1, value: this.DIRECTION_VALUES.UP },
+            { name: 'DOWN', dx: 0, dy: 1, value: this.DIRECTION_VALUES.DOWN },
+            { name: 'LEFT', dx: -1, dy: 0, value: this.DIRECTION_VALUES.LEFT },
+            { name: 'RIGHT', dx: 1, dy: 0, value: this.DIRECTION_VALUES.RIGHT }
+        ];
+
+        for (const dir of directions) {
+            const newX = myHead.x + dir.dx;
+            const newY = myHead.y + dir.dy;
+
+            // Check bounds
+            if (newX < 0 || newX >= grid.width || newY < 0 || newY >= grid.height) {
+                continue; // Out of bounds, not safe
+            }
+
+            // Check if cell is safe (empty '.')
+            const cell = grid.cells[newY][newX];
+            if (cell === '.') {
+                expectedValue += dir.value;
+                safeMoves.push({ x: newX, y: newY, direction: dir.name });
+            }
+        }
+
+        // Store safe moves for visualization
+        grid.safeMoves = safeMoves;
+
+        console.log(`Grid ${grid.index}: Head at (${myHead.x}, ${myHead.y}), Safe moves: ${safeMoves.map(m => m.direction).join(', ')}, Expected: ${expectedValue}`);
+
+        return expectedValue;
+    }
+
+    /**
+     * Auto-calculate expected values for all grids
+     */
+    autoCalculateAll() {
+        console.log('🤖 Auto-calculating expected values for all grids...');
+
+        let calculated = 0;
+        this.grids.forEach(grid => {
+            const expectedValue = this.calculateExpectedValue(grid);
+            if (expectedValue > 0) {
+                grid.expectedValue = expectedValue;
+                grid.status = 'ready';
+                calculated++;
+            }
+        });
+
+        this.renderGrids();
+        this.updateStats();
+        this.saveGridsToStorage();
+
+        this.notify.success(`Auto-calculated ${calculated} expected values`);
+    }
+
+    /**
+     * Calculate expected value for a single grid
+     */
+    recalculateExpected(testId) {
+        const gridIndex = testId - this.startId;
+        if (gridIndex >= 0 && gridIndex < this.grids.length) {
+            const grid = this.grids[gridIndex];
+            const expectedValue = this.calculateExpectedValue(grid);
+
+            if (expectedValue > 0) {
+                grid.expectedValue = expectedValue;
+                grid.status = 'ready';
+
+                // Re-render just this grid
+                const card = document.querySelector(`[data-test-id="${testId}"]`);
+                if (card && card.parentElement) {
+                    const newCardHTML = this.renderGridCard(grid, gridIndex);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newCardHTML;
+                    card.parentElement.replaceChild(tempDiv.firstElementChild, card);
+                }
+
+                this.updateStats();
+                this.saveGridsToStorage();
+                this.notify.success(`Calculated expected value: ${expectedValue} for Test-${testId}`);
+            } else {
+                this.notify.warning(`No safe moves found for Test-${testId}`);
+            }
+        }
     }
 
     /**
@@ -133,8 +252,20 @@ class ProcessTabManager {
         const gridsHTML = this.grids.map((grid, index) => this.renderGridCard(grid, index)).join('');
         container.innerHTML = gridsHTML;
 
-        // Bind events after rendering
-        this.bindGridEvents();
+        // Add auto-calculate button if it doesn't exist
+        const header = document.querySelector('.d-flex.justify-content-between.align-items-center.mb-3');
+        if (header && !document.getElementById('autoCalculateBtn')) {
+            const autoCalcBtn = document.createElement('button');
+            autoCalcBtn.id = 'autoCalculateBtn';
+            autoCalcBtn.className = 'btn btn-primary btn-sm ms-2';
+            autoCalcBtn.innerHTML = '🤖 Auto-Calculate All';
+            autoCalcBtn.onclick = () => this.autoCalculateAll();
+
+            const buttonsDiv = header.querySelector('.d-flex.align-items-end.gap-2');
+            if (buttonsDiv) {
+                buttonsDiv.insertBefore(autoCalcBtn, buttonsDiv.firstChild);
+            }
+        }
     }
 
     /**
@@ -175,6 +306,13 @@ class ProcessTabManager {
                             <div id="expectedDisplay-${testId}">${expectedDisplay}</div>
                         </div>
 
+                        <!-- Recalculate Button -->
+                        <div class="mb-2 text-center">
+                            <button class="btn btn-info btn-sm" onclick="window.snake.processTabManager.recalculateExpected(${testId})">
+                                🔄 Recalculate Expected
+                            </button>
+                        </div>
+
                         <!-- Expected Value Selector -->
                         <div>
                             <div class="row g-2"> 
@@ -200,52 +338,73 @@ class ProcessTabManager {
     }
 
     /**
-     * Render matrix visualization
+     * Render matrix visualization with safe moves highlighted
      */
     renderMatrix(grid) {
         if (!grid.cells || grid.cells.length === 0) {
             return '<div class="text-muted">No matrix data</div>';
         }
 
-        const rows = grid.cells.map(row => {
-            const cells = row.map(cell => {
+        const safeMoves = grid.safeMoves || [];
+        const myHead = grid.analysis?.myHead;
+
+        const rows = grid.cells.map((row, y) => {
+            const cells = row.map((cell, x) => {
+                // Check if this position is a safe move
+                const isSafeMove = safeMoves.some(move => move.x === x && move.y === y);
+                const isHead = myHead && myHead.x === x && myHead.y === y;
+
                 // Convert characters to colored cells
                 let cellClass = 'matrix-cell';
                 let cellContent = '·';
+                let title = '';
 
-                switch (cell) {
-                    case 'H':
-                        cellClass += ' my-head';
-                        cellContent = 'H';
-                        break;
-                    case 'B':
-                        cellClass += ' my-body';
-                        cellContent = 'B';
-                        break;
-                    case 'E':
-                        cellClass += ' enemy-head';
-                        cellContent = 'E';
-                        break;
-                    case 'b':
-                        cellClass += ' enemy-body';
-                        cellContent = 'e';
-                        break;
-                    case 'F':
-                        cellClass += ' food';
-                        cellContent = 'F';
-                        break;
-                    case '#': // Hazard
-                        cellClass += ' hazard';
-                        cellContent = 'X';
-                        break;
-                    case '.':
-                    default:
-                        cellClass += ' empty';
-                        cellContent = '·';
-                        break;
+                if (isSafeMove) {
+                    cellClass += ' safe-move';
+                    cellContent = '✓';
+                    title = 'Safe move';
+                } else {
+                    switch (cell) {
+                        case 'H':
+                            cellClass += ' my-head';
+                            cellContent = 'H';
+                            title = 'My Head';
+                            break;
+                        case 'B':
+                            cellClass += ' my-body';
+                            cellContent = 'B';
+                            title = 'My Body';
+                            break;
+                        case 'E':
+                            cellClass += ' enemy-head';
+                            cellContent = 'E';
+                            title = 'Enemy Head';
+                            break;
+                        case 'b':
+                            cellClass += ' enemy-body';
+                            cellContent = 'e';
+                            title = 'Enemy Body';
+                            break;
+                        case 'F':
+                            cellClass += ' food';
+                            cellContent = 'F';
+                            title = 'Food';
+                            break;
+                        case '#': // Hazard
+                            cellClass += ' hazard';
+                            cellContent = 'X';
+                            title = 'Hazard';
+                            break;
+                        case '.':
+                        default:
+                            cellClass += ' empty';
+                            cellContent = '·';
+                            title = 'Empty';
+                            break;
+                    }
                 }
 
-                return `<span class="${cellClass}">${cellContent}</span>`;
+                return `<span class="${cellClass}" title="${title}">${cellContent}</span>`;
             }).join('');
 
             return `<div class="matrix-row">${cells}</div>`;
@@ -325,14 +484,6 @@ class ProcessTabManager {
     }
 
     /**
-     * Bind grid events
-     */
-    bindGridEvents() {
-        // Events are handled by onclick attributes in HTML
-        console.log('✅ Grid events bound');
-    }
-
-    /**
      * Set expected value for a test
      */
     setExpectedValue(testId, value) {
@@ -340,6 +491,9 @@ class ProcessTabManager {
         if (gridIndex >= 0 && gridIndex < this.grids.length) {
             this.grids[gridIndex].expectedValue = value;
             this.grids[gridIndex].status = 'ready';
+
+            // Recalculate safe moves for visualization
+            this.calculateExpectedValue(this.grids[gridIndex]);
 
             // Update display
             const expectedDisplay = document.getElementById(`expectedDisplay-${testId}`);

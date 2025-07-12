@@ -76,6 +76,12 @@
     color: var(--color-empty-text);
 }
 
+
+.matrix-cell.safe-move {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
 /* === GRID CARDS === */
 .card {
     transition: all 0.2s ease;
