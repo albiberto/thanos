@@ -325,8 +325,9 @@ class GridMatrixComponent {
 
             /* Direction overlay styles */
             #${instanceId} .matrix-cell.direction-overlay {
-                border: 3px solid #00ff00 !important;
-                background-color: rgba(0, 255, 0, 0.1) !important;
+                border: 3px solid #--color-primary !important;
+                background: var(--color-primary-light) !important;
+                color: var(--color-primary) !important;
                 animation: pulse 1.5s infinite;
             }
 
@@ -337,7 +338,7 @@ class GridMatrixComponent {
                 transform: translate(-50%, -50%);
                 font-size: ${Math.floor(fontSize * 1.2)}px;
                 font-weight: bold;
-                color: #00ff00;
+                color: var(--color-primary);               
                 text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
                 z-index: 10;
                 pointer-events: none;
