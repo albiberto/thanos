@@ -1,6 +1,6 @@
 ﻿/**
- * BattlesnakeJsonFormatter - Shared JSON formatting class
- * Ensures consistent JSON format between Formatter and Process tabs
+ * BattlesnakeJsonFormatter - Fixed version with clean inline body strings
+ * Ensures snake body is formatted as clean JSON string without escapes
  */
 class BattlesnakeJsonFormatter {
     constructor() {
@@ -36,7 +36,7 @@ class BattlesnakeJsonFormatter {
     }
 
     /**
-     * Format a snake object with inline body
+     * Format a snake object with clean inline body string
      * @param {Object} snake - The snake object to format
      * @returns {Object} - Formatted snake object
      */
@@ -45,16 +45,18 @@ class BattlesnakeJsonFormatter {
 
         const formattedSnake = { ...snake };
 
-        // Convert body array to JSON string
+        // Convert body array to clean JSON string (no escapes)
         if (Array.isArray(snake.body)) {
+            // Convert to clean JSON string without escapes
             formattedSnake.body = JSON.stringify(snake.body);
         } else if (typeof snake.body === 'string') {
             // Already a string, ensure it's valid JSON
             try {
-                JSON.parse(snake.body);
-                formattedSnake.body = snake.body;
+                // Parse and re-stringify to clean it
+                const parsed = JSON.parse(snake.body);
+                formattedSnake.body = JSON.stringify(parsed);
             } catch (e) {
-                // Invalid JSON string, convert to empty array
+                // Invalid JSON string, convert to empty array string
                 formattedSnake.body = "[]";
             }
         } else {
@@ -265,12 +267,76 @@ class BattlesnakeJsonFormatter {
     }
 
     /**
-     * Generate JSON string with proper formatting
+     * Generate JSON string with proper formatting and clean inline bodies
      * @param {Array|Object} data - Data to stringify
-     * @returns {string} - Formatted JSON string
+     * @returns {string} - Formatted JSON string with clean inline bodies
      */
     toJSON(data) {
-        return JSON.stringify(data, null, this.formatOptions.indent);
+        // Alternative approach: use a placeholder system
+        const BODY_PLACEHOLDER = '___BODY_PLACEHOLDER_';
+        const bodyReplacements = new Map();
+        let placeholderIndex = 0;
+
+        // Pre-process: replace body strings with placeholders
+        const dataWithPlaceholders = this.replaceBodyWithPlaceholders(data, BODY_PLACEHOLDER, bodyReplacements, placeholderIndex);
+
+        // Stringify the data with placeholders
+        let jsonString = JSON.stringify(dataWithPlaceholders.data, null, this.formatOptions.indent);
+
+        // Post-process: replace placeholders with actual JSON arrays
+        bodyReplacements.forEach((bodyContent, placeholder) => {
+            const quotedPlaceholder = `"${placeholder}"`;
+            jsonString = jsonString.replace(quotedPlaceholder, bodyContent);
+        });
+
+        return jsonString;
+    }
+
+    /**
+     * Replace body strings with placeholders to avoid escaping
+     * @param {*} data - Data to process
+     * @param {string} prefix - Placeholder prefix
+     * @param {Map} replacements - Map to store replacements
+     * @param {number} index - Current index
+     * @returns {Object} - Data with placeholders and updated index
+     */
+    replaceBodyWithPlaceholders(data, prefix, replacements, index) {
+        if (typeof data !== 'object' || data === null) {
+            return { data, index };
+        }
+
+        if (Array.isArray(data)) {
+            const newArray = [];
+            for (const item of data) {
+                const result = this.replaceBodyWithPlaceholders(item, prefix, replacements, index);
+                newArray.push(result.data);
+                index = result.index;
+            }
+            return { data: newArray, index };
+        }
+
+        const newObj = {};
+        for (const [key, value] of Object.entries(data)) {
+            if (key === 'body' && typeof value === 'string') {
+                // Create placeholder for this body
+                const placeholder = `${prefix}${index++}___`;
+                try {
+                    // Parse and re-stringify to ensure valid JSON
+                    const parsed = JSON.parse(value);
+                    const cleanJson = JSON.stringify(parsed);
+                    replacements.set(placeholder, cleanJson);
+                } catch (e) {
+                    // If invalid, use empty array
+                    replacements.set(placeholder, '[]');
+                }
+                newObj[key] = placeholder;
+            } else {
+                const result = this.replaceBodyWithPlaceholders(value, prefix, replacements, index);
+                newObj[key] = result.data;
+                index = result.index;
+            }
+        }
+        return { data: newObj, index };
     }
 
     /**
