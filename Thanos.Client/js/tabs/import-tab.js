@@ -7,8 +7,8 @@
         this.initialized = false;
 
         // Caratteri validi per le griglie BattleSnake
-        this.VALID_CHARACTERS = ['👽', '💲', '😈', '⛔', '🍎', '💀', '⬛', '⬆', '➡', '⬅', '⬇', ' ', '\t', '\n', '\r'];
-
+        this.VALID_CHARACTERS = ['👽', '💲', '😈', '⛔', '🍎', '💀', '⬛', '⬆', '➡', '⬅', '⬇', '❌', ' ', '\t', '\n', '\r', '⬆️', '⬇️', '⬅️', '➡️'];
+        
         // Storage key per le griglie
         this.STORAGE_KEY = 'battlesnake_grids';
     }
@@ -86,8 +86,13 @@
 
         try {
             // Sanifica il contenuto rimuovendo i caratteri non validi
-            const sanitizedContent = this.sanitizeGridContent(this.input.value);
 
+
+            const sanitizer = new ImprovedSanitizer();
+            const sanitizedContent = sanitizer.sanitizeBattlesnakeGrid(this.input.value);
+            
+            console.log('Contenuto sanificato:', sanitizedContent);
+            
             // Parsing delle griglie
             const gridTexts = sanitizedContent
             .split(/\n\s*\n/)
@@ -195,33 +200,33 @@
             for (let x = 0; x < rows[y].length; x++) {
                 const cell = rows[y][x];
                 const position = { x, y };
-
+                
                 switch (cell) {
-                    case '👽':
+                    case 'H':
                         analysis.myHead = position;
                         break;
-                    case '💲':
+                    case 'B':
                         analysis.myBody.push(position);
                         break;
-                    case '😈':
+                    case 'E':
                         analysis.enemyHeads.push(position);
                         break;
-                    case '⛔':
+                    case 'b':
                         analysis.enemyBodies.push(position);
                         break;
-                    case '🍎':
+                    case 'F':
                         analysis.food.push(position);
                         break;
-                    case '💀':
+                    case 'X':
                         analysis.hazards.push(position);
                         break;
-                    case '⬛':
+                    case '.':
                         analysis.empty.push(position);
                         break;
-                    case '⬆️':
-                    case '⬇️':
-                    case '⬅️':
-                    case '➡️':
+                        case '^':
+                        case 'v':
+                        case '<':
+                        case '>':
                         analysis.directions.push({ position, direction: cell });
                         break;
                 }
@@ -291,22 +296,35 @@
         }
     }
 
-    sanitizeGridContent(content) {
-        return Array.from(content)
-        .map(char => this.VALID_CHARACTERS.includes(char) ? char : '')
+sanitizeGridContent(content) {
+    // Mappa emoji e simboli a caratteri standard
+    const charMap = {
+        '👽': 'H', // Testa mia
+        '💲': 'B', // Corpo mio
+        '😈': 'E', // Testa nemico
+        '⛔': 'b', // Corpo nemico
+        '🍎': 'F', // Cibo
+        '💀': '#', // Pericolo
+        '⬛': '.', // Vuoto
+        '⬆': '^', // Direzione
+        '➡': '>', // Direzione
+        '⬅': '<', // Direzione
+        '⬇': 'v', // Direzione
+        '❌': '.', // Bloccato
+        ' ': ' ', // Spazio
+        '\t': '\t',
+        '\n': '\n',
+        '\r': '\r',
+        '⬆️': '^',
+        '⬇️': 'v',
+        '⬅️': '<',
+        '➡️': '>'
+    };
+    
+    return Array.from(content)
+        .map(char => this.VALID_CHARACTERS.includes(char) ? (charMap[char] ?? char) : '')
         .join('');
-    }
-
-        // Trova caratteri non validi
-    findInvalidCharacters(content) {
-        const invalidChars = new Set();
-        for (const char of content) {
-            if (!this.VALID_CHARACTERS.includes(char)) {
-                invalidChars.add(char);
-            }
-        }
-        return Array.from(invalidChars);
-    }
+}
 
     // Clear input
     clearInput() {
