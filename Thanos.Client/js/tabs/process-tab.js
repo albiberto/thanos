@@ -14,7 +14,7 @@ class ProcessTabManager {
         this.STORAGE_KEY = 'battlesnake_grids';
 
         // JSON formatter instance
-        this.jsonFormatter = null;
+        this.jsonFormatter = new BattlesnakeJsonFormatter();
 
         // Expected values mapping
         this.expectedLabels = {
@@ -159,7 +159,6 @@ class ProcessTabManager {
                         </div>
                         ${statusBadge}
                     </div>
-                    </div>
                     
                     <div class="card-body d-flex flex-column p-2">
                         <!-- Grid Matrix -->
@@ -210,7 +209,7 @@ class ProcessTabManager {
 
         const rows = grid.cells.map(row => {
             const cells = row.map(cell => {
-                // Convert emoji to colored cells
+                // Convert characters to colored cells
                 let cellClass = 'matrix-cell';
                 let cellContent = '·';
 
@@ -235,7 +234,7 @@ class ProcessTabManager {
                         cellClass += ' food';
                         cellContent = 'F';
                         break;
-                    case '#':
+                    case '#': // Hazard
                         cellClass += ' hazard';
                         cellContent = 'X';
                         break;
@@ -397,18 +396,21 @@ class ProcessTabManager {
     }
 
     /**
-     * Delete grid
+     * Delete all grids
      */
     deleteGrids() {
-        if (confirm('Sei sicuro di voler eliminare questa griglia?')) {
+        if (confirm('Sei sicuro di voler eliminare TUTTE le griglie?')) {
             this.grids = [];
             this.renderGrids();
             this.updateStats();
             this.saveGridsToStorage();
-            this.notify.success('Griglia eliminata');
+            this.notify.success('Tutte le griglie eliminate');
         }
     }
 
+    /**
+     * Delete single grid
+     */
     deleteGrid(gridId) {
         if (confirm('Sei sicuro di voler eliminare questa griglia?')) {
             this.grids = this.grids.filter(g => g.id !== gridId);

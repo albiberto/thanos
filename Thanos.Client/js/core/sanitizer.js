@@ -16,16 +16,16 @@ class ImprovedSanitizer {
             ['⬛', '.'], // Spazio vuoto (Empty)
 
             // === DIREZIONI CON EMOJI ===
-            ['⬆️', '^'], // Up
-            ['⬇️', 'v'], // Down
-            ['⬅️', '<'], // Left
-            ['➡️', '>'], // Right
+            ['⬆️', '.'], // Up
+            ['⬇️', '.'], // Down
+            ['⬅️', '.'], // Left
+            ['➡️', '.'], // Right
 
             // === DIREZIONI SENZA EMOJI ===
-            ['⬆', '^'], // Up
-            ['⬇', 'v'], // Down
-            ['⬅', '<'], // Left
-            ['➡', '>'], // Right
+            ['⬆', '.'], // Up
+            ['⬇', '.'], // Down
+            ['⬅', '.'], // Left
+            ['➡', '.'], // Right
 
             // === SIMBOLI ALTERNATIVI ===
             ['❌', '.'], // Bloccato/Invalid -> Empty
@@ -44,10 +44,10 @@ class ImprovedSanitizer {
             ['F', 'F'], // Food (già standard)
             ['#', '#'], // Hazard (già standard)
             ['.', '.'], // Empty (già standard)
-            ['^', '^'], // Up (già standard)
-            ['v', 'v'], // Down (già standard)
-            ['<', '<'], // Left (già standard)
-            ['>', '>'], // Right (già standard)
+            ['^', '.'], // Up (già standard)
+            ['v', '.'], // Down (già standard)
+            ['<', '.'], // Left (già standard)
+            ['>', '.'], // Right (già standard)
 
             // === SPAZI E CONTROLLO ===
             [' ', ' '],   // Spazio normale
@@ -89,11 +89,19 @@ class ImprovedSanitizer {
             normalizeWhitespace = false,      // Normalizza spazi multipli
             removeInvalidChars = true,        // Rimuovi caratteri non validi
             logUnknownChars = true,          // Log caratteri sconosciuti
-            allowCoordinates = false         // Permetti coordinate tipo (x,y)
+            allowCoordinates = false,        // Permetti coordinate tipo (x,y)
+            removeNumericCoordinates = true  // Rimuovi coordinate numeriche (00 01 02...)
         } = options;
 
         if (!content || typeof content !== 'string') {
             return '';
+        }
+
+        let processedContent = content;
+
+        // Pre-processing: rimuovi coordinate numeriche se richiesto
+        if (removeNumericCoordinates) {
+            processedContent = this.removeNumericCoordinates(processedContent);
         }
 
         let result = '';
@@ -101,7 +109,7 @@ class ImprovedSanitizer {
         let charCount = 0;
 
         // Itera attraverso ogni carattere (gestisce correttamente emoji multi-byte)
-        for (const char of content) {
+        for (const char of processedContent) {
             charCount++;
 
             // Controlla se il carattere è mappato
@@ -151,6 +159,39 @@ class ImprovedSanitizer {
         }
 
         return result;
+    }
+
+    /**
+     * Rimuove coordinate numeriche dal contenuto
+     * @param {string} content - Contenuto con coordinate
+     * @returns {string} - Contenuto senza coordinate
+     */
+    removeNumericCoordinates(content) {
+        let lines = content.split('\n');
+
+        // Rimuovi righe che contengono solo numeri e spazi (header/footer coordinate)
+        lines = lines.filter(line => {
+            const trimmed = line.trim();
+            // Se la riga è vuota, mantienila (serve come separatore tra griglie)
+            if (trimmed === '') {
+                return true;
+            }
+            // Se la riga contiene solo numeri, spazi e tab, rimuovila
+            return !/^[\d\s\t]+$/.test(trimmed);
+        });
+
+        // Processa ogni riga per rimuovere coordinate iniziali
+        lines = lines.map(line => {
+            // Se la riga è vuota, mantienila così com'è
+            if (line.trim() === '') {
+                return line;
+            }
+            // Rimuovi numero iniziale se presente (coordinate di riga)
+            return line.replace(/^\s*\d+\s+/, '');
+        });
+
+        // Riunisci le righe mantenendo le righe vuote come separatori
+        return lines.join('\n');
     }
 
     /**

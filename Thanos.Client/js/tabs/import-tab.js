@@ -295,38 +295,7 @@
             this.notify.error('Impossibile navigare al tab process');
         }
     }
-
-sanitizeGridContent(content) {
-    // Mappa emoji e simboli a caratteri standard
-    const charMap = {
-        '👽': 'H', // Testa mia
-        '💲': 'B', // Corpo mio
-        '😈': 'E', // Testa nemico
-        '⛔': 'b', // Corpo nemico
-        '🍎': 'F', // Cibo
-        '💀': '#', // Pericolo
-        '⬛': '.', // Vuoto
-        '⬆': '^', // Direzione
-        '➡': '>', // Direzione
-        '⬅': '<', // Direzione
-        '⬇': 'v', // Direzione
-        '❌': '.', // Bloccato
-        ' ': ' ', // Spazio
-        '\t': '\t',
-        '\n': '\n',
-        '\r': '\r',
-        '⬆️': '^',
-        '⬇️': 'v',
-        '⬅️': '<',
-        '➡️': '>'
-    };
-    
-    return Array.from(content)
-        .map(char => this.VALID_CHARACTERS.includes(char) ? (charMap[char] ?? char) : '')
-        .join('');
-}
-
-    // Clear input
+// Clear input
     clearInput() {
         if (!this.input) {
             this.notify.error('Campo non trovato');
