@@ -1,12 +1,13 @@
 ﻿/**
- * Process Tab Manager - Enhanced with Auto-Calculate Expected Values
- * Automatically calculates expected values based on snake head position and safe moves
+ * Process Tab Manager - Updated with Single Grid Layout and Grid Component
+ * One grid per page with two-column layout (grid + controls)
  */
 class ProcessTabManager {
     constructor(containerId, notifyService) {
         this.containerId = containerId;
         this.notify = notifyService;
         this.grids = [];
+        this.currentGridIndex = 0;
         this.startId = 101;
         this.initialized = false;
 
@@ -16,21 +17,13 @@ class ProcessTabManager {
         // JSON formatter instance
         this.jsonFormatter = new BattlesnakeJsonFormatter();
 
-        // Direction constants matching C# code
-        this.DIRECTIONS = {
-            UP: 0,
-            DOWN: 1,
-            LEFT: 2,
-            RIGHT: 3
-        };
-
-        // Direction values for expected calculation
-        this.DIRECTION_VALUES = {
-            UP: 1,      // 2^0 = 1
-            DOWN: 2,    // 2^1 = 2
-            LEFT: 4,    // 2^2 = 4
-            RIGHT: 8    // 2^3 = 8
-        };
+        // Grid Matrix Component instance
+        this.gridComponent = new GridMatrixComponent({
+            cellSize: 40,
+            fontSize: 25,
+            margin: 2,
+            borderRadius: 3
+        });
 
         // Expected values mapping
         this.expectedLabels = {
@@ -66,111 +59,21 @@ class ProcessTabManager {
             console.error('❌ BattlesnakeJsonFormatter not found');
         }
 
+        // Initialize Grid Component
+        if (window.GridMatrixComponent) {
+            this.gridComponent = new window.GridMatrixComponent({
+                cellSize: 40,
+                fontSize: 25,
+                margin: 2,
+                borderRadius: 3
+            });
+            console.log('✅ Grid Matrix Component initialized');
+        } else {
+            console.error('❌ GridMatrixComponent not found');
+        }
+
         this.initialized = true;
         this.loadGridsFromStorage();
-    }
-
-    /**
-     * Calculate expected value for a grid based on safe moves
-     * @param {Object} grid - Grid object
-     * @returns {number} - Expected value (sum of direction values)
-     */
-    calculateExpectedValue(grid) {
-        // Find my head position
-        const myHead = grid.analysis?.myHead;
-        if (!myHead) {
-            console.log('No head found in grid');
-            return 0;
-        }
-
-        let expectedValue = 0;
-        const safeMoves = [];
-
-        // Check each direction
-        const directions = [
-            { name: 'UP', dx: 0, dy: -1, value: this.DIRECTION_VALUES.UP },
-            { name: 'DOWN', dx: 0, dy: 1, value: this.DIRECTION_VALUES.DOWN },
-            { name: 'LEFT', dx: -1, dy: 0, value: this.DIRECTION_VALUES.LEFT },
-            { name: 'RIGHT', dx: 1, dy: 0, value: this.DIRECTION_VALUES.RIGHT }
-        ];
-
-        for (const dir of directions) {
-            const newX = myHead.x + dir.dx;
-            const newY = myHead.y + dir.dy;
-
-            // Check bounds
-            if (newX < 0 || newX >= grid.width || newY < 0 || newY >= grid.height) {
-                continue; // Out of bounds, not safe
-            }
-
-            // Check if cell is safe (empty '.')
-            const cell = grid.cells[newY][newX];
-            if (cell === '.') {
-                expectedValue += dir.value;
-                safeMoves.push({ x: newX, y: newY, direction: dir.name });
-            }
-        }
-
-        // Store safe moves for visualization
-        grid.safeMoves = safeMoves;
-
-        console.log(`Grid ${grid.index}: Head at (${myHead.x}, ${myHead.y}), Safe moves: ${safeMoves.map(m => m.direction).join(', ')}, Expected: ${expectedValue}`);
-
-        return expectedValue;
-    }
-
-    /**
-     * Auto-calculate expected values for all grids
-     */
-    autoCalculateAll() {
-        console.log('🤖 Auto-calculating expected values for all grids...');
-
-        let calculated = 0;
-        this.grids.forEach(grid => {
-            const expectedValue = this.calculateExpectedValue(grid);
-            if (expectedValue > 0) {
-                grid.expectedValue = expectedValue;
-                grid.status = 'ready';
-                calculated++;
-            }
-        });
-
-        this.renderGrids();
-        this.updateStats();
-        this.saveGridsToStorage();
-
-        this.notify.success(`Auto-calculated ${calculated} expected values`);
-    }
-
-    /**
-     * Calculate expected value for a single grid
-     */
-    recalculateExpected(testId) {
-        const gridIndex = testId - this.startId;
-        if (gridIndex >= 0 && gridIndex < this.grids.length) {
-            const grid = this.grids[gridIndex];
-            const expectedValue = this.calculateExpectedValue(grid);
-
-            if (expectedValue > 0) {
-                grid.expectedValue = expectedValue;
-                grid.status = 'ready';
-
-                // Re-render just this grid
-                const card = document.querySelector(`[data-test-id="${testId}"]`);
-                if (card && card.parentElement) {
-                    const newCardHTML = this.renderGridCard(grid, gridIndex);
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = newCardHTML;
-                    card.parentElement.replaceChild(tempDiv.firstElementChild, card);
-                }
-
-                this.updateStats();
-                this.saveGridsToStorage();
-                this.notify.success(`Calculated expected value: ${expectedValue} for Test-${testId}`);
-            } else {
-                this.notify.warning(`No safe moves found for Test-${testId}`);
-            }
-        }
     }
 
     /**
@@ -204,7 +107,9 @@ class ProcessTabManager {
             console.log(`✅ ${this.grids.length} griglie caricate`);
             this.notify.success(`${this.grids.length} griglie caricate`);
 
-            this.renderGrids();
+            this.currentGridIndex = 0;
+            this.showGridsInterface();
+            this.renderCurrentGrid();
             this.updateStats();
 
         } catch (error) {
@@ -218,233 +123,209 @@ class ProcessTabManager {
      * Show message when no grids are available
      */
     showNoGridsMessage() {
-        const container = document.getElementById('gridsContainer');
-        if (!container) return;
+        const singleGridContainer = document.getElementById('singleGridContainer');
+        const noGridsMessage = document.getElementById('noGridsMessage');
+        const gridNavigation = document.getElementById('gridNavigation');
 
-        container.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-info text-center">
-                    <h4 class="alert-heading">📭 Nessuna griglia trovata</h4>
-                    <p>Non ci sono griglie da processare. Vai al tab Import per importare delle griglie.</p>
-                    <hr>
-                    <button class="btn btn-outline-primary" onclick="window.snake.tabManager.switchTab('import')">
-                        📥 Vai al Tab Import
-                    </button>
-                </div>
-            </div>
-        `;
+        if (singleGridContainer) singleGridContainer.style.display = 'none';
+        if (noGridsMessage) noGridsMessage.style.display = 'block';
+        if (gridNavigation) gridNavigation.style.display = 'none';
 
         this.updateStatsEmpty();
     }
 
     /**
-     * Render grids as matrix visualization
+     * Show grids interface
      */
-    renderGrids() {
-        const container = document.getElementById('gridsContainer');
-        if (!container) return;
+    showGridsInterface() {
+        const singleGridContainer = document.getElementById('singleGridContainer');
+        const noGridsMessage = document.getElementById('noGridsMessage');
+        const gridNavigation = document.getElementById('gridNavigation');
 
-        if (this.grids.length === 0) {
+        if (singleGridContainer) singleGridContainer.style.display = 'block';
+        if (noGridsMessage) noGridsMessage.style.display = 'none';
+        if (gridNavigation && this.grids.length > 1) {
+            gridNavigation.style.display = 'flex';
+            this.updateNavigationControls();
+        }
+    }
+
+    /**
+     * Update navigation controls
+     */
+    updateNavigationControls() {
+        const currentGridIndexEl = document.getElementById('currentGridIndex');
+        const totalGridsNavEl = document.getElementById('totalGridsNav');
+        const gotoGridInput = document.getElementById('gotoGridInput');
+        const prevBtn = document.getElementById('prevGridBtn');
+        const nextBtn = document.getElementById('nextGridBtn');
+
+        if (currentGridIndexEl) currentGridIndexEl.textContent = this.currentGridIndex + 1;
+        if (totalGridsNavEl) totalGridsNavEl.textContent = this.grids.length;
+
+        if (gotoGridInput) {
+            gotoGridInput.value = this.currentGridIndex + 1;
+            gotoGridInput.max = this.grids.length;
+        }
+
+        if (prevBtn) prevBtn.disabled = this.currentGridIndex === 0;
+        if (nextBtn) nextBtn.disabled = this.currentGridIndex === this.grids.length - 1;
+    }
+
+    /**
+     * Navigate to specific grid
+     */
+    navigateGrid(direction) {
+        const newIndex = this.currentGridIndex + direction;
+        if (newIndex >= 0 && newIndex < this.grids.length) {
+            this.currentGridIndex = newIndex;
+            this.renderCurrentGrid();
+            this.updateNavigationControls();
+        }
+    }
+
+    /**
+     * Go to specific grid by index
+     */
+    gotoGrid(index) {
+        const gridIndex = parseInt(index);
+        if (gridIndex >= 0 && gridIndex < this.grids.length) {
+            this.currentGridIndex = gridIndex;
+            this.renderCurrentGrid();
+            this.updateNavigationControls();
+        }
+    }
+
+    /**
+     * Render current grid with all its information
+     */
+    renderCurrentGrid() {
+        if (this.grids.length === 0 || this.currentGridIndex >= this.grids.length) {
             this.showNoGridsMessage();
             return;
         }
 
-        const gridsHTML = this.grids.map((grid, index) => this.renderGridCard(grid, index)).join('');
-        container.innerHTML = gridsHTML;
+        const grid = this.grids[this.currentGridIndex];
+        const testId = this.startId + this.currentGridIndex;
 
-        // Add auto-calculate button if it doesn't exist
-        const header = document.querySelector('.d-flex.justify-content-between.align-items-center.mb-3');
-        if (header && !document.getElementById('autoCalculateBtn')) {
-            const autoCalcBtn = document.createElement('button');
-            autoCalcBtn.id = 'autoCalculateBtn';
-            autoCalcBtn.className = 'btn btn-primary btn-sm ms-2';
-            autoCalcBtn.innerHTML = '🤖 Auto-Calculate All';
-            autoCalcBtn.onclick = () => this.autoCalculateAll();
+        // Update grid information
+        this.updateGridInformation(grid, testId);
 
-            const buttonsDiv = header.querySelector('.d-flex.align-items-end.gap-2');
-            if (buttonsDiv) {
-                buttonsDiv.insertBefore(autoCalcBtn, buttonsDiv.firstChild);
+        // Render matrix using Grid Component with adaptive sizing
+        this.renderGridMatrix(grid);
+
+        // Update expected value controls
+        this.updateExpectedControls(grid);
+
+        // Update expected value grid
+        this.renderExpectedValueGrid(testId, grid.expectedValue);
+
+        console.log(`🎯 Grid ${this.currentGridIndex + 1} rendered`);
+    }
+
+    /**
+     * Update grid information panel
+     */
+    updateGridInformation(grid, testId) {
+        // Header information
+        this.updateElement('currentGridTitle', `Test-${testId} - Grid Matrix`);
+        this.updateElement('currentGridDimensions', `${grid.width}×${grid.height}`);
+
+        // Status badge
+        const statusElement = document.getElementById('currentGridStatus');
+        if (statusElement) {
+            const statusInfo = this.getStatusInfo(grid.status);
+            statusElement.className = `badge ${statusInfo.class}`;
+            statusElement.textContent = statusInfo.text;
+        }
+
+        // Detail information
+        this.updateElement('currentTestId', testId);
+        this.updateElement('currentDimensions', `${grid.width}×${grid.height}`);
+        this.updateElement('mySnakeLength', grid.analysis?.mySnakeLength || 0);
+        this.updateElement('enemyCount', grid.analysis?.totalEnemies || 0);
+        this.updateElement('foodCount', grid.analysis?.food?.length || 0);
+        this.updateElement('hazardCount', grid.analysis?.hazards?.length || 0);
+    }
+
+    /**
+     * Render grid matrix using Grid Component with responsive sizing
+     */
+    renderGridMatrix(grid) {
+        const matrixContainer = document.getElementById('gridMatrixContainer');
+        if (!matrixContainer || !this.gridComponent) {
+            console.error('Matrix container or grid component not found');
+            return;
+        }
+
+        // Get container dimensions
+        const containerRect = matrixContainer.getBoundingClientRect();
+        const containerWidth = containerRect.width || 400;
+        const containerHeight = containerRect.height || 300;
+
+        // Calculate optimal sizing for the grid
+        const optimalSize = this.gridComponent.calculateOptimalSize(
+            containerWidth,
+            containerHeight,
+            grid.width,
+            grid.height
+        );
+
+        // Render the matrix with optimal sizing
+        const matrixHTML = this.gridComponent.render(grid, optimalSize);
+        matrixContainer.innerHTML = matrixHTML;
+    }
+
+    /**
+     * Update expected value controls
+     */
+    updateExpectedControls(grid) {
+        const expectedDisplay = document.getElementById('currentExpectedDisplay');
+        if (expectedDisplay) {
+            if (grid.expectedValue) {
+                expectedDisplay.innerHTML = `<span class="badge bg-success">${grid.expectedValue} - ${this.expectedLabels[grid.expectedValue]}</span>`;
+            } else {
+                expectedDisplay.innerHTML = `<span class="badge bg-warning">Not Set</span>`;
             }
         }
     }
 
     /**
-     * Render single grid card with matrix visualization
+     * Render expected value grid buttons
      */
-    renderGridCard(grid, index) {
-        const testId = this.startId + index;
-        const statusClass = this.getStatusClass(grid.status);
-        const statusBadge = this.getStatusBadge(grid.status);
-        const matrixHTML = this.renderMatrix(grid);
-        const expectedDisplay = grid.expectedValue ?
-            `<span class="badge bg-success">${grid.expectedValue} - ${this.expectedLabels[grid.expectedValue]}</span>` :
-            `<span class="badge bg-warning">Not Set</span>`;
+    renderExpectedValueGrid(testId, currentValue) {
+        const container = document.getElementById('expectedValueGrid');
+        if (!container) return;
 
-        return `
-            <div class="col-lg-12 col-xl-6">
-                <div class="card h-100 ${statusClass}" data-grid-id="${grid.id}" data-test-id="${testId}">
-                    <div class="card-header d-flex justify-content-between align-items-center py-2">
-                        <div>
-                            <h6 class="card-title mb-0 fw-semibold">Test-${testId}</h6>
-                            <small class="text-muted">${grid.width}×${grid.height}</small>
-                        </div>
-                        ${statusBadge}
-                    </div>
-                    
-                    <div class="card-body d-flex flex-column p-2">
-                        <!-- Grid Matrix -->
-                        <div class="grid-matrix-container mb-2">
-                            <div class="small text-muted mb-1">Grid Matrix:</div>
-                            <div class="grid-matrix border rounded p-1" style="font-size: 8px; line-height: 1; font-family: monospace;">
-                                ${matrixHTML}
-                            </div>
-                        </div>
-
-                        <!-- Expected Value Display -->
-                        <div class="mb-2 text-center">
-                            <div class="small text-muted">Expected Direction:</div>
-                            <div id="expectedDisplay-${testId}">${expectedDisplay}</div>
-                        </div>
-
-                        <!-- Recalculate Button -->
-                        <div class="mb-2 text-center">
-                            <button class="btn btn-info btn-sm" onclick="window.snake.processTabManager.recalculateExpected(${testId})">
-                                🔄 Recalculate Expected
-                            </button>
-                        </div>
-
-                        <!-- Expected Value Selector -->
-                        <div>
-                            <div class="row g-2"> 
-                                ${this.renderExpectedButtons(testId, grid.expectedValue)}
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="mt-auto pt-2 border-top">
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-outline-info btn-sm flex-fill" onclick="window.snake.processTabManager.previewTest(${testId})">
-                                    👁️ Preview
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="window.snake.processTabManager.deleteGrid('${grid.id}')">
-                                    🗑️
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    /**
-     * Render matrix visualization with safe moves highlighted
-     */
-    renderMatrix(grid) {
-        if (!grid.cells || grid.cells.length === 0) {
-            return '<div class="text-muted">No matrix data</div>';
-        }
-
-        const safeMoves = grid.safeMoves || [];
-        const myHead = grid.analysis?.myHead;
-
-        const rows = grid.cells.map((row, y) => {
-            const cells = row.map((cell, x) => {
-                // Check if this position is a safe move
-                const isSafeMove = safeMoves.some(move => move.x === x && move.y === y);
-                const isHead = myHead && myHead.x === x && myHead.y === y;
-
-                // Convert characters to colored cells
-                let cellClass = 'matrix-cell';
-                let cellContent = '·';
-                let title = '';
-
-                if (isSafeMove) {
-                    cellClass += ' safe-move';
-                    cellContent = '✓';
-                    title = 'Safe move';
-                } else {
-                    switch (cell) {
-                        case 'H':
-                            cellClass += ' my-head';
-                            cellContent = 'H';
-                            title = 'My Head';
-                            break;
-                        case 'B':
-                            cellClass += ' my-body';
-                            cellContent = 'B';
-                            title = 'My Body';
-                            break;
-                        case 'E':
-                            cellClass += ' enemy-head';
-                            cellContent = 'E';
-                            title = 'Enemy Head';
-                            break;
-                        case 'b':
-                            cellClass += ' enemy-body';
-                            cellContent = 'e';
-                            title = 'Enemy Body';
-                            break;
-                        case 'F':
-                            cellClass += ' food';
-                            cellContent = 'F';
-                            title = 'Food';
-                            break;
-                        case '#': // Hazard
-                            cellClass += ' hazard';
-                            cellContent = 'X';
-                            title = 'Hazard';
-                            break;
-                        case '.':
-                        default:
-                            cellClass += ' empty';
-                            cellContent = '·';
-                            title = 'Empty';
-                            break;
-                    }
-                }
-
-                return `<span class="${cellClass}" title="${title}">${cellContent}</span>`;
-            }).join('');
-
-            return `<div class="matrix-row">${cells}</div>`;
-        }).join('');
-
-        return rows;
-    }
-
-    /**
-     * Render expected value buttons
-     */
-    renderExpectedButtons(testId, currentValue) {
         const buttonGroups = [
             [1, 2, 3, 4, 5],
             [6, 7, 8, 9, 10],
             [11, 12, 13, 14, 15]
         ];
 
-        return buttonGroups.map(group => {
-            const buttons = group.map(value => {
+        let html = '';
+        buttonGroups.forEach(group => {
+            group.forEach(value => {
                 const isSelected = currentValue === value;
                 const btnClass = isSelected ? 'btn-primary' : 'btn-outline-primary';
                 const icon = this.getDirectionIcon(value);
 
-                return `
-            <div class="col-2">
-                <button class="btn ${btnClass} w-100 btn-square expected-btn" 
-                        data-test-id="${testId}" 
-                        data-value="${value}"
-                        style="font-size: 20px; height: 40px;"
-                        onclick="window.snake.processTabManager.setExpectedValue(${testId}, ${value})">
-                    <div style="font-size: 15px;">${value}</div>
-                    <div style="font-size: 15px;">${icon}</div>
-                </button>
-            </div>
-        `;
-            }).join('');
+                html += `
+                    <div class="col-4 col-md-3 col-lg-4">
+                        <button class="btn ${btnClass} w-100 btn-sm expected-btn" 
+                                data-value="${value}"
+                                style="font-size: 10px; padding: 4px 2px; min-height: 35px;"
+                                onclick="window.snake.processTabManager.setCurrentExpectedValue(${value})"
+                                title="${this.expectedLabels[value]}">
+                            <div style="font-size: 11px; font-weight: bold;">${value}</div>
+                            <div style="font-size: 10px;">${icon}</div>
+                        </button>
+                    </div>
+                `;
+            });
+        });
 
-            return `<div class="col-12"><div class="row g-2 justify-content-center">${buttons}</div></div>`;
-        }).join('');
+        container.innerHTML = html;
     }
 
     /**
@@ -460,92 +341,141 @@ class ProcessTabManager {
     }
 
     /**
-     * Get status class for card
+     * Get status information
      */
-    getStatusClass(status) {
-        const classes = {
-            pending: 'border-warning',
-            ready: 'border-success',
-            failed: 'border-danger'
+    getStatusInfo(status) {
+        const statusMap = {
+            pending: { class: 'bg-warning text-dark', text: '⏳ Pending' },
+            ready: { class: 'bg-success', text: '✅ Ready' },
+            failed: { class: 'bg-danger', text: '❌ Failed' }
         };
-        return classes[status] || 'border-secondary';
+        return statusMap[status] || { class: 'bg-secondary', text: '❓ Unknown' };
     }
 
     /**
-     * Get status badge
+     * Set expected value for current grid
      */
-    getStatusBadge(status) {
-        const badges = {
-            pending: '<span class="badge bg-warning text-dark">⏳ Pending</span>',
-            ready: '<span class="badge bg-success">✅ Ready</span>',
-            failed: '<span class="badge bg-danger">❌ Failed</span>'
-        };
-        return badges[status] || '<span class="badge bg-secondary">❓ Unknown</span>';
-    }
+    setCurrentExpectedValue(value) {
+        if (this.currentGridIndex >= 0 && this.currentGridIndex < this.grids.length) {
+            this.grids[this.currentGridIndex].expectedValue = value;
+            this.grids[this.currentGridIndex].status = 'ready';
 
-    /**
-     * Set expected value for a test
-     */
-    setExpectedValue(testId, value) {
-        const gridIndex = testId - this.startId;
-        if (gridIndex >= 0 && gridIndex < this.grids.length) {
-            this.grids[gridIndex].expectedValue = value;
-            this.grids[gridIndex].status = 'ready';
+            // Update display immediately
+            this.updateExpectedControls(this.grids[this.currentGridIndex]);
+            this.renderExpectedValueGrid(this.startId + this.currentGridIndex, value);
 
-            // Recalculate safe moves for visualization
-            this.calculateExpectedValue(this.grids[gridIndex]);
-
-            // Update display
-            const expectedDisplay = document.getElementById(`expectedDisplay-${testId}`);
-            if (expectedDisplay) {
-                expectedDisplay.innerHTML = `<span class="badge bg-success">${value} - ${this.expectedLabels[value]}</span>`;
-            }
-
-            // Update buttons
-            const card = document.querySelector(`[data-test-id="${testId}"]`);
-            if (card) {
-                card.className = card.className.replace(/border-\w+/, 'border-success');
-
-                // Update all buttons in this card
-                card.querySelectorAll('.expected-btn').forEach(btn => {
-                    const btnValue = parseInt(btn.getAttribute('data-value'));
-                    if (btnValue === value) {
-                        btn.className = btn.className.replace('btn-outline-primary', 'btn-primary');
-                    } else {
-                        btn.className = btn.className.replace('btn-primary', 'btn-outline-primary');
-                    }
-                });
-
-                // Update status badge
-                const statusBadge = card.querySelector('.badge');
-                if (statusBadge) {
-                    statusBadge.className = 'badge bg-success';
-                    statusBadge.textContent = '✅ Ready';
-                }
-            }
-
+            // Update stats and save
             this.updateStats();
             this.saveGridsToStorage();
 
-            this.notify.success(`Expected value ${value} set for Test-${testId}`);
+            this.notify.success(`Expected value ${value} set for current grid`);
         }
     }
 
     /**
-     * Preview test JSON
+     * Calculate expected value automatically (placeholder for future AI logic)
      */
-    previewTest(testId) {
+    calculateExpected() {
+        const grid = this.grids[this.currentGridIndex];
+        if (!grid) return;
+
+        // Simple heuristic: if food is above snake head, suggest UP (1)
+        // This is a placeholder - you can implement more sophisticated logic
+
+        if (grid.analysis?.myHead && grid.analysis?.food?.length > 0) {
+            const head = grid.analysis.myHead;
+            const food = grid.analysis.food[0]; // First food item
+
+            let suggestedValue = 1; // Default to UP
+
+            if (food.y < head.y) {
+                suggestedValue = 1; // UP
+            } else if (food.y > head.y) {
+                suggestedValue = 2; // DOWN
+            } else if (food.x < head.x) {
+                suggestedValue = 4; // LEFT
+            } else if (food.x > head.x) {
+                suggestedValue = 8; // RIGHT
+            }
+
+            // Show suggestion dialog
+            if (confirm(`Suggested expected value: ${suggestedValue} - ${this.expectedLabels[suggestedValue]}\n\nDo you want to apply this value?`)) {
+                this.setCurrentExpectedValue(suggestedValue);
+            }
+        } else {
+            this.notify.warning('Cannot calculate expected value: missing snake head or food');
+        }
+    }
+
+    /**
+     * Preview current test JSON
+     */
+    previewCurrentTest() {
+        const grid = this.grids[this.currentGridIndex];
+        if (!grid) return;
+
         if (!this.jsonFormatter) {
             this.notify.error('JSON Formatter non inizializzato');
             return;
         }
 
-        const gridIndex = testId - this.startId;
-        if (gridIndex >= 0 && gridIndex < this.grids.length) {
-            const grid = this.grids[gridIndex];
-            const testJson = this.jsonFormatter.gridToTest(grid, testId);
+        const testId = this.startId + this.currentGridIndex;
+        const testJson = this.jsonFormatter.gridToTest(grid, testId);
 
-            alert(`Test-${testId} JSON Preview:\n\n${JSON.stringify(testJson, null, 2)}`);
+        alert(`Test-${testId} JSON Preview:\n\n${JSON.stringify(testJson, null, 2)}`);
+    }
+
+    /**
+     * Duplicate current grid
+     */
+    duplicateCurrentGrid() {
+        const grid = this.grids[this.currentGridIndex];
+        if (!grid) return;
+
+        const duplicatedGrid = {
+            ...JSON.parse(JSON.stringify(grid)), // Deep clone
+            id: `grid_${Date.now()}_duplicated`,
+            index: this.grids.length + 1,
+            status: 'imported',
+            timestamp: new Date().toISOString(),
+            expectedValue: null // Reset expected value for duplicate
+        };
+
+        this.grids.push(duplicatedGrid);
+        this.currentGridIndex = this.grids.length - 1; // Switch to new grid
+        this.renderCurrentGrid();
+        this.updateNavigationControls();
+        this.updateStats();
+        this.saveGridsToStorage();
+
+        this.notify.success('Grid duplicated successfully');
+    }
+
+    /**
+     * Delete current grid
+     */
+    deleteCurrentGrid() {
+        if (this.grids.length === 0) return;
+
+        const testId = this.startId + this.currentGridIndex;
+        if (confirm(`Sei sicuro di voler eliminare Test-${testId}?`)) {
+            this.grids.splice(this.currentGridIndex, 1);
+
+            // Adjust current index if necessary
+            if (this.currentGridIndex >= this.grids.length) {
+                this.currentGridIndex = Math.max(0, this.grids.length - 1);
+            }
+
+            if (this.grids.length === 0) {
+                this.showNoGridsMessage();
+            } else {
+                this.renderCurrentGrid();
+                this.updateNavigationControls();
+            }
+
+            this.updateStats();
+            this.saveGridsToStorage();
+            this.notify.success('Grid eliminata');
         }
     }
 
@@ -555,23 +485,11 @@ class ProcessTabManager {
     deleteGrids() {
         if (confirm('Sei sicuro di voler eliminare TUTTE le griglie?')) {
             this.grids = [];
-            this.renderGrids();
+            this.currentGridIndex = 0;
+            this.showNoGridsMessage();
             this.updateStats();
             this.saveGridsToStorage();
             this.notify.success('Tutte le griglie eliminate');
-        }
-    }
-
-    /**
-     * Delete single grid
-     */
-    deleteGrid(gridId) {
-        if (confirm('Sei sicuro di voler eliminare questa griglia?')) {
-            this.grids = this.grids.filter(g => g.id !== gridId);
-            this.renderGrids();
-            this.updateStats();
-            this.saveGridsToStorage();
-            this.notify.success('Griglia eliminata');
         }
     }
 
@@ -594,7 +512,7 @@ class ProcessTabManager {
         const input = document.getElementById('startIdInput');
         if (input) {
             this.startId = parseInt(input.value) || 101;
-            this.renderGrids(); // Re-render with new IDs
+            this.renderCurrentGrid(); // Re-render with new ID
         }
     }
 
@@ -642,18 +560,16 @@ class ProcessTabManager {
             // Store for copy/download
             this.generatedJson = tests;
 
-            // Show modal - try different approaches
+            // Show modal
             try {
                 if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                     const modal = new bootstrap.Modal(modalElement);
                     modal.show();
                 } else {
-                    // Fallback - show modal manually
                     modalElement.style.display = 'block';
                     modalElement.classList.add('show');
                     document.body.classList.add('modal-open');
 
-                    // Add backdrop
                     const backdrop = document.createElement('div');
                     backdrop.className = 'modal-backdrop fade show';
                     backdrop.id = 'json-modal-backdrop';
@@ -661,7 +577,6 @@ class ProcessTabManager {
                 }
             } catch (error) {
                 console.error('Modal error:', error);
-                // Ultimate fallback - use alert with JSON
                 alert(`Generated ${tests.length} test cases:\n\n${JSON.stringify(tests, null, 2).substring(0, 1000)}...`);
             }
         } else {
@@ -699,7 +614,6 @@ class ProcessTabManager {
                 this.notify.success('JSON copiato negli appunti');
             } catch (error) {
                 console.error('Clipboard error:', error);
-                // Fallback method
                 const textArea = document.createElement('textarea');
                 textArea.value = JSON.stringify(this.generatedJson, null, 2);
                 document.body.appendChild(textArea);
@@ -763,26 +677,26 @@ class ProcessTabManager {
             failed: this.grids.filter(g => g.status === 'failed').length
         };
 
-        this.updateStatElement('totalGrids', stats.total);
-        this.updateStatElement('pendingGrids', stats.pending);
-        this.updateStatElement('readyGrids', stats.ready);
-        this.updateStatElement('failedGrids', stats.failed);
+        this.updateElement('totalGrids', stats.total);
+        this.updateElement('pendingGrids', stats.pending);
+        this.updateElement('readyGrids', stats.ready);
+        this.updateElement('failedGrids', stats.failed);
     }
 
     /**
      * Update stats when empty
      */
     updateStatsEmpty() {
-        this.updateStatElement('totalGrids', 0);
-        this.updateStatElement('pendingGrids', 0);
-        this.updateStatElement('readyGrids', 0);
-        this.updateStatElement('failedGrids', 0);
+        this.updateElement('totalGrids', 0);
+        this.updateElement('pendingGrids', 0);
+        this.updateElement('readyGrids', 0);
+        this.updateElement('failedGrids', 0);
     }
 
     /**
-     * Update stat element
+     * Update element text content
      */
-    updateStatElement(elementId, value) {
+    updateElement(elementId, value) {
         const element = document.getElementById(elementId);
         if (element) {
             element.textContent = value;
@@ -804,7 +718,7 @@ class ProcessTabManager {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
             console.log('✅ Griglie aggiornate nel localStorage');
 
-            // Aggiorna il badge nel tab
+            // Update badge in tab
             if (window.snake?.updateGridsBadge) {
                 window.snake.updateGridsBadge();
             }

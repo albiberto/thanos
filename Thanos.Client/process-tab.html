@@ -1,4 +1,4 @@
-﻿<!-- Process Tab - Grid Matrix Visualization -->
+﻿<!-- Process Tab - Grid Matrix Visualization - Updated Layout -->
 <div class="h-100 d-flex flex-column">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-success border-2">
@@ -12,79 +12,248 @@
                     <input type="number" class="form-control form-control-sm text-center" id="startIdInput" value="101" min="1" max="9999" onchange="window.snake.processTabManager.updateStartId()">
                     <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.snake.processTabManager.changeStartId(1)">+</button>
                 </div>
+            </div>
+            <div class="vr"></div>
+            <div class="d-flex align-items-end gap-2">
+                <button class="btn btn-outline-danger btn-sm d-flex align-items-center" onclick="window.snake.processTabManager.deleteGrids()">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.5"
+                         stroke="currentColor"
+                         class="me-2"
+                         style="width: 18px; height: 18px;">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M6 7h12M9 7v10m6-10v10M4 7h16M4 7l1 12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2l1-12" />
+                    </svg>
+                    Delete Grids
+                </button>
+                <button class="btn btn-outline-success btn-sm" onclick="window.snake.processTabManager.refreshGrids()">
+                    🔄 Refresh
+                </button>
+                <button class="btn btn-success btn-sm" onclick="window.snake.processTabManager.generateAllTests()">
+                    📋 Generate JSON
+                </button>
+            </div>
         </div>
     </div>
-    <div class="vr"></div>
-        <div class="d-flex align-items-end gap-2">
-        <button class="btn btn-outline-danger btn-sm d-flex align-items-center" onclick="window.snake.processTabManager.deleteGrids()">
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 stroke-width="1.5"
-                 stroke="currentColor"
-                 class="me-2"
-                 style="width: 18px; height: 18px;">
-                <path stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M6 7h12M9 7v10m6-10v10M4 7h16M4 7l1 12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2l1-12" />
-            </svg>
-            Delete Grids
+
+    <!-- Quick Stats -->
+    <div class="row g-2 mb-3">
+        <div class="col-3">
+            <div class="card border-primary">
+                <div class="card-body py-1 text-center">
+                    <div class="small text-muted">Total</div>
+                    <div class="fw-bold" id="totalGrids">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="card border-warning">
+                <div class="card-body py-1 text-center">
+                    <div class="small text-muted">Pending</div>
+                    <div class="fw-bold text-warning" id="pendingGrids">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="card border-success">
+                <div class="card-body py-1 text-center">
+                    <div class="small text-muted">Ready</div>
+                    <div class="fw-bold text-success" id="readyGrids">0</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="card border-danger">
+                <div class="card-body py-1 text-center">
+                    <div class="small text-muted">Failed</div>
+                    <div class="fw-bold text-danger" id="failedGrids">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Controls for Grids -->
+    <div class="d-flex justify-content-between align-items-center mb-3" id="gridNavigation" style="display: none;">
+        <button class="btn btn-outline-primary" id="prevGridBtn" onclick="window.snake.processTabManager.navigateGrid(-1)">
+            ← Previous Grid
         </button>
-    <button class="btn btn-outline-success btn-sm" onclick="window.snake.processTabManager.refreshGrids()">
-        🔄 Refresh
-    </button>
-    <button class="btn btn-success btn-sm" onclick="window.snake.processTabManager.generateAllTests()">
-        📋 Generate JSON
-    </button>
-</div>
-</div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-semibold">Grid <span id="currentGridIndex">1</span> of <span id="totalGridsNav">1</span></span>
+            <div class="input-group" style="width: 100px;">
+                <input type="number" class="form-control form-control-sm text-center"
+                       id="gotoGridInput" min="1" max="1"
+                       onchange="window.snake.processTabManager.gotoGrid(this.value - 1)">
+            </div>
+        </div>
+        <button class="btn btn-outline-primary" id="nextGridBtn" onclick="window.snake.processTabManager.navigateGrid(1)">
+            Next Grid →
+        </button>
+    </div>
 
-<!-- Quick Stats -->
-<div class="row g-2 mb-3">
-    <div class="col-3">
-        <div class="card border-primary">
-            <div class="card-body py-1 text-center">
-                <div class="small text-muted">Total</div>
-                <div class="fw-bold" id="totalGrids">0</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="card border-warning">
-            <div class="card-body py-1 text-center">
-                <div class="small text-muted">Pending</div>
-                <div class="fw-bold text-warning" id="pendingGrids">0</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="card border-success">
-            <div class="card-body py-1 text-center">
-                <div class="small text-muted">Ready</div>
-                <div class="fw-bold text-success" id="readyGrids">0</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-3">
-        <div class="card border-danger">
-            <div class="card-body py-1 text-center">
-                <div class="small text-muted">Failed</div>
-                <div class="fw-bold text-danger" id="failedGrids">0</div>
-            </div>
-        </div>
-    </div>
-</div>
+    <!-- Single Grid Container with Two-Column Layout -->
+    <div class="flex-fill overflow-auto">
+        <div id="singleGridContainer" style="display: none;">
+            <!-- Two Column Layout: Grid + Controls -->
+            <div class="row h-100 g-3">
+                <!-- Left Column: Grid Matrix -->
+                <div class="col-md-7 col-lg-8 d-flex flex-column">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary-subtle">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0 fw-semibold" id="currentGridTitle">Grid Matrix</h6>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-secondary" id="currentGridDimensions">0×0</span>
+                                    <span class="badge" id="currentGridStatus">Unknown</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body d-flex justify-content-center align-items-center p-3">
+                            <!-- Grid Matrix Component Container -->
+                            <div id="gridMatrixContainer" class="w-100 h-100 d-flex justify-content-center align-items-center">
+                                <!-- Matrix will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<!-- Grids Container -->
-<div class="flex-fill overflow-auto">
-    <div class="row g-3" id="gridsContainer">
-        <!-- Grid cards will be generated here -->
+                <!-- Right Column: Controls and Information -->
+                <div class="col-md-5 col-lg-4 d-flex flex-column">
+                    <!-- Grid Information -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-info-subtle">
+                            <h6 class="card-title mb-0 fw-semibold">📊 Grid Information</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2 text-center">
+                                <div class="col-6">
+                                    <div class="small text-muted">Test ID</div>
+                                    <div class="fw-bold" id="currentTestId">-</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Dimensions</div>
+                                    <div class="fw-bold" id="currentDimensions">-</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">My Snake</div>
+                                    <div class="fw-bold" id="mySnakeLength">-</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Enemies</div>
+                                    <div class="fw-bold" id="enemyCount">-</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Food</div>
+                                    <div class="fw-bold" id="foodCount">-</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Hazards</div>
+                                    <div class="fw-bold" id="hazardCount">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expected Direction -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-success-subtle">
+                            <h6 class="card-title mb-0 fw-semibold">🎯 Expected Direction</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <!-- Current Expected Value Display -->
+                            <div class="text-center mb-3">
+                                <div class="small text-muted mb-1">Current Expected:</div>
+                                <div id="currentExpectedDisplay">
+                                    <span class="badge bg-warning">Not Set</span>
+                                </div>
+                            </div>
+
+                            <!-- Calculate Expected Button -->
+                            <div class="text-center mb-3">
+                                <button class="btn btn-outline-primary btn-sm w-100" id="calculateExpectedBtn"
+                                        onclick="window.snake.processTabManager.calculateExpected()">
+                                    🧮 Calculate Expected
+                                </button>
+                            </div>
+
+                            <!-- Expected Value Quick Set Buttons -->
+                            <div class="row g-1">
+                                <div class="col-6">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(1)">
+                                        1 - ⬆️
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(2)">
+                                        2 - ⬇️
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(4)">
+                                        4 - ⬅️
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="window.snake.processTabManager.setCurrentExpectedValue(8)">
+                                        8 - ➡️
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expected Value Override -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-warning-subtle">
+                            <h6 class="card-title mb-0 fw-semibold">⚙️ Override Expected</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <!-- Expected Value Selector Grid -->
+                            <div class="row g-1" id="expectedValueGrid">
+                                <!-- Buttons will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card mt-auto">
+                        <div class="card-body py-2">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-info btn-sm" onclick="window.snake.processTabManager.previewCurrentTest()">
+                                    👁️ Preview JSON
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="window.snake.processTabManager.duplicateCurrentGrid()">
+                                    📋 Duplicate Grid
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="window.snake.processTabManager.deleteCurrentGrid()">
+                                    🗑️ Delete Grid
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Grids Message -->
+        <div id="noGridsMessage">
+            <div class="alert alert-info text-center">
+                <h4 class="alert-heading">📭 Nessuna griglia trovata</h4>
+                <p>Non ci sono griglie da processare. Vai al tab Import per importare delle griglie.</p>
+                <hr>
+                <button class="btn btn-outline-primary" onclick="window.snake.tabManager.switchTab('import')">
+                    📥 Vai al Tab Import
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- JSON Output Modal -->
-    <div class="modal fade" id="jsonOutputModal" tabindex="-1" onclick="window.snake.processTabManager.closeJsonModal()">
-        <div class="modal-dialog modal-xl" onclick="event.stopPropagation()">
+<div class="modal fade" id="jsonOutputModal" tabindex="-1" onclick="window.snake.processTabManager.closeJsonModal()">
+    <div class="modal-dialog modal-xl" onclick="event.stopPropagation()">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Generated Test JSON</h5>
@@ -107,27 +276,3 @@
         </div>
     </div>
 </div>
-
-<!-- Expected Value Selection Template -->
-<template id="expectedSelectorTemplate">
-    <div class="expected-selector">
-        <div class="small text-muted mb-2">Expected Direction:</div>
-        <div class="btn-group-vertical btn-group-sm w-100" role="group">
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="1" data-label="⬆️ UP">1 - ⬆️ UP</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="2" data-label="⬇️ DOWN">2 - ⬇️ DOWN</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="3" data-label="⬆️⬇️ UP|DOWN">3 - ⬆️⬇️ UP|DOWN</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="4" data-label="⬅️ LEFT">4 - ⬅️ LEFT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="5" data-label="⬆️⬅️ UP|LEFT">5 - ⬆️⬅️ UP|LEFT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="6" data-label="⬇️⬅️ DOWN|LEFT">6 - ⬇️⬅️ DOWN|LEFT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="7" data-label="⬆️⬇️⬅️ UP|DOWN|LEFT">7 - ⬆️⬇️⬅️ UP|DOWN|LEFT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="8" data-label="➡️ RIGHT">8 - ➡️ RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="9" data-label="⬆️➡️ UP|RIGHT">9 - ⬆️➡️ UP|RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="10" data-label="⬇️➡️ DOWN|RIGHT">10 - ⬇️➡️ DOWN|RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="11" data-label="⬆️⬇️➡️ UP|DOWN|RIGHT">11 - ⬆️⬇️➡️ UP|DOWN|RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="12" data-label="⬅️➡️ LEFT|RIGHT">12 - ⬅️➡️ LEFT|RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="13" data-label="⬆️⬅️➡️ UP|LEFT|RIGHT">13 - ⬆️⬅️➡️ UP|LEFT|RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="14" data-label="⬇️⬅️➡️ DOWN|LEFT|RIGHT">14 - ⬇️⬅️➡️ DOWN|LEFT|RIGHT</button>
-            <button type="button" class="btn btn-outline-primary expected-btn" data-value="15" data-label="⬆️⬇️⬅️➡️ ALL">15 - ⬆️⬇️⬅️➡️ ALL</button>
-        </div>
-    </div>
-</template>
