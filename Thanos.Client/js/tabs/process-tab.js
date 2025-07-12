@@ -220,7 +220,7 @@ class ProcessTabManager {
         // Update expected value grid
         this.renderExpectedValueGrid(testId, grid.expectedValue);
 
-        console.log(`🎯 Grid ${this.currentGridIndex + 1} rendered`);
+        console.log(`Grid ${this.currentGridIndex + 1} rendered`);
     }
 
     /**
@@ -271,7 +271,13 @@ class ProcessTabManager {
             grid.height
         );
 
-        // Render the matrix with optimal sizing
+        // Add expected value and head position for direction overlay
+        optimalSize.expectedValue = grid.expectedValue;
+        optimalSize.myHead = grid.analysis?.myHead;
+
+        console.log('🎯 Rendering grid with expected value:', grid.expectedValue, 'and head:', grid.analysis?.myHead);
+
+        // Render the matrix with optimal sizing and direction overlays
         const matrixHTML = this.gridComponent.render(grid, optimalSize);
         matrixContainer.innerHTML = matrixHTML;
     }
@@ -364,47 +370,101 @@ class ProcessTabManager {
             this.updateExpectedControls(this.grids[this.currentGridIndex]);
             this.renderExpectedValueGrid(this.startId + this.currentGridIndex, value);
 
+            // IMPORTANT: Re-render the grid matrix to show direction overlays
+            this.renderGridMatrix(this.grids[this.currentGridIndex]);
+
+            // Also update the status badge
+            this.updateGridInformation(this.grids[this.currentGridIndex], this.startId + this.currentGridIndex);
+
             // Update stats and save
             this.updateStats();
             this.saveGridsToStorage();
 
-            this.notify.success(`Expected value ${value} set for current grid`);
+            this.notify.success(`Expected value ${value} - ${this.expectedLabels[value]} set for current grid`);
         }
     }
 
     /**
-     * Calculate expected value automatically (placeholder for future AI logic)
+     * Calculate expected value based on grid analysis (safe moves)
      */
     calculateExpected() {
         const grid = this.grids[this.currentGridIndex];
         if (!grid) return;
 
-        // Simple heuristic: if food is above snake head, suggest UP (1)
-        // This is a placeholder - you can implement more sophisticated logic
-
-        if (grid.analysis?.myHead && grid.analysis?.food?.length > 0) {
-            const head = grid.analysis.myHead;
-            const food = grid.analysis.food[0]; // First food item
-
-            let suggestedValue = 1; // Default to UP
-
-            if (food.y < head.y) {
-                suggestedValue = 1; // UP
-            } else if (food.y > head.y) {
-                suggestedValue = 2; // DOWN
-            } else if (food.x < head.x) {
-                suggestedValue = 4; // LEFT
-            } else if (food.x > head.x) {
-                suggestedValue = 8; // RIGHT
-            }
-
-            // Show suggestion dialog
-            if (confirm(`Suggested expected value: ${suggestedValue} - ${this.expectedLabels[suggestedValue]}\n\nDo you want to apply this value?`)) {
-                this.setCurrentExpectedValue(suggestedValue);
-            }
-        } else {
-            this.notify.warning('Cannot calculate expected value: missing snake head or food');
+        if (!grid.analysis?.myHead) {
+            this.notify.warning('Cannot calculate expected value: missing snake head position');
+            return;
         }
+
+        const head = grid.analysis.myHead;
+        const gridWidth = grid.width;
+        const gridHeight = grid.height;
+
+        // Check which directions are safe/valid
+        const safeMoves = [];
+
+        // Check UP (y-1)
+        if (head.y > 0 && this.isSafeMove(grid, head.x, head.y - 1)) {
+            safeMoves.push(1);
+        }
+
+        // Check DOWN (y+1)
+        if (head.y < gridHeight - 1 && this.isSafeMove(grid, head.x, head.y + 1)) {
+            safeMoves.push(2);
+        }
+
+        // Check LEFT (x-1)
+        if (head.x > 0 && this.isSafeMove(grid, head.x - 1, head.y)) {
+            safeMoves.push(4);
+        }
+
+        // Check RIGHT (x+1)
+        if (head.x < gridWidth - 1 && this.isSafeMove(grid, head.x + 1, head.y)) {
+            safeMoves.push(8);
+        }
+
+        if (safeMoves.length === 0) {
+            this.notify.warning('No safe moves available!');
+            return;
+        }
+
+        // Calculate suggested value based on safe moves
+        let suggestedValue = 0;
+        safeMoves.forEach(move => {
+            suggestedValue |= move; // Bitwise OR to combine directions
+        });
+
+        // If all directions are safe, suggest the primary direction (UP as default)
+        if (suggestedValue === 15) { // All directions safe
+            suggestedValue = 1; // Default to UP
+        }
+
+        const moveNames = safeMoves.map(move => this.expectedLabels[move]).join(', ');
+
+        // Show suggestion dialog
+        this.setCurrentExpectedValue(suggestedValue);
+    }
+
+    /**
+     * Check if a move to the given position is safe
+     * @param {Object} grid - Grid data
+     * @param {number} x - Target X position
+     * @param {number} y - Target Y position
+     * @returns {boolean} - True if move is safe
+     */
+    isSafeMove(grid, x, y) {
+        // Check bounds
+        if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) {
+            return false;
+        }
+
+        // Get cell content
+        const cell = grid.cells[y][x];
+
+        // Unsafe cells: my body, enemy head, enemy body, hazards
+        const unsafeCells = ['B', 'E', 'b', '#'];
+
+        return !unsafeCells.includes(cell);
     }
 
     /**
