@@ -21,10 +21,10 @@ public static class Debug
 
     private static readonly Direction[] directions =
     [
-        new() { Label = $"{UP_ICON} (1) UP", DX = 0, DY = -1, Flag = MonteCarlo.UP },
-        new() { Label = $"{DOWN_ICON} (2) DOWN", DX = 0, DY = 1, Flag = MonteCarlo.DOWN },
-        new() { Label = $"{LEFT_ICON} (4)LEFT", DX = -1, DY = 0, Flag = MonteCarlo.LEFT },
-        new() { Label = $"{RIGHT_ICON} (8) RIGHT", DX = 1, DY = 0, Flag = MonteCarlo.RIGHT }
+        new() { Icon = UP_ICON, Label = $"{UP_ICON} (1) UP", DX = 0, DY = -1, Flag = MonteCarlo.UP },
+        new() { Icon = DOWN_ICON, Label = $"{DOWN_ICON} (2) DOWN", DX = 0, DY = 1, Flag = MonteCarlo.DOWN },
+        new() { Icon = LEFT_ICON, Label = $"{LEFT_ICON} (4)LEFT", DX = -1, DY = 0, Flag = MonteCarlo.LEFT },
+        new() { Icon = RIGHT_ICON, Label = $"{RIGHT_ICON} (8) RIGHT", DX = 1, DY = 0, Flag = MonteCarlo.RIGHT }
     ];
 
 
@@ -54,7 +54,7 @@ public static class Debug
     /// <summary>
     ///     Stampa la griglia di gioco con tutti gli elementi visualizzati
     /// </summary>
-    public static void PrintMap(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int scenario, string testName, string fileName, int id, bool onlyFailed = true, bool onlyBoards = false)
+    public static void PrintMap(uint width, uint height, Point[] myBody, Point[] hazards, Snake[] snakes, int expected, int scenario, string testName, string fileName, int id, bool onlyFailed = false, bool onlyBoards = false)
     {
         var headX = myBody[0].x;
         var headY = myBody[0].y;
@@ -200,13 +200,6 @@ public static class Debug
 
         // --- INSERIMENTO FRECCE E X ---
         var head = myBody[0];
-        var directions = new[]
-        {
-            new { Icon = UP_ICON, DX = 0, DY = -1, Flag = MonteCarlo.UP },
-            new { Icon = DOWN_ICON, DX = 0, DY = 1, Flag = MonteCarlo.DOWN },
-            new { Icon = LEFT_ICON, DX = -1, DY = 0, Flag = MonteCarlo.LEFT },
-            new { Icon = RIGHT_ICON, DX = 1, DY = 0, Flag = MonteCarlo.RIGHT }
-        };
 
         foreach (var dir in directions)
         {
@@ -239,7 +232,8 @@ public static class Debug
 
     private class Direction
     {
-        public string Label { get; set; }
+        public required string Label { get; set; }
+        public required string Icon { get; set; }
         public int DX { get; set; }
         public int DY { get; set; }
         public int Flag { get; set; }
