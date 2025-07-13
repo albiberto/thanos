@@ -27,47 +27,10 @@ public class GetValidMovesTests
                 .Concat(complex)
                 .Concat([]);
         
-        // const bool onlyFailed = true;
-        const bool onlyFailed = false;
-        const bool onlyBoards = true;
-        // const bool onlyBoards = false;
+        // Visual(scenarios);
         
-        // For testing specific scenarios, uncomment and modify as needed:
-        scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
-        // scenarios = scenarios.Where(a => a.Id is >= 200 and < 300); // Borders
-        // scenarios = scenarios.Where(a => a.Id is >= 300 and < 400); // Hazards
-        // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
-        // scenarios = scenarios.Where(a => a.Id is >= 500 and < 600); // Combat
-        // scenarios = scenarios.Where(a => a.Id is >= 1000);          // Complex 
-        // scenarios = complex;
+        Debug.PrintHeader();
         
-        // Debug.PrintHeader();
-        foreach (var scenario in scenarios)
-        {
-            var request = scenario.MoveRequest;
-            
-            var board = request.Board;
-            var mySnake = request.You;
-
-            var width = board.width;
-            var height = board.height;
-            var hazards = board.hazards;
-            var hazardCount = hazards.Length;
-            var snakes = board.snakes;
-            var snakeCount = snakes.Length;
-            var myId = mySnake.id;
-            var myBody = mySnake.body;
-            var myBodyLength = myBody.Length;
-            var myHead = mySnake.head;
-            var myHeadX = myHead.x;
-            var myHeadY = myHead.y;
-            var eat = mySnake.health == 100;
-            
-            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed, onlyBoards);
-        }
-        
-        return;
-
         foreach (var scenario in scenarios)
         {
             var request = scenario.MoveRequest;
@@ -127,6 +90,48 @@ public class GetValidMovesTests
                     $"🛑 Ottenuto: {result}\n" +
                     $"❌ Test fallito!\n"); 
             });
+        }
+    }
+
+    private static void Visual(IEnumerable<Scenario> scenarios)
+    {
+        // const bool onlyFailed = true;
+        const bool onlyFailed = false;
+        const bool onlyBoards = true;
+        // const bool onlyBoards = false;
+        
+        // For testing specific scenarios, uncomment and modify as needed:
+        scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
+        // scenarios = scenarios.Where(a => a.Id is >= 200 and < 300); // Borders
+        // scenarios = scenarios.Where(a => a.Id is >= 300 and < 400); // Hazards
+        // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
+        // scenarios = scenarios.Where(a => a.Id is >= 500 and < 600); // Combat
+        // scenarios = scenarios.Where(a => a.Id is >= 1000);          // Complex 
+        // scenarios = complex;
+        
+        // Debug.PrintHeader();
+        foreach (var scenario in scenarios)
+        {
+            var request = scenario.MoveRequest;
+            
+            var board = request.Board;
+            var mySnake = request.You;
+
+            var width = board.width;
+            var height = board.height;
+            var hazards = board.hazards;
+            var hazardCount = hazards.Length;
+            var snakes = board.snakes;
+            var snakeCount = snakes.Length;
+            var myId = mySnake.id;
+            var myBody = mySnake.body;
+            var myBodyLength = myBody.Length;
+            var myHead = mySnake.head;
+            var myHeadX = myHead.x;
+            var myHeadY = myHead.y;
+            var eat = mySnake.health == 100;
+            
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed, onlyBoards);
         }
     }
 }
