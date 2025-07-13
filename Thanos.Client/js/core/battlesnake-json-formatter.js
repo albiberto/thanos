@@ -1,5 +1,5 @@
 ﻿/**
- * BattlesnakeJsonFormatter - Fixed version with direct array bodies
+ * BattlesnakeJsonFormatter - Fixed version with direct array bodies and proper hazard extraction
  * Snake body remains as array for proper JSON serialization
  */
 class BattlesnakeJsonFormatter {
@@ -77,12 +77,62 @@ class BattlesnakeJsonFormatter {
     }
 
     /**
+     * Extract hazards from grid cells
+     * @param {Array} cells - 2D array of grid cells
+     * @param {number} width - Grid width
+     * @param {number} height - Grid height
+     * @returns {Array} - Array of hazard positions
+     */
+    extractHazards(cells, width, height) {
+        const hazards = [];
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (cells[y] && cells[y][x] === '#') {
+                    hazards.push({ x, y });
+                }
+            }
+        }
+
+        console.log(`🔥 Found ${hazards.length} hazards:`, hazards);
+        return hazards;
+    }
+
+    /**
+     * Extract food from grid cells
+     * @param {Array} cells - 2D array of grid cells
+     * @param {number} width - Grid width
+     * @param {number} height - Grid height
+     * @returns {Array} - Array of food positions
+     */
+    extractFood(cells, width, height) {
+        const food = [];
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (cells[y] && cells[y][x] === 'F') {
+                    food.push({ x, y });
+                }
+            }
+        }
+
+        console.log(`🍎 Found ${food.length} food:`, food);
+        return food;
+    }
+
+    /**
      * Convert grid data from Process Tab to test JSON format
      * @param {Object} grid - Grid object from Process Tab
      * @param {number} testId - Test ID
      * @returns {Object} - Formatted test object
      */
     gridToTest(grid, testId) {
+        console.log(`🔧 Converting grid ${testId}:`, grid);
+
+        // Extract hazards and food directly from grid cells (più affidabile dell'analysis)
+        const hazards = this.extractHazards(grid.cells, grid.width, grid.height);
+        const food = this.extractFood(grid.cells, grid.width, grid.height);
+
         // Build snakes array
         const snakes = [];
 
@@ -150,13 +200,15 @@ class BattlesnakeJsonFormatter {
                 board: {
                     height: grid.height,
                     width: grid.width,
-                    food: grid.analysis?.food || [],
-                    hazards: grid.analysis?.hazards || [],
+                    food: food, // Usa i food estratti direttamente dalle celle
+                    hazards: hazards, // Usa gli hazard estratti direttamente dalle celle
                     snakes: snakes
                 },
                 you: snakes.find(s => s.id === "thanos") || null
             }
         };
+
+        console.log(`✅ Generated test ${testId} with ${hazards.length} hazards and ${food.length} food`);
 
         // Format but keep body as arrays
         return this.formatTest(test);
@@ -263,5 +315,5 @@ class BattlesnakeJsonFormatter {
 
 // Export for global access
 if (typeof window !== 'undefined') {
-    window.BattlesnakeJsonFormatterFixed = BattlesnakeJsonFormatterFixed;
+    window.BattlesnakeJsonFormatter = BattlesnakeJsonFormatter;
 }

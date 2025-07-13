@@ -18,6 +18,8 @@ public static class GetValidMovesLightSpeedB
         ClearCollisionMatrix();
         BuildCollisionMatrix(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);
         
+        Debug.Print(width, height, _collisionBytes);
+        
         return GetValidMovesFromMatrix(width, height, myHeadX, myHeadY);
     }
     
@@ -142,7 +144,6 @@ public static class GetValidMovesLightSpeedB
                 *(ptr + bp.y * widthInt + bp.x) = 1;
             }
         }
-        // Debug.Print(width, height, _collisionBytes);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

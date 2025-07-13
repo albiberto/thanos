@@ -12,7 +12,7 @@ public class GetValidMovesTests
     {
         // Arrange - Load all existing scenarios
         var basics = Faker.GetAllScenarios("01-basics");
-        // var hazardss = Faker.GetAllScenarios("02-hazards");
+        var hazardss = Faker.GetAllScenarios("02-hazards");
         // var space_control = Faker.GetAllScenarios("04-space-control");
         // var combat = Faker.GetAllScenarios("05-combat");
         var complex = Faker.GetAllScenarios("10-complex");
@@ -21,14 +21,16 @@ public class GetValidMovesTests
         var scenarios =
             Enumerable.Empty<Scenario>()
                 .Concat(basics)
-                // .Concat(hazardss)
+                .Concat(hazardss)
                 // .Concat(space_control)
                 // .Concat(combat)
                 .Concat(complex)
                 .Concat([]);
+
+        scenarios = hazardss;
         
         // Visual(scenarios);
-        
+        // return;
         Debug.PrintHeader();
         
         foreach (var scenario in scenarios)
@@ -101,7 +103,7 @@ public class GetValidMovesTests
         // const bool onlyBoards = false;
         
         // For testing specific scenarios, uncomment and modify as needed:
-        scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
+        // scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
         // scenarios = scenarios.Where(a => a.Id is >= 200 and < 300); // Borders
         // scenarios = scenarios.Where(a => a.Id is >= 300 and < 400); // Hazards
         // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
