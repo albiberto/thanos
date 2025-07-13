@@ -11,23 +11,24 @@ public class GetValidMovesTests
     public void TestGetValidMoves()
     {
         // Arrange - Load all existing scenarios
-        var basics = Faker.GetAllScenarios("01-basics");
-        var hazardss = Faker.GetAllScenarios("02-hazards");
-        // var space_control = Faker.GetAllScenarios("04-space-control");
+        var basicsJson = Faker.GetAllScenarios("01-basics");
+        var hazardsJson = Faker.GetAllScenarios("02-hazards");
+        var h2hJson = Faker.GetAllScenarios("03-head2head");
+        var foodJson = Faker.GetAllScenarios("04-food");
         // var combat = Faker.GetAllScenarios("05-combat");
-        var complex = Faker.GetAllScenarios("10-complex");
+        var complexJson = Faker.GetAllScenarios("10-complex");
         
         // Combine all scenarios for comprehensive testing
         var scenarios =
             Enumerable.Empty<Scenario>()
-                .Concat(basics)
-                .Concat(hazardss)
-                // .Concat(space_control)
-                // .Concat(combat)
-                .Concat(complex)
+                .Concat(basicsJson)
+                .Concat(hazardsJson)
+                .Concat(h2hJson)
+                .Concat(foodJson)
+                .Concat(complexJson)
                 .Concat([]);
 
-        scenarios = hazardss;
+        scenarios = basicsJson;
         
         // Visual(scenarios);
         // return;
@@ -59,7 +60,7 @@ public class GetValidMovesTests
             var eat = mySnake.health == 100;
             
             // Debug    
-            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id);
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, true, true, true);
         
             // Act
             var result = GetValidMovesLightSpeedB.GetValidMovesLightSpeed(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);
@@ -97,13 +98,12 @@ public class GetValidMovesTests
 
     private static void Visual(IEnumerable<Scenario> scenarios)
     {
-        // const bool onlyFailed = true;
         const bool onlyFailed = false;
         const bool onlyBoards = true;
-        // const bool onlyBoards = false;
+        const bool noDirections = true;
         
         // For testing specific scenarios, uncomment and modify as needed:
-        // scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
+        scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
         // scenarios = scenarios.Where(a => a.Id is >= 200 and < 300); // Borders
         // scenarios = scenarios.Where(a => a.Id is >= 300 and < 400); // Hazards
         // scenarios = scenarios.Where(a => a.Id is >= 400 and < 500); // Space control
@@ -133,7 +133,7 @@ public class GetValidMovesTests
             var myHeadY = myHead.y;
             var eat = mySnake.health == 100;
             
-            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed, onlyBoards);
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, onlyFailed, onlyBoards, noDirections);
         }
     }
 }

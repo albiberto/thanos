@@ -9,6 +9,7 @@ class ImprovedSanitizer {
             // === EMOJI PRINCIPALI ===
             ['👽', 'H'], // Testa mia (My Head)
             ['💲', 'B'], // Corpo mio (My Body)
+            ['🌀', 'T'], // Corpo mio (My Tail)
             ['😈', 'E'], // Testa nemico (Enemy Head)
             ['⛔', 'b'], // Corpo nemico (Enemy Body)
             ['🍎', 'F'], // Cibo (Food)

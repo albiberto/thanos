@@ -45,6 +45,11 @@
     background: var(--color-my-head);
     color: var(--color-white);
 }
+/* Matrix cell types */
+.matrix-cell.my-tail {
+    background: var(--color-info);
+    color: var(--color-white);
+}
 
 .matrix-cell.my-body {
     background: var(--color-my-body);
