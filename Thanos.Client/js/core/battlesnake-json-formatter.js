@@ -1,18 +1,16 @@
 ﻿/**
- * BattlesnakeJsonFormatter - Fixed version with clean inline body strings
- * Ensures snake body is formatted as clean JSON string without escapes
+ * BattlesnakeJsonFormatter - Fixed version with direct array bodies
+ * Snake body remains as array for proper JSON serialization
  */
 class BattlesnakeJsonFormatter {
     constructor() {
-        // Snake body should be formatted as inline JSON string
         this.formatOptions = {
-            inlineBody: true,
             indent: 2
         };
     }
 
     /**
-     * Format a single test object with inline body
+     * Format a single test object keeping body as array
      * @param {Object} test - The test object to format
      * @returns {Object} - Formatted test object
      */
@@ -20,7 +18,7 @@ class BattlesnakeJsonFormatter {
         // Deep clone to avoid modifying original
         const formatted = JSON.parse(JSON.stringify(test));
 
-        // Format snakes with inline body
+        // Format snakes keeping body as array
         if (formatted.MoveRequest?.board?.snakes) {
             formatted.MoveRequest.board.snakes = formatted.MoveRequest.board.snakes.map(snake =>
                 this.formatSnake(snake)
@@ -36,7 +34,7 @@ class BattlesnakeJsonFormatter {
     }
 
     /**
-     * Format a snake object with clean inline body string
+     * Format a snake object keeping body as array
      * @param {Object} snake - The snake object to format
      * @returns {Object} - Formatted snake object
      */
@@ -45,23 +43,21 @@ class BattlesnakeJsonFormatter {
 
         const formattedSnake = { ...snake };
 
-        // Convert body array to clean JSON string (no escapes)
-        if (Array.isArray(snake.body)) {
-            // Convert to clean JSON string without escapes
-            formattedSnake.body = JSON.stringify(snake.body);
-        } else if (typeof snake.body === 'string') {
-            // Already a string, ensure it's valid JSON
+        // Ensure body is array, not string
+        if (typeof snake.body === 'string') {
             try {
-                // Parse and re-stringify to clean it
-                const parsed = JSON.parse(snake.body);
-                formattedSnake.body = JSON.stringify(parsed);
+                // Parse string back to array
+                formattedSnake.body = JSON.parse(snake.body);
             } catch (e) {
-                // Invalid JSON string, convert to empty array string
-                formattedSnake.body = "[]";
+                // Invalid JSON string, convert to empty array
+                formattedSnake.body = [];
             }
+        } else if (Array.isArray(snake.body)) {
+            // Already an array, keep it as is
+            formattedSnake.body = snake.body;
         } else {
             // No body or invalid type
-            formattedSnake.body = "[]";
+            formattedSnake.body = [];
         }
 
         return formattedSnake;
@@ -81,52 +77,6 @@ class BattlesnakeJsonFormatter {
     }
 
     /**
-     * Parse snake body from JSON string to array
-     * @param {Object} snake - Snake object with body as JSON string
-     * @returns {Object} - Snake object with body as array
-     */
-    parseSnake(snake) {
-        if (!snake) return snake;
-
-        const parsedSnake = { ...snake };
-
-        // Convert body JSON string to array
-        if (typeof snake.body === 'string') {
-            try {
-                parsedSnake.body = JSON.parse(snake.body);
-            } catch (e) {
-                console.error('Failed to parse snake body:', e);
-                parsedSnake.body = [];
-            }
-        }
-
-        return parsedSnake;
-    }
-
-    /**
-     * Parse test object converting body strings back to arrays
-     * @param {Object} test - Test object with inline body strings
-     * @returns {Object} - Test object with body arrays
-     */
-    parseTest(test) {
-        const parsed = JSON.parse(JSON.stringify(test));
-
-        // Parse snakes
-        if (parsed.MoveRequest?.board?.snakes) {
-            parsed.MoveRequest.board.snakes = parsed.MoveRequest.board.snakes.map(snake =>
-                this.parseSnake(snake)
-            );
-        }
-
-        // Parse 'you' snake
-        if (parsed.MoveRequest?.you) {
-            parsed.MoveRequest.you = this.parseSnake(parsed.MoveRequest.you);
-        }
-
-        return parsed;
-    }
-
-    /**
      * Convert grid data from Process Tab to test JSON format
      * @param {Object} grid - Grid object from Process Tab
      * @param {number} testId - Test ID
@@ -143,10 +93,10 @@ class BattlesnakeJsonFormatter {
                 id: "thanos",
                 name: "Thanos",
                 health: 100,
-                body: body,
+                body: body, // Keep as array, don't stringify
                 head: grid.analysis.myHead,
                 length: body.length,
-                latency: "50",
+                latency: 50,
                 shout: "",
                 squad: "",
                 customizations: {
@@ -160,7 +110,6 @@ class BattlesnakeJsonFormatter {
         // Add enemy snakes
         if (grid.analysis?.enemyHeads) {
             grid.analysis.enemyHeads.forEach((head, index) => {
-                // Find corresponding body segments for this enemy
                 const enemyBodySegments = this.findEnemyBodySegments(head, grid.analysis.enemyBodies || [], grid.cells);
                 const body = [head, ...enemyBodySegments];
 
@@ -168,7 +117,7 @@ class BattlesnakeJsonFormatter {
                     id: `enemy-${index + 1}`,
                     name: `Enemy ${index + 1}`,
                     health: 100,
-                    body: body,
+                    body: body, // Keep as array, don't stringify
                     head: head,
                     length: body.length,
                     latency: "50",
@@ -209,7 +158,7 @@ class BattlesnakeJsonFormatter {
             }
         };
 
-        // Format with inline body
+        // Format but keep body as arrays
         return this.formatTest(test);
     }
 
@@ -221,12 +170,9 @@ class BattlesnakeJsonFormatter {
      * @returns {Array} - Connected body segments
      */
     findEnemyBodySegments(head, allEnemyBodies, cells) {
-        // Simple heuristic: find body segments adjacent to head
-        // In a real implementation, you'd want to trace the snake path
         const segments = [];
         const used = new Set();
 
-        // Check adjacent positions
         const directions = [
             { x: 0, y: -1 }, // up
             { x: 0, y: 1 },  // down
@@ -267,76 +213,12 @@ class BattlesnakeJsonFormatter {
     }
 
     /**
-     * Generate JSON string with proper formatting and clean inline bodies
+     * Generate clean JSON string with proper array formatting
      * @param {Array|Object} data - Data to stringify
-     * @returns {string} - Formatted JSON string with clean inline bodies
+     * @returns {string} - Clean JSON string
      */
     toJSON(data) {
-        // Alternative approach: use a placeholder system
-        const BODY_PLACEHOLDER = '___BODY_PLACEHOLDER_';
-        const bodyReplacements = new Map();
-        let placeholderIndex = 0;
-
-        // Pre-process: replace body strings with placeholders
-        const dataWithPlaceholders = this.replaceBodyWithPlaceholders(data, BODY_PLACEHOLDER, bodyReplacements, placeholderIndex);
-
-        // Stringify the data with placeholders
-        let jsonString = JSON.stringify(dataWithPlaceholders.data, null, this.formatOptions.indent);
-
-        // Post-process: replace placeholders with actual JSON arrays
-        bodyReplacements.forEach((bodyContent, placeholder) => {
-            const quotedPlaceholder = `"${placeholder}"`;
-            jsonString = jsonString.replace(quotedPlaceholder, bodyContent);
-        });
-
-        return jsonString;
-    }
-
-    /**
-     * Replace body strings with placeholders to avoid escaping
-     * @param {*} data - Data to process
-     * @param {string} prefix - Placeholder prefix
-     * @param {Map} replacements - Map to store replacements
-     * @param {number} index - Current index
-     * @returns {Object} - Data with placeholders and updated index
-     */
-    replaceBodyWithPlaceholders(data, prefix, replacements, index) {
-        if (typeof data !== 'object' || data === null) {
-            return { data, index };
-        }
-
-        if (Array.isArray(data)) {
-            const newArray = [];
-            for (const item of data) {
-                const result = this.replaceBodyWithPlaceholders(item, prefix, replacements, index);
-                newArray.push(result.data);
-                index = result.index;
-            }
-            return { data: newArray, index };
-        }
-
-        const newObj = {};
-        for (const [key, value] of Object.entries(data)) {
-            if (key === 'body' && typeof value === 'string') {
-                // Create placeholder for this body
-                const placeholder = `${prefix}${index++}___`;
-                try {
-                    // Parse and re-stringify to ensure valid JSON
-                    const parsed = JSON.parse(value);
-                    const cleanJson = JSON.stringify(parsed);
-                    replacements.set(placeholder, cleanJson);
-                } catch (e) {
-                    // If invalid, use empty array
-                    replacements.set(placeholder, '[]');
-                }
-                newObj[key] = placeholder;
-            } else {
-                const result = this.replaceBodyWithPlaceholders(value, prefix, replacements, index);
-                newObj[key] = result.data;
-                index = result.index;
-            }
-        }
-        return { data: newObj, index };
+        return JSON.stringify(data, null, this.formatOptions.indent);
     }
 
     /**
@@ -361,17 +243,11 @@ class BattlesnakeJsonFormatter {
                 return false;
             }
 
-            // Check snakes have inline body strings
+            // Check snakes have body as arrays
             if (board.snakes) {
                 for (const snake of board.snakes) {
-                    if (typeof snake.body !== 'string') {
-                        console.warn('Snake body should be JSON string');
-                        return false;
-                    }
-                    // Validate body string is valid JSON
-                    try {
-                        JSON.parse(snake.body);
-                    } catch (e) {
+                    if (!Array.isArray(snake.body)) {
+                        console.warn('Snake body should be an array, not string');
                         return false;
                     }
                 }
@@ -387,5 +263,5 @@ class BattlesnakeJsonFormatter {
 
 // Export for global access
 if (typeof window !== 'undefined') {
-    window.BattlesnakeJsonFormatter = BattlesnakeJsonFormatter;
+    window.BattlesnakeJsonFormatterFixed = BattlesnakeJsonFormatterFixed;
 }
