@@ -789,6 +789,49 @@ class ProcessTabManager {
         }
     }
 
+    // Aggiungi questo metodo alla classe ProcessTabManager
+
+    /**
+     * Calculate expected value for all grids
+     */
+    calculateAllExpected() {
+        console.log('🧮 Calculate All Expected chiamato...');
+
+        if (this.grids.length === 0) {
+            this.notify.warning('Nessuna griglia da processare');
+            return;
+        }
+
+        let calculatedCount = 0;
+        let errorCount = 0;
+        const totalGrids = this.grids.length;
+
+        // Cicla tutte le griglie
+        for (let i = 0; i < this.grids.length; i++) {
+            // Imposta la griglia corrente
+            this.currentGridIndex = i;
+
+            try {
+                // Chiama il metodo calculate esistente
+                this.calculateExpected();
+                calculatedCount++;
+            } catch (error) {
+                console.error(`Errore calcolando griglia ${i + 1}:`, error);
+                errorCount++;
+            }
+        }
+
+        // Torna alla prima griglia e aggiorna la visualizzazione
+        this.currentGridIndex = 0;
+        this.renderCurrentGrid();
+        this.updateNavigationControls();
+
+        // Notifica risultati
+        this.notify.success(`Calculate All completato: ${calculatedCount}/${totalGrids} griglie processate (${errorCount} errori)`);
+
+        console.log(`✅ Calculate All completato: ${calculatedCount} successi, ${errorCount} errori`);
+    }
+    
     /**
      * Check if initialized
      */
