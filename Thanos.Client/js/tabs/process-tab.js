@@ -351,11 +351,11 @@ class ProcessTabManager {
      */
     getStatusInfo(status) {
         const statusMap = {
-            pending: { class: 'bg-warning text-dark', text: '⏳ Pending' },
-            ready: { class: 'bg-success', text: '✅ Ready' },
-            failed: { class: 'bg-danger', text: '❌ Failed' }
+            pending: {class: 'bg-warning text-dark', text: '⏳ Pending'},
+            ready: {class: 'bg-success', text: '✅ Ready'},
+            failed: {class: 'bg-danger', text: '❌ Failed'}
         };
-        return statusMap[status] || { class: 'bg-secondary', text: '❓ Unknown' };
+        return statusMap[status] || {class: 'bg-secondary', text: '❓ Unknown'};
     }
 
     /**
@@ -397,74 +397,59 @@ class ProcessTabManager {
         }
 
         const head = grid.analysis.myHead;
+        const tail = grid.analysis.myTail;
         const gridWidth = grid.width;
         const gridHeight = grid.height;
 
-        // Check which directions are safe/valid
+        // Direzioni possibili
+        const directions = [
+            {name: 'UP', value: 1, dx: 0, dy: -1},
+            {name: 'DOWN', value: 2, dx: 0, dy: 1},
+            {name: 'LEFT', value: 4, dx: -1, dy: 0},
+            {name: 'RIGHT', value: 8, dx: 1, dy: 0}
+        ];
+
         const safeMoves = [];
 
-        // Check UP (y-1)
-        if (head.y > 0 && this.isSafeMove(grid, head.x, head.y - 1)) {
-            safeMoves.push(1);
-        }
+        directions.forEach(dir => {
+            const nx = head.x + dir.dx;
+            const ny = head.y + dir.dy;
 
-        // Check DOWN (y+1)
-        if (head.y < gridHeight - 1 && this.isSafeMove(grid, head.x, head.y + 1)) {
-            safeMoves.push(2);
-        }
+            // Controlla i limiti della griglia
+            if (nx < 0 || nx >= gridWidth || ny < 0 || ny >= gridHeight) return;
 
-        // Check LEFT (x-1)
-        if (head.x > 0 && this.isSafeMove(grid, head.x - 1, head.y)) {
-            safeMoves.push(4);
-        }
+            const cell = grid.cells[ny][nx];
 
-        // Check RIGHT (x+1)
-        if (head.x < gridWidth - 1 && this.isSafeMove(grid, head.x + 1, head.y)) {
-            safeMoves.push(8);
-        }
+            // Se la cella è la posizione della coda, è considerata sicura (non mangia cibo)
+            if (tail && tail.x === nx && tail.y === ny) {
+                safeMoves.push(dir.value);
+                return;
+            }
+
+            // Celle non sicure
+            const unsafeCells = ['B', 'E', 'b', '#'];
+            if (!unsafeCells.includes(cell)) {
+                safeMoves.push(dir.value);
+            }
+        });
 
         if (safeMoves.length === 0) {
             this.notify.warning('No safe moves available!');
             return;
         }
 
-        // Calculate suggested value based on safe moves
+        // Calcola il valore suggerito
         let suggestedValue = 0;
         safeMoves.forEach(move => {
-            suggestedValue |= move; // Bitwise OR to combine directions
+            suggestedValue |= move;
         });
 
-        // If all directions are safe, suggest the primary direction (UP as default)
-        if (suggestedValue === 15) { // All directions safe
-            suggestedValue = 1; // Default to UP
+        // Se tutte le direzioni sono sicure, suggerisci UP come default
+        if (suggestedValue === 15) {
+            suggestedValue = 1;
         }
 
-        const moveNames = safeMoves.map(move => this.expectedLabels[move]).join(', ');
-
-        // Show suggestion dialog
         this.setCurrentExpectedValue(suggestedValue);
-    }
-
-    /**
-     * Check if a move to the given position is safe
-     * @param {Object} grid - Grid data
-     * @param {number} x - Target X position
-     * @param {number} y - Target Y position
-     * @returns {boolean} - True if move is safe
-     */
-    isSafeMove(grid, x, y) {
-        // Check bounds
-        if (x < 0 || x >= grid.width || y < 0 || y >= grid.height) {
-            return false;
-        }
-
-        // Get cell content
-        const cell = grid.cells[y][x];
-
-        // Unsafe cells: my body, enemy head, enemy body, hazards
-        const unsafeCells = ['B', 'E', 'b', '#'];
-
-        return !unsafeCells.includes(cell);
     }
 
     /**
@@ -698,7 +683,7 @@ class ProcessTabManager {
         if (this.generatedJson) {
             try {
                 const jsonString = JSON.stringify(this.generatedJson, null, 2);
-                const blob = new Blob([jsonString], { type: 'application/json' });
+                const blob = new Blob([jsonString], {type: 'application/json'});
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
 
@@ -831,7 +816,7 @@ class ProcessTabManager {
 
         console.log(`✅ Calculate All completato: ${calculatedCount} successi, ${errorCount} errori`);
     }
-    
+
     /**
      * Check if initialized
      */

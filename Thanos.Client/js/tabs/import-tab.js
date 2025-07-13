@@ -6,10 +6,6 @@
         this._eventListener = null;
         this.initialized = false;
 
-        // Caratteri validi per le griglie BattleSnake
-        this.VALID_CHARACTERS = ['👽', '💲', '😈', '⛔', '🍎', '💀', '⬛', '⬆', '➡', '⬅', '⬇', '❌', ' ', '\t', '\n', '\r', '⬆️', '⬇️', '⬅️', '➡️'];
-        
-        // Storage key per le griglie
         this.STORAGE_KEY = 'battlesnake_grids';
     }
 
@@ -85,9 +81,6 @@
         }
 
         try {
-            // Sanifica il contenuto rimuovendo i caratteri non validi
-
-
             const sanitizer = new ImprovedSanitizer();
             const sanitizedContent = sanitizer.sanitizeBattlesnakeGrid(this.input.value);
             
@@ -186,6 +179,7 @@
     analyzeGrid(rows) {
         const analysis = {
             myHead: null,
+            myTail: null,
             myBody: [],
             enemyHeads: [],
             enemyBodies: [],
@@ -207,6 +201,9 @@
                         break;
                     case 'B':
                         analysis.myBody.push(position);
+                        break;
+                    case 'T':
+                        analysis.myTail = position;
                         break;
                     case 'E':
                         analysis.enemyHeads.push(position);
@@ -315,7 +312,7 @@
             return;
         }
 
-        const exampleContent =
+        this.input.value = 
             '👽 💲 💲 ⬛ ⬛\n' +
             '⬛ ⬛ ⬛ ⬛ 🍎\n' +
             '⬛ ⬛ 😈 ⛔ ⬛\n' +
@@ -334,8 +331,6 @@
             '👽 💲 💲 💲 ⬛ ⬛\n' +
             '⬛ ⬛ ⬛ ⬛ 💀 ⬛\n' +
             '⬛ ⬛ ⬛ ⬛ ⬛ ⬛';
-
-        this.input.value = exampleContent;
         this.updateStats();
         this.notify.success('Esempio caricato con 3 griglie');
     }
@@ -397,45 +392,7 @@
             console.warn('Errore nel leggere i dati del localStorage:', error);
         }
     }
-
-    // Verifica se ci sono griglie salvate
-    hasStoredGrids() {
-        try {
-            const data = localStorage.getItem(this.STORAGE_KEY);
-            if (data) {
-                const parsedData = JSON.parse(data);
-                return parsedData.grids && parsedData.grids.length > 0;
-            }
-            return false;
-        } catch (error) {
-            return false;
-        }
-    }
-
-    // Cancella le griglie salvate
-    clearStoredGrids() {
-        try {
-            localStorage.removeItem(this.STORAGE_KEY);
-            this.notify.success('Tutte le griglie salvate sono state cancellate');
-        } catch (error) {
-            this.notify.error('Errore nella cancellazione delle griglie salvate');
-        }
-    }
-
-    // Get stored grids count
-    getStoredGridsCount() {
-        try {
-            const data = localStorage.getItem(this.STORAGE_KEY);
-            if (data) {
-                const parsedData = JSON.parse(data);
-                return parsedData.grids ? parsedData.grids.length : 0;
-            }
-            return 0;
-        } catch (error) {
-            return 0;
-        }
-    }
-
+    
     isInitialized() {
         return this.initialized && this.input !== null;
     }

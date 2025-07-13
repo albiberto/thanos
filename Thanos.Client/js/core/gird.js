@@ -35,6 +35,7 @@ class GridMatrixComponent {
             'B': 'my-body',
             'E': 'enemy-head',
             'b': 'enemy-body',
+            'T': 'my-tail',
             'F': 'food',
             '#': 'hazard',
             '.': 'empty',
@@ -387,50 +388,7 @@ class GridMatrixComponent {
             </div>
         `;
     }
-
-    /**
-     * Update an existing rendered matrix
-     * @param {string} containerId - Container element ID
-     * @param {Object} grid - New grid data
-     * @param {Object} options - Rendering options
-     */
-    update(containerId, grid, options = {}) {
-        const container = document.getElementById(containerId);
-        if (container) {
-            container.innerHTML = this.render(grid, options);
-        }
-    }
-
-    /**
-     * Get cell at specific coordinates
-     * @param {Object} grid - Grid data
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @returns {string|null} - Cell value or null if out of bounds
-     */
-    getCellAt(grid, row, col) {
-        if (!grid?.cells || !Array.isArray(grid.cells)) return null;
-        if (row < 0 || row >= grid.cells.length) return null;
-        if (col < 0 || col >= grid.cells[row].length) return null;
-        return grid.cells[row][col];
-    }
-
-    /**
-     * Set cell at specific coordinates
-     * @param {Object} grid - Grid data (will be modified)
-     * @param {number} row - Row index
-     * @param {number} col - Column index
-     * @param {string} value - New cell value
-     * @returns {boolean} - True if successful
-     */
-    setCellAt(grid, row, col, value) {
-        if (!grid?.cells || !Array.isArray(grid.cells)) return false;
-        if (row < 0 || row >= grid.cells.length) return false;
-        if (col < 0 || col >= grid.cells[row].length) return false;
-
-        grid.cells[row][col] = value;
-        return true;
-    }
+    
 
     /**
      * Calculate optimal cell size based on container dimensions
