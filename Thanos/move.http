@@ -1,0 +1,260 @@
+﻿### Variabili Globali
+@hostname = localhost
+@port = 5195
+
+
+### 
+# Richiesta di test per l'endpoint /move
+# Simula una richiesta al turno 4
+POST http://{{hostname}}:{{port}}/move
+Content-Type: application/json
+Cache-Control: no-cache
+
+{
+  "game": {
+	"id": "game-01-snake-01",
+	"ruleset": {
+	  "name": "standard",
+	  "version": "v1.2.3"
+	},
+	"timeout": 500
+  },
+  "turn": 4,
+  "board": {
+	"height": 11,
+	"width": 11,
+	"food": [
+	  {
+		"x": 5,
+		"y": 5
+	  }
+	],
+	"hazards": [
+	  {
+		"x": 3,
+		"y": 6
+	  }
+	],
+	"snakes": [
+	  {
+		"id": "gs_12345",
+		"name": "MySnake",
+		"health": 95,
+		"body": [
+		  {
+			"x": 1,
+			"y": 1
+		  },
+		  {
+			"x": 1,
+			"y": 0
+		  },
+		  {
+			"x": 0,
+			"y": 0
+		  }
+		],
+		"head": {
+		  "x": 1,
+		  "y": 1
+		},
+		"length": 3
+	  }
+	]
+  },
+  "you": {
+	"id": "gs_12345",
+	"name": "MySnake",
+	"health": 95,
+	"body": [
+	  {
+		"x": 1,
+		"y": 1
+	  },
+	  {
+		"x": 1,
+		"y": 0
+	  },
+	  {
+		"x": 0,
+		"y": 0
+	  }
+	],
+	"head": {
+	  "x": 1,
+	  "y": 1
+	},
+	"length": 3
+  }
+}
+
+### 
+# Richiesta di test per l'endpoint /move
+# Simula una richiesta al turno 4
+POST http://{{hostname}}:{{port}}/move2
+Content-Type: application/json
+Cache-Control: no-cache
+
+{
+  "game": {
+	"id": "game-01-snake-01",
+	"ruleset": {
+	  "name": "standard",
+	  "version": "v1.2.3"
+	},
+	"timeout": 500
+  },
+  "turn": 4,
+  "board": {
+	"height": 11,
+	"width": 11,
+	"food": [
+	  {
+		"x": 5,
+		"y": 5
+	  }
+	],
+	"hazards": [
+	  {
+		"x": 3,
+		"y": 6
+	  }
+	],
+	"snakes": [
+	  {
+		"id": "gs_12345",
+		"name": "MySnake",
+		"health": 95,
+		"body": [
+		  {
+			"x": 1,
+			"y": 1
+		  },
+		  {
+			"x": 1,
+			"y": 0
+		  },
+		  {
+			"x": 0,
+			"y": 0
+		  }
+		],
+		"head": {
+		  "x": 1,
+		  "y": 1
+		},
+		"length": 3
+	  }
+	]
+  },
+  "you": {
+	"id": "gs_12345",
+	"name": "MySnake",
+	"health": 95,
+	"body": [
+	  {
+		"x": 1,
+		"y": 1
+	  },
+	  {
+		"x": 1,
+		"y": 0
+	  },
+	  {
+		"x": 0,
+		"y": 0
+	  }
+	],
+	"head": {
+	  "x": 1,
+	  "y": 1
+	},
+	"length": 3
+  }
+}
+
+### 
+# Richiesta di test per l'endpoint /move
+# Simula una richiesta al turno 4
+POST http://{{hostname}}:{{port}}/move-ultra
+Content-Type: application/json
+Cache-Control: no-cache
+
+
+{
+  "game": {
+	"id": "game-01-snake-01",
+	"ruleset": {
+	  "name": "standard",
+	  "version": "v1.2.3"
+	},
+	"timeout": 500
+  },
+  "turn": 4,
+  "board": {
+	"height": 11,
+	"width": 11,
+	"food": [
+	  {
+		"x": 5,
+		"y": 5
+	  }
+	],
+	"hazards": [
+	  {
+		"x": 3,
+		"y": 6
+	  }
+	],
+	"snakes": [
+	  {
+		"id": "gs_12345",
+		"name": "MySnake",
+		"health": 95,
+		"body": [
+		  {
+			"x": 1,
+			"y": 1
+		  },
+		  {
+			"x": 1,
+			"y": 0
+		  },
+		  {
+			"x": 0,
+			"y": 0
+		  }
+		],
+		"head": {
+		  "x": 1,
+		  "y": 1
+		},
+		"length": 3
+	  }
+	]
+  },
+  "you": {
+	"id": "gs_12345",
+	"name": "MySnake",
+	"health": 95,
+	"body": [
+	  {
+		"x": 1,
+		"y": 1
+	  },
+	  {
+		"x": 1,
+		"y": 0
+	  },
+	  {
+		"x": 0,
+		"y": 0
+	  }
+	],
+	"head": {
+	  "x": 1,
+	  "y": 1
+	},
+	"length": 3
+  }
+}
