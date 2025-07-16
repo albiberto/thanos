@@ -2,10 +2,10 @@
  * ProcessManager.js - Gestisce il processamento e la visualizzazione delle griglie
  */
 
-import {StorageService} from '../services/StorageService.js';
-import {JsonFormatter} from '../utils/JsonFormatter.js';
-import {GridMatrixComponent} from '../components/GridMatrix.js';
-import {EXPECTED_LABELS, GRID_STATUS, UI_CONFIG} from '../config/constants.js';
+import { StorageService } from '../services/StorageService.js';
+import { JsonFormatter } from '../utils/JsonFormatter.js';
+import { GridMatrixComponent } from '../components/GridMatrix.js';
+import { EXPECTED_LABELS, UI_CONFIG, GRID_STATUS } from '../config/constants.js';
 
 export class ProcessManager {
     constructor(notificationService) {
@@ -23,6 +23,12 @@ export class ProcessManager {
      * Inizializza il manager
      */
     initialize() {
+        // Legge l'ID di partenza dall'input se presente
+        const startIdInput = document.getElementById('startIdInput');
+        if (startIdInput) {
+            this.startId = parseInt(startIdInput.value) || UI_CONFIG.DEFAULT_START_ID;
+        }
+
         this.loadGrids();
     }
 
@@ -37,10 +43,8 @@ export class ProcessManager {
             return;
         }
 
-        // Assegna test ID
-        this.grids.forEach((grid, index) => {
-            grid.testId = this.startId + index;
-        });
+        // Assegna test ID basati su startId
+        this.assignTestIds();
 
         this.currentIndex = 0;
         this.showGridsInterface();
@@ -48,6 +52,15 @@ export class ProcessManager {
         this.updateStats();
 
         this.notify.success(`${this.grids.length} griglie caricate`);
+    }
+
+    /**
+     * Assegna i test ID a tutte le griglie
+     */
+    assignTestIds() {
+        this.grids.forEach((grid, index) => {
+            grid.testId = this.startId + index;
+        });
     }
 
     /**
@@ -66,6 +79,9 @@ export class ProcessManager {
 
         // Aggiorna controlli expected value
         this.updateExpectedControls(grid);
+
+        // Aggiorna navigazione
+        this.updateNavigation();
     }
 
     /**
@@ -86,6 +102,9 @@ export class ProcessManager {
             statusEl.className = `badge ${statusInfo.class}`;
             statusEl.textContent = statusInfo.text;
         }
+
+        // Aggiorna titolo
+        this.updateElement('currentGridTitle', `Test-${grid.testId} - Grid Matrix`);
     }
 
     /**
@@ -95,10 +114,12 @@ export class ProcessManager {
         const container = document.getElementById('gridMatrixContainer');
         if (!container) return;
 
-        container.innerHTML = this.gridComponent.render(grid, {
+        const matrixHTML = this.gridComponent.render(grid, {
             expectedValue: grid.expectedValue,
             myHead: grid.analysis?.myHead
         });
+
+        container.innerHTML = matrixHTML;
     }
 
     /**
@@ -197,6 +218,7 @@ export class ProcessManager {
     calculateAllExpected() {
         let processed = 0;
         const total = this.grids.length;
+        const currentIdx = this.currentIndex;
 
         for (let i = 0; i < total; i++) {
             this.currentIndex = i;
@@ -208,7 +230,7 @@ export class ProcessManager {
             }
         }
 
-        this.currentIndex = 0;
+        this.currentIndex = currentIdx;
         this.renderCurrentGrid();
 
         this.notify.success(`Processate ${processed}/${total} griglie`);
@@ -222,7 +244,50 @@ export class ProcessManager {
         if (newIndex >= 0 && newIndex < this.grids.length) {
             this.currentIndex = newIndex;
             this.renderCurrentGrid();
-            this.updateNavigation();
+        }
+    }
+
+    /**
+     * Aggiorna controlli di navigazione
+     */
+    updateNavigation() {
+        this.updateElement('currentGridIndex', this.currentIndex + 1);
+        this.updateElement('totalGridsNav', this.grids.length);
+
+        const prevBtn = document.getElementById('prevGridBtn');
+        const nextBtn = document.getElementById('nextGridBtn');
+
+        if (prevBtn) prevBtn.disabled = this.currentIndex === 0;
+        if (nextBtn) nextBtn.disabled = this.currentIndex === this.grids.length - 1;
+    }
+
+    /**
+     * Cambia Start ID
+     */
+    changeStartId(delta) {
+        const input = document.getElementById('startIdInput');
+        if (input) {
+            const newValue = Math.max(1, Math.min(9999, parseInt(input.value) + delta));
+            input.value = newValue;
+            this.updateStartId();
+        }
+    }
+
+    /**
+     * Aggiorna Start ID
+     */
+    updateStartId() {
+        const input = document.getElementById('startIdInput');
+        if (input) {
+            this.startId = parseInt(input.value) || UI_CONFIG.DEFAULT_START_ID;
+
+            // Riassegna tutti i test ID
+            this.assignTestIds();
+
+            // Re-render la griglia corrente per mostrare il nuovo ID
+            if (this.grids.length > 0) {
+                this.renderCurrentGrid();
+            }
         }
     }
 
@@ -259,8 +324,14 @@ export class ProcessManager {
             this.generatedTests = tests;
 
             // Mostra modal
-            const modal = new bootstrap.Modal(document.getElementById('jsonOutputModal'));
-            modal.show();
+            try {
+                const modal = new bootstrap.Modal(document.getElementById('jsonOutputModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Modal error:', error);
+                alert('JSON generato - controlla console');
+                console.log(this.formatter.formatTests(tests));
+            }
         }
     }
 
@@ -309,6 +380,8 @@ export class ProcessManager {
                 this.showNoGridsMessage();
             } else {
                 this.currentIndex = Math.min(this.currentIndex, this.grids.length - 1);
+                // Riassegna gli ID dopo eliminazione
+                this.assignTestIds();
                 this.renderCurrentGrid();
             }
 
@@ -394,17 +467,6 @@ export class ProcessManager {
         this.setDisplay('noGridsMessage', 'none');
         this.setDisplay('gridNavigation', this.grids.length > 1 ? 'flex' : 'none');
         this.updateNavigation();
-    }
-
-    updateNavigation() {
-        this.updateElement('currentGridIndex', this.currentIndex + 1);
-        this.updateElement('totalGridsNav', this.grids.length);
-
-        const prevBtn = document.getElementById('prevGridBtn');
-        const nextBtn = document.getElementById('nextGridBtn');
-
-        if (prevBtn) prevBtn.disabled = this.currentIndex === 0;
-        if (nextBtn) nextBtn.disabled = this.currentIndex === this.grids.length - 1;
     }
 
     setDisplay(id, value) {

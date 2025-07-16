@@ -42,12 +42,12 @@
 
 /* Matrix cell types */
 .matrix-cell.my-head {
-    background: var(--color-my-head);
+    background: var(--color-info);
     color: var(--color-white);
 }
 /* Matrix cell types */
 .matrix-cell.my-tail {
-    background: var(--color-info);
+    background: var(--color-my-head);
     color: var(--color-white);
 }
 

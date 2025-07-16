@@ -142,14 +142,14 @@ export class GridMatrixComponent {
             }
 
             /* Cell types */
-            #${instanceId} .my-head { background: #22c55e; color: white; }
-            #${instanceId} .my-body { background: #16a34a; color: white; }
-            #${instanceId} .my-tail { background: #0dcaf0; color: white; }
-            #${instanceId} .enemy-head { background: #ef4444; color: white; }
-            #${instanceId} .enemy-body { background: #dc2626; color: white; }
-            #${instanceId} .food { background: #f59e0b; color: white; }
-            #${instanceId} .hazard { background: #8b5cf6; color: white; }
-            #${instanceId} .empty { background: #f3f4f6; color: #9ca3af; }
+            #${instanceId} .my-head
+            #${instanceId} .my-body
+            #${instanceId} .my-tail
+            #${instanceId} .enemy-head
+            #${instanceId} .enemy-body
+            #${instanceId} .food 
+            #${instanceId} .hazard
+            #${instanceId} .empty 
 
             /* Direction overlay */
             #${instanceId} .direction-overlay {

@@ -5,7 +5,7 @@
     "Expected": 13,
     "MoveRequest": {
       "game": {
-        "id": "game-101",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -31,13 +31,17 @@
               {
                 "x": 5,
                 "y": 6
+              },
+              {
+                "x": 5,
+                "y": 7
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -61,13 +65,17 @@
           {
             "x": 5,
             "y": 6
+          },
+          {
+            "x": 5,
+            "y": 7
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -85,7 +93,7 @@
     "Expected": 11,
     "MoveRequest": {
       "game": {
-        "id": "game-102",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -111,13 +119,17 @@
               {
                 "x": 4,
                 "y": 5
+              },
+              {
+                "x": 3,
+                "y": 5
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -141,13 +153,17 @@
           {
             "x": 4,
             "y": 5
+          },
+          {
+            "x": 3,
+            "y": 5
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -165,7 +181,7 @@
     "Expected": 14,
     "MoveRequest": {
       "game": {
-        "id": "game-103",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -191,13 +207,17 @@
               {
                 "x": 5,
                 "y": 4
+              },
+              {
+                "x": 5,
+                "y": 3
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -221,13 +241,17 @@
           {
             "x": 5,
             "y": 4
+          },
+          {
+            "x": 5,
+            "y": 3
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -245,7 +269,7 @@
     "Expected": 7,
     "MoveRequest": {
       "game": {
-        "id": "game-104",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -271,13 +295,17 @@
               {
                 "x": 6,
                 "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -301,13 +329,17 @@
           {
             "x": 6,
             "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -325,7 +357,7 @@
     "Expected": 8,
     "MoveRequest": {
       "game": {
-        "id": "game-105",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -351,13 +383,17 @@
               {
                 "x": 0,
                 "y": 1
+              },
+              {
+                "x": 0,
+                "y": 2
               }
             ],
             "head": {
               "x": 0,
               "y": 0
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -381,13 +417,17 @@
           {
             "x": 0,
             "y": 1
+          },
+          {
+            "x": 0,
+            "y": 2
           }
         ],
         "head": {
           "x": 0,
           "y": 0
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -405,7 +445,7 @@
     "Expected": 4,
     "MoveRequest": {
       "game": {
-        "id": "game-106",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -431,13 +471,17 @@
               {
                 "x": 10,
                 "y": 1
+              },
+              {
+                "x": 10,
+                "y": 2
               }
             ],
             "head": {
               "x": 10,
               "y": 0
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -461,13 +505,17 @@
           {
             "x": 10,
             "y": 1
+          },
+          {
+            "x": 10,
+            "y": 2
           }
         ],
         "head": {
           "x": 10,
           "y": 0
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -485,7 +533,7 @@
     "Expected": 4,
     "MoveRequest": {
       "game": {
-        "id": "game-107",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -511,13 +559,17 @@
               {
                 "x": 10,
                 "y": 9
+              },
+              {
+                "x": 10,
+                "y": 8
               }
             ],
             "head": {
               "x": 10,
               "y": 10
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -541,13 +593,17 @@
           {
             "x": 10,
             "y": 9
+          },
+          {
+            "x": 10,
+            "y": 8
           }
         ],
         "head": {
           "x": 10,
           "y": 10
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -565,7 +621,7 @@
     "Expected": 8,
     "MoveRequest": {
       "game": {
-        "id": "game-108",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -591,13 +647,17 @@
               {
                 "x": 0,
                 "y": 9
+              },
+              {
+                "x": 0,
+                "y": 8
               }
             ],
             "head": {
               "x": 0,
               "y": 10
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -621,13 +681,17 @@
           {
             "x": 0,
             "y": 9
+          },
+          {
+            "x": 0,
+            "y": 8
           }
         ],
         "head": {
           "x": 0,
           "y": 10
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -645,7 +709,7 @@
     "Expected": 12,
     "MoveRequest": {
       "game": {
-        "id": "game-109",
+        "id": "game-grid_1752688571615",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -671,13 +735,17 @@
               {
                 "x": 5,
                 "y": 1
+              },
+              {
+                "x": 5,
+                "y": 2
               }
             ],
             "head": {
               "x": 5,
               "y": 0
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -701,13 +769,17 @@
           {
             "x": 5,
             "y": 1
+          },
+          {
+            "x": 5,
+            "y": 2
           }
         ],
         "head": {
           "x": 5,
           "y": 0
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -725,7 +797,7 @@
     "Expected": 3,
     "MoveRequest": {
       "game": {
-        "id": "game-110",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -751,13 +823,17 @@
               {
                 "x": 9,
                 "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
               }
             ],
             "head": {
               "x": 10,
               "y": 5
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -781,13 +857,17 @@
           {
             "x": 9,
             "y": 5
+          },
+          {
+            "x": 8,
+            "y": 5
           }
         ],
         "head": {
           "x": 10,
           "y": 5
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -805,7 +885,7 @@
     "Expected": 12,
     "MoveRequest": {
       "game": {
-        "id": "game-111",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -831,13 +911,17 @@
               {
                 "x": 5,
                 "y": 9
+              },
+              {
+                "x": 5,
+                "y": 8
               }
             ],
             "head": {
               "x": 5,
               "y": 10
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -861,13 +945,17 @@
           {
             "x": 5,
             "y": 9
+          },
+          {
+            "x": 5,
+            "y": 8
           }
         ],
         "head": {
           "x": 5,
           "y": 10
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -885,7 +973,7 @@
     "Expected": 3,
     "MoveRequest": {
       "game": {
-        "id": "game-112",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -911,13 +999,17 @@
               {
                 "x": 1,
                 "y": 5
+              },
+              {
+                "x": 2,
+                "y": 5
               }
             ],
             "head": {
               "x": 0,
               "y": 5
             },
-            "length": 2,
+            "length": 3,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -941,13 +1033,17 @@
           {
             "x": 1,
             "y": 5
+          },
+          {
+            "x": 2,
+            "y": 5
           }
         ],
         "head": {
           "x": 0,
           "y": 5
         },
-        "length": 2,
+        "length": 3,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -965,7 +1061,7 @@
     "Expected": 11,
     "MoveRequest": {
       "game": {
-        "id": "game-113",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -995,13 +1091,17 @@
               {
                 "x": 4,
                 "y": 6
+              },
+              {
+                "x": 5,
+                "y": 6
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 3,
+            "length": 4,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1029,13 +1129,17 @@
           {
             "x": 4,
             "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 3,
+        "length": 4,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1053,7 +1157,7 @@
     "Expected": 14,
     "MoveRequest": {
       "game": {
-        "id": "game-114",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1077,19 +1181,23 @@
                 "y": 5
               },
               {
+                "x": 5,
+                "y": 4
+              },
+              {
                 "x": 4,
                 "y": 4
               },
               {
-                "x": 5,
-                "y": 4
+                "x": 4,
+                "y": 5
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 3,
+            "length": 4,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1111,19 +1219,23 @@
             "y": 5
           },
           {
+            "x": 5,
+            "y": 4
+          },
+          {
             "x": 4,
             "y": 4
           },
           {
-            "x": 5,
-            "y": 4
+            "x": 4,
+            "y": 5
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 3,
+        "length": 4,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1141,7 +1253,7 @@
     "Expected": 7,
     "MoveRequest": {
       "game": {
-        "id": "game-115",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1171,13 +1283,17 @@
               {
                 "x": 6,
                 "y": 6
+              },
+              {
+                "x": 5,
+                "y": 6
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 3,
+            "length": 4,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1205,13 +1321,17 @@
           {
             "x": 6,
             "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 3,
+        "length": 4,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1229,7 +1349,7 @@
     "Expected": 13,
     "MoveRequest": {
       "game": {
-        "id": "game-116",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1259,13 +1379,17 @@
               {
                 "x": 6,
                 "y": 6
+              },
+              {
+                "x": 6,
+                "y": 5
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 3,
+            "length": 4,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1293,13 +1417,17 @@
           {
             "x": 6,
             "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 3,
+        "length": 4,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1317,7 +1445,7 @@
     "Expected": 1,
     "MoveRequest": {
       "game": {
-        "id": "game-117",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1341,31 +1469,35 @@
                 "y": 5
               },
               {
-                "x": 4,
-                "y": 5
-              },
-              {
-                "x": 6,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 6
-              },
-              {
                 "x": 5,
                 "y": 6
               },
               {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
                 "x": 6,
                 "y": 6
+              },
+              {
+                "x": 6,
+                "y": 4
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 6,
+            "length": 7,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1387,31 +1519,35 @@
             "y": 5
           },
           {
-            "x": 4,
-            "y": 5
-          },
-          {
-            "x": 6,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 6
-          },
-          {
             "x": 5,
             "y": 6
           },
           {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
             "x": 6,
             "y": 6
+          },
+          {
+            "x": 6,
+            "y": 4
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 6,
+        "length": 7,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1429,7 +1565,7 @@
     "Expected": 8,
     "MoveRequest": {
       "game": {
-        "id": "game-118",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1453,11 +1589,11 @@
                 "y": 5
               },
               {
-                "x": 4,
+                "x": 5,
                 "y": 4
               },
               {
-                "x": 5,
+                "x": 4,
                 "y": 4
               },
               {
@@ -1471,13 +1607,17 @@
               {
                 "x": 5,
                 "y": 6
+              },
+              {
+                "x": 6,
+                "y": 6
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 6,
+            "length": 7,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1499,11 +1639,11 @@
             "y": 5
           },
           {
-            "x": 4,
+            "x": 5,
             "y": 4
           },
           {
-            "x": 5,
+            "x": 4,
             "y": 4
           },
           {
@@ -1517,13 +1657,17 @@
           {
             "x": 5,
             "y": 6
+          },
+          {
+            "x": 6,
+            "y": 6
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 6,
+        "length": 7,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1541,7 +1685,7 @@
     "Expected": 2,
     "MoveRequest": {
       "game": {
-        "id": "game-119",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1565,15 +1709,11 @@
                 "y": 5
               },
               {
-                "x": 4,
-                "y": 4
-              },
-              {
                 "x": 5,
                 "y": 4
               },
               {
-                "x": 6,
+                "x": 4,
                 "y": 4
               },
               {
@@ -1582,14 +1722,22 @@
               },
               {
                 "x": 6,
+                "y": 4
+              },
+              {
+                "x": 6,
                 "y": 5
+              },
+              {
+                "x": 4,
+                "y": 6
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 6,
+            "length": 7,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -1611,15 +1759,11 @@
             "y": 5
           },
           {
-            "x": 4,
-            "y": 4
-          },
-          {
             "x": 5,
             "y": 4
           },
           {
-            "x": 6,
+            "x": 4,
             "y": 4
           },
           {
@@ -1628,14 +1772,22 @@
           },
           {
             "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
             "y": 5
+          },
+          {
+            "x": 4,
+            "y": 6
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 6,
+        "length": 7,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -1653,7 +1805,7 @@
     "Expected": 4,
     "MoveRequest": {
       "game": {
-        "id": "game-120",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1689,11 +1841,243 @@
                 "y": 5
               },
               {
+                "x": 6,
+                "y": 6
+              },
+              {
                 "x": 5,
                 "y": 6
               },
               {
+                "x": 4,
+                "y": 4
+              }
+            ],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 7,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ],
+        "head": {
+          "x": 5,
+          "y": 5
+        },
+        "length": 7,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 121,
+    "Name": "Test-121",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
                 "x": 6,
+                "y": 6
+              },
+              {
+                "x": 6,
+                "y": 5
+              }
+            ],
+            "head": {
+              "x": 5,
+              "y": 5
+            },
+            "length": 6,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          }
+        ],
+        "head": {
+          "x": 5,
+          "y": 5
+        },
+        "length": 6,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 122,
+    "Name": "Test-122",
+    "Expected": 10,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 5,
                 "y": 6
               }
             ],
@@ -1727,19 +2111,19 @@
             "y": 4
           },
           {
-            "x": 6,
+            "x": 4,
             "y": 4
           },
           {
-            "x": 6,
+            "x": 4,
             "y": 5
           },
           {
-            "x": 5,
+            "x": 4,
             "y": 6
           },
           {
-            "x": 6,
+            "x": 5,
             "y": 6
           }
         ],
@@ -1760,220 +2144,12 @@
     }
   },
   {
-    "Id": 121,
-    "Name": "Test-121",
-    "Expected": 9,
-    "MoveRequest": {
-      "game": {
-        "id": "game-121",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 11,
-        "width": 11,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 5,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 6
-              },
-              {
-                "x": 5,
-                "y": 6
-              },
-              {
-                "x": 6,
-                "y": 6
-              }
-            ],
-            "head": {
-              "x": 5,
-              "y": 5
-            },
-            "length": 5,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 5,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 6
-          },
-          {
-            "x": 5,
-            "y": 6
-          },
-          {
-            "x": 6,
-            "y": 6
-          }
-        ],
-        "head": {
-          "x": 5,
-          "y": 5
-        },
-        "length": 5,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 122,
-    "Name": "Test-122",
-    "Expected": 10,
-    "MoveRequest": {
-      "game": {
-        "id": "game-122",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 11,
-        "width": 11,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 5,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 4
-              },
-              {
-                "x": 5,
-                "y": 4
-              },
-              {
-                "x": 4,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 6
-              }
-            ],
-            "head": {
-              "x": 5,
-              "y": 5
-            },
-            "length": 5,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 5,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 4
-          },
-          {
-            "x": 5,
-            "y": 4
-          },
-          {
-            "x": 4,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 6
-          }
-        ],
-        "head": {
-          "x": 5,
-          "y": 5
-        },
-        "length": 5,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
     "Id": 123,
     "Name": "Test-123",
     "Expected": 6,
     "MoveRequest": {
       "game": {
-        "id": "game-123",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -1997,11 +2173,11 @@
                 "y": 5
               },
               {
-                "x": 4,
+                "x": 5,
                 "y": 4
               },
               {
-                "x": 5,
+                "x": 4,
                 "y": 4
               },
               {
@@ -2011,13 +2187,17 @@
               {
                 "x": 6,
                 "y": 5
+              },
+              {
+                "x": 4,
+                "y": 5
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 5,
+            "length": 6,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2039,11 +2219,11 @@
             "y": 5
           },
           {
-            "x": 4,
+            "x": 5,
             "y": 4
           },
           {
-            "x": 5,
+            "x": 4,
             "y": 4
           },
           {
@@ -2053,13 +2233,17 @@
           {
             "x": 6,
             "y": 5
+          },
+          {
+            "x": 4,
+            "y": 5
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 5,
+        "length": 6,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -2077,7 +2261,7 @@
     "Expected": 5,
     "MoveRequest": {
       "game": {
-        "id": "game-124",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -2101,27 +2285,31 @@
                 "y": 5
               },
               {
-                "x": 6,
-                "y": 4
-              },
-              {
-                "x": 6,
-                "y": 5
-              },
-              {
                 "x": 5,
                 "y": 6
               },
               {
                 "x": 6,
                 "y": 6
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 4
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 5,
+            "length": 6,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2143,27 +2331,31 @@
             "y": 5
           },
           {
-            "x": 6,
-            "y": 4
-          },
-          {
-            "x": 6,
-            "y": 5
-          },
-          {
             "x": 5,
             "y": 6
           },
           {
             "x": 6,
             "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 4
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 5,
+        "length": 6,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -2181,7 +2373,7 @@
     "Expected": 9,
     "MoveRequest": {
       "game": {
-        "id": "game-125",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -2213,63 +2405,67 @@
                 "y": 3
               },
               {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 6
+              },
+              {
+                "x": 0,
+                "y": 7
+              },
+              {
+                "x": 0,
+                "y": 8
+              },
+              {
+                "x": 0,
+                "y": 9
+              },
+              {
+                "x": 1,
+                "y": 9
+              },
+              {
+                "x": 1,
+                "y": 8
+              },
+              {
+                "x": 1,
+                "y": 7
+              },
+              {
+                "x": 1,
+                "y": 6
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
                 "x": 1,
                 "y": 3
               },
               {
-                "x": 0,
-                "y": 4
-              },
-              {
                 "x": 1,
-                "y": 4
-              },
-              {
-                "x": 0,
-                "y": 5
-              },
-              {
-                "x": 1,
-                "y": 5
-              },
-              {
-                "x": 0,
-                "y": 6
-              },
-              {
-                "x": 1,
-                "y": 6
-              },
-              {
-                "x": 0,
-                "y": 7
-              },
-              {
-                "x": 1,
-                "y": 7
-              },
-              {
-                "x": 0,
-                "y": 8
-              },
-              {
-                "x": 1,
-                "y": 8
-              },
-              {
-                "x": 0,
-                "y": 9
-              },
-              {
-                "x": 1,
-                "y": 9
+                "y": 2
               }
             ],
             "head": {
               "x": 0,
               "y": 1
             },
-            "length": 16,
+            "length": 17,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2299,63 +2495,67 @@
             "y": 3
           },
           {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
             "x": 1,
             "y": 3
           },
           {
-            "x": 0,
-            "y": 4
-          },
-          {
             "x": 1,
-            "y": 4
-          },
-          {
-            "x": 0,
-            "y": 5
-          },
-          {
-            "x": 1,
-            "y": 5
-          },
-          {
-            "x": 0,
-            "y": 6
-          },
-          {
-            "x": 1,
-            "y": 6
-          },
-          {
-            "x": 0,
-            "y": 7
-          },
-          {
-            "x": 1,
-            "y": 7
-          },
-          {
-            "x": 0,
-            "y": 8
-          },
-          {
-            "x": 1,
-            "y": 8
-          },
-          {
-            "x": 0,
-            "y": 9
-          },
-          {
-            "x": 1,
-            "y": 9
+            "y": 2
           }
         ],
         "head": {
           "x": 0,
           "y": 1
         },
-        "length": 16,
+        "length": 17,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -2373,7 +2573,7 @@
     "Expected": 5,
     "MoveRequest": {
       "game": {
-        "id": "game-126",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -2401,67 +2601,71 @@
                 "y": 2
               },
               {
-                "x": 9,
-                "y": 3
-              },
-              {
                 "x": 10,
                 "y": 3
-              },
-              {
-                "x": 9,
-                "y": 4
               },
               {
                 "x": 10,
                 "y": 4
               },
               {
-                "x": 9,
-                "y": 5
-              },
-              {
                 "x": 10,
                 "y": 5
-              },
-              {
-                "x": 9,
-                "y": 6
               },
               {
                 "x": 10,
                 "y": 6
               },
               {
-                "x": 9,
-                "y": 7
-              },
-              {
                 "x": 10,
                 "y": 7
-              },
-              {
-                "x": 9,
-                "y": 8
               },
               {
                 "x": 10,
                 "y": 8
               },
               {
+                "x": 10,
+                "y": 9
+              },
+              {
                 "x": 9,
                 "y": 9
               },
               {
-                "x": 10,
-                "y": 9
+                "x": 9,
+                "y": 8
+              },
+              {
+                "x": 9,
+                "y": 7
+              },
+              {
+                "x": 9,
+                "y": 6
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 2
               }
             ],
             "head": {
               "x": 10,
               "y": 1
             },
-            "length": 16,
+            "length": 17,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2487,67 +2691,71 @@
             "y": 2
           },
           {
-            "x": 9,
-            "y": 3
-          },
-          {
             "x": 10,
             "y": 3
-          },
-          {
-            "x": 9,
-            "y": 4
           },
           {
             "x": 10,
             "y": 4
           },
           {
-            "x": 9,
-            "y": 5
-          },
-          {
             "x": 10,
             "y": 5
-          },
-          {
-            "x": 9,
-            "y": 6
           },
           {
             "x": 10,
             "y": 6
           },
           {
-            "x": 9,
-            "y": 7
-          },
-          {
             "x": 10,
             "y": 7
-          },
-          {
-            "x": 9,
-            "y": 8
           },
           {
             "x": 10,
             "y": 8
           },
           {
+            "x": 10,
+            "y": 9
+          },
+          {
             "x": 9,
             "y": 9
           },
           {
-            "x": 10,
-            "y": 9
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 2
           }
         ],
         "head": {
           "x": 10,
           "y": 1
         },
-        "length": 16,
+        "length": 17,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -2565,7 +2773,7 @@
     "Expected": 10,
     "MoveRequest": {
       "game": {
-        "id": "game-127",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -2589,39 +2797,15 @@
                 "y": 0
               },
               {
-                "x": 3,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 0
-              },
-              {
-                "x": 5,
-                "y": 0
-              },
-              {
-                "x": 6,
-                "y": 0
-              },
-              {
-                "x": 7,
-                "y": 0
-              },
-              {
                 "x": 8,
                 "y": 0
               },
               {
-                "x": 3,
-                "y": 1
+                "x": 7,
+                "y": 0
               },
               {
-                "x": 4,
-                "y": 1
-              },
-              {
-                "x": 5,
+                "x": 7,
                 "y": 1
               },
               {
@@ -2629,7 +2813,35 @@
                 "y": 1
               },
               {
-                "x": 7,
+                "x": 6,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 1
+              },
+              {
+                "x": 8,
                 "y": 1
               }
             ],
@@ -2637,7 +2849,7 @@
               "x": 9,
               "y": 0
             },
-            "length": 12,
+            "length": 13,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2659,39 +2871,15 @@
             "y": 0
           },
           {
-            "x": 3,
-            "y": 0
-          },
-          {
-            "x": 4,
-            "y": 0
-          },
-          {
-            "x": 5,
-            "y": 0
-          },
-          {
-            "x": 6,
-            "y": 0
-          },
-          {
-            "x": 7,
-            "y": 0
-          },
-          {
             "x": 8,
             "y": 0
           },
           {
-            "x": 3,
-            "y": 1
+            "x": 7,
+            "y": 0
           },
           {
-            "x": 4,
-            "y": 1
-          },
-          {
-            "x": 5,
+            "x": 7,
             "y": 1
           },
           {
@@ -2699,7 +2887,35 @@
             "y": 1
           },
           {
-            "x": 7,
+            "x": 6,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 8,
             "y": 1
           }
         ],
@@ -2707,7 +2923,7 @@
           "x": 9,
           "y": 0
         },
-        "length": 12,
+        "length": 13,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -2725,7 +2941,7 @@
     "Expected": 9,
     "MoveRequest": {
       "game": {
-        "id": "game-128",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -2749,15 +2965,15 @@
                 "y": 10
               },
               {
-                "x": 3,
-                "y": 9
+                "x": 8,
+                "y": 10
               },
               {
-                "x": 4,
-                "y": 9
+                "x": 7,
+                "y": 10
               },
               {
-                "x": 5,
+                "x": 7,
                 "y": 9
               },
               {
@@ -2765,15 +2981,7 @@
                 "y": 9
               },
               {
-                "x": 7,
-                "y": 9
-              },
-              {
-                "x": 3,
-                "y": 10
-              },
-              {
-                "x": 4,
+                "x": 6,
                 "y": 10
               },
               {
@@ -2781,23 +2989,35 @@
                 "y": 10
               },
               {
-                "x": 6,
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 4,
+                "y": 9
+              },
+              {
+                "x": 4,
                 "y": 10
               },
               {
-                "x": 7,
+                "x": 3,
                 "y": 10
+              },
+              {
+                "x": 3,
+                "y": 9
               },
               {
                 "x": 8,
-                "y": 10
+                "y": 9
               }
             ],
             "head": {
               "x": 9,
               "y": 10
             },
-            "length": 12,
+            "length": 13,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2819,15 +3039,15 @@
             "y": 10
           },
           {
-            "x": 3,
-            "y": 9
+            "x": 8,
+            "y": 10
           },
           {
-            "x": 4,
-            "y": 9
+            "x": 7,
+            "y": 10
           },
           {
-            "x": 5,
+            "x": 7,
             "y": 9
           },
           {
@@ -2835,15 +3055,7 @@
             "y": 9
           },
           {
-            "x": 7,
-            "y": 9
-          },
-          {
-            "x": 3,
-            "y": 10
-          },
-          {
-            "x": 4,
+            "x": 6,
             "y": 10
           },
           {
@@ -2851,23 +3063,35 @@
             "y": 10
           },
           {
-            "x": 6,
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
             "y": 10
           },
           {
-            "x": 7,
+            "x": 3,
             "y": 10
+          },
+          {
+            "x": 3,
+            "y": 9
           },
           {
             "x": 8,
-            "y": 10
+            "y": 9
           }
         ],
         "head": {
           "x": 9,
           "y": 10
         },
-        "length": 12,
+        "length": 13,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -2885,7 +3109,7 @@
     "Expected": 6,
     "MoveRequest": {
       "game": {
-        "id": "game-129",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -2909,56 +3133,8 @@
                 "y": 9
               },
               {
-                "x": 9,
-                "y": 1
-              },
-              {
                 "x": 10,
-                "y": 1
-              },
-              {
-                "x": 9,
-                "y": 2
-              },
-              {
-                "x": 10,
-                "y": 2
-              },
-              {
-                "x": 9,
-                "y": 3
-              },
-              {
-                "x": 10,
-                "y": 3
-              },
-              {
-                "x": 9,
-                "y": 4
-              },
-              {
-                "x": 10,
-                "y": 4
-              },
-              {
-                "x": 9,
-                "y": 5
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 9,
-                "y": 6
-              },
-              {
-                "x": 10,
-                "y": 6
-              },
-              {
-                "x": 9,
-                "y": 7
+                "y": 8
               },
               {
                 "x": 10,
@@ -2966,6 +3142,58 @@
               },
               {
                 "x": 10,
+                "y": 6
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 1
+              },
+              {
+                "x": 9,
+                "y": 1
+              },
+              {
+                "x": 9,
+                "y": 2
+              },
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 6
+              },
+              {
+                "x": 9,
+                "y": 7
+              },
+              {
+                "x": 9,
                 "y": 8
               }
             ],
@@ -2973,7 +3201,7 @@
               "x": 10,
               "y": 9
             },
-            "length": 16,
+            "length": 17,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -2995,56 +3223,8 @@
             "y": 9
           },
           {
-            "x": 9,
-            "y": 1
-          },
-          {
             "x": 10,
-            "y": 1
-          },
-          {
-            "x": 9,
-            "y": 2
-          },
-          {
-            "x": 10,
-            "y": 2
-          },
-          {
-            "x": 9,
-            "y": 3
-          },
-          {
-            "x": 10,
-            "y": 3
-          },
-          {
-            "x": 9,
-            "y": 4
-          },
-          {
-            "x": 10,
-            "y": 4
-          },
-          {
-            "x": 9,
-            "y": 5
-          },
-          {
-            "x": 10,
-            "y": 5
-          },
-          {
-            "x": 9,
-            "y": 6
-          },
-          {
-            "x": 10,
-            "y": 6
-          },
-          {
-            "x": 9,
-            "y": 7
+            "y": 8
           },
           {
             "x": 10,
@@ -3052,6 +3232,58 @@
           },
           {
             "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
             "y": 8
           }
         ],
@@ -3059,7 +3291,7 @@
           "x": 10,
           "y": 9
         },
-        "length": 16,
+        "length": 17,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -3077,7 +3309,7 @@
     "Expected": 10,
     "MoveRequest": {
       "game": {
-        "id": "game-130",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -3102,6 +3334,34 @@
               },
               {
                 "x": 0,
+                "y": 8
+              },
+              {
+                "x": 0,
+                "y": 7
+              },
+              {
+                "x": 0,
+                "y": 6
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 2
+              },
+              {
+                "x": 0,
                 "y": 1
               },
               {
@@ -3109,61 +3369,1785 @@
                 "y": 1
               },
               {
-                "x": 0,
-                "y": 2
-              },
-              {
                 "x": 1,
                 "y": 2
-              },
-              {
-                "x": 0,
-                "y": 3
               },
               {
                 "x": 1,
                 "y": 3
               },
               {
-                "x": 0,
-                "y": 4
-              },
-              {
                 "x": 1,
                 "y": 4
-              },
-              {
-                "x": 0,
-                "y": 5
               },
               {
                 "x": 1,
                 "y": 5
               },
               {
-                "x": 0,
-                "y": 6
-              },
-              {
                 "x": 1,
                 "y": 6
-              },
-              {
-                "x": 0,
-                "y": 7
               },
               {
                 "x": 1,
                 "y": 7
               },
               {
-                "x": 0,
+                "x": 1,
                 "y": 8
               }
             ],
             "head": {
               "x": 0,
               "y": 9
+            },
+            "length": 17,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 1
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 8
+          }
+        ],
+        "head": {
+          "x": 0,
+          "y": 9
+        },
+        "length": 17,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 131,
+    "Name": "Test-131",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 1,
+                "y": 10
+              },
+              {
+                "x": 2,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 9
+              },
+              {
+                "x": 4,
+                "y": 9
+              },
+              {
+                "x": 4,
+                "y": 10
+              },
+              {
+                "x": 5,
+                "y": 10
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 6,
+                "y": 9
+              },
+              {
+                "x": 6,
+                "y": 10
+              },
+              {
+                "x": 7,
+                "y": 10
+              },
+              {
+                "x": 7,
+                "y": 9
+              },
+              {
+                "x": 8,
+                "y": 9
+              },
+              {
+                "x": 8,
+                "y": 10
+              },
+              {
+                "x": 2,
+                "y": 9
+              }
+            ],
+            "head": {
+              "x": 1,
+              "y": 10
+            },
+            "length": 15,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 1,
+            "y": 10
+          },
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 9
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 9
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 2,
+            "y": 9
+          }
+        ],
+        "head": {
+          "x": 1,
+          "y": 10
+        },
+        "length": 15,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 132,
+    "Name": "Test-132",
+    "Expected": 6,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 1,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 0
+              },
+              {
+                "x": 3,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 1
+              },
+              {
+                "x": 6,
+                "y": 1
+              },
+              {
+                "x": 6,
+                "y": 0
+              },
+              {
+                "x": 7,
+                "y": 0
+              },
+              {
+                "x": 7,
+                "y": 1
+              },
+              {
+                "x": 8,
+                "y": 1
+              },
+              {
+                "x": 8,
+                "y": 0
+              },
+              {
+                "x": 2,
+                "y": 1
+              }
+            ],
+            "head": {
+              "x": 1,
+              "y": 0
+            },
+            "length": 15,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 3,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 6,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 1
+          }
+        ],
+        "head": {
+          "x": 1,
+          "y": 0
+        },
+        "length": 15,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 133,
+    "Name": "Test-133",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 0,
+                "y": 2
+              },
+              {
+                "x": 0,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 6
+              },
+              {
+                "x": 0,
+                "y": 7
+              },
+              {
+                "x": 0,
+                "y": 8
+              },
+              {
+                "x": 0,
+                "y": 9
+              },
+              {
+                "x": 0,
+                "y": 10
+              },
+              {
+                "x": 1,
+                "y": 10
+              },
+              {
+                "x": 1,
+                "y": 9
+              },
+              {
+                "x": 1,
+                "y": 8
+              },
+              {
+                "x": 1,
+                "y": 7
+              },
+              {
+                "x": 1,
+                "y": 6
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 2
+              }
+            ],
+            "head": {
+              "x": 0,
+              "y": 2
+            },
+            "length": 18,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 2
+          }
+        ],
+        "head": {
+          "x": 0,
+          "y": 2
+        },
+        "length": 18,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 134,
+    "Name": "Test-134",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 11,
+        "width": 11,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 10,
+                "y": 1
+              },
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 6
+              },
+              {
+                "x": 10,
+                "y": 7
+              },
+              {
+                "x": 10,
+                "y": 8
+              },
+              {
+                "x": 10,
+                "y": 9
+              },
+              {
+                "x": 9,
+                "y": 9
+              },
+              {
+                "x": 9,
+                "y": 8
+              },
+              {
+                "x": 9,
+                "y": 7
+              },
+              {
+                "x": 9,
+                "y": 6
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 3
+              },
+              {
+                "x": 9,
+                "y": 2
+              },
+              {
+                "x": 9,
+                "y": 1
+              }
+            ],
+            "head": {
+              "x": 10,
+              "y": 1
+            },
+            "length": 18,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 9
+          },
+          {
+            "x": 9,
+            "y": 8
+          },
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 3
+          },
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 1
+          }
+        ],
+        "head": {
+          "x": 10,
+          "y": 1
+        },
+        "length": 18,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 135,
+    "Name": "Test-135",
+    "Expected": 10,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 10,
+                "y": 0
+              },
+              {
+                "x": 9,
+                "y": 0
+              },
+              {
+                "x": 9,
+                "y": 1
+              },
+              {
+                "x": 8,
+                "y": 1
+              },
+              {
+                "x": 8,
+                "y": 0
+              },
+              {
+                "x": 7,
+                "y": 0
+              },
+              {
+                "x": 7,
+                "y": 1
+              },
+              {
+                "x": 6,
+                "y": 1
+              },
+              {
+                "x": 6,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 1
+              },
+              {
+                "x": 4,
+                "y": 0
+              },
+              {
+                "x": 10,
+                "y": 1
+              }
+            ],
+            "head": {
+              "x": 10,
+              "y": 0
+            },
+            "length": 14,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 0
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 0
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 6,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 1
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 1
+          }
+        ],
+        "head": {
+          "x": 10,
+          "y": 0
+        },
+        "length": 14,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 136,
+    "Name": "Test-136",
+    "Expected": 9,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 10,
+                "y": 11
+              },
+              {
+                "x": 9,
+                "y": 11
+              },
+              {
+                "x": 9,
+                "y": 10
+              },
+              {
+                "x": 8,
+                "y": 10
+              },
+              {
+                "x": 8,
+                "y": 11
+              },
+              {
+                "x": 7,
+                "y": 11
+              },
+              {
+                "x": 7,
+                "y": 10
+              },
+              {
+                "x": 6,
+                "y": 10
+              },
+              {
+                "x": 6,
+                "y": 11
+              },
+              {
+                "x": 5,
+                "y": 11
+              },
+              {
+                "x": 5,
+                "y": 10
+              },
+              {
+                "x": 4,
+                "y": 10
+              },
+              {
+                "x": 4,
+                "y": 11
+              },
+              {
+                "x": 10,
+                "y": 10
+              }
+            ],
+            "head": {
+              "x": 10,
+              "y": 11
+            },
+            "length": 14,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 10,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 7,
+            "y": 11
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 5,
+            "y": 11
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "head": {
+          "x": 10,
+          "y": 11
+        },
+        "length": 14,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 137,
+    "Name": "Test-137",
+    "Expected": 6,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 11,
+                "y": 10
+              },
+              {
+                "x": 11,
+                "y": 9
+              },
+              {
+                "x": 11,
+                "y": 8
+              },
+              {
+                "x": 11,
+                "y": 7
+              },
+              {
+                "x": 11,
+                "y": 6
+              },
+              {
+                "x": 11,
+                "y": 5
+              },
+              {
+                "x": 11,
+                "y": 4
+              },
+              {
+                "x": 11,
+                "y": 3
+              },
+              {
+                "x": 11,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 6
+              },
+              {
+                "x": 10,
+                "y": 7
+              },
+              {
+                "x": 10,
+                "y": 8
+              },
+              {
+                "x": 10,
+                "y": 9
+              },
+              {
+                "x": 10,
+                "y": 10
+              }
+            ],
+            "head": {
+              "x": 11,
+              "y": 10
+            },
+            "length": 18,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 11,
+            "y": 10
+          },
+          {
+            "x": 11,
+            "y": 9
+          },
+          {
+            "x": 11,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 5
+          },
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 11,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 7
+          },
+          {
+            "x": 10,
+            "y": 8
+          },
+          {
+            "x": 10,
+            "y": 9
+          },
+          {
+            "x": 10,
+            "y": 10
+          }
+        ],
+        "head": {
+          "x": 11,
+          "y": 10
+        },
+        "length": 18,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 138,
+    "Name": "Test-138",
+    "Expected": 10,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 0,
+                "y": 10
+              },
+              {
+                "x": 0,
+                "y": 9
+              },
+              {
+                "x": 0,
+                "y": 8
+              },
+              {
+                "x": 0,
+                "y": 7
+              },
+              {
+                "x": 0,
+                "y": 6
+              },
+              {
+                "x": 0,
+                "y": 5
+              },
+              {
+                "x": 0,
+                "y": 4
+              },
+              {
+                "x": 0,
+                "y": 3
+              },
+              {
+                "x": 0,
+                "y": 2
+              },
+              {
+                "x": 1,
+                "y": 2
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 6
+              },
+              {
+                "x": 1,
+                "y": 7
+              },
+              {
+                "x": 1,
+                "y": 8
+              },
+              {
+                "x": 1,
+                "y": 9
+              },
+              {
+                "x": 1,
+                "y": 10
+              }
+            ],
+            "head": {
+              "x": 0,
+              "y": 10
+            },
+            "length": 18,
+            "latency": 50,
+            "shout": "",
+            "squad": "",
+            "customizations": {
+              "color": "#FF0000",
+              "head": "default",
+              "tail": "default"
+            }
+          }
+        ]
+      },
+      "you": {
+        "id": "thanos",
+        "name": "Thanos",
+        "health": 100,
+        "body": [
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 0,
+            "y": 8
+          },
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 0,
+            "y": 6
+          },
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 7
+          },
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 1,
+            "y": 10
+          }
+        ],
+        "head": {
+          "x": 0,
+          "y": 10
+        },
+        "length": 18,
+        "latency": 50,
+        "shout": "",
+        "squad": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "default",
+          "tail": "default"
+        }
+      }
+    }
+  },
+  {
+    "Id": 139,
+    "Name": "Test-139",
+    "Expected": 5,
+    "MoveRequest": {
+      "game": {
+        "id": "game-grid_1752688571616",
+        "ruleset": {
+          "name": "standard",
+          "version": "v1.0.0"
+        },
+        "timeout": 500
+      },
+      "turn": 5,
+      "board": {
+        "height": 12,
+        "width": 12,
+        "food": [],
+        "hazards": [],
+        "snakes": [
+          {
+            "id": "thanos",
+            "name": "Thanos",
+            "health": 100,
+            "body": [
+              {
+                "x": 1,
+                "y": 11
+              },
+              {
+                "x": 2,
+                "y": 11
+              },
+              {
+                "x": 2,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 10
+              },
+              {
+                "x": 3,
+                "y": 11
+              },
+              {
+                "x": 4,
+                "y": 11
+              },
+              {
+                "x": 4,
+                "y": 10
+              },
+              {
+                "x": 5,
+                "y": 10
+              },
+              {
+                "x": 5,
+                "y": 11
+              },
+              {
+                "x": 6,
+                "y": 11
+              },
+              {
+                "x": 6,
+                "y": 10
+              },
+              {
+                "x": 7,
+                "y": 10
+              },
+              {
+                "x": 7,
+                "y": 11
+              },
+              {
+                "x": 8,
+                "y": 11
+              },
+              {
+                "x": 8,
+                "y": 10
+              },
+              {
+                "x": 1,
+                "y": 10
+              }
+            ],
+            "head": {
+              "x": 1,
+              "y": 11
             },
             "length": 16,
             "latency": 50,
@@ -3183,1747 +5167,75 @@
         "health": 100,
         "body": [
           {
-            "x": 0,
-            "y": 9
+            "x": 1,
+            "y": 11
           },
           {
-            "x": 0,
-            "y": 1
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 11
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 10
           },
           {
             "x": 1,
-            "y": 1
-          },
-          {
-            "x": 0,
-            "y": 2
-          },
-          {
-            "x": 1,
-            "y": 2
-          },
-          {
-            "x": 0,
-            "y": 3
-          },
-          {
-            "x": 1,
-            "y": 3
-          },
-          {
-            "x": 0,
-            "y": 4
-          },
-          {
-            "x": 1,
-            "y": 4
-          },
-          {
-            "x": 0,
-            "y": 5
-          },
-          {
-            "x": 1,
-            "y": 5
-          },
-          {
-            "x": 0,
-            "y": 6
-          },
-          {
-            "x": 1,
-            "y": 6
-          },
-          {
-            "x": 0,
-            "y": 7
-          },
-          {
-            "x": 1,
-            "y": 7
-          },
-          {
-            "x": 0,
-            "y": 8
+            "y": 10
           }
         ],
         "head": {
-          "x": 0,
-          "y": 9
+          "x": 1,
+          "y": 11
         },
         "length": 16,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 131,
-    "Name": "Test-131",
-    "Expected": 5,
-    "MoveRequest": {
-      "game": {
-        "id": "game-131",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 11,
-        "width": 11,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 1,
-                "y": 10
-              },
-              {
-                "x": 3,
-                "y": 9
-              },
-              {
-                "x": 4,
-                "y": 9
-              },
-              {
-                "x": 5,
-                "y": 9
-              },
-              {
-                "x": 6,
-                "y": 9
-              },
-              {
-                "x": 7,
-                "y": 9
-              },
-              {
-                "x": 8,
-                "y": 9
-              },
-              {
-                "x": 2,
-                "y": 10
-              },
-              {
-                "x": 3,
-                "y": 10
-              },
-              {
-                "x": 4,
-                "y": 10
-              },
-              {
-                "x": 5,
-                "y": 10
-              },
-              {
-                "x": 6,
-                "y": 10
-              },
-              {
-                "x": 7,
-                "y": 10
-              },
-              {
-                "x": 8,
-                "y": 10
-              }
-            ],
-            "head": {
-              "x": 1,
-              "y": 10
-            },
-            "length": 14,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 1,
-            "y": 10
-          },
-          {
-            "x": 3,
-            "y": 9
-          },
-          {
-            "x": 4,
-            "y": 9
-          },
-          {
-            "x": 5,
-            "y": 9
-          },
-          {
-            "x": 6,
-            "y": 9
-          },
-          {
-            "x": 7,
-            "y": 9
-          },
-          {
-            "x": 8,
-            "y": 9
-          },
-          {
-            "x": 2,
-            "y": 10
-          },
-          {
-            "x": 3,
-            "y": 10
-          },
-          {
-            "x": 4,
-            "y": 10
-          },
-          {
-            "x": 5,
-            "y": 10
-          },
-          {
-            "x": 6,
-            "y": 10
-          },
-          {
-            "x": 7,
-            "y": 10
-          },
-          {
-            "x": 8,
-            "y": 10
-          }
-        ],
-        "head": {
-          "x": 1,
-          "y": 10
-        },
-        "length": 14,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 132,
-    "Name": "Test-132",
-    "Expected": 6,
-    "MoveRequest": {
-      "game": {
-        "id": "game-132",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 11,
-        "width": 11,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 1,
-                "y": 0
-              },
-              {
-                "x": 2,
-                "y": 0
-              },
-              {
-                "x": 3,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 0
-              },
-              {
-                "x": 5,
-                "y": 0
-              },
-              {
-                "x": 6,
-                "y": 0
-              },
-              {
-                "x": 7,
-                "y": 0
-              },
-              {
-                "x": 8,
-                "y": 0
-              },
-              {
-                "x": 3,
-                "y": 1
-              },
-              {
-                "x": 4,
-                "y": 1
-              },
-              {
-                "x": 5,
-                "y": 1
-              },
-              {
-                "x": 6,
-                "y": 1
-              },
-              {
-                "x": 7,
-                "y": 1
-              },
-              {
-                "x": 8,
-                "y": 1
-              }
-            ],
-            "head": {
-              "x": 1,
-              "y": 0
-            },
-            "length": 14,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 1,
-            "y": 0
-          },
-          {
-            "x": 2,
-            "y": 0
-          },
-          {
-            "x": 3,
-            "y": 0
-          },
-          {
-            "x": 4,
-            "y": 0
-          },
-          {
-            "x": 5,
-            "y": 0
-          },
-          {
-            "x": 6,
-            "y": 0
-          },
-          {
-            "x": 7,
-            "y": 0
-          },
-          {
-            "x": 8,
-            "y": 0
-          },
-          {
-            "x": 3,
-            "y": 1
-          },
-          {
-            "x": 4,
-            "y": 1
-          },
-          {
-            "x": 5,
-            "y": 1
-          },
-          {
-            "x": 6,
-            "y": 1
-          },
-          {
-            "x": 7,
-            "y": 1
-          },
-          {
-            "x": 8,
-            "y": 1
-          }
-        ],
-        "head": {
-          "x": 1,
-          "y": 0
-        },
-        "length": 14,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 133,
-    "Name": "Test-133",
-    "Expected": 9,
-    "MoveRequest": {
-      "game": {
-        "id": "game-133",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 12,
-        "width": 12,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 2
-              },
-              {
-                "x": 0,
-                "y": 3
-              },
-              {
-                "x": 1,
-                "y": 3
-              },
-              {
-                "x": 0,
-                "y": 4
-              },
-              {
-                "x": 1,
-                "y": 4
-              },
-              {
-                "x": 0,
-                "y": 5
-              },
-              {
-                "x": 1,
-                "y": 5
-              },
-              {
-                "x": 0,
-                "y": 6
-              },
-              {
-                "x": 1,
-                "y": 6
-              },
-              {
-                "x": 0,
-                "y": 7
-              },
-              {
-                "x": 1,
-                "y": 7
-              },
-              {
-                "x": 0,
-                "y": 8
-              },
-              {
-                "x": 1,
-                "y": 8
-              },
-              {
-                "x": 0,
-                "y": 9
-              },
-              {
-                "x": 1,
-                "y": 9
-              },
-              {
-                "x": 0,
-                "y": 10
-              },
-              {
-                "x": 1,
-                "y": 10
-              }
-            ],
-            "head": {
-              "x": 0,
-              "y": 2
-            },
-            "length": 17,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 0,
-            "y": 2
-          },
-          {
-            "x": 0,
-            "y": 3
-          },
-          {
-            "x": 1,
-            "y": 3
-          },
-          {
-            "x": 0,
-            "y": 4
-          },
-          {
-            "x": 1,
-            "y": 4
-          },
-          {
-            "x": 0,
-            "y": 5
-          },
-          {
-            "x": 1,
-            "y": 5
-          },
-          {
-            "x": 0,
-            "y": 6
-          },
-          {
-            "x": 1,
-            "y": 6
-          },
-          {
-            "x": 0,
-            "y": 7
-          },
-          {
-            "x": 1,
-            "y": 7
-          },
-          {
-            "x": 0,
-            "y": 8
-          },
-          {
-            "x": 1,
-            "y": 8
-          },
-          {
-            "x": 0,
-            "y": 9
-          },
-          {
-            "x": 1,
-            "y": 9
-          },
-          {
-            "x": 0,
-            "y": 10
-          },
-          {
-            "x": 1,
-            "y": 10
-          }
-        ],
-        "head": {
-          "x": 0,
-          "y": 2
-        },
-        "length": 17,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 134,
-    "Name": "Test-134",
-    "Expected": 5,
-    "MoveRequest": {
-      "game": {
-        "id": "game-134",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 11,
-        "width": 11,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 10,
-                "y": 1
-              },
-              {
-                "x": 9,
-                "y": 2
-              },
-              {
-                "x": 10,
-                "y": 2
-              },
-              {
-                "x": 9,
-                "y": 3
-              },
-              {
-                "x": 10,
-                "y": 3
-              },
-              {
-                "x": 9,
-                "y": 4
-              },
-              {
-                "x": 10,
-                "y": 4
-              },
-              {
-                "x": 9,
-                "y": 5
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 9,
-                "y": 6
-              },
-              {
-                "x": 10,
-                "y": 6
-              },
-              {
-                "x": 9,
-                "y": 7
-              },
-              {
-                "x": 10,
-                "y": 7
-              },
-              {
-                "x": 9,
-                "y": 8
-              },
-              {
-                "x": 10,
-                "y": 8
-              },
-              {
-                "x": 9,
-                "y": 9
-              },
-              {
-                "x": 10,
-                "y": 9
-              }
-            ],
-            "head": {
-              "x": 10,
-              "y": 1
-            },
-            "length": 17,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 10,
-            "y": 1
-          },
-          {
-            "x": 9,
-            "y": 2
-          },
-          {
-            "x": 10,
-            "y": 2
-          },
-          {
-            "x": 9,
-            "y": 3
-          },
-          {
-            "x": 10,
-            "y": 3
-          },
-          {
-            "x": 9,
-            "y": 4
-          },
-          {
-            "x": 10,
-            "y": 4
-          },
-          {
-            "x": 9,
-            "y": 5
-          },
-          {
-            "x": 10,
-            "y": 5
-          },
-          {
-            "x": 9,
-            "y": 6
-          },
-          {
-            "x": 10,
-            "y": 6
-          },
-          {
-            "x": 9,
-            "y": 7
-          },
-          {
-            "x": 10,
-            "y": 7
-          },
-          {
-            "x": 9,
-            "y": 8
-          },
-          {
-            "x": 10,
-            "y": 8
-          },
-          {
-            "x": 9,
-            "y": 9
-          },
-          {
-            "x": 10,
-            "y": 9
-          }
-        ],
-        "head": {
-          "x": 10,
-          "y": 1
-        },
-        "length": 17,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 135,
-    "Name": "Test-135",
-    "Expected": 10,
-    "MoveRequest": {
-      "game": {
-        "id": "game-135",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 12,
-        "width": 12,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 10,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 0
-              },
-              {
-                "x": 5,
-                "y": 0
-              },
-              {
-                "x": 6,
-                "y": 0
-              },
-              {
-                "x": 7,
-                "y": 0
-              },
-              {
-                "x": 8,
-                "y": 0
-              },
-              {
-                "x": 9,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 1
-              },
-              {
-                "x": 5,
-                "y": 1
-              },
-              {
-                "x": 6,
-                "y": 1
-              },
-              {
-                "x": 7,
-                "y": 1
-              },
-              {
-                "x": 8,
-                "y": 1
-              },
-              {
-                "x": 9,
-                "y": 1
-              }
-            ],
-            "head": {
-              "x": 10,
-              "y": 0
-            },
-            "length": 13,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 10,
-            "y": 0
-          },
-          {
-            "x": 4,
-            "y": 0
-          },
-          {
-            "x": 5,
-            "y": 0
-          },
-          {
-            "x": 6,
-            "y": 0
-          },
-          {
-            "x": 7,
-            "y": 0
-          },
-          {
-            "x": 8,
-            "y": 0
-          },
-          {
-            "x": 9,
-            "y": 0
-          },
-          {
-            "x": 4,
-            "y": 1
-          },
-          {
-            "x": 5,
-            "y": 1
-          },
-          {
-            "x": 6,
-            "y": 1
-          },
-          {
-            "x": 7,
-            "y": 1
-          },
-          {
-            "x": 8,
-            "y": 1
-          },
-          {
-            "x": 9,
-            "y": 1
-          }
-        ],
-        "head": {
-          "x": 10,
-          "y": 0
-        },
-        "length": 13,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 136,
-    "Name": "Test-136",
-    "Expected": 9,
-    "MoveRequest": {
-      "game": {
-        "id": "game-136",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 12,
-        "width": 12,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 10,
-                "y": 11
-              },
-              {
-                "x": 4,
-                "y": 10
-              },
-              {
-                "x": 5,
-                "y": 10
-              },
-              {
-                "x": 6,
-                "y": 10
-              },
-              {
-                "x": 7,
-                "y": 10
-              },
-              {
-                "x": 8,
-                "y": 10
-              },
-              {
-                "x": 9,
-                "y": 10
-              },
-              {
-                "x": 4,
-                "y": 11
-              },
-              {
-                "x": 5,
-                "y": 11
-              },
-              {
-                "x": 6,
-                "y": 11
-              },
-              {
-                "x": 7,
-                "y": 11
-              },
-              {
-                "x": 8,
-                "y": 11
-              },
-              {
-                "x": 9,
-                "y": 11
-              }
-            ],
-            "head": {
-              "x": 10,
-              "y": 11
-            },
-            "length": 13,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 10,
-            "y": 11
-          },
-          {
-            "x": 4,
-            "y": 10
-          },
-          {
-            "x": 5,
-            "y": 10
-          },
-          {
-            "x": 6,
-            "y": 10
-          },
-          {
-            "x": 7,
-            "y": 10
-          },
-          {
-            "x": 8,
-            "y": 10
-          },
-          {
-            "x": 9,
-            "y": 10
-          },
-          {
-            "x": 4,
-            "y": 11
-          },
-          {
-            "x": 5,
-            "y": 11
-          },
-          {
-            "x": 6,
-            "y": 11
-          },
-          {
-            "x": 7,
-            "y": 11
-          },
-          {
-            "x": 8,
-            "y": 11
-          },
-          {
-            "x": 9,
-            "y": 11
-          }
-        ],
-        "head": {
-          "x": 10,
-          "y": 11
-        },
-        "length": 13,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 137,
-    "Name": "Test-137",
-    "Expected": 6,
-    "MoveRequest": {
-      "game": {
-        "id": "game-137",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 12,
-        "width": 12,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 11,
-                "y": 10
-              },
-              {
-                "x": 10,
-                "y": 2
-              },
-              {
-                "x": 11,
-                "y": 2
-              },
-              {
-                "x": 10,
-                "y": 3
-              },
-              {
-                "x": 11,
-                "y": 3
-              },
-              {
-                "x": 10,
-                "y": 4
-              },
-              {
-                "x": 11,
-                "y": 4
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 11,
-                "y": 5
-              },
-              {
-                "x": 10,
-                "y": 6
-              },
-              {
-                "x": 11,
-                "y": 6
-              },
-              {
-                "x": 10,
-                "y": 7
-              },
-              {
-                "x": 11,
-                "y": 7
-              },
-              {
-                "x": 10,
-                "y": 8
-              },
-              {
-                "x": 11,
-                "y": 8
-              },
-              {
-                "x": 10,
-                "y": 9
-              },
-              {
-                "x": 11,
-                "y": 9
-              }
-            ],
-            "head": {
-              "x": 11,
-              "y": 10
-            },
-            "length": 17,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 11,
-            "y": 10
-          },
-          {
-            "x": 10,
-            "y": 2
-          },
-          {
-            "x": 11,
-            "y": 2
-          },
-          {
-            "x": 10,
-            "y": 3
-          },
-          {
-            "x": 11,
-            "y": 3
-          },
-          {
-            "x": 10,
-            "y": 4
-          },
-          {
-            "x": 11,
-            "y": 4
-          },
-          {
-            "x": 10,
-            "y": 5
-          },
-          {
-            "x": 11,
-            "y": 5
-          },
-          {
-            "x": 10,
-            "y": 6
-          },
-          {
-            "x": 11,
-            "y": 6
-          },
-          {
-            "x": 10,
-            "y": 7
-          },
-          {
-            "x": 11,
-            "y": 7
-          },
-          {
-            "x": 10,
-            "y": 8
-          },
-          {
-            "x": 11,
-            "y": 8
-          },
-          {
-            "x": 10,
-            "y": 9
-          },
-          {
-            "x": 11,
-            "y": 9
-          }
-        ],
-        "head": {
-          "x": 11,
-          "y": 10
-        },
-        "length": 17,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 138,
-    "Name": "Test-138",
-    "Expected": 10,
-    "MoveRequest": {
-      "game": {
-        "id": "game-138",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 12,
-        "width": 12,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 0,
-                "y": 10
-              },
-              {
-                "x": 0,
-                "y": 2
-              },
-              {
-                "x": 1,
-                "y": 2
-              },
-              {
-                "x": 0,
-                "y": 3
-              },
-              {
-                "x": 1,
-                "y": 3
-              },
-              {
-                "x": 0,
-                "y": 4
-              },
-              {
-                "x": 1,
-                "y": 4
-              },
-              {
-                "x": 0,
-                "y": 5
-              },
-              {
-                "x": 1,
-                "y": 5
-              },
-              {
-                "x": 0,
-                "y": 6
-              },
-              {
-                "x": 1,
-                "y": 6
-              },
-              {
-                "x": 0,
-                "y": 7
-              },
-              {
-                "x": 1,
-                "y": 7
-              },
-              {
-                "x": 0,
-                "y": 8
-              },
-              {
-                "x": 1,
-                "y": 8
-              },
-              {
-                "x": 0,
-                "y": 9
-              },
-              {
-                "x": 1,
-                "y": 9
-              }
-            ],
-            "head": {
-              "x": 0,
-              "y": 10
-            },
-            "length": 17,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 0,
-            "y": 10
-          },
-          {
-            "x": 0,
-            "y": 2
-          },
-          {
-            "x": 1,
-            "y": 2
-          },
-          {
-            "x": 0,
-            "y": 3
-          },
-          {
-            "x": 1,
-            "y": 3
-          },
-          {
-            "x": 0,
-            "y": 4
-          },
-          {
-            "x": 1,
-            "y": 4
-          },
-          {
-            "x": 0,
-            "y": 5
-          },
-          {
-            "x": 1,
-            "y": 5
-          },
-          {
-            "x": 0,
-            "y": 6
-          },
-          {
-            "x": 1,
-            "y": 6
-          },
-          {
-            "x": 0,
-            "y": 7
-          },
-          {
-            "x": 1,
-            "y": 7
-          },
-          {
-            "x": 0,
-            "y": 8
-          },
-          {
-            "x": 1,
-            "y": 8
-          },
-          {
-            "x": 0,
-            "y": 9
-          },
-          {
-            "x": 1,
-            "y": 9
-          }
-        ],
-        "head": {
-          "x": 0,
-          "y": 10
-        },
-        "length": 17,
-        "latency": 50,
-        "shout": "",
-        "squad": "",
-        "customizations": {
-          "color": "#FF0000",
-          "head": "default",
-          "tail": "default"
-        }
-      }
-    }
-  },
-  {
-    "Id": 139,
-    "Name": "Test-139",
-    "Expected": 5,
-    "MoveRequest": {
-      "game": {
-        "id": "game-139",
-        "ruleset": {
-          "name": "standard",
-          "version": "v1.0.0"
-        },
-        "timeout": 500
-      },
-      "turn": 5,
-      "board": {
-        "height": 12,
-        "width": 12,
-        "food": [],
-        "hazards": [],
-        "snakes": [
-          {
-            "id": "thanos",
-            "name": "Thanos",
-            "health": 100,
-            "body": [
-              {
-                "x": 1,
-                "y": 11
-              },
-              {
-                "x": 2,
-                "y": 10
-              },
-              {
-                "x": 3,
-                "y": 10
-              },
-              {
-                "x": 4,
-                "y": 10
-              },
-              {
-                "x": 5,
-                "y": 10
-              },
-              {
-                "x": 6,
-                "y": 10
-              },
-              {
-                "x": 7,
-                "y": 10
-              },
-              {
-                "x": 8,
-                "y": 10
-              },
-              {
-                "x": 2,
-                "y": 11
-              },
-              {
-                "x": 3,
-                "y": 11
-              },
-              {
-                "x": 4,
-                "y": 11
-              },
-              {
-                "x": 5,
-                "y": 11
-              },
-              {
-                "x": 6,
-                "y": 11
-              },
-              {
-                "x": 7,
-                "y": 11
-              },
-              {
-                "x": 8,
-                "y": 11
-              }
-            ],
-            "head": {
-              "x": 1,
-              "y": 11
-            },
-            "length": 15,
-            "latency": 50,
-            "shout": "",
-            "squad": "",
-            "customizations": {
-              "color": "#FF0000",
-              "head": "default",
-              "tail": "default"
-            }
-          }
-        ]
-      },
-      "you": {
-        "id": "thanos",
-        "name": "Thanos",
-        "health": 100,
-        "body": [
-          {
-            "x": 1,
-            "y": 11
-          },
-          {
-            "x": 2,
-            "y": 10
-          },
-          {
-            "x": 3,
-            "y": 10
-          },
-          {
-            "x": 4,
-            "y": 10
-          },
-          {
-            "x": 5,
-            "y": 10
-          },
-          {
-            "x": 6,
-            "y": 10
-          },
-          {
-            "x": 7,
-            "y": 10
-          },
-          {
-            "x": 8,
-            "y": 10
-          },
-          {
-            "x": 2,
-            "y": 11
-          },
-          {
-            "x": 3,
-            "y": 11
-          },
-          {
-            "x": 4,
-            "y": 11
-          },
-          {
-            "x": 5,
-            "y": 11
-          },
-          {
-            "x": 6,
-            "y": 11
-          },
-          {
-            "x": 7,
-            "y": 11
-          },
-          {
-            "x": 8,
-            "y": 11
-          }
-        ],
-        "head": {
-          "x": 1,
-          "y": 11
-        },
-        "length": 15,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -4941,7 +5253,7 @@
     "Expected": 6,
     "MoveRequest": {
       "game": {
-        "id": "game-140",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -4969,30 +5281,6 @@
                 "y": 0
               },
               {
-                "x": 3,
-                "y": 0
-              },
-              {
-                "x": 4,
-                "y": 0
-              },
-              {
-                "x": 5,
-                "y": 0
-              },
-              {
-                "x": 6,
-                "y": 0
-              },
-              {
-                "x": 7,
-                "y": 0
-              },
-              {
-                "x": 8,
-                "y": 0
-              },
-              {
                 "x": 2,
                 "y": 1
               },
@@ -5001,12 +5289,28 @@
                 "y": 1
               },
               {
+                "x": 3,
+                "y": 0
+              },
+              {
+                "x": 4,
+                "y": 0
+              },
+              {
                 "x": 4,
                 "y": 1
               },
               {
                 "x": 5,
                 "y": 1
+              },
+              {
+                "x": 5,
+                "y": 0
+              },
+              {
+                "x": 6,
+                "y": 0
               },
               {
                 "x": 6,
@@ -5017,7 +5321,19 @@
                 "y": 1
               },
               {
+                "x": 7,
+                "y": 0
+              },
+              {
                 "x": 8,
+                "y": 0
+              },
+              {
+                "x": 8,
+                "y": 1
+              },
+              {
+                "x": 1,
                 "y": 1
               }
             ],
@@ -5025,7 +5341,7 @@
               "x": 1,
               "y": 0
             },
-            "length": 15,
+            "length": 16,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -5051,30 +5367,6 @@
             "y": 0
           },
           {
-            "x": 3,
-            "y": 0
-          },
-          {
-            "x": 4,
-            "y": 0
-          },
-          {
-            "x": 5,
-            "y": 0
-          },
-          {
-            "x": 6,
-            "y": 0
-          },
-          {
-            "x": 7,
-            "y": 0
-          },
-          {
-            "x": 8,
-            "y": 0
-          },
-          {
             "x": 2,
             "y": 1
           },
@@ -5083,12 +5375,28 @@
             "y": 1
           },
           {
+            "x": 3,
+            "y": 0
+          },
+          {
+            "x": 4,
+            "y": 0
+          },
+          {
             "x": 4,
             "y": 1
           },
           {
             "x": 5,
             "y": 1
+          },
+          {
+            "x": 5,
+            "y": 0
+          },
+          {
+            "x": 6,
+            "y": 0
           },
           {
             "x": 6,
@@ -5099,7 +5407,19 @@
             "y": 1
           },
           {
+            "x": 7,
+            "y": 0
+          },
+          {
             "x": 8,
+            "y": 0
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 1,
             "y": 1
           }
         ],
@@ -5107,7 +5427,7 @@
           "x": 1,
           "y": 0
         },
-        "length": 15,
+        "length": 16,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -5125,7 +5445,7 @@
     "Expected": 9,
     "MoveRequest": {
       "game": {
-        "id": "game-141",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -5149,87 +5469,19 @@
                 "y": 3
               },
               {
-                "x": 1,
-                "y": 3
-              },
-              {
-                "x": 2,
-                "y": 3
-              },
-              {
-                "x": 3,
-                "y": 3
-              },
-              {
-                "x": 4,
-                "y": 3
-              },
-              {
-                "x": 1,
-                "y": 4
-              },
-              {
-                "x": 2,
-                "y": 4
-              },
-              {
-                "x": 3,
-                "y": 4
-              },
-              {
-                "x": 4,
-                "y": 4
-              },
-              {
                 "x": 5,
                 "y": 4
-              },
-              {
-                "x": 1,
-                "y": 5
-              },
-              {
-                "x": 2,
-                "y": 5
-              },
-              {
-                "x": 3,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 5
               },
               {
                 "x": 5,
                 "y": 5
               },
               {
-                "x": 1,
-                "y": 6
-              },
-              {
-                "x": 2,
-                "y": 6
-              },
-              {
-                "x": 3,
-                "y": 6
-              },
-              {
-                "x": 4,
-                "y": 6
-              },
-              {
                 "x": 5,
                 "y": 6
               },
               {
-                "x": 2,
-                "y": 7
-              },
-              {
-                "x": 3,
+                "x": 5,
                 "y": 7
               },
               {
@@ -5237,7 +5489,79 @@
                 "y": 7
               },
               {
-                "x": 5,
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 3
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 2,
+                "y": 7
+              },
+              {
+                "x": 2,
+                "y": 6
+              },
+              {
+                "x": 2,
+                "y": 5
+              },
+              {
+                "x": 2,
+                "y": 4
+              },
+              {
+                "x": 2,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 3
+              },
+              {
+                "x": 1,
+                "y": 4
+              },
+              {
+                "x": 1,
+                "y": 5
+              },
+              {
+                "x": 1,
+                "y": 6
+              },
+              {
+                "x": 1,
                 "y": 7
               }
             ],
@@ -5245,7 +5569,7 @@
               "x": 5,
               "y": 3
             },
-            "length": 24,
+            "length": 25,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -5267,87 +5591,19 @@
             "y": 3
           },
           {
-            "x": 1,
-            "y": 3
-          },
-          {
-            "x": 2,
-            "y": 3
-          },
-          {
-            "x": 3,
-            "y": 3
-          },
-          {
-            "x": 4,
-            "y": 3
-          },
-          {
-            "x": 1,
-            "y": 4
-          },
-          {
-            "x": 2,
-            "y": 4
-          },
-          {
-            "x": 3,
-            "y": 4
-          },
-          {
-            "x": 4,
-            "y": 4
-          },
-          {
             "x": 5,
             "y": 4
-          },
-          {
-            "x": 1,
-            "y": 5
-          },
-          {
-            "x": 2,
-            "y": 5
-          },
-          {
-            "x": 3,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 5
           },
           {
             "x": 5,
             "y": 5
           },
           {
-            "x": 1,
-            "y": 6
-          },
-          {
-            "x": 2,
-            "y": 6
-          },
-          {
-            "x": 3,
-            "y": 6
-          },
-          {
-            "x": 4,
-            "y": 6
-          },
-          {
             "x": 5,
             "y": 6
           },
           {
-            "x": 2,
-            "y": 7
-          },
-          {
-            "x": 3,
+            "x": 5,
             "y": 7
           },
           {
@@ -5355,7 +5611,79 @@
             "y": 7
           },
           {
-            "x": 5,
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 4
+          },
+          {
+            "x": 2,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 3
+          },
+          {
+            "x": 1,
+            "y": 4
+          },
+          {
+            "x": 1,
+            "y": 5
+          },
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 1,
             "y": 7
           }
         ],
@@ -5363,7 +5691,7 @@
           "x": 5,
           "y": 3
         },
-        "length": 24,
+        "length": 25,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -5381,7 +5709,7 @@
     "Expected": 10,
     "MoveRequest": {
       "game": {
-        "id": "game-142",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -5405,11 +5733,19 @@
                 "y": 7
               },
               {
-                "x": 4,
-                "y": 3
+                "x": 7,
+                "y": 6
               },
               {
-                "x": 5,
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 7,
                 "y": 3
               },
               {
@@ -5417,75 +5753,19 @@
                 "y": 3
               },
               {
-                "x": 7,
-                "y": 3
-              },
-              {
-                "x": 3,
-                "y": 4
-              },
-              {
-                "x": 4,
-                "y": 4
-              },
-              {
-                "x": 5,
-                "y": 4
-              },
-              {
                 "x": 6,
                 "y": 4
-              },
-              {
-                "x": 7,
-                "y": 4
-              },
-              {
-                "x": 3,
-                "y": 5
-              },
-              {
-                "x": 4,
-                "y": 5
-              },
-              {
-                "x": 5,
-                "y": 5
               },
               {
                 "x": 6,
                 "y": 5
               },
               {
-                "x": 7,
-                "y": 5
-              },
-              {
-                "x": 3,
-                "y": 6
-              },
-              {
-                "x": 4,
-                "y": 6
-              },
-              {
-                "x": 5,
-                "y": 6
-              },
-              {
                 "x": 6,
                 "y": 6
               },
               {
-                "x": 7,
-                "y": 6
-              },
-              {
-                "x": 3,
-                "y": 7
-              },
-              {
-                "x": 4,
+                "x": 6,
                 "y": 7
               },
               {
@@ -5493,15 +5773,67 @@
                 "y": 7
               },
               {
-                "x": 6,
+                "x": 5,
+                "y": 6
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 4,
                 "y": 7
+              },
+              {
+                "x": 3,
+                "y": 7
+              },
+              {
+                "x": 3,
+                "y": 6
+              },
+              {
+                "x": 3,
+                "y": 5
+              },
+              {
+                "x": 3,
+                "y": 4
+              },
+              {
+                "x": 3,
+                "y": 3
               }
             ],
             "head": {
               "x": 7,
               "y": 7
             },
-            "length": 24,
+            "length": 25,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -5523,11 +5855,19 @@
             "y": 7
           },
           {
-            "x": 4,
-            "y": 3
+            "x": 7,
+            "y": 6
           },
           {
-            "x": 5,
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 7,
             "y": 3
           },
           {
@@ -5535,75 +5875,19 @@
             "y": 3
           },
           {
-            "x": 7,
-            "y": 3
-          },
-          {
-            "x": 3,
-            "y": 4
-          },
-          {
-            "x": 4,
-            "y": 4
-          },
-          {
-            "x": 5,
-            "y": 4
-          },
-          {
             "x": 6,
             "y": 4
-          },
-          {
-            "x": 7,
-            "y": 4
-          },
-          {
-            "x": 3,
-            "y": 5
-          },
-          {
-            "x": 4,
-            "y": 5
-          },
-          {
-            "x": 5,
-            "y": 5
           },
           {
             "x": 6,
             "y": 5
           },
           {
-            "x": 7,
-            "y": 5
-          },
-          {
-            "x": 3,
-            "y": 6
-          },
-          {
-            "x": 4,
-            "y": 6
-          },
-          {
-            "x": 5,
-            "y": 6
-          },
-          {
             "x": 6,
             "y": 6
           },
           {
-            "x": 7,
-            "y": 6
-          },
-          {
-            "x": 3,
-            "y": 7
-          },
-          {
-            "x": 4,
+            "x": 6,
             "y": 7
           },
           {
@@ -5611,15 +5895,67 @@
             "y": 7
           },
           {
-            "x": 6,
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
             "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 5
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 3,
+            "y": 3
           }
         ],
         "head": {
           "x": 7,
           "y": 7
         },
-        "length": 24,
+        "length": 25,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -5637,7 +5973,7 @@
     "Expected": 6,
     "MoveRequest": {
       "game": {
-        "id": "game-143",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -5662,81 +5998,37 @@
               },
               {
                 "x": 5,
-                "y": 3
-              },
-              {
-                "x": 6,
-                "y": 3
-              },
-              {
-                "x": 7,
-                "y": 3
-              },
-              {
-                "x": 8,
-                "y": 3
-              },
-              {
-                "x": 5,
-                "y": 4
-              },
-              {
-                "x": 6,
-                "y": 4
-              },
-              {
-                "x": 7,
-                "y": 4
-              },
-              {
-                "x": 8,
-                "y": 4
-              },
-              {
-                "x": 9,
-                "y": 4
+                "y": 6
               },
               {
                 "x": 5,
                 "y": 5
               },
               {
-                "x": 6,
-                "y": 5
-              },
-              {
-                "x": 7,
-                "y": 5
-              },
-              {
-                "x": 8,
-                "y": 5
-              },
-              {
-                "x": 9,
-                "y": 5
+                "x": 5,
+                "y": 4
               },
               {
                 "x": 5,
-                "y": 6
+                "y": 3
+              },
+              {
+                "x": 6,
+                "y": 3
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 5
               },
               {
                 "x": 6,
                 "y": 6
               },
               {
-                "x": 7,
-                "y": 6
-              },
-              {
-                "x": 8,
-                "y": 6
-              },
-              {
-                "x": 9,
-                "y": 6
-              },
-              {
                 "x": 6,
                 "y": 7
               },
@@ -5745,19 +6037,67 @@
                 "y": 7
               },
               {
+                "x": 7,
+                "y": 6
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 3
+              },
+              {
+                "x": 8,
+                "y": 3
+              },
+              {
+                "x": 8,
+                "y": 4
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 6
+              },
+              {
                 "x": 8,
                 "y": 7
               },
               {
                 "x": 9,
                 "y": 7
+              },
+              {
+                "x": 9,
+                "y": 6
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 4
+              },
+              {
+                "x": 9,
+                "y": 3
               }
             ],
             "head": {
               "x": 5,
               "y": 7
             },
-            "length": 24,
+            "length": 25,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -5780,81 +6120,37 @@
           },
           {
             "x": 5,
-            "y": 3
-          },
-          {
-            "x": 6,
-            "y": 3
-          },
-          {
-            "x": 7,
-            "y": 3
-          },
-          {
-            "x": 8,
-            "y": 3
-          },
-          {
-            "x": 5,
-            "y": 4
-          },
-          {
-            "x": 6,
-            "y": 4
-          },
-          {
-            "x": 7,
-            "y": 4
-          },
-          {
-            "x": 8,
-            "y": 4
-          },
-          {
-            "x": 9,
-            "y": 4
+            "y": 6
           },
           {
             "x": 5,
             "y": 5
           },
           {
-            "x": 6,
-            "y": 5
-          },
-          {
-            "x": 7,
-            "y": 5
-          },
-          {
-            "x": 8,
-            "y": 5
-          },
-          {
-            "x": 9,
-            "y": 5
+            "x": 5,
+            "y": 4
           },
           {
             "x": 5,
-            "y": 6
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
           },
           {
             "x": 6,
             "y": 6
           },
           {
-            "x": 7,
-            "y": 6
-          },
-          {
-            "x": 8,
-            "y": 6
-          },
-          {
-            "x": 9,
-            "y": 6
-          },
-          {
             "x": 6,
             "y": 7
           },
@@ -5863,19 +6159,67 @@
             "y": 7
           },
           {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 5
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
             "x": 8,
             "y": 7
           },
           {
             "x": 9,
             "y": 7
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 4
+          },
+          {
+            "x": 9,
+            "y": 3
           }
         ],
         "head": {
           "x": 5,
           "y": 7
         },
-        "length": 24,
+        "length": 25,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -5893,7 +6237,7 @@
     "Expected": 5,
     "MoveRequest": {
       "game": {
-        "id": "game-144",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -5917,39 +6261,7 @@
                 "y": 3
               },
               {
-                "x": 4,
-                "y": 3
-              },
-              {
-                "x": 5,
-                "y": 3
-              },
-              {
-                "x": 6,
-                "y": 3
-              },
-              {
-                "x": 7,
-                "y": 3
-              },
-              {
                 "x": 3,
-                "y": 4
-              },
-              {
-                "x": 4,
-                "y": 4
-              },
-              {
-                "x": 5,
-                "y": 4
-              },
-              {
-                "x": 6,
-                "y": 4
-              },
-              {
-                "x": 7,
                 "y": 4
               },
               {
@@ -5957,39 +6269,7 @@
                 "y": 5
               },
               {
-                "x": 4,
-                "y": 5
-              },
-              {
-                "x": 5,
-                "y": 5
-              },
-              {
-                "x": 6,
-                "y": 5
-              },
-              {
-                "x": 7,
-                "y": 5
-              },
-              {
                 "x": 3,
-                "y": 6
-              },
-              {
-                "x": 4,
-                "y": 6
-              },
-              {
-                "x": 5,
-                "y": 6
-              },
-              {
-                "x": 6,
-                "y": 6
-              },
-              {
-                "x": 7,
                 "y": 6
               },
               {
@@ -6001,11 +6281,79 @@
                 "y": 7
               },
               {
+                "x": 4,
+                "y": 6
+              },
+              {
+                "x": 4,
+                "y": 5
+              },
+              {
+                "x": 4,
+                "y": 4
+              },
+              {
+                "x": 4,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 3
+              },
+              {
+                "x": 5,
+                "y": 4
+              },
+              {
+                "x": 5,
+                "y": 5
+              },
+              {
+                "x": 5,
+                "y": 6
+              },
+              {
                 "x": 5,
                 "y": 7
               },
               {
                 "x": 6,
+                "y": 7
+              },
+              {
+                "x": 6,
+                "y": 6
+              },
+              {
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 6,
+                "y": 4
+              },
+              {
+                "x": 6,
+                "y": 3
+              },
+              {
+                "x": 7,
+                "y": 3
+              },
+              {
+                "x": 7,
+                "y": 4
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 6
+              },
+              {
+                "x": 7,
                 "y": 7
               }
             ],
@@ -6013,7 +6361,7 @@
               "x": 3,
               "y": 3
             },
-            "length": 24,
+            "length": 25,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -6035,39 +6383,7 @@
             "y": 3
           },
           {
-            "x": 4,
-            "y": 3
-          },
-          {
-            "x": 5,
-            "y": 3
-          },
-          {
-            "x": 6,
-            "y": 3
-          },
-          {
-            "x": 7,
-            "y": 3
-          },
-          {
             "x": 3,
-            "y": 4
-          },
-          {
-            "x": 4,
-            "y": 4
-          },
-          {
-            "x": 5,
-            "y": 4
-          },
-          {
-            "x": 6,
-            "y": 4
-          },
-          {
-            "x": 7,
             "y": 4
           },
           {
@@ -6075,39 +6391,7 @@
             "y": 5
           },
           {
-            "x": 4,
-            "y": 5
-          },
-          {
-            "x": 5,
-            "y": 5
-          },
-          {
-            "x": 6,
-            "y": 5
-          },
-          {
-            "x": 7,
-            "y": 5
-          },
-          {
             "x": 3,
-            "y": 6
-          },
-          {
-            "x": 4,
-            "y": 6
-          },
-          {
-            "x": 5,
-            "y": 6
-          },
-          {
-            "x": 6,
-            "y": 6
-          },
-          {
-            "x": 7,
             "y": 6
           },
           {
@@ -6119,11 +6403,79 @@
             "y": 7
           },
           {
+            "x": 4,
+            "y": 6
+          },
+          {
+            "x": 4,
+            "y": 5
+          },
+          {
+            "x": 4,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 5
+          },
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
             "x": 5,
             "y": 7
           },
           {
             "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 7,
             "y": 7
           }
         ],
@@ -6131,7 +6483,7 @@
           "x": 3,
           "y": 3
         },
-        "length": 24,
+        "length": 25,
         "latency": 50,
         "shout": "",
         "squad": "",
@@ -6149,7 +6501,7 @@
     "Expected": 7,
     "MoveRequest": {
       "game": {
-        "id": "game-145",
+        "id": "game-grid_1752688571616",
         "ruleset": {
           "name": "standard",
           "version": "v1.0.0"
@@ -6173,23 +6525,59 @@
                 "y": 5
               },
               {
-                "x": 0,
+                "x": 6,
+                "y": 5
+              },
+              {
+                "x": 7,
+                "y": 5
+              },
+              {
+                "x": 8,
+                "y": 5
+              },
+              {
+                "x": 9,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 5
+              },
+              {
+                "x": 10,
+                "y": 4
+              },
+              {
+                "x": 10,
+                "y": 3
+              },
+              {
+                "x": 10,
+                "y": 2
+              },
+              {
+                "x": 10,
+                "y": 1
+              },
+              {
+                "x": 10,
                 "y": 0
               },
               {
-                "x": 1,
+                "x": 9,
                 "y": 0
               },
               {
-                "x": 2,
+                "x": 8,
                 "y": 0
               },
               {
-                "x": 3,
+                "x": 7,
                 "y": 0
               },
               {
-                "x": 4,
+                "x": 6,
                 "y": 0
               },
               {
@@ -6197,23 +6585,23 @@
                 "y": 0
               },
               {
-                "x": 6,
+                "x": 4,
                 "y": 0
               },
               {
-                "x": 7,
+                "x": 3,
                 "y": 0
               },
               {
-                "x": 8,
+                "x": 2,
                 "y": 0
               },
               {
-                "x": 9,
+                "x": 1,
                 "y": 0
               },
               {
-                "x": 10,
+                "x": 0,
                 "y": 0
               },
               {
@@ -6221,15 +6609,7 @@
                 "y": 1
               },
               {
-                "x": 10,
-                "y": 1
-              },
-              {
                 "x": 0,
-                "y": 2
-              },
-              {
-                "x": 10,
                 "y": 2
               },
               {
@@ -6237,39 +6617,11 @@
                 "y": 3
               },
               {
-                "x": 10,
-                "y": 3
-              },
-              {
                 "x": 0,
                 "y": 4
               },
               {
-                "x": 10,
-                "y": 4
-              },
-              {
                 "x": 0,
-                "y": 5
-              },
-              {
-                "x": 6,
-                "y": 5
-              },
-              {
-                "x": 7,
-                "y": 5
-              },
-              {
-                "x": 8,
-                "y": 5
-              },
-              {
-                "x": 9,
-                "y": 5
-              },
-              {
-                "x": 10,
                 "y": 5
               },
               {
@@ -6281,23 +6633,11 @@
                 "y": 7
               },
               {
-                "x": 5,
-                "y": 7
-              },
-              {
                 "x": 0,
                 "y": 8
               },
               {
-                "x": 5,
-                "y": 8
-              },
-              {
                 "x": 0,
-                "y": 9
-              },
-              {
-                "x": 5,
                 "y": 9
               },
               {
@@ -6323,13 +6663,29 @@
               {
                 "x": 5,
                 "y": 10
+              },
+              {
+                "x": 5,
+                "y": 9
+              },
+              {
+                "x": 5,
+                "y": 8
+              },
+              {
+                "x": 5,
+                "y": 7
+              },
+              {
+                "x": 5,
+                "y": 6
               }
             ],
             "head": {
               "x": 5,
               "y": 5
             },
-            "length": 39,
+            "length": 40,
             "latency": 50,
             "shout": "",
             "squad": "",
@@ -6351,23 +6707,59 @@
             "y": 5
           },
           {
-            "x": 0,
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 7,
+            "y": 5
+          },
+          {
+            "x": 8,
+            "y": 5
+          },
+          {
+            "x": 9,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 10,
             "y": 0
           },
           {
-            "x": 1,
+            "x": 9,
             "y": 0
           },
           {
-            "x": 2,
+            "x": 8,
             "y": 0
           },
           {
-            "x": 3,
+            "x": 7,
             "y": 0
           },
           {
-            "x": 4,
+            "x": 6,
             "y": 0
           },
           {
@@ -6375,23 +6767,23 @@
             "y": 0
           },
           {
-            "x": 6,
+            "x": 4,
             "y": 0
           },
           {
-            "x": 7,
+            "x": 3,
             "y": 0
           },
           {
-            "x": 8,
+            "x": 2,
             "y": 0
           },
           {
-            "x": 9,
+            "x": 1,
             "y": 0
           },
           {
-            "x": 10,
+            "x": 0,
             "y": 0
           },
           {
@@ -6399,15 +6791,7 @@
             "y": 1
           },
           {
-            "x": 10,
-            "y": 1
-          },
-          {
             "x": 0,
-            "y": 2
-          },
-          {
-            "x": 10,
             "y": 2
           },
           {
@@ -6415,39 +6799,11 @@
             "y": 3
           },
           {
-            "x": 10,
-            "y": 3
-          },
-          {
             "x": 0,
             "y": 4
           },
           {
-            "x": 10,
-            "y": 4
-          },
-          {
             "x": 0,
-            "y": 5
-          },
-          {
-            "x": 6,
-            "y": 5
-          },
-          {
-            "x": 7,
-            "y": 5
-          },
-          {
-            "x": 8,
-            "y": 5
-          },
-          {
-            "x": 9,
-            "y": 5
-          },
-          {
-            "x": 10,
             "y": 5
           },
           {
@@ -6459,23 +6815,11 @@
             "y": 7
           },
           {
-            "x": 5,
-            "y": 7
-          },
-          {
             "x": 0,
             "y": 8
           },
           {
-            "x": 5,
-            "y": 8
-          },
-          {
             "x": 0,
-            "y": 9
-          },
-          {
-            "x": 5,
             "y": 9
           },
           {
@@ -6501,13 +6845,29 @@
           {
             "x": 5,
             "y": 10
+          },
+          {
+            "x": 5,
+            "y": 9
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 6
           }
         ],
         "head": {
           "x": 5,
           "y": 5
         },
-        "length": 39,
+        "length": 40,
         "latency": 50,
         "shout": "",
         "squad": "",
