@@ -1,5 +1,6 @@
 ﻿/**
  * JsonFormatter.js - Formatta le griglie in JSON per Battlesnake
+ * Con ordinamento del corpo dei serpenti dalla testa alla coda
  */
 
 export class JsonFormatter {
@@ -59,14 +60,7 @@ export class JsonFormatter {
 
         // Serpente del giocatore
         if (grid.analysis.myHead) {
-            const body = [
-                grid.analysis.myHead,
-                ...(grid.analysis.myBody || [])
-            ];
-
-            if (grid.analysis.myTail) {
-                body.push(grid.analysis.myTail);
-            }
+            const body = this.buildMySnakeBody(grid);
 
             snakes.push({
                 id: "thanos",
@@ -89,7 +83,7 @@ export class JsonFormatter {
         // Serpenti nemici
         if (grid.analysis.enemyHeads) {
             grid.analysis.enemyHeads.forEach((head, index) => {
-                const body = this.buildEnemyBody(head, grid.analysis.enemyBodies, grid);
+                const body = this.buildEnemySnakeBody(head, grid);
 
                 snakes.push({
                     id: `enemy-${index + 1}`,
@@ -114,48 +108,150 @@ export class JsonFormatter {
     }
 
     /**
-     * Costruisce il corpo di un serpente nemico
+     * Costruisce il corpo del mio serpente ordinato dalla testa alla coda
      */
-    buildEnemyBody(head, allBodies, grid) {
-        const body = [head];
-        const used = new Set([`${head.x},${head.y}`]);
+    buildMySnakeBody(grid) {
+        const body = [grid.analysis.myHead];
+        const myBodySegments = [...(grid.analysis.myBody || [])];
+        const myTail = grid.analysis.myTail;
 
+        // Se non ci sono segmenti del corpo, torna solo la testa
+        if (myBodySegments.length === 0 && !myTail) {
+            return body;
+        }
+
+        // Ordina i segmenti del corpo
+        const orderedSegments = this.orderBodySegments(
+            grid.analysis.myHead,
+            myBodySegments,
+            myTail,
+            grid
+        );
+
+        // Aggiungi i segmenti ordinati
+        body.push(...orderedSegments);
+
+        // Aggiungi la coda se esiste e non è già inclusa
+        if (myTail && !orderedSegments.some(seg => seg.x === myTail.x && seg.y === myTail.y)) {
+            body.push(myTail);
+        }
+
+        return body;
+    }
+
+    /**
+     * Costruisce il corpo di un serpente nemico ordinato
+     */
+    buildEnemySnakeBody(head, grid) {
+        const body = [head];
+        const allEnemyBodies = grid.analysis.enemyBodies || [];
+
+        if (allEnemyBodies.length === 0) {
+            return body;
+        }
+
+        // Trova tutti i segmenti connessi a questa testa
+        const connectedSegments = this.findConnectedSegments(head, allEnemyBodies, grid);
+
+        // Ordina i segmenti
+        const orderedSegments = this.orderBodySegments(head, connectedSegments, null, grid);
+
+        body.push(...orderedSegments);
+        return body;
+    }
+
+    /**
+     * Trova i segmenti del corpo connessi a una testa
+     */
+    findConnectedSegments(head, allBodies, grid) {
+        const connected = [];
+        const visited = new Set([`${head.x},${head.y}`]);
+        const toVisit = [head];
+
+        while (toVisit.length > 0) {
+            const current = toVisit.shift();
+
+            // Controlla tutte le direzioni
+            const directions = [
+                { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
+                { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
+            ];
+
+            for (const dir of directions) {
+                const nx = current.x + dir.dx;
+                const ny = current.y + dir.dy;
+                const key = `${nx},${ny}`;
+
+                if (visited.has(key)) continue;
+
+                const segment = allBodies.find(b => b.x === nx && b.y === ny);
+                if (segment) {
+                    connected.push(segment);
+                    visited.add(key);
+                    toVisit.push(segment);
+                }
+            }
+        }
+
+        return connected;
+    }
+
+    /**
+     * Ordina i segmenti del corpo dalla testa alla coda
+     */
+    orderBodySegments(head, segments, tail, grid) {
+        if (segments.length === 0) return [];
+        if (segments.length === 1) return segments;
+
+        const ordered = [];
+        const used = new Set();
         let current = head;
+
+        // Direzioni possibili
         const directions = [
             { dx: 0, dy: -1 }, { dx: 0, dy: 1 },
             { dx: -1, dy: 0 }, { dx: 1, dy: 0 }
         ];
 
-        // Cerca segmenti adiacenti
-        while (body.length < allBodies.length) {
-            let found = false;
+        // Costruisci il percorso
+        while (ordered.length < segments.length) {
+            let nextSegment = null;
 
+            // Cerca il prossimo segmento adiacente
             for (const dir of directions) {
-                const next = {
-                    x: current.x + dir.dx,
-                    y: current.y + dir.dy
-                };
+                const nx = current.x + dir.dx;
+                const ny = current.y + dir.dy;
 
-                const key = `${next.x},${next.y}`;
-                if (used.has(key)) continue;
-
-                const segment = allBodies.find(b =>
-                    b.x === next.x && b.y === next.y
+                const candidate = segments.find(seg =>
+                    seg.x === nx &&
+                    seg.y === ny &&
+                    !used.has(`${seg.x},${seg.y}`)
                 );
 
-                if (segment) {
-                    body.push(segment);
-                    used.add(key);
-                    current = segment;
-                    found = true;
+                if (candidate) {
+                    nextSegment = candidate;
                     break;
                 }
             }
 
-            if (!found) break;
+            if (!nextSegment) {
+                // Se non troviamo un segmento adiacente, aggiungi i rimanenti
+                // (questo può succedere con serpenti frammentati)
+                segments.forEach(seg => {
+                    if (!used.has(`${seg.x},${seg.y}`)) {
+                        ordered.push(seg);
+                        used.add(`${seg.x},${seg.y}`);
+                    }
+                });
+                break;
+            }
+
+            ordered.push(nextSegment);
+            used.add(`${nextSegment.x},${nextSegment.y}`);
+            current = nextSegment;
         }
 
-        return body;
+        return ordered;
     }
 
     /**
@@ -189,6 +285,17 @@ export class JsonFormatter {
                 for (const snake of board.snakes) {
                     if (!Array.isArray(snake.body)) {
                         return false;
+                    }
+
+                    // Verifica che il body sia ordinato (ogni segmento è adiacente al precedente)
+                    for (let i = 1; i < snake.body.length; i++) {
+                        const prev = snake.body[i - 1];
+                        const curr = snake.body[i];
+                        const distance = Math.abs(prev.x - curr.x) + Math.abs(prev.y - curr.y);
+
+                        if (distance > 1) {
+                            console.warn(`Snake ${snake.id} has non-adjacent body segments at index ${i}`);
+                        }
                     }
                 }
             }

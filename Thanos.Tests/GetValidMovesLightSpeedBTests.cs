@@ -60,7 +60,7 @@ public class GetValidMovesTests
             var eat = mySnake.health == 100;
             
             // Debug    
-            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, true, true, true);
+            Debug.PrintMap(width, height, myBody, hazards, snakes, scenario.Expected, scenario.Id, scenario.Name, scenario.FileName, scenario.Id, true, false, true);
         
             // Act
             var result = GetValidMovesLightSpeedB.GetValidMovesLightSpeed(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);
@@ -100,7 +100,7 @@ public class GetValidMovesTests
     {
         const bool onlyFailed = false;
         const bool onlyBoards = true;
-        const bool noDirections = true;
+        const bool noDirections = !true;
         
         // For testing specific scenarios, uncomment and modify as needed:
         scenarios = scenarios.Where(a => a.Id is >= 100 and < 200); // Basic movements
