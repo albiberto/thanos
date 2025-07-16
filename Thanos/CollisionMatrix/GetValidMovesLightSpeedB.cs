@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Thanos.Domain;
@@ -15,53 +16,13 @@ public static class GetValidMovesLightSpeedB
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetValidMovesLightSpeed(uint width, uint height, string myId, Point[] myBody, int myBodyLength, uint myHeadX, uint myHeadY, Point[] hazards, int hazardCount, Snake[] snakes, int snakeCount, bool eat)
     {
-        ClearCollisionMatrix();
+        var span = _collisionBytes.AsSpan();
+        span.Clear();
         BuildCollisionMatrix(width, height, myId, myBody, myBodyLength, myHeadX, myHeadY, hazards, hazardCount, snakes, snakeCount, eat);
         
-        Debug.Print(width, height, _collisionBytes);
+        // Debug.Print(width, height, _collisionBytes);
         
         return GetValidMovesFromMatrix(width, height, myHeadX, myHeadY);
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void ClearCollisionMatrix()
-    {
-        fixed (byte* ptr = _collisionBytes)
-        {
-            if (Avx2.IsSupported)
-            {
-                var vectorCount = _collisionBytes.Length / 32;
-                var zero = Vector256<byte>.Zero;
-                
-                for (var i = 0; i < vectorCount; i++)
-                    Avx.Store(ptr + i * 32, zero);
-                
-                var remaining = _collisionBytes.Length % 32;
-                if (remaining > 0)
-                    Unsafe.InitBlock(ptr + vectorCount * 32, 0, (uint)remaining);
-            }
-            else
-            {
-                var longPtr = (long*)ptr;
-                var longCount = _collisionBytes.Length / 8;
-                
-                var i = 0;
-                for (; i + 8 <= longCount; i += 8)
-                {
-                    longPtr[i] = 0;
-                    longPtr[i + 1] = 0;
-                    longPtr[i + 2] = 0;
-                    longPtr[i + 3] = 0;
-                    longPtr[i + 4] = 0;
-                    longPtr[i + 5] = 0;
-                    longPtr[i + 6] = 0;
-                    longPtr[i + 7] = 0;
-                }
-                
-                for (; i < longCount; i++)
-                    longPtr[i] = 0;
-            }
-        }
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
