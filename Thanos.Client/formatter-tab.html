@@ -10,22 +10,22 @@
     <div class="row g-3 mb-4">
         <div class="col-md-8">
             <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-success" id="formatBtn" onclick="window.snake.formatterTabManager.formatJSON()">
+                <button class="btn btn-success" id="formatBtn" onclick="window.formatterManager.formatJSON()">
                     ✨ Format JSON
                 </button>
-                <button class="btn btn-outline-success" id="validateBtn" onclick="window.snake.formatterTabManager.validateJSON()">
+                <button class="btn btn-outline-success" id="validateBtn" onclick="window.formatterManager.validateJSON()">
                     ✅ Validate
                 </button>
-                <button class="btn btn-outline-secondary" id="prettifyBtn" onclick="window.snake.formatterTabManager.prettifyJSON()">
+                <button class="btn btn-outline-secondary" id="prettifyBtn" onclick="window.formatterManager.prettifyJSON()">
                     🎨 Prettify
                 </button>
-                <button class="btn btn-outline-secondary" id="minifyBtn" onclick="window.snake.formatterTabManager.minifyJSON()">
+                <button class="btn btn-outline-secondary" id="minifyBtn" onclick="window.formatterManager.minifyJSON()">
                     📦 Minify
                 </button>
-                <button class="btn btn-outline-info" id="exampleJsonBtn" onclick="window.snake.formatterTabManager.loadExample()">
+                <button class="btn btn-outline-info" id="exampleJsonBtn" onclick="window.formatterManager.loadExample()">
                     📄 Example
                 </button>
-                <button class="btn btn-outline-danger" id="clearJsonBtn" onclick="window.snake.formatterTabManager.clearInput()">
+                <button class="btn btn-outline-danger" id="clearJsonBtn" onclick="window.formatterManager.clearInput()">
                     🗑️ Clear
                 </button>
             </div>
@@ -69,13 +69,13 @@
                 <div class="card-header bg-success-subtle d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0 text-success fw-semibold">📤 Formatted JSON</h5>
                     <div class="d-flex gap-1">
-                        <button class="btn btn-outline-success btn-sm" id="copyFormatterBtn" onclick="window.snake.formatterTabManager.copyToClipboard()">
+                        <button class="btn btn-outline-success btn-sm" id="copyFormatterBtn" onclick="window.formatterManager.copyToClipboard()">
                             📋 Copy
                         </button>
-                        <button class="btn btn-outline-success btn-sm" id="exportBtn" onclick="window.snake.formatterTabManager.exportJSON()">
+                        <button class="btn btn-outline-success btn-sm" id="exportBtn" onclick="window.formatterManager.exportJSON()">
                             💾 Export
                         </button>
-                        <button class="btn btn-outline-secondary btn-sm" id="hideOutputBtn" onclick="window.snake.formatterTabManager.hideOutput()">
+                        <button class="btn btn-outline-secondary btn-sm" id="hideOutputBtn" onclick="window.formatterManager.hideOutput()">
                             ❌ Hide
                         </button>
                     </div>

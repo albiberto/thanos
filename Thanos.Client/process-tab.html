@@ -8,14 +8,14 @@
             <div class="d-flex align-items-center gap-2">
                 <label class="small fw-semibold">Start ID:</label>
                 <div class="input-group" style="width: 120px;">
-                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.snake.processTabManager.changeStartId(-1)">−</button>
-                    <input type="number" class="form-control form-control-sm text-center" id="startIdInput" value="101" min="1" max="9999" onchange="window.snake.processTabManager.updateStartId()">
-                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.snake.processTabManager.changeStartId(1)">+</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.processManager.changeStartId(-1)">−</button>
+                    <input type="number" class="form-control form-control-sm text-center" id="startIdInput" value="101" min="1" max="9999" onchange="window.processManager.updateStartId()">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="window.processManager.changeStartId(1)">+</button>
                 </div>
             </div>
             <div class="vr"></div>
             <div class="d-flex align-items-end gap-2">
-                <button class="btn btn-outline-danger btn-sm d-flex align-items-center" onclick="window.snake.processTabManager.deleteGrids()">
+                <button class="btn btn-outline-danger btn-sm d-flex align-items-center" onclick="window.processManager.deleteAllGrids()">
                     <svg xmlns="http://www.w3.org/2000/svg"
                          fill="none"
                          viewBox="0 0 24 24"
@@ -29,10 +29,10 @@
                     </svg>
                     Delete Grids
                 </button>
-                <button class="btn btn-outline-primary btn-sm" onclick="window.snake.processTabManager.calculateAllExpected()">
+                <button class="btn btn-outline-primary btn-sm" onclick="window.processManager.calculateAllExpected()">
                     🧮 Calculate All
                 </button>
-                <button class="btn btn-success btn-sm" onclick="window.snake.processTabManager.generateAllTests()">
+                <button class="btn btn-success btn-sm" onclick="window.processManager.generateAllTests()">
                     📋 Generate JSON
                 </button>
             </div>
@@ -77,18 +77,13 @@
 
     <!-- Navigation Controls for Grids -->
     <div class="d-flex justify-content-between align-items-center mb-3" id="gridNavigation" style="display: none;">
-        <button class="btn btn-outline-primary" id="prevGridBtn" onclick="window.snake.processTabManager.navigateGrid(-1)">
+        <button class="btn btn-outline-primary" id="prevGridBtn" onclick="window.processManager.navigate(-1)">
             ← Previous Grid
         </button>
         <div class="d-flex align-items-center gap-3">
             <span class="fw-semibold">Grid <span id="currentGridIndex">1</span> of <span id="totalGridsNav">1</span></span>
-            <div class="input-group" style="width: 100px;">
-                <input type="number" class="form-control form-control-sm text-center"
-                       id="gotoGridInput" min="1" max="1"
-                       onchange="window.snake.processTabManager.gotoGrid(this.value - 1)">
-            </div>
         </div>
-        <button class="btn btn-outline-primary" id="nextGridBtn" onclick="window.snake.processTabManager.navigateGrid(1)">
+        <button class="btn btn-outline-primary" id="nextGridBtn" onclick="window.processManager.navigate(1)">
             Next Grid →
         </button>
     </div>
@@ -173,7 +168,7 @@
                             <!-- Calculate Expected Button -->
                             <div class="text-center">
                                 <button class="btn btn-outline-primary btn-sm w-100" id="calculateExpectedBtn"
-                                        onclick="window.snake.processTabManager.calculateExpected()">
+                                        onclick="window.processManager.calculateExpected()">
                                     🧮 Calculate Expected
                                 </button>
                             </div>
@@ -195,13 +190,7 @@
                         <!-- Card Footer with Action Buttons -->
                         <div class="card-footer bg-light">
                             <div class="d-grid gap-2">
-                                <button class="btn btn-outline-info btn-sm" onclick="window.snake.processTabManager.previewCurrentTest()">
-                                    👁️ Preview JSON
-                                </button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="window.snake.processTabManager.duplicateCurrentGrid()">
-                                    📋 Duplicate Grid
-                                </button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="window.snake.processTabManager.deleteCurrentGrid()">
+                                <button class="btn btn-outline-danger btn-sm" onclick="window.processManager.deleteCurrentGrid()">
                                     🗑️ Delete Grid
                                 </button>
                             </div>
@@ -216,31 +205,26 @@
             <div class="alert alert-info text-center">
                 <h4 class="alert-heading">📭 Nessuna griglia trovata</h4>
                 <p>Non ci sono griglie da processare. Vai al tab Import per importare delle griglie.</p>
-                <hr>
-                <button class="btn btn-outline-primary" onclick="window.snake.tabManager.switchTab('import')">
-                    📥 Vai al Tab Import
-                </button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- JSON Output Modal -->
-<div class="modal fade" id="jsonOutputModal" tabindex="-1" onclick="window.snake.processTabManager.closeJsonModal()">
+<div class="modal fade" id="jsonOutputModal" tabindex="-1">
     <div class="modal-dialog modal-xl" onclick="event.stopPropagation()">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Generated Test JSON</h5>
-                <button type="button" class="btn-close" onclick="window.snake.processTabManager.closeJsonModal()"></button>
             </div>
             <div class="modal-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="text-muted">Generated <span id="jsonTestCount">0</span> test cases</span>
                     <div>
-                        <button class="btn btn-outline-primary btn-sm" onclick="window.snake.processTabManager.copyJsonToClipboard()">
+                        <button class="btn btn-outline-primary btn-sm" onclick="window.processManager.copyJson()">
                             📋 Copy to Clipboard
                         </button>
-                        <button class="btn btn-primary btn-sm" onclick="window.snake.processTabManager.downloadJson()">
+                        <button class="btn btn-primary btn-sm" onclick="window.processManager.downloadJson()">
                             💾 Download JSON
                         </button>
                     </div>
