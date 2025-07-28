@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Enums;
+using Direction = Thanos.CollisionMatrix.Direction;
 
 namespace Thanos.Domain;
 
