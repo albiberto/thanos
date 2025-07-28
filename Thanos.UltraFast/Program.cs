@@ -12,6 +12,9 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxConcurrentUpgradedConnections = null;
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
     options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(5);
+    
+    // Enable synchronous IO for our ultra-fast parser
+    options.AllowSynchronousIO = true;
 });
 
 // Disable logging in production
@@ -45,174 +48,38 @@ app.MapPost("/start", () => Results.Ok());
 // End endpoint
 app.MapPost("/end", () => Results.Ok());
 
-// Move endpoint - the heart of the system
-app.MapPost("/move", (HttpContext context) =>
+// Move endpoint - Corretto per separare async da unsafe
+app.MapPost("/move", async (HttpContext context) =>
 {
+    // --- Step 1: Fase ASINCRONA (fuori da unsafe) ---
+    // Leggi il body della richiesta. L'operazione di I/O viene attesa qui.
+    var readResult = await context.Request.BodyReader.ReadAsync();
+    var buffer = readResult.Buffer;
+
+    Direction bestMove;
+
+    // --- Step 2: Fase SINCRONA e UNSAFE ---
+    // Ora che i dati sono in memoria, possiamo usare un blocco unsafe per l'elaborazione.
     unsafe
     {
-        var state = GameManager.State;
+        // Chiama il parser con la sequenza di byte.
+        BattlesnakeParser.ParseFromSpan(buffer.FirstSpan, GameManager.State);
         
-        // Read request body synchronously
-        using var reader = new StreamReader(context.Request.Body);
-        var json = reader.ReadToEnd();
-        var bytes = System.Text.Encoding.UTF8.GetBytes(json);
-        
-        BattlesnakeParser.ParseFromSpan(bytes, state);
-        
-        // Compute optimal move
-        var direction = ComputeOptimalMove(state);
-        
-        // Write response
-        context.Response.ContentType = "application/json";
-        context.Response.WriteAsync(BattlesnakeParser.GetMoveResponse(direction));
+        // Chiedi al GameManager di trovare la mossa migliore.
+        // Tutta questa logica è sincrona e usa i puntatori.
+        bestMove = GameManager.FindBestMove();
     }
+    
+    // Comunica al BodyReader che abbiamo finito con il buffer.
+    context.Request.BodyReader.AdvanceTo(buffer.End);
+
+    // --- Step 3: Fase ASINCRONA (fuori da unsafe) ---
+    // Scrivi la risposta. L'operazione di I/O viene attesa qui.
+    context.Response.ContentType = "application/json";
+    await context.Response.WriteAsync(BattlesnakeParser.GetMoveResponse(bestMove));
 });
 
 app.Run("http://0.0.0.0:8080");
-
-// AI Logic
-[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-unsafe Direction ComputeOptimalMove(GameState* state)
-{
-    Span<ushort> neighbors = stackalloc ushort[4];
-    Span<int> scores = stackalloc int[4];
-    
-    ref var you = ref state->You();
-    Movement.GetNeighbors(you.Head, state->Width, state->Height, neighbors);
-    
-    for (int i = 0; i < 4; i++)
-    {
-        scores[i] = EvaluatePosition(state, neighbors[i], (Direction)i);
-    }
-    
-    int bestScore = int.MinValue;
-    Direction bestMove = Direction.Up;
-    
-    for (int i = 0; i < 4; i++)
-    {
-        if (scores[i] > bestScore)
-        {
-            bestScore = scores[i];
-            bestMove = (Direction)i;
-        }
-    }
-    
-    return bestMove;
-}
-
-[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-unsafe int EvaluatePosition(GameState* state, ushort position, Direction dir)
-{
-    const int DEATH_PENALTY = -10000;
-    const int FOOD_BONUS = 100;
-    const int SPACE_BONUS = 10;
-    
-    if (!Movement.IsValid(position))
-        return DEATH_PENALTY;
-    
-    // Check collisions
-    for (int i = 0; i < state->SnakeCount; i++)
-    {
-        ref var snake = ref state->Snakes[i];
-        
-        if (position == snake.Head && i != state->YouIndex)
-        {
-            if (snake.Length >= state->You().Length)
-                return DEATH_PENALTY;
-        }
-        
-        for (int j = 0; j < snake.Length - 1; j++)
-        {
-            if (snake.Body[j] == position)
-                return DEATH_PENALTY;
-        }
-    }
-    
-    int score = 0;
-    
-    // Food proximity
-    if (state->FoodCount > 0 && state->You().Health < 50)
-    {
-        var (px, py) = GridMath.ToCoords(position, state->Width);
-        int minFoodDist = int.MaxValue;
-        
-        for (int i = 0; i < state->FoodCount; i++)
-        {
-            var (fx, fy) = GridMath.ToCoords(state->FoodPositions[i], state->Width);
-            int dist = Math.Abs(fx - px) + Math.Abs(fy - py);
-            minFoodDist = Math.Min(minFoodDist, dist);
-        }
-        
-        score += FOOD_BONUS / (minFoodDist + 1);
-    }
-    
-    // Space control
-    score += CountReachableSpaces(state, position) * SPACE_BONUS;
-    
-    // Center control
-    var (x, y) = GridMath.ToCoords(position, state->Width);
-    int centerDist = Math.Abs(x - state->Width/2) + Math.Abs(y - state->Height/2);
-    score += (state->Width + state->Height) / 2 - centerDist;
-    
-    return score;
-}
-
-[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-unsafe int CountReachableSpaces(GameState* state, ushort startPos)
-{
-    Span<ulong> visited = stackalloc ulong[(state->TotalCells + 63) / 64];
-    visited.Clear();
-    
-    for (int i = 0; i < state->SnakeCount; i++)
-    {
-        ref var snake = ref state->Snakes[i];
-        for (int j = 0; j < snake.Length - 1; j++)
-        {
-            SetBit(visited, snake.Body[j]);
-        }
-    }
-    
-    Span<ushort> queue = stackalloc ushort[128];
-    int head = 0, tail = 0;
-    int count = 0;
-    
-    queue[tail++] = startPos;
-    SetBit(visited, startPos);
-    
-    Span<ushort> neighbors = stackalloc ushort[4];
-    
-    while (head < tail && count < 30)
-    {
-        var current = queue[head++];
-        count++;
-        
-        Movement.GetNeighbors(current, state->Width, state->Height, neighbors);
-        
-        for (int i = 0; i < 4; i++)
-        {
-            if (Movement.IsValid(neighbors[i]) && !GetBit(visited, neighbors[i]))
-            {
-                SetBit(visited, neighbors[i]);
-                if (tail < queue.Length)
-                    queue[tail++] = neighbors[i];
-            }
-        }
-    }
-    
-    return count;
-}
-
-[MethodImpl(MethodImplOptions.AggressiveInlining)]
-void SetBit(Span<ulong> bits, ushort index)
-{
-    bits[index >> 6] |= 1UL << (index & 63);
-}
-
-[MethodImpl(MethodImplOptions.AggressiveInlining)]
-bool GetBit(Span<ulong> bits, ushort index)
-{
-    return (bits[index >> 6] & (1UL << (index & 63))) != 0;
-}
 
 // Inline JSON Parser
 public static unsafe class BattlesnakeParser
