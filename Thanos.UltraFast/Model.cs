@@ -271,18 +271,74 @@ public static unsafe class GameManager
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref Snake Snakes() => ref _state->You();
 
-    /// <summary>
-    /// Esempio di utilizzo ottimizzato
+        /// <summary>
+    /// Calcola la mossa migliore analizzando lo stato di gioco corrente.
+    /// Questo è il cuore della tua AI.
     /// </summary>
-    public static bool ProcessMove(Direction dir)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Direction FindBestMove()
     {
         var state = State;
         ref var you = ref You();
-        ref var snakes = ref _state->Snakes;
+        
+        // Usiamo uno Span sullo stack per evitare allocazioni heap
+        Span<Direction> safeMoves = stackalloc Direction[4];
+        int safeMoveCount = 0;
 
-        // Calcola nuova posizione (no LUT!)
-        var newHead = Movement.Move(you.Head, dir, state->Width, state->Height);
+        // Itera su tutte e 4 le direzioni possibili
+        for (byte i = 0; i < 4; i++)
+        {
+            var direction = (Direction)i;
+            ushort nextHead = Movement.Move(you.Head, direction, state->Width, state->Height);
+            
+            // Step 1: Controlla che la mossa non vada fuori dai muri
+            if (!Movement.IsValid(nextHead))
+            {
+                continue; // Mossa non valida, passa alla prossima direzione
+            }
+            
+            bool isSafe = true;
 
-        return Movement.IsValid(newHead);
+            // Step 2: Controlla la collisione con tutti i serpenti (incluso te stesso)
+            for (int s = 0; s < state->SnakeCount; s++)
+            {
+                ref var snake = ref state->Snakes[s];
+                
+                // Il controllo del corpo usa il tuo metodo ottimizzato `Contains`
+                // NOTA: il corpo di un serpente include la sua testa (tranne l'ultimo segmento di coda, che si sposterà)
+                if (snake.Contains(nextHead))
+                {
+                    // Eccezione: non è una collisione se la posizione è la coda di un serpente
+                    // che non ha appena mangiato (perché la coda si sposterà).
+                    // Per semplicità, qui consideriamo ogni collisione fatale.
+                    isSafe = false;
+                    break;
+                }
+            }
+            
+            if (!isSafe)
+            {
+                continue; // Mossa non sicura, passa alla prossima
+            }
+
+            // Aggiungi la direzione alle mosse sicure
+            safeMoves[safeMoveCount++] = direction;
+        }
+
+        if (safeMoveCount == 0)
+        {
+            // Nessuna mossa sicura! Situazione disperata.
+            // Scegli una mossa di default per non andare in errore.
+            Console.WriteLine($"Turno {state->Turn}: NESSUNA MOSSA SICURA! Scelgo UP come ultima risorsa.");
+            return Direction.Up;
+        }
+
+        // --- QUI INSERISCI LA TUA LOGICA AVANZATA ---
+        // Al momento, scegliamo una mossa sicura a caso.
+        // Potresti sostituirlo con Minimax, ricerca di cibo, controllo delle aree, ecc.
+        var chosenMove = safeMoves[Random.Shared.Next(safeMoveCount)];
+        
+        Console.WriteLine($"Turno {state->Turn}: Mosse sicure: {safeMoveCount}. Scelta: {chosenMove}");
+        return chosenMove;
     }
 }
