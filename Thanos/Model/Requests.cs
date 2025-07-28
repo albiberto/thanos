@@ -11,7 +11,6 @@ public sealed class MoveRequest
     public Game game { get; set; } = new();
 
     public uint turn { get; set; }
-    [JsonPropertyName("board")] public Board Board { get; set; } = new();
 
     [JsonPropertyName("you")] public Snake You { get; set; } = new();
 }

@@ -263,28 +263,28 @@ public static class Bootstrapper
         });
     }
 
-    public static void AddMonteCarlo(this WebApplicationBuilder builder)
-    {
-        // Registra Monte Carlo service come Singleton con pre-warming
-        builder.Services.AddSingleton<MonteCarlo>(_ =>
-        {
-            Console.WriteLine("🚀 Pre-warming Monte Carlo service with MASSIVE memory allocation...");
-
-            // PreWarm Monte Carlo service with MAXIMUM precision and ultra-fast lookup
-            const int tableSize = 1000000; // 10x più grande per precisione estrema
-            var precomputedSqrtLog = GC.AllocateUninitializedArray<double>(tableSize, true);
-
-            for (var i = 1; i < tableSize; i++) precomputedSqrtLog[i] = Math.Sqrt(Math.Log(i));
-
-            var service = new MonteCarlo();
-
-            // Force immediate memory allocation verso target
-            GC.Collect(0, GCCollectionMode.Optimized);
-            GC.WaitForPendingFinalizers();
-
-            var memoryUsageMB = GC.GetTotalMemory(false) / 1024 / 1024;
-            Console.WriteLine($"✅ Monte Carlo ready! Memory: {memoryUsageMB}MB / {PerformanceConfig.MaxMemoryMB}MB target ({(double)memoryUsageMB / PerformanceConfig.MaxMemoryBytes * 100.0:F1}%)");
-            return service;
-        });
-    }
+    // public static void AddMonteCarlo(this WebApplicationBuilder builder)
+    // {
+    //     // Registra Monte Carlo service come Singleton con pre-warming
+    //     builder.Services.AddSingleton<MonteCarlo>(_ =>
+    //     {
+    //         Console.WriteLine("🚀 Pre-warming Monte Carlo service with MASSIVE memory allocation...");
+    //
+    //         // PreWarm Monte Carlo service with MAXIMUM precision and ultra-fast lookup
+    //         const int tableSize = 1000000; // 10x più grande per precisione estrema
+    //         var precomputedSqrtLog = GC.AllocateUninitializedArray<double>(tableSize, true);
+    //
+    //         for (var i = 1; i < tableSize; i++) precomputedSqrtLog[i] = Math.Sqrt(Math.Log(i));
+    //
+    //         var service = new MonteCarlo();
+    //
+    //         // Force immediate memory allocation verso target
+    //         GC.Collect(0, GCCollectionMode.Optimized);
+    //         GC.WaitForPendingFinalizers();
+    //
+    //         var memoryUsageMB = GC.GetTotalMemory(false) / 1024 / 1024;
+    //         Console.WriteLine($"✅ Monte Carlo ready! Memory: {memoryUsageMB}MB / {PerformanceConfig.MaxMemoryMB}MB target ({(double)memoryUsageMB / PerformanceConfig.MaxMemoryBytes * 100.0:F1}%)");
+    //         return service;
+    //     });
+    // }
 }

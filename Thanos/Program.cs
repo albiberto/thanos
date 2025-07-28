@@ -9,7 +9,7 @@ builder.ConfigureGlobJsonSerializer();
 builder.AddRouting();
 builder.AddLogging();
 
-builder.AddMonteCarlo();
+// builder.AddMonteCarlo();
 
 var app = builder.Build();
 
@@ -29,7 +29,7 @@ app.AddEndpoints();
 
 // ===== PRE-WARM =====
 Console.WriteLine("🔥 Pre-warming all systems for MAXIMUM VELOCITY...");
-_ = app.Services.GetRequiredService<MonteCarlo>(); // Force JIT compilation di tutti i metodi critici
+// _ = app.Services.GetRequiredService<MonteCarlo>(); // Force JIT compilation di tutti i metodi critici
 
 // ===== AVVIO DELL'APPLICAZIONE =====
 app.Run();
