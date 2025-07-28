@@ -5,6 +5,7 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,7 +13,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Thanos\Thanos.csproj"/>
+        <ProjectReference Include="..\Thanos.UltraFast\Thanos.UltraFast.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="test.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
