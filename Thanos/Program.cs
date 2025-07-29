@@ -1,8 +1,4 @@
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Buffers;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Thanos.UltraFast;
+using Thanos;
 
 var builder = WebApplication.CreateBuilder(args);
 

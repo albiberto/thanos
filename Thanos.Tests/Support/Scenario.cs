@@ -1,6 +1,4 @@
-﻿using Thanos.Model;
-
-namespace Thanos.Tests.Support;
+﻿namespace Thanos.Tests.Support;
 
 public class Scenario
 {

@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.Benchmark", "Thanos.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.Tests", "Thanos.Tests\Thanos.Tests.csproj", "{86F3A8B6-2D15-4617-90E3-6207C7706AF6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.UltraFast", "Thanos.UltraFast\Thanos.UltraFast.csproj", "{C23A7EB8-1B6A-4B99-8F64-9FF33B0CECFC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos", "Thanos\Thanos.csproj", "{C23A7EB8-1B6A-4B99-8F64-9FF33B0CECFC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.Diagnostic", "Thanos.Diagnostic\Thanos.Diagnostic.csproj", "{28481B04-A83D-42C7-B382-EE03419F77B8}"
 EndProject

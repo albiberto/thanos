@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Thanos.UltraFast\Thanos.UltraFast.csproj" />
+      <ProjectReference Include="..\Thanos\Thanos.csproj" />
     </ItemGroup>
 
 </Project>

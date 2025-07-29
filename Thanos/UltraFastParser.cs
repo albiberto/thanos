@@ -1,7 +1,6 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
-namespace Thanos.UltraFast;
+namespace Thanos;
 
 /// <summary>
 /// Parser minimalista spinto al limite fisico
@@ -16,8 +15,8 @@ public static unsafe class UltraFastParser
         state->FoodCount = 0;
         state->HazardCount = 0;
 
-        int pos = 0;
-        int len = json.Length;
+        var pos = 0;
+        var len = json.Length;
         
         // Skip to first property
         while (pos < len && json[pos] != '"') pos++;
@@ -26,22 +25,22 @@ public static unsafe class UltraFastParser
         byte snakeIndex = 0;
         ushort bodyOffset = 0;
         Snake* currentSnake = null;
-        bool inSnakes = false;
-        bool inFood = false;
-        bool inBody = false;
+        var inSnakes = false;
+        var inFood = false;
+        var inBody = false;
         byte pendingX = 0;
-        bool hasX = false;
+        var hasX = false;
         
         while (pos < len)
         {
             if (json[pos] == '"')
             {
                 pos++;
-                int start = pos;
+                var start = pos;
                 
                 // Find end of property name
                 while (pos < len && json[pos] != '"') pos++;
-                int propLen = pos - start;
+                var propLen = pos - start;
                 
                 // Skip quote and colon
                 pos++;
@@ -57,8 +56,8 @@ public static unsafe class UltraFastParser
                     }
                     else if (json[start] == 'y' && hasX)
                     {
-                        byte y = ParseByte(json, ref pos);
-                        ushort coord = GridMath.ToIndex(pendingX, y, state->Width);
+                        var y = ParseByte(json, ref pos);
+                        var coord = GridMath.ToIndex(pendingX, y, state->Width);
                         
                         if (inBody && currentSnake != null)
                         {

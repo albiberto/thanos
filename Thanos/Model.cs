@@ -1,9 +1,8 @@
-﻿using System;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Buffers;
-using System.Numerics;
 
+namespace Thanos;
 // ====================================================================
 // SISTEMA UNIVERSALE SCALABILE PER GRIGLIE DI GIOCO - VERSIONE 2024
 // ====================================================================
@@ -97,7 +96,7 @@ public unsafe struct Snake
         // Per snake piccoli, loop lineare resta imbattibile
         if (Length < Vector<ushort>.Count)
         {
-            for (int j = 0; j < Length; j++)
+            for (var j = 0; j < Length; j++)
             {
                 if (Body[j] == position) return true;
             }
@@ -109,7 +108,7 @@ public unsafe struct Snake
         var searchVector = new Vector<ushort>(position);
         
         // Confronta blocchi vettoriali
-        int i = 0;
+        var i = 0;
         for (; i <= Length - Vector<ushort>.Count; i += Vector<ushort>.Count)
         {
             var currentVector = new Vector<ushort>(bodySpan[i..]);
@@ -271,7 +270,7 @@ public static unsafe class GameManager
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ref Snake Snakes() => ref _state->You();
 
-        /// <summary>
+    /// <summary>
     /// Calcola la mossa migliore analizzando lo stato di gioco corrente.
     /// Questo è il cuore della tua AI.
     /// </summary>
@@ -283,13 +282,13 @@ public static unsafe class GameManager
         
         // Usiamo uno Span sullo stack per evitare allocazioni heap
         Span<Direction> safeMoves = stackalloc Direction[4];
-        int safeMoveCount = 0;
+        var safeMoveCount = 0;
 
         // Itera su tutte e 4 le direzioni possibili
         for (byte i = 0; i < 4; i++)
         {
             var direction = (Direction)i;
-            ushort nextHead = Movement.Move(you.Head, direction, state->Width, state->Height);
+            var nextHead = Movement.Move(you.Head, direction, state->Width, state->Height);
             
             // Step 1: Controlla che la mossa non vada fuori dai muri
             if (!Movement.IsValid(nextHead))
@@ -297,10 +296,10 @@ public static unsafe class GameManager
                 continue; // Mossa non valida, passa alla prossima direzione
             }
             
-            bool isSafe = true;
+            var isSafe = true;
 
             // Step 2: Controlla la collisione con tutti i serpenti (incluso te stesso)
-            for (int s = 0; s < state->SnakeCount; s++)
+            for (var s = 0; s < state->SnakeCount; s++)
             {
                 ref var snake = ref state->Snakes[s];
                 
