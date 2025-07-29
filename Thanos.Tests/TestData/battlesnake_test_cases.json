@@ -1,0 +1,190 @@
+﻿{
+  "basic_game": {
+	"turn": 42,
+	"board": {
+	  "width": 11,
+	  "height": 11,
+	  "food": [{"x": 5, "y": 5}],
+	  "snakes": [
+		{
+		  "id": "snake1",
+		  "head": {"x": 1, "y": 1},
+		  "body": [{"x": 1, "y": 1}],
+		  "health": 100
+		}
+	  ]
+	}
+  },
+
+  "multiple_snakes": {
+	"turn": 10,
+	"board": {
+	  "width": 7,
+	  "height": 7,
+	  "food": [],
+	  "snakes": [
+		{
+		  "id": "snake1",
+		  "head": {"x": 0, "y": 0},
+		  "body": [{"x": 0, "y": 0}],
+		  "health": 90
+		},
+		{
+		  "id": "snake2",
+		  "head": {"x": 6, "y": 6},
+		  "body": [{"x": 6, "y": 6}],
+		  "health": 85
+		},
+		{
+		  "id": "snake3",
+		  "head": {"x": 3, "y": 3},
+		  "body": [{"x": 3, "y": 3}],
+		  "health": 75
+		}
+	  ]
+	}
+  },
+
+  "snake_with_body": {
+	"turn": 15,
+	"board": {
+	  "width": 11,
+	  "height": 11,
+	  "food": [],
+	  "snakes": [
+		{
+		  "id": "longsnake",
+		  "head": {"x": 5, "y": 5},
+		  "body": [
+			{"x": 5, "y": 5},
+			{"x": 5, "y": 4},
+			{"x": 5, "y": 3},
+			{"x": 4, "y": 3},
+			{"x": 3, "y": 3}
+		  ],
+		  "health": 80
+		}
+	  ]
+	}
+  },
+
+  "multiple_food": {
+	"turn": 20,
+	"board": {
+	  "width": 11,
+	  "height": 11,
+	  "food": [
+		{"x": 1, "y": 1},
+		{"x": 9, "y": 1},
+		{"x": 1, "y": 9},
+		{"x": 9, "y": 9},
+		{"x": 5, "y": 5}
+	  ],
+	  "snakes": [
+		{
+		  "id": "snake1",
+		  "head": {"x": 0, "y": 0},
+		  "body": [{"x": 0, "y": 0}],
+		  "health": 95
+		}
+	  ]
+	}
+  },
+
+  "large_grid": {
+	"turn": 100,
+	"board": {
+	  "width": 25,
+	  "height": 25,
+	  "food": [{"x": 24, "y": 24}],
+	  "snakes": [
+		{
+		  "id": "bigsnake",
+		  "head": {"x": 12, "y": 12},
+		  "body": [{"x": 12, "y": 12}],
+		  "health": 50
+		}
+	  ]
+	}
+  },
+
+  "edge_cases": {
+	"turn": 0,
+	"board": {
+	  "width": 1,
+	  "height": 1,
+	  "food": [{"x": 0, "y": 0}],
+	  "snakes": [
+		{
+		  "id": "tinysnake",
+		  "head": {"x": 0, "y": 0},
+		  "body": [{"x": 0, "y": 0}],
+		  "health": 1
+		}
+	  ]
+	}
+  },
+
+  "complex_game": {
+	"turn": 150,
+	"board": {
+	  "width": 11,
+	  "height": 11,
+	  "food": [
+		{"x": 2, "y": 8},
+		{"x": 8, "y": 2}
+	  ],
+	  "snakes": [
+		{
+		  "id": "player1",
+		  "head": {"x": 5, "y": 5},
+		  "body": [
+			{"x": 5, "y": 5},
+			{"x": 5, "y": 4},
+			{"x": 5, "y": 3},
+			{"x": 6, "y": 3},
+			{"x": 7, "y": 3}
+		  ],
+		  "health": 85
+		},
+		{
+		  "id": "player2",
+		  "head": {"x": 1, "y": 1},
+		  "body": [
+			{"x": 1, "y": 1},
+			{"x": 1, "y": 2},
+			{"x": 2, "y": 2}
+		  ],
+		  "health": 70
+		}
+	  ]
+	}
+  },
+
+  "malformed_tolerant": {
+	"turn":   50   ,
+	"board": {
+	  "width": 11,
+	  "height"   :   11,
+	  "food": [ { "x" : 3 , "y" : 7 } ],
+	  "snakes": [
+		{
+		  "id": "test",
+		  "head": { "x": 5, "y": 5 },
+		  "body": [ { "x": 5, "y": 5 } ],
+		  "health": 99
+		}
+	  ]
+	}
+  },
+
+  "empty_arrays": {
+	"turn": 25,
+	"board": {
+	  "width": 11,
+	  "height": 11,
+	  "food": [],
+	  "snakes": []
+	}
+  }
+}

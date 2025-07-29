@@ -1,4 +1,4 @@
-﻿namespace Thanos.Tests.Support;
+﻿namespace Thanos.Tests.Old.Support;
 
 public static class Constants
 {

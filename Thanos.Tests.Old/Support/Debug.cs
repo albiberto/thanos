@@ -1,6 +1,6 @@
 ﻿using Snake = Thanos.CollisionMatrix.Snake;
 
-namespace Thanos.Tests.Support;
+namespace Thanos.Tests.Old.Support;
 
 public static class Debug
 {

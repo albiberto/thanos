@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
-using Thanos.Tests.Support;
+using Thanos.Tests.Old.Support;
 
-namespace Thanos.Tests;
+namespace Thanos.Tests.Old;
 
 [TestFixture]
 public class GetValidMovesTests
