@@ -1,4 +1,5 @@
 using Thanos;
+using Thanos.Parsers;
 
 var builder = WebApplication.CreateBuilder(args);
 
