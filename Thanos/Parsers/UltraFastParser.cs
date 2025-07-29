@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Thanos;
+namespace Thanos.Parsers;
 
 /// <summary>
 /// Parser minimalista spinto al limite fisico

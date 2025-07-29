@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Thanos;
+namespace Thanos.Parsers;
 
 /// <summary>
 /// Parser JSON ottimizzato che sfrutta il JIT di .NET
