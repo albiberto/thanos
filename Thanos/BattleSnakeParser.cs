@@ -1,8 +1,7 @@
-﻿namespace Thanos.UltraFast;
-
-using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text;
+
+namespace Thanos;
 
 /// <summary>
 /// Parser JSON ottimizzato che sfrutta il JIT di .NET
@@ -171,7 +170,7 @@ public static unsafe class BattlesnakeParser
         private void HandleString()
         {
             _pos++; // Skip opening quote
-            int start = _pos;
+            var start = _pos;
             
             // Trova la fine della stringa
             while (_pos < _data.Length && _data[_pos] != '"') 
@@ -297,7 +296,7 @@ public static unsafe class BattlesnakeParser
             if (_inYou)
             {
                 SkipToString();
-                int start = _pos;
+                var start = _pos;
                 while (_pos < _data.Length && _data[_pos] != '"') _pos++;
                 
                 _youIdLen = _pos - start;
@@ -338,12 +337,12 @@ public static unsafe class BattlesnakeParser
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int ParseNumber()
         {
-            int result = 0;
+            var result = 0;
             
             // Loop semplice che il JIT può vettorizzare
             while (_pos < _data.Length)
             {
-                byte c = _data[_pos];
+                var c = _data[_pos];
                 if (c >= '0' && c <= '9')
                 {
                     result = result * 10 + (c - '0');

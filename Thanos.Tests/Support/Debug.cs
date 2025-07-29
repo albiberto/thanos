@@ -1,6 +1,4 @@
-﻿using Thanos.Domain;
-using Thanos.Model;
-using Snake = Thanos.CollisionMatrix.Snake;
+﻿using Snake = Thanos.CollisionMatrix.Snake;
 
 namespace Thanos.Tests.Support;
 

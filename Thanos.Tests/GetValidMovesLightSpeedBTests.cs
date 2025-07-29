@@ -1,5 +1,4 @@
 ﻿using NUnit.Framework;
-using Thanos.CollisionMatrix;
 using Thanos.Tests.Support;
 
 namespace Thanos.Tests;
