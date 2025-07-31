@@ -151,7 +151,6 @@ public static unsafe class UltraFastParser
             }
         }
         
-        // Per semplicità, you index = 0
         state->YouIndex = 0;
     }
 

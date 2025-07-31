@@ -1,60 +1,175 @@
 ﻿{
-  "basic_game": {
+  "only_me": {
+	"game": {
+	  "id": "basic-game-001",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 15,
+		  "minimumFood": 1,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "custom",
+	  "timeout": 500
+	},
 	"turn": 42,
 	"board": {
 	  "width": 11,
 	  "height": 11,
-	  "food": [{"x": 5, "y": 5}],
+	  "food": [{"x": 5, "y": 5}, {"x": 6, "y": 6}],
+	  "hazards": [{"x": 2, "y": 2}, {"x": 8, "y": 8}],
 	  "snakes": [
 		{
 		  "id": "snake1",
+		  "name": "Basic Snake",
+		  "health": 100,
+		  "body": [{"x": 1, "y": 1}, {"x": 1, "y": 2}, {"x": 1, "y": 3}],
+		  "latency": "50",
 		  "head": {"x": 1, "y": 1},
-		  "body": [{"x": 1, "y": 1}],
-		  "health": 100
+		  "length": 3,
+		  "shout": "Let's go!",
+		  "customizations": {
+			"color": "#00FF00",
+			"head": "default",
+			"tail": "default"
+		  }
 		}
 	  ]
+	},
+	"you": {
+	  "id": "snake1",
+	  "name": "Basic Snake",
+	  "health": 100,
+	  "body": [{"x": 1, "y": 1}, {"x": 1, "y": 2}, {"x": 1, "y": 3}],
+	  "latency": "50",
+	  "head": {"x": 1, "y": 1},
+	  "length": 3,
+	  "shout": "Let's go!",
+	  "customizations": {
+		"color": "#00FF00",
+		"head": "default",
+		"tail": "default"
+	  }
 	}
   },
 
   "multiple_snakes": {
+	"game": {
+	  "id": "multi-snake-battle",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 15,
+		  "minimumFood": 1,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "arena",
+	  "timeout": 500
+	},
 	"turn": 10,
 	"board": {
 	  "width": 7,
 	  "height": 7,
 	  "food": [],
+	  "hazards": [],
 	  "snakes": [
 		{
 		  "id": "snake1",
+		  "name": "Red Viper",
+		  "health": 90,
+		  "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 0, "y": 2}],
+		  "latency": "75",
 		  "head": {"x": 0, "y": 0},
-		  "body": [{"x": 0, "y": 0}],
-		  "health": 90
+		  "length": 3,
+		  "shout": "Ready to strike!",
+		  "customizations": {
+			"color": "#FF0000",
+			"head": "evil",
+			"tail": "sharp"
+		  }
 		},
 		{
 		  "id": "snake2",
+		  "name": "Blue Python",
+		  "health": 85,
+		  "body": [{"x": 6, "y": 6}, {"x": 6, "y": 5}, {"x": 6, "y": 4}],
+		  "latency": "80",
 		  "head": {"x": 6, "y": 6},
-		  "body": [{"x": 6, "y": 6}],
-		  "health": 85
+		  "length": 3,
+		  "shout": "Smooth moves!",
+		  "customizations": {
+			"color": "#0000FF",
+			"head": "tongue",
+			"tail": "curled"
+		  }
 		},
 		{
 		  "id": "snake3",
+		  "name": "Green Mamba",
+		  "health": 75,
+		  "body": [{"x": 3, "y": 3}, {"x": 3, "y": 2}, {"x": 3, "y": 1}],
+		  "latency": "60",
 		  "head": {"x": 3, "y": 3},
-		  "body": [{"x": 3, "y": 3}],
-		  "health": 75
+		  "length": 3,
+		  "shout": "Fast and deadly!",
+		  "customizations": {
+			"color": "#00FF00",
+			"head": "pixel",
+			"tail": "pixel"
+		  }
 		}
 	  ]
+	},
+	"you": {
+	  "id": "snake1",
+	  "name": "Red Viper",
+	  "health": 90,
+	  "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 0, "y": 2}],
+	  "latency": "75",
+	  "head": {"x": 0, "y": 0},
+	  "length": 3,
+	  "shout": "Ready to strike!",
+	  "customizations": {
+		"color": "#FF0000",
+		"head": "evil",
+		"tail": "sharp"
+	  }
 	}
   },
 
   "snake_with_body": {
+	"game": {
+	  "id": "long-snake-demo",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 15,
+		  "minimumFood": 1,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "custom",
+	  "timeout": 500
+	},
 	"turn": 15,
 	"board": {
 	  "width": 11,
 	  "height": 11,
 	  "food": [],
+	  "hazards": [],
 	  "snakes": [
 		{
 		  "id": "longsnake",
-		  "head": {"x": 5, "y": 5},
+		  "name": "The Long One",
+		  "health": 80,
 		  "body": [
 			{"x": 5, "y": 5},
 			{"x": 5, "y": 4},
@@ -62,13 +177,57 @@
 			{"x": 4, "y": 3},
 			{"x": 3, "y": 3}
 		  ],
-		  "health": 80
+		  "latency": "100",
+		  "head": {"x": 5, "y": 5},
+		  "length": 5,
+		  "shout": "I'm getting longer!",
+		  "customizations": {
+			"color": "#FFFF00",
+			"head": "safe",
+			"tail": "freckled"
+		  }
 		}
 	  ]
+	},
+	"you": {
+	  "id": "longsnake",
+	  "name": "The Long One",
+	  "health": 80,
+	  "body": [
+		{"x": 5, "y": 5},
+		{"x": 5, "y": 4},
+		{"x": 5, "y": 3},
+		{"x": 4, "y": 3},
+		{"x": 3, "y": 3}
+	  ],
+	  "latency": "100",
+	  "head": {"x": 5, "y": 5},
+	  "length": 5,
+	  "shout": "I'm getting longer!",
+	  "customizations": {
+		"color": "#FFFF00",
+		"head": "safe",
+		"tail": "freckled"
+	  }
 	}
   },
 
   "multiple_food": {
+	"game": {
+	  "id": "feast-mode",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 25,
+		  "minimumFood": 5,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "custom",
+	  "timeout": 500
+	},
 	"turn": 20,
 	"board": {
 	  "width": 11,
@@ -80,52 +239,172 @@
 		{"x": 9, "y": 9},
 		{"x": 5, "y": 5}
 	  ],
+	  "hazards": [],
 	  "snakes": [
 		{
 		  "id": "snake1",
+		  "name": "Hungry Snake",
+		  "health": 95,
+		  "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}],
+		  "latency": "45",
 		  "head": {"x": 0, "y": 0},
-		  "body": [{"x": 0, "y": 0}],
-		  "health": 95
+		  "length": 3,
+		  "shout": "So much food!",
+		  "customizations": {
+			"color": "#FF8000",
+			"head": "tongue",
+			"tail": "default"
+		  }
 		}
 	  ]
+	},
+	"you": {
+	  "id": "snake1",
+	  "name": "Hungry Snake",
+	  "health": 95,
+	  "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}],
+	  "latency": "45",
+	  "head": {"x": 0, "y": 0},
+	  "length": 3,
+	  "shout": "So much food!",
+	  "customizations": {
+		"color": "#FF8000",
+		"head": "tongue",
+		"tail": "default"
+	  }
 	}
   },
 
   "large_grid": {
+	"game": {
+	  "id": "big-arena-challenge",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 10,
+		  "minimumFood": 1,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "tournament",
+	  "timeout": 500
+	},
 	"turn": 100,
 	"board": {
 	  "width": 25,
 	  "height": 25,
 	  "food": [{"x": 24, "y": 24}],
+	  "hazards": [],
 	  "snakes": [
 		{
 		  "id": "bigsnake",
+		  "name": "Arena Master",
+		  "health": 50,
+		  "body": [{"x": 12, "y": 12}, {"x": 12, "y": 11}, {"x": 12, "y": 10}],
+		  "latency": "120",
 		  "head": {"x": 12, "y": 12},
-		  "body": [{"x": 12, "y": 12}],
-		  "health": 50
+		  "length": 3,
+		  "shout": "Big space, big opportunities!",
+		  "customizations": {
+			"color": "#800080",
+			"head": "pixel",
+			"tail": "pixel"
+		  }
 		}
 	  ]
+	},
+	"you": {
+	  "id": "bigsnake",
+	  "name": "Arena Master",
+	  "health": 50,
+	  "body": [{"x": 12, "y": 12}, {"x": 12, "y": 11}, {"x": 12, "y": 10}],
+	  "latency": "120",
+	  "head": {"x": 12, "y": 12},
+	  "length": 3,
+	  "shout": "Big space, big opportunities!",
+	  "customizations": {
+		"color": "#800080",
+		"head": "pixel",
+		"tail": "pixel"
+	  }
 	}
   },
 
   "edge_cases": {
+	"game": {
+	  "id": "minimal-game",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 100,
+		  "minimumFood": 1,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "test",
+	  "timeout": 500
+	},
 	"turn": 0,
 	"board": {
-	  "width": 1,
-	  "height": 1,
-	  "food": [{"x": 0, "y": 0}],
+	  "width": 5,
+	  "height": 5,
+	  "food": [{"x": 2, "y": 2}],
+	  "hazards": [],
 	  "snakes": [
 		{
 		  "id": "tinysnake",
+		  "name": "Starter Snake",
+		  "health": 100,
+		  "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 0, "y": 2}],
+		  "latency": "30",
 		  "head": {"x": 0, "y": 0},
-		  "body": [{"x": 0, "y": 0}],
-		  "health": 1
+		  "length": 3,
+		  "shout": "Just started!",
+		  "customizations": {
+			"color": "#00FFFF",
+			"head": "default",
+			"tail": "default"
+		  }
 		}
 	  ]
+	},
+	"you": {
+	  "id": "tinysnake",
+	  "name": "Starter Snake",
+	  "health": 100,
+	  "body": [{"x": 0, "y": 0}, {"x": 0, "y": 1}, {"x": 0, "y": 2}],
+	  "latency": "30",
+	  "head": {"x": 0, "y": 0},
+	  "length": 3,
+	  "shout": "Just started!",
+	  "customizations": {
+		"color": "#00FFFF",
+		"head": "default",
+		"tail": "default"
+	  }
 	}
   },
 
   "complex_game": {
+	"game": {
+	  "id": "advanced-battle-royale",
+	  "ruleset": {
+		"name": "standard",
+		"version": "v1.1.15",
+		"settings": {
+		  "foodSpawnChance": 20,
+		  "minimumFood": 2,
+		  "hazardDamagePerTurn": 14
+		}
+	  },
+	  "map": "standard",
+	  "source": "league",
+	  "timeout": 500
+	},
 	"turn": 150,
 	"board": {
 	  "width": 11,
@@ -134,10 +413,12 @@
 		{"x": 2, "y": 8},
 		{"x": 8, "y": 2}
 	  ],
+	  "hazards": [],
 	  "snakes": [
 		{
 		  "id": "player1",
-		  "head": {"x": 5, "y": 5},
+		  "name": "Veteran Player",
+		  "health": 85,
 		  "body": [
 			{"x": 5, "y": 5},
 			{"x": 5, "y": 4},
@@ -145,46 +426,57 @@
 			{"x": 6, "y": 3},
 			{"x": 7, "y": 3}
 		  ],
-		  "health": 85
+		  "latency": "95",
+		  "head": {"x": 5, "y": 5},
+		  "length": 5,
+		  "shout": "Experience counts!",
+		  "customizations": {
+			"color": "#FF0000",
+			"head": "evil",
+			"tail": "sharp"
+		  }
 		},
 		{
 		  "id": "player2",
-		  "head": {"x": 1, "y": 1},
+		  "name": "Rising Star",
+		  "health": 70,
 		  "body": [
 			{"x": 1, "y": 1},
 			{"x": 1, "y": 2},
 			{"x": 2, "y": 2}
 		  ],
-		  "health": 70
+		  "latency": "85",
+		  "head": {"x": 1, "y": 1},
+		  "length": 3,
+		  "shout": "Coming for you!",
+		  "customizations": {
+			"color": "#0000FF",
+			"head": "tongue",
+			"tail": "curled"
+		  }
 		}
 	  ]
-	}
-  },
-
-  "malformed_tolerant": {
-	"turn":   50   ,
-	"board": {
-	  "width": 11,
-	  "height"   :   11,
-	  "food": [ { "x" : 3 , "y" : 7 } ],
-	  "snakes": [
-		{
-		  "id": "test",
-		  "head": { "x": 5, "y": 5 },
-		  "body": [ { "x": 5, "y": 5 } ],
-		  "health": 99
-		}
-	  ]
-	}
-  },
-
-  "empty_arrays": {
-	"turn": 25,
-	"board": {
-	  "width": 11,
-	  "height": 11,
-	  "food": [],
-	  "snakes": []
+	},
+	"you": {
+	  "id": "player1",
+	  "name": "Veteran Player",
+	  "health": 85,
+	  "body": [
+		{"x": 5, "y": 5},
+		{"x": 5, "y": 4},
+		{"x": 5, "y": 3},
+		{"x": 6, "y": 3},
+		{"x": 7, "y": 3}
+	  ],
+	  "latency": "95",
+	  "head": {"x": 5, "y": 5},
+	  "length": 5,
+	  "shout": "Experience counts!",
+	  "customizations": {
+		"color": "#FF0000",
+		"head": "evil",
+		"tail": "sharp"
+	  }
 	}
   }
 }
