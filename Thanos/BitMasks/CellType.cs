@@ -90,7 +90,7 @@ public static class CellType
     /// <summary>
     /// Number of bits to left-shift to encode the enemy index
     /// </summary>
-    public const int EnemyIndexShift = 6;
+    private const ushort EnemyIndexShift = 6;
     
     /// <summary>
     /// Bitmask usata per estrarre l’indice del nemico (bit 6–8).
@@ -103,7 +103,7 @@ public static class CellType
     ///                                 0b0000_0001_1000_0000 
     /// ]]>
     /// </example>
-    public const ushort EnemyIndexMask = 0x1C0;
+    private const ushort EnemyIndexMask = 0x1C0;
 
     /// <summary>
     ///     Checks if the cell contains a part of your snake (head or body).
@@ -143,15 +143,12 @@ public static class CellType
     ///     Creates a cell for an enemy snake.
     ///     Encodes both the identifier (0–7) and whether it is a head or body.
     /// </summary>
-    /// <param name="enemyIndex">Index of the enemy snake (0–15)</param>
+    /// <param name="enemyIndex">Index of the enemy snake (0–7)</param>
     /// <param name="isHead">True for head, false for body</param>
     /// <returns>Cell value</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ushort MakeEnemyCell(int enemyIndex, bool isHead)
-    {
-        var typeBit = isHead ? EnemyHead : EnemyBody;
-        return ((ushort)(enemyIndex << EnemyIndexShift) & EnemyIndexMask) | typeBit;
-    }
+    public static ushort MakeEnemyCell(byte enemyIndex, bool isHead) => (ushort)(((enemyIndex << EnemyIndexShift) & EnemyIndexMask) | (isHead ? EnemyHead : EnemyBody));
+
 
     /// <summary>
     ///     Returns the enemy snake index (0–7).
@@ -173,5 +170,5 @@ public static class CellType
     /// <param name="cell">Cell value</param>
     /// <returns>Enemy snake index (0–7)</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetEnemyIndex(ushort cell) => (int)((cell & EnemyIndexMask) >> EnemyIndexShift);
+    public static byte GetEnemyIndex(ushort cell) => (byte)((cell & EnemyIndexMask) >> EnemyIndexShift);
 }
