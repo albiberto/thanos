@@ -1,11 +1,23 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Thanos;
-using Thanos.BitMasks;
+﻿using System.Runtime.InteropServices;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct BattleField
+namespace Thanos;
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct Battlefield
 {
-    public fixed uint Field[Configuration.MaxHeight * Configuration.MaxWidth];
-
+    // int prevent boxing/unboxing overhead
+    private const int MaxSnakes = 8;  // Me + 7 enemies
+    private const int TotalSnakesSize = BattleSnake.SnakeSize * MaxSnakes; 
+    
+    public fixed byte SnakeData[TotalSnakesSize];
+    
+    public BattleSnake* GetMe()
+    {
+        fixed (byte* ptr = SnakeData) return (BattleSnake*)ptr;
+    }
+    
+    public BattleSnake* GetSnake(int index)
+    {
+        fixed (byte* ptr = SnakeData) return (BattleSnake*)(ptr + index * BattleSnake.SnakeSize);
+    }
 }
