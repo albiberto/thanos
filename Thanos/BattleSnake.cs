@@ -1,5 +1,5 @@
-﻿using System.Runtime.InteropServices;
-using Thanos.BitMasks;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Thanos;
 
@@ -31,24 +31,65 @@ public unsafe struct BattleSnake
     public byte Health;                         // 1 byte - Current health (0-100)
     public byte Length;                         // 1 byte - Current snake length
     public ushort Head;                         // 2 bytes - Head position (packed coordinates)
-    private fixed byte _padding[60];            // 60 bytes - Padding to complete cache line
-                                                // Calculation: 64 byte - (1 byte (health) + 1 byte (Lenght) + 2 byte (Head)) = 60 bytes (Padding)
+    private byte _isInitialized;                // 1 byte - Pre-warm flag
+    private fixed byte _padding[59];            // 59 bytes - Padding to complete cache line
+    // Calculation: 64 byte - (1 + 1 + 2 + 1) = 59 bytes (Padding)
     
     // CACHE LINE 2-3: BODY (128 bytes)
     // Contiguous array for efficient iterations
     public fixed ushort Body[MaxBodyLength];    // Cache line size: 64 bytes
-                                                // ushort size: 2 bytes
-                                                // Elements per cache line: 64 ÷ 2 = 32 ushorts
-                                                // Max Body Length: 64 segments (32 in each cache line)
-                                               
+    // ushort size: 2 bytes
+    // Elements per cache line: 64 ÷ 2 = 32 ushorts
+    // Max Body Length: 64 segments (32 in each cache line)
+    
+    /// <summary>
+    /// Pre-warms the snake by initializing it to a default state.
+    /// This avoids runtime initialization overhead and ensures predictable memory patterns.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void PreWarm()
+    {
+        if (_isInitialized != 0) return; // Already pre-warmed
+        
+        // Initialize to default snake state
+        Health = 100;
+        Length = 3;  // Standard starting length
+        Head = 0;    // Will be set properly during game initialization
+            
+        // Pre-initialize body with bulk zero operation
+        // This ensures all cache lines are touched and memory is committed
+        Unsafe.InitBlock(ref Unsafe.As<ushort, byte>(ref Body[0]), 0, MaxBodyLength * sizeof(ushort));
+        
+        _isInitialized = 1;
+    }
+    
+    /// <summary>
+    /// Resets snake to initial state without deallocating memory
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset()
+    {
+        Health = 100;
+        Length = 3;
+        Head = 0;
+        
+        // Pre-initialize body with bulk zero operation
+        // This ensures all cache lines are touched and memory is committed
+        Unsafe.InitBlock(ref Unsafe.As<ushort, byte>(ref Body[0]), 0, MaxBodyLength * sizeof(ushort));
+    }
+    
     /// <summary>
     /// Snake eats food: restores health to 100 and increases length by 1.
     /// Returns true if successful, false if already at maximum length.
     /// </summary>
-    public void Eat()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Eat()
     {
+        if (Length >= MaxBodyLength) return false;
+        
         Health = 100;
-        Body[Length] = Body[Length - 1];
+        Body[Length] = Body[Length - 1]; // Duplicate tail segment
         Length++;
+        return true;
     }
 }
