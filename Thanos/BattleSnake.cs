@@ -1,95 +1,90 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.BitMasks;
 
 namespace Thanos;
 
 /// <summary>
-/// BattleSnake struct optimized for cache locality and performance.
-/// Designed to occupy exactly 3 cache lines of 64 bytes each.
-///
-/// CacheLineSize = 64 bytes (Standard for modern CPUs (x86-64, ARM64, RPi5)) 
-/// 
-/// MEMORY LAYOUT (192 bytes total):
-/// - Cache Line 1 (0-63):   Header data + padding
-/// - Cache Line 2 (64-127): Body[0-31] 
-/// - Cache Line 3 (128-191): Body[32-63]
-/// 
-/// RATIONALE:
-/// - Header separated from body to avoid false sharing
-/// - Body spans 2 contiguous cache lines for spatial locality during iterations
-/// - MaxBodyLength=64 supports very long snakes (realistic for battle snake)
+///     BattleSnake con i propri metodi di modifica
+///     Sa come modificare se stesso, ma non conosce i limiti globali
 /// </summary>
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public unsafe struct BattleSnake
 {
-    // DESIGN CONSTANTS: int prevent boxing/unboxing overhead
-    public const int SnakeSize = 192;          // Total: 192 bytes = 3 cache lines of 64 bytes
-    private const int MaxBodyLength = 64;      // 64 segments * 2 bytes (ushort, Body array type) = 128 bytes = 2 cache lines
-    
-    // CACHE LINE 1: HEADER (64 bytes)
-    // Frequently accessed, separated from body
-    public byte Health;                         // 1 byte - Current health (0-100)
-    public byte Length;                         // 1 byte - Current snake length
-    public ushort Head;                         // 2 bytes - Head position (packed coordinates)
-    private byte _isInitialized;                // 1 byte - Pre-warm flag
-    private fixed byte _padding[59];            // 59 bytes - Padding to complete cache line
-    // Calculation: 64 byte - (1 + 1 + 2 + 1) = 59 bytes (Padding)
-    
-    // CACHE LINE 2-3: BODY (128 bytes)
-    // Contiguous array for efficient iterations
-    public fixed ushort Body[MaxBodyLength];    // Cache line size: 64 bytes
-    // ushort size: 2 bytes
-    // Elements per cache line: 64 ÷ 2 = 32 ushorts
-    // Max Body Length: 64 segments (32 in each cache line)
-    
+    public const int HeaderSize = 64;
+
+    // CACHE LINE 1
+    // HEADER (64 bytes)
+    public int Health; // 4 byte
+    public int Length; // 4 byte
+    public ushort Head; // 2 bytes
+    private fixed byte _padding[64 - 10]; // 54 bytes padding
+
+    // CACHE LINE (da 2 a N)
+    // Il body inizia qui
+    public fixed ushort Body[1]; // La dimensione reale è gestita dal Battlefield
+
     /// <summary>
-    /// Pre-warms the snake by initializing it to a default state.
-    /// This avoids runtime initialization overhead and ensures predictable memory patterns.
+    ///     Muove il serpente in base al contenuto della cella di destinazione,
+    ///     aggiornando vita, lunghezza e posizione.
     /// </summary>
+    /// <param name="newHeadPosition">La nuova coordinata della testa.</param>
+    /// <param name="content">Il contenuto della cella di destinazione.</param>
+    /// <param name="hazardDamage">Il danno inflitto da un hazard.</param>
+    /// <returns>Restituisce true se il serpente è ancora vivo dopo la mossa, altrimenti false.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PreWarm()
+    public bool Move(ushort newHeadPosition, CellContent content, int hazardDamage = 15)
     {
-        if (_isInitialized != 0) return; // Already pre-warmed
-        
-        // Initialize to default snake state
-        Health = 100;
-        Length = 3;  // Standard starting length
-        Head = 0;    // Will be set properly during game initialization
-            
-        // Pre-initialize body with bulk zero operation
-        // This ensures all cache lines are touched and memory is committed
-        Unsafe.InitBlock(ref Unsafe.As<ushort, byte>(ref Body[0]), 0, MaxBodyLength * sizeof(ushort));
-        
-        _isInitialized = 1;
+        var hasEaten = content == CellContent.Food;
+
+        if (hasEaten)
+        {
+            // CASO CIBO: cresce, non perde salute e non shifta il corpo.
+            Health = 100;
+            Body[Length] = Head; // La vecchia testa diventa un nuovo pezzo del corpo
+            Length++;
+        }
+        else
+        {
+            // CASO MOVIMENTO NORMALE (o impatto): perde salute e shifta il corpo.
+            switch (content)
+            {
+                case CellContent.Hazard:
+                case CellContent.EnemySnake:
+                    Health -= hazardDamage;
+                    break;
+
+                case CellContent.Food: // Se mangia ma è a lunghezza massima, è un movimento normale
+                case CellContent.Empty:
+                default:
+                    Health -= 1; // Danno base per il movimento
+                    break;
+            }
+
+            // Esegue lo shift del corpo per "dimenticare" l'ultima coda
+            fixed (ushort* bodyPtr = Body)
+            {
+                Unsafe.CopyBlock(bodyPtr, bodyPtr + 1, (uint)(Length - 1) * sizeof(ushort));
+            }
+
+            Body[Length - 1] = Head;
+        }
+
+        // --- 2. Aggiornamento Posizione Testa ---
+        Head = newHeadPosition;
+
+        // --- 3. Controllo Finale e Ritorno Stato ---
+        return Health > 0; // Vivo ✅ o Morto 💀 
     }
     
     /// <summary>
-    /// Resets snake to initial state without deallocating memory
+    /// Resetta lo stato del serpente ai valori iniziali.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
         Health = 100;
-        Length = 3;
-        Head = 0;
-        
-        // Pre-initialize body with bulk zero operation
-        // This ensures all cache lines are touched and memory is committed
-        Unsafe.InitBlock(ref Unsafe.As<ushort, byte>(ref Body[0]), 0, MaxBodyLength * sizeof(ushort));
-    }
-    
-    /// <summary>
-    /// Snake eats food: restores health to 100 and increases length by 1.
-    /// Returns true if successful, false if already at maximum length.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Eat()
-    {
-        if (Length >= MaxBodyLength) return false;
-        
-        Health = 100;
-        Body[Length] = Body[Length - 1]; // Duplicate tail segment
-        Length++;
-        return true;
+        Length = 3; // O una lunghezza iniziale a tua scelta
+        Head = 0;   // O una posizione di partenza non valida/default
     }
 }
