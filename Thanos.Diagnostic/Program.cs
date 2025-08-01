@@ -10,8 +10,8 @@ public class PerformanceDiagnostic
     public static unsafe void Main(string[] args)
     {
         // Inizializza una volta
-        GameManager.Initialize();
-        var state = GameManager.State;
+        GameEngine.Initialize();
+        var state = GameEngine.State;
         
         // Test JSON
         var smallJson = """

@@ -28,8 +28,8 @@ public unsafe class BattlesnakeParserBenchmark
     public void Setup()
     {
         // Inizializza UNA SOLA VOLTA
-        GameManager.Initialize();
-        _state = GameManager.State;
+        GameEngine.Initialize();
+        _state = GameEngine.State;
         
         // JSON piccolo per test veloce
         _smallJson = """
