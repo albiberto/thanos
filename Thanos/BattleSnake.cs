@@ -15,10 +15,11 @@ public unsafe struct BattleSnake
 
     // CACHE LINE 1
     // HEADER (64 bytes)
-    public int Health; // 4 byte
-    public int Length; // 4 byte
-    public ushort Head; // 2 bytes
-    private fixed byte _padding[64 - 10]; // 54 bytes padding
+    public int Health;      // 4 byte
+    public int Length;      // 4 byte
+    public int MaxLength;   // 4 byte - NEW: limite massimo imposto dal Battlefield
+    public ushort Head;     // 2 bytes
+    private fixed byte _padding[64 - 14]; // 50 bytes padding (era 54, ora 50)
 
     // CACHE LINE (da 2 a N)
     // Il body inizia qui
@@ -36,8 +37,16 @@ public unsafe struct BattleSnake
     public bool Move(ushort newHeadPosition, CellContent content, int hazardDamage = 15)
     {
         var hasEaten = content == CellContent.Food;
+        var canGrow = hasEaten && Length < MaxLength; // Controlla se può crescere
 
-        if (hasEaten)
+        // TODO:🔁 Ordine delle operazioni nel turno (semplificato):
+            // Tutti i serpenti fanno la loro mossa.
+            // La health viene decrementata di 1.
+            // Se un serpente finisce su un cibo → health torna a 100 e il corpo cresce.
+            // Se un serpente ha 0 di health → muore immediatamente, anche se non ha ancora subito collisioni.
+            // Poi vengono valutate le collisioni (con pareti, se stessi o altri serpenti).
+        
+        if (canGrow)
         {
             // CASO CIBO: cresce, non perde salute e non shifta il corpo.
             Health = 100;
@@ -47,27 +56,37 @@ public unsafe struct BattleSnake
         else
         {
             // CASO MOVIMENTO NORMALE (o impatto): perde salute e shifta il corpo.
-            switch (content)
+            if (hasEaten)
             {
-                case CellContent.Hazard:
-                case CellContent.EnemySnake:
-                    Health -= hazardDamage;
-                    break;
+                // Ha mangiato ma è già alla lunghezza massima
+                Health = 100; // Recupera comunque la salute
+            }
+            else
+            {
+                switch (content)
+                {
+                    case CellContent.Hazard:
+                    case CellContent.EnemySnake:
+                        Health -= hazardDamage;
+                        break;
 
-                case CellContent.Food: // Se mangia ma è a lunghezza massima, è un movimento normale
-                case CellContent.Empty:
-                default:
-                    Health -= 1; // Danno base per il movimento
-                    break;
+                    case CellContent.Empty:
+                    case CellContent.Food:
+                    default:
+                        Health -= 1; // Danno base per il movimento
+                        break;
+                }
             }
 
             // Esegue lo shift del corpo per "dimenticare" l'ultima coda
-            fixed (ushort* bodyPtr = Body)
+            if (Length > 1)
             {
-                Unsafe.CopyBlock(bodyPtr, bodyPtr + 1, (uint)(Length - 1) * sizeof(ushort));
+                fixed (ushort* bodyPtr = Body)
+                {
+                    Unsafe.CopyBlock(bodyPtr, bodyPtr + 1, (uint)(Length - 1) * sizeof(ushort));
+                }
+                Body[Length - 1] = Head;
             }
-
-            Body[Length - 1] = Head;
         }
 
         // --- 2. Aggiornamento Posizione Testa ---
@@ -80,11 +99,13 @@ public unsafe struct BattleSnake
     /// <summary>
     /// Resetta lo stato del serpente ai valori iniziali.
     /// </summary>
+    /// <param name="maxLength">La lunghezza massima del serpente impostata dal Battlefield</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reset()
+    public void Reset(int maxLength)
     {
         Health = 100;
-        Length = 3; // O una lunghezza iniziale a tua scelta
-        Head = 0;   // O una posizione di partenza non valida/default
+        Length = 3;
+        MaxLength = maxLength;
+        Head = 0;
     }
 }
