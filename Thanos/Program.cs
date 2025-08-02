@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 // Initialize GameManager during application bootstrapping
-RuntimeHelpers.RunClassConstructor(typeof(GameEngine).TypeHandle);
+// RuntimeHelpers.RunClassConstructor(typeof(GameEngine).TypeHandle);
 
 app.MapGet("/", () => Results.Ok);
 

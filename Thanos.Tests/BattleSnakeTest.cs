@@ -5,64 +5,45 @@ namespace Thanos.Tests
     [TestFixture]
     public class BattleSnakeTests
     {
+        private BattleSnake _snake;
+        private const int HazardDamage = 15;
+        private const int InitialHealth = 100;
+        
+        [SetUp]
+        public void Setup()
+        {
+            _snake = new BattleSnake();
+            _snake.Reset();
+        }
+        
         [Test]
         public void Reset_ImpostaValoriIniziali()
         {
-            BattleSnake snake = new BattleSnake();
-            snake.Reset();
-
-            Assert.That(snake.Health, Is.EqualTo(100));
-            Assert.That(snake.Length, Is.EqualTo(3));
-            Assert.That(snake.Head, Is.EqualTo((ushort)0));
+            Assert.That(_snake.Health, Is.EqualTo(100));
+            Assert.That(_snake.Length, Is.EqualTo(3));
+            Assert.That(_snake.Head, Is.EqualTo(0U));
         }
-
-        // [Test]
-        // public void Move_MangiaCibo_AumentaLunghezzaERipristinaSalute()
-        // {
-        //     BattleSnake snake = new BattleSnake();
-        //     snake.Reset();
-        //
-        //     int oldLength = snake.Length;
-        //     ushort oldHead = snake.Head;
-        //
-        //     bool alive = snake.Move(newHeadPosition: 1, content: CellContent.Food);
-        //
-        //     Assert.That(alive, Is.True);
-        //     Assert.That(snake.Health, Is.EqualTo(100));
-        //     Assert.That(snake.Length, Is.EqualTo(oldLength + 1));
-        //     Assert.That(snake.Head, Is.EqualTo((ushort)1));
-        //
-        //     fixed (ushort* bodyPtr = snake.Body)
-        //     {
-        //         Assert.That(bodyPtr[oldLength], Is.EqualTo(oldHead));
-        //     }
-        // }
 
         [Test]
         public void Move_EntraInHazard_DiminuisceSaluteDiHazardDamage()
         {
-            BattleSnake snake = new BattleSnake();
-            snake.Reset();
-
-            int initialHealth = snake.Health;
-
-            bool alive = snake.Move(newHeadPosition: 2, content: CellContent.Hazard, hazardDamage: 15);
+            var alive = _snake.Move(newHeadPosition: 2, content: CellContent.Hazard, hazardDamage: 15);
 
             Assert.That(alive, Is.True);
-            Assert.That(snake.Health, Is.EqualTo(initialHealth - 15));
-            Assert.That(snake.Length, Is.EqualTo(3));
-            Assert.That(snake.Head, Is.EqualTo((ushort)2));
+            Assert.That(_snake.Health, Is.EqualTo(InitialHealth - 15));
+            Assert.That(_snake.Length, Is.EqualTo(3));
+            Assert.That(_snake.Head, Is.EqualTo(2U));
         }
 
         [Test]
         public void Move_EntraInHazard_MuoreSeSaluteScendeSottoZero()
         {
-            BattleSnake snake = new BattleSnake();
+            var snake = new BattleSnake();
             snake.Reset();
 
             snake.Health = 10;
 
-            bool alive = snake.Move(newHeadPosition: 3, content: CellContent.Hazard, hazardDamage: 15);
+            var alive = snake.Move(newHeadPosition: 3, content: CellContent.Hazard, hazardDamage: 15);
 
             Assert.That(alive, Is.False);
             Assert.That(snake.Health, Is.LessThanOrEqualTo(0));
@@ -72,12 +53,12 @@ namespace Thanos.Tests
         [Test]
         public void Move_MovimentoNormale_DiminuisceSaluteDiUno()
         {
-            BattleSnake snake = new BattleSnake();
+            var snake = new BattleSnake();
             snake.Reset();
 
-            int initialHealth = snake.Health;
+            var initialHealth = snake.Health;
 
-            bool alive = snake.Move(newHeadPosition: 4, content: CellContent.Empty);
+            var alive = snake.Move(newHeadPosition: 4, content: CellContent.Empty);
 
             Assert.That(alive, Is.True);
             Assert.That(snake.Health, Is.EqualTo(initialHealth - 1));
@@ -88,12 +69,12 @@ namespace Thanos.Tests
         [Test]
         public void Move_EntraInEnemySnake_DiminuisceSaluteDiHazardDamage()
         {
-            BattleSnake snake = new BattleSnake();
+            var snake = new BattleSnake();
             snake.Reset();
 
-            int initialHealth = snake.Health;
+            var initialHealth = snake.Health;
 
-            bool alive = snake.Move(newHeadPosition: 5, content: CellContent.EnemySnake, hazardDamage: 15);
+            var alive = snake.Move(newHeadPosition: 5, content: CellContent.EnemySnake, hazardDamage: 15);
 
             Assert.That(alive, Is.True);
             Assert.That(snake.Health, Is.EqualTo(initialHealth - 15));
