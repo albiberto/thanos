@@ -69,13 +69,13 @@ public unsafe struct Battlefield : IDisposable
     public void Initialize(int boardWidth, int boardHeight)
     {
         // Controlla se le dimensioni sono cambiate
-        bool dimensionsChanged = !_isInitialized || _boardWidth != boardWidth || _boardHeight != boardHeight;
+        var dimensionsChanged = !_isInitialized || _boardWidth != boardWidth || _boardHeight != boardHeight;
         
         if (dimensionsChanged)
         {
             // Calcola la lunghezza massima del corpo basata sui 3/4 dell'area.
-            int boardArea = boardWidth * boardHeight;
-            int desiredBodyLength = boardArea * 3 / 4;
+            var boardArea = boardWidth * boardHeight;
+            var desiredBodyLength = boardArea * 3 / 4;
             
             // Arrotonda la lunghezza del body al multiplo di 64 byte più vicino
             // Ogni elemento del body è un ushort (2 byte), quindi 32 elementi = 64 byte
@@ -117,7 +117,7 @@ public unsafe struct Battlefield : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PrecalculatePointers()
     {
-        for (int i = 0; i < MaxSnakes; i++)
+        for (var i = 0; i < MaxSnakes; i++)
         {
             _snakePointers[i] = (long)(_memory + i * _snakeStride);
         }
@@ -137,7 +137,7 @@ public unsafe struct Battlefield : IDisposable
     /// <summary>
     /// Azzera la memoria e imposta tutti i serpenti al loro stato iniziale.
     /// </summary>
-    public void ResetAllSnakes()
+    private void ResetAllSnakes()
     {
         if (!_isInitialized) return;
         
@@ -146,29 +146,11 @@ public unsafe struct Battlefield : IDisposable
 
         // 2. Chiama il metodo Reset per ogni serpente per inizializzare i suoi valori di default.
         // Questa operazione tocca anche la memoria, aiutando a caricarla in cache (pre-warming).
-        for (int i = 0; i < MaxSnakes; i++)
+        for (var i = 0; i < MaxSnakes; i++)
         {
-            BattleSnake* snake = (BattleSnake*)_snakePointers[i];
+            var snake = (BattleSnake*)_snakePointers[i];
             snake->Reset(_maxBodyLength);
         }
-    }
-
-    /// <summary>
-    /// Resetta un singolo serpente.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ResetSnake(int index)
-    {
-        if (!_isInitialized || index < 0 || index >= MaxSnakes) return;
-        
-        // Usa il puntatore precalcolato invece di calcolare l'offset
-        BattleSnake* snake = (BattleSnake*)_snakePointers[index];
-        
-        // Azzera la memoria del serpente specifico
-        Unsafe.InitBlock((byte*)snake, 0, (uint)_snakeStride);
-        
-        // Inizializza con i valori di default
-        snake->Reset(_maxBodyLength);
     }
 
     /// <summary>
@@ -178,12 +160,12 @@ public unsafe struct Battlefield : IDisposable
     public void ProcessAllMoves(ReadOnlySpan<ushort> newHeadPositions, ReadOnlySpan<CellContent> destinationContents)
     {
         // Assicura che gli span abbiano la stessa lunghezza per evitare errori.
-        int count = Math.Min(MaxSnakes, Math.Min(newHeadPositions.Length, destinationContents.Length));
+        var count = Math.Min(MaxSnakes, Math.Min(newHeadPositions.Length, destinationContents.Length));
 
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             // Accesso diretto al puntatore precalcolato (seconda cache line)
-            BattleSnake* snake = (BattleSnake*)_snakePointers[i];
+            var snake = (BattleSnake*)_snakePointers[i];
 
             // Procede solo se il serpente è vivo.
             if (snake->Health > 0)
@@ -203,7 +185,7 @@ public unsafe struct Battlefield : IDisposable
             _isInitialized = false;
             
             // Opzionale: azzera anche i puntatori per sicurezza
-            for (int i = 0; i < MaxSnakes; i++)
+            for (var i = 0; i < MaxSnakes; i++)
             {
                 _snakePointers[i] = 0;
             }
