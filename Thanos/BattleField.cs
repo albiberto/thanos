@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.BitMasks; // Assicurati che CellContent sia accessibile
+using Thanos.BitMasks;
 
 namespace Thanos;
 
@@ -30,33 +30,38 @@ public unsafe struct Battlefield : IDisposable
     /// </summary>
     public void Initialize(int boardWidth, int boardHeight)
     {
-        // Calcola la lunghezza massima del corpo basata sull'area, con un minimo e un massimo.
-        int boardArea = boardWidth * boardHeight;
-        _maxBodyLength = boardArea / 2;
-        if (_maxBodyLength < 32) _maxBodyLength = 32;
-        if (_maxBodyLength > 256) _maxBodyLength = 256;
-
-        // Calcola lo "stride": lo spazio totale occupato da un serpente, allineato alla cache line.
-        // Questo garantisce che ogni serpente inizi su un nuovo blocco di cache.
-        int snakeSize = BattleSnake.HeaderSize + (_maxBodyLength * sizeof(ushort));
-        _snakeStride = (snakeSize + CacheLine - 1) & ~(CacheLine - 1);
-
-        // Se le dimensioni cambiano, libera la vecchia memoria.
-        if (_isInitialized && (_boardWidth != boardWidth || _boardHeight != boardHeight))
+        // Controlla se le dimensioni sono cambiate
+        bool dimensionsChanged = !_isInitialized || _boardWidth != boardWidth || _boardHeight != boardHeight;
+        
+        if (dimensionsChanged)
         {
-            Dispose();
-        }
-
-        _boardWidth = boardWidth;
-        _boardHeight = boardHeight;
-
-        if (!_isInitialized)
-        {
+            // Calcola la lunghezza massima del corpo basata sui 3/4 dell'area.
+            int boardArea = boardWidth * boardHeight;
+            int desiredBodyLength = boardArea * 3 / 4;
+            
+            // Arrotonda la lunghezza del body al multiplo di 64 byte più vicino
+            // Ogni elemento del body è un ushort (2 byte), quindi 32 elementi = 64 byte
+            const int elementsPerCacheLine = CacheLine / sizeof(ushort); // 32 elementi
+            _maxBodyLength = (desiredBodyLength + elementsPerCacheLine - 1) / elementsPerCacheLine * elementsPerCacheLine;
+            
+            // Applica i limiti minimo e massimo DOPO l'arrotondamento
+            if (_maxBodyLength < elementsPerCacheLine) _maxBodyLength = elementsPerCacheLine; // min 32 elementi (1 cache line)
+            if (_maxBodyLength > 256) _maxBodyLength = 256; // max 256 elementi (8 cache line)
+            
+            // Lo stride totale include header (64 byte) + body allineato
+            _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort);
+            
+            // Se già inizializzato, libera la vecchia memoria
+            if (_isInitialized) Dispose();
+            
+            // Alloca la nuova memoria
             _totalMemory = (nuint)_snakeStride * MaxSnakes;
             _memory = (byte*)NativeMemory.AlignedAlloc(_totalMemory, CacheLine);
-
+            
             if (_memory == null) throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes");
-
+            
+            _boardWidth = boardWidth;
+            _boardHeight = boardHeight;
             _isInitialized = true;
             
             // Inizializza tutti i serpenti al loro stato di default.
@@ -84,8 +89,24 @@ public unsafe struct Battlefield : IDisposable
         // Questa operazione tocca anche la memoria, aiutando a caricarla in cache (pre-warming).
         for (int i = 0; i < MaxSnakes; i++)
         {
-            GetSnake(i)->Reset(); // Utilizza il nuovo metodo Reset di BattleSnake
+            GetSnake(i)->Reset(); // Passa la lunghezza massima calcolata
         }
+    }
+
+    /// <summary>
+    /// Resetta un singolo serpente.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ResetSnake(int index)
+    {
+        if (!_isInitialized || index < 0 || index >= MaxSnakes) return;
+        
+        // Azzera la memoria del serpente specifico
+        byte* snakeMemory = _memory + index * _snakeStride;
+        Unsafe.InitBlock(snakeMemory, 0, (uint)_snakeStride);
+        
+        // Inizializza con i valori di default
+        GetSnake(index)->Reset(_maxBodyLength);
     }
 
     /// <summary>
@@ -104,7 +125,6 @@ public unsafe struct Battlefield : IDisposable
             BattleSnake* snake = GetSnake(i);
 
             // Procede solo se il serpente è vivo.
-            // Sostituisce il vecchio metodo IsAlive() con un controllo diretto sulla vita.
             if (snake->Health > 0)
             {
                 // Chiama la nuova versione di Move, passando la posizione e il contenuto della cella.
@@ -115,6 +135,7 @@ public unsafe struct Battlefield : IDisposable
 
     public int BoardWidth => _boardWidth;
     public int BoardHeight => _boardHeight;
+    public int MaxBodyLength => _maxBodyLength;
     public int SnakeCount => MaxSnakes;
 
     public void Dispose()
