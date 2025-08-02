@@ -33,8 +33,9 @@ namespace Thanos;
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public unsafe struct Battlefield : IDisposable
 {
-    private const int MaxSnakes = 8;
-    private const int CacheLine = 64; // Allineamento per la cache line
+    private const int MaxSnakes = 8; // Numero massimo di serpenti gestiti (me + 7 avversari)
+    private const int CacheLine = 64; // Dimensioni della cache line
+    private const int SnakeElementsPErCacheLine = CacheLine / sizeof(ushort); // Ogni elemento del body è un ushort (2 byte), quindi 32 elementi = 64 byte
 
     // === PRIMA CACHE LINE (0-63 byte) ===
     
@@ -68,46 +69,41 @@ public unsafe struct Battlefield : IDisposable
     /// </summary>
     public void Initialize(int boardWidth, int boardHeight)
     {
-        // Controlla se le dimensioni sono cambiate
-        var dimensionsChanged = !_isInitialized || _boardWidth != boardWidth || _boardHeight != boardHeight;
+        if (_isInitialized && _boardWidth == boardWidth && _boardHeight == boardHeight) return;
         
-        if (dimensionsChanged)
-        {
-            // Calcola la lunghezza massima del corpo basata sui 3/4 dell'area.
-            var boardArea = boardWidth * boardHeight;
-            var desiredBodyLength = boardArea * 3 / 4;
+        // Calcola la lunghezza massima del corpo basata sui 3/4 dell'area.
+        var boardArea = boardWidth * boardHeight;
+        var desiredBodyLength = boardArea * 3 / 4;
+        
+        // Arrotonda la lunghezza del body al multiplo di 64 byte più vicino
+        _maxBodyLength = (desiredBodyLength + SnakeElementsPErCacheLine - 1) / SnakeElementsPErCacheLine * SnakeElementsPErCacheLine;
             
-            // Arrotonda la lunghezza del body al multiplo di 64 byte più vicino
-            // Ogni elemento del body è un ushort (2 byte), quindi 32 elementi = 64 byte
-            const int elementsPerCacheLine = CacheLine / sizeof(ushort); // 32 elementi
-            _maxBodyLength = (desiredBodyLength + elementsPerCacheLine - 1) / elementsPerCacheLine * elementsPerCacheLine;
+        // Applica i limiti minimo e massimo DOPO l'arrotondamento
+        // TODO: Forse esiste un modo migliore per calcolare il body length?
+        if (_maxBodyLength < SnakeElementsPErCacheLine) _maxBodyLength = SnakeElementsPErCacheLine; // min 32 elementi (1 cache line)
+        if (_maxBodyLength > 256) _maxBodyLength = 256; // max 256 elementi (8 cache line)
             
-            // Applica i limiti minimo e massimo DOPO l'arrotondamento
-            if (_maxBodyLength < elementsPerCacheLine) _maxBodyLength = elementsPerCacheLine; // min 32 elementi (1 cache line)
-            if (_maxBodyLength > 256) _maxBodyLength = 256; // max 256 elementi (8 cache line)
+        // Lo stride totale include header (64 byte) + body allineato
+        _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort);
             
-            // Lo stride totale include header (64 byte) + body allineato
-            _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort);
+        // Se già inizializzato, libera la vecchia memoria
+        if (_isInitialized) Dispose();
             
-            // Se già inizializzato, libera la vecchia memoria
-            if (_isInitialized) Dispose();
+        // Alloca la nuova memoria
+        // TODO: Considera l'uso di un allocatore personalizzato per ottimizzare ulteriormente
+        // TODO: Valuta se manca header di BattleField + Array di puntatori
+        _totalMemory = (nuint)_snakeStride * MaxSnakes;
+        _memory = (byte*)NativeMemory.AlignedAlloc(_totalMemory, CacheLine);
             
-            // Alloca la nuova memoria
-            _totalMemory = (nuint)_snakeStride * MaxSnakes;
-            _memory = (byte*)NativeMemory.AlignedAlloc(_totalMemory, CacheLine);
+        if (_memory == null) throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes");
             
-            if (_memory == null) throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes");
+        _boardWidth = boardWidth;
+        _boardHeight = boardHeight;
+        _isInitialized = true;
             
-            _boardWidth = boardWidth;
-            _boardHeight = boardHeight;
-            _isInitialized = true;
+        PrecalculatePointers(); // Precalcola i puntatori ai serpenti 
             
-            // Precalcola i puntatori ai serpenti
-            PrecalculatePointers();
-            
-            // Inizializza tutti i serpenti al loro stato di default.
-            ResetAllSnakes();
-        }
+        ResetAllSnakes(); // Inizializza tutti i serpenti al loro stato di default.
     }
 
     /// <summary>
@@ -117,10 +113,8 @@ public unsafe struct Battlefield : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PrecalculatePointers()
     {
-        for (var i = 0; i < MaxSnakes; i++)
-        {
-            _snakePointers[i] = (long)(_memory + i * _snakeStride);
-        }
+        // TODO: nell array credo che vengano memorizzati gli offset e non i puntatori diretti. Si potrebbe salvare direttamente il puntatore?
+        for (var i = 0; i < MaxSnakes; i++) _snakePointers[i] = (long)(_memory + i * _snakeStride);
     }
 
     /// <summary>
@@ -152,30 +146,35 @@ public unsafe struct Battlefield : IDisposable
             snake->Reset(_maxBodyLength);
         }
     }
-
+    
     /// <summary>
     /// Processa i movimenti per tutti i serpenti attivi.
-    /// Accede principalmente alla seconda cache line per i puntatori.
+    /// I dati di input (posizioni, contenuti) devono essere allineati per indice con i serpenti.
     /// </summary>
-    public void ProcessAllMoves(ReadOnlySpan<ushort> newHeadPositions, ReadOnlySpan<CellContent> destinationContents)
+    public void ProcessAllMoves(ReadOnlySpan<ushort> newHeadPositions, ReadOnlySpan<CellContent> destinationContents, int hazardDamage)
     {
-        // Assicura che gli span abbiano la stessa lunghezza per evitare errori.
-        var count = Math.Min(MaxSnakes, Math.Min(newHeadPositions.Length, destinationContents.Length));
-
-        for (var i = 0; i < count; i++)
+        for (var i = 0; i < MaxSnakes; i++)
         {
-            // Accesso diretto al puntatore precalcolato (seconda cache line)
-            var snake = (BattleSnake*)_snakePointers[i];
+            // Ottiene l'indirizzo del serpente come valore numerico (long).
+            var snakeAddress = _snakePointers[i];
 
-            // Procede solo se il serpente è vivo.
-            if (snake->Health > 0)
-            {
-                // Chiama la nuova versione di Move, passando la posizione e il contenuto della cella.
-                snake->Move(newHeadPositions[i], destinationContents[i]);
-            }
+            // Se l'indirizzo è 0, lo slot non è usato.
+            if (snakeAddress == 0) continue;
+        
+            // Converte l'indirizzo in un puntatore per leggere la vita.
+            var snakePtr = (BattleSnake*)snakeAddress;
+
+            // Salta i serpenti già morti.
+            if (snakePtr->Health <= 0) continue;
+
+            // Prende l'indirizzo base (long), aggiunge l'offset (64) e fa il cast del risultato a puntatore.
+            var bodyPtr = (ushort*)(snakeAddress + BattleSnake.HeaderSize);
+
+            // Esegue la mossa passando il puntatore al corpo precalcolato.
+            snakePtr->Move(bodyPtr, newHeadPositions[i], destinationContents[i], hazardDamage);
         }
     }
-
+    
     public void Dispose()
     {
         if (_isInitialized && _memory != null)
@@ -185,6 +184,7 @@ public unsafe struct Battlefield : IDisposable
             _isInitialized = false;
             
             // Opzionale: azzera anche i puntatori per sicurezza
+            // TODO: Valuta se è necessario?
             for (var i = 0; i < MaxSnakes; i++)
             {
                 _snakePointers[i] = 0;
