@@ -6,7 +6,7 @@ namespace Thanos;
 
 /// <summary>
 /// Battlefield manages the global context, memory allocation, and collective operations on snakes.
-/// It doesn't know about specific game grid logic (food, obstacles).
+/// It also owns and manages the master CollisionMatrix.
 /// </summary>
 /// <remarks>
 /// CACHE-OPTIMIZED MEMORY LAYOUT (x64):
@@ -28,7 +28,10 @@ namespace Thanos;
 /// Second cache line (64-127 bytes):
 /// - Offset 64-127: _snakePointers[8] (64 bytes - array of 8 long pointers)
 /// 
-/// TOTAL STRUCT SIZE: 128 bytes (exactly 2 cache lines)
+/// Subsequent memory:
+/// - The CollisionMatrix struct is placed after the primary cache-aligned fields.
+/// 
+/// TOTAL STRUCT SIZE: >128 bytes
 /// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public unsafe struct Battlefield : IDisposable
@@ -65,15 +68,23 @@ public unsafe struct Battlefield : IDisposable
     // Array of direct pointers to snakes - optimizes sequential access
     // Each pointer is precalculated to avoid runtime multiplications
     private fixed long _snakePointers[MaxSnakes]; // 64 bytes (8 × 8)
+
+    // === NUOVA SEZIONE: GESTIONE DELLA MATRICE DI COLLISIONE ===
+    
+    // La matrice di collisione è di proprietà e gestita dal Battlefield.
+    private CollisionMatrix _collisionMatrix;
     
     /// <summary>
     /// Initializes or reinitializes the battlefield with specific dimensions.
-    /// Allocates aligned memory to ensure each snake starts on a cache line boundary.
+    /// Allocates aligned memory for all snakes and the collision matrix.
     /// </summary>
     public void Initialize(int boardWidth, int boardHeight)
     {
         if (_isInitialized && _boardWidth == boardWidth && _boardHeight == boardHeight) return;
         
+        // Free any previous memory allocation first
+        if (_isInitialized) Dispose();
+
         // Calculate body length based on 3/4 of total area
         var boardArea = boardWidth * boardHeight;
         var desiredBodyLength = boardArea * 3 / 4;
@@ -90,18 +101,19 @@ public unsafe struct Battlefield : IDisposable
         // Calculate total stride per snake (header + aligned body)
         _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort);
             
-        // Free any previous memory allocation
-        if (_isInitialized) Dispose();
-            
         // Allocate aligned memory for all snakes
         _totalMemory = (nuint)_snakeStride * MaxSnakes;
         _memory = (byte*)NativeMemory.AlignedAlloc(_totalMemory, CacheLine);
             
         if (_memory == null) 
-            throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes");
+            throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes for snakes");
             
         _boardWidth = boardWidth;
         _boardHeight = boardHeight;
+        
+        // Inizializza la matrice di collisione con le dimensioni corrette
+        _collisionMatrix.Initialize(boardArea);
+
         _isInitialized = true;
             
         PrecalculatePointers();
@@ -133,10 +145,10 @@ public unsafe struct Battlefield : IDisposable
         // Single access to second cache line to retrieve pointer
         return (BattleSnake*)_snakePointers[index];
     }
-
+    
     /// <summary>
     /// Initializes all snakes by zeroing memory and setting default values.
-    /// Also pre-loads memory into cache (cache warming).
+    /// Also clears the collision matrix.
     /// </summary>
     private void ResetAllSnakes()
     {
@@ -151,8 +163,28 @@ public unsafe struct Battlefield : IDisposable
             var snake = (BattleSnake*)_snakePointers[i];
             snake->Reset(_maxBodyLength);
         }
+
+        // Assicura che anche la matrice di collisione sia vuota
+        _collisionMatrix.Clear();
     }
     
+    /// <summary>
+    /// Aggiorna la CollisionMatrix proiettando lo stato corrente di tutti i serpenti attivi.
+    /// Questa operazione dovrebbe essere eseguita una volta per turno, prima di valutare le mosse.
+    /// </summary>
+    private void UpdateCollisionMatrix()
+    {
+        // Azzera lo stato precedente della matrice
+        _collisionMatrix.Clear();
+
+        // Per passare un puntatore a questa istanza di struct, dobbiamo usare 'fixed'
+        fixed (Battlefield* thisPtr = &this)
+        {
+            // Proietta lo stato corrente sulla matrice
+            _collisionMatrix.ProjectBattlefield(thisPtr, MaxSnakes);
+        }
+    }
+
     /// <summary>
     /// Processes movements for all active snakes in a single batch.
     /// Optimized to minimize cache misses by processing snakes sequentially.
@@ -185,21 +217,17 @@ public unsafe struct Battlefield : IDisposable
     }
     
     /// <summary>
-    /// Frees allocated memory and resets battlefield state.
+    /// Frees allocated memory for both snakes and the collision matrix.
     /// </summary>
     public void Dispose()
     {
-        if (_isInitialized && _memory != null)
-        {
-            NativeMemory.AlignedFree(_memory);
-            _memory = null;
-            _isInitialized = false;
-            
-            // Zero pointers for safety and to indicate free slots
-            for (var i = 0; i < MaxSnakes; i++)
-            {
-                _snakePointers[i] = 0;
-            }
-        }
+        // Libera la memoria della matrice di collisione
+        _collisionMatrix.Dispose();
+
+        // Libera la memoria dei serpenti
+        NativeMemory.AlignedFree(_memory);
+        _memory = null;
+        
+        _isInitialized = false;
     }
 }
