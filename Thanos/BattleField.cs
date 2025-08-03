@@ -60,8 +60,8 @@ public unsafe struct Battlefield : IDisposable
     // Explicit padding to align next field to 8-byte boundary
     private fixed byte _padding1[7]; // 7 bytes
     
-    // Explicit padding to fill the rest with the first cache line
-    private fixed byte _padding2[24]; // 24 bytes
+    // La matrice di collisione è di proprietà e gestita dal Battlefield.
+    private CollisionMatrix _collisionMatrix; // 24 bytes (aligned to 64 bytes)
     
     // === SECOND CACHE LINE (64-127 bytes) ===
     
@@ -70,9 +70,6 @@ public unsafe struct Battlefield : IDisposable
     private fixed long _snakePointers[MaxSnakes]; // 64 bytes (8 × 8)
 
     // === NUOVA SEZIONE: GESTIONE DELLA MATRICE DI COLLISIONE ===
-    
-    // La matrice di collisione è di proprietà e gestita dal Battlefield.
-    private CollisionMatrix _collisionMatrix;
     
     /// <summary>
     /// Initializes or reinitializes the battlefield with specific dimensions.
