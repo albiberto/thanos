@@ -5,90 +5,91 @@ using System.Runtime.InteropServices;
 namespace Thanos;
 
 /// <summary>
-/// Represents a high-performance, cache-friendly, and SIMD-optimized game board for collision detection.
-/// Manages its own aligned, unmanaged memory buffer.
+/// Rappresenta una griglia di gioco ad alte prestazioni, ottimizzata per la cache e le operazioni SIMD,
+/// per la rilevazione delle collisioni. Gestisce il proprio buffer di memoria allineata e non gestita.
 /// </summary>
 public unsafe struct CollisionMatrix : IDisposable
 {
     private byte* _grid;        // Puntatore alla memoria non gestita che rappresenta la griglia.
     private int _boardSize;     // Dimensione logica della griglia (width * height).
     private nuint _totalMemory; // Dimensione fisica della memoria allocata, con padding per SIMD.
-    
+
     /// <summary>
-    /// Gets the content of a cell at a specific board coordinate (index).
+    /// Ottiene il contenuto di una cella a una coordinata specifica della griglia (indice).
     /// </summary>
     public byte this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _grid[index];
     }
-    
+
     /// <summary>
-    /// Initializes the GameBoard, allocating aligned memory.
-    /// Should be called once at the start of the game.
+    /// Inizializza la CollisionMatrix, allocando memoria allineata.
+    /// Dovrebbe essere chiamata una volta all'inizio del gioco.
     /// </summary>
-    /// <param name="width">The width of the game board.</param>
-    /// <param name="height">The height of the game board.</param>
+    /// <param name="width">La larghezza della griglia di gioco.</param>
+    /// <param name="height">L'altezza della griglia di gioco.</param>
     public void Initialize(int width, int height)
     {
         _boardSize = width * height;
 
-        // For SIMD operations, the memory size must be a multiple of the vector size.
-        // We use Vector256 (32 bytes), so we pad the memory allocation to the next multiple of 32.
+        // Per le operazioni SIMD, la dimensione della memoria deve essere un multiplo della dimensione del vettore.
+        // Aggiungiamo un padding per raggiungere il successivo multiplo della dimensione del vettore.
         var vectorSize = Vector<byte>.Count;
         _totalMemory = (nuint)((_boardSize + vectorSize - 1) / vectorSize * vectorSize);
 
-        // Allocate memory aligned to a 64-byte boundary for optimal cache and SIMD performance.
+        // Alloca memoria allineata a 64 byte per prestazioni ottimali della cache e di SIMD.
         _grid = (byte*)NativeMemory.AlignedAlloc(_totalMemory, 64);
         if (_grid == null)
-            throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes for GameBoard");
+            throw new OutOfMemoryException($"Impossibile allocare {_totalMemory} byte per la CollisionMatrix");
     }
 
     /// <summary>
-    /// Clears the entire game board to zero using SIMD instructions for maximum speed.
-    /// This is the equivalent of a highly optimized memset.
+    /// Azzera l'intera griglia di gioco utilizzando il metodo intrinseco più efficiente.
+    /// Questa è l'equivalente di una `memset` altamente ottimizzata.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
         if (_grid == null) return;
 
-        var zeroVector = Vector<byte>.Zero;
-        // Converte la dimensione del vettore in nuint una sola volta per efficienza
-        var vectorSize = (nuint)Vector<byte>.Count;
-
-        // Usa 'nuint' per la variabile del ciclo 'i' per renderla compatibile con '_totalMemory'
-        for (nuint i = 0; i < _totalMemory; i += vectorSize) Unsafe.WriteUnaligned(_grid + i, zeroVector);
+        // Unsafe.InitBlock viene sostituito dal compilatore JIT con le istruzioni macchina
+        // più veloci possibili per l'azzeramento della memoria (es. REP STOSB su x86).
+        // È più performante di un loop manuale, anche se basato su SIMD.
+        Unsafe.InitBlock(_grid, 0, (uint)_totalMemory);
     }
 
     /// <summary>
-    /// Projects the current state of all snakes from a Battlefield onto this grid.
+    /// Proietta lo stato corrente di tutti i serpenti da un Battlefield su questa griglia.
     /// </summary>
-    /// <param name="battlefield">A pointer to the Battlefield containing the snake data.</param>
-    /// <param name="maxSnakes">The maximum number of snakes to process.</param>
+    /// <param name="battlefield">Un puntatore al Battlefield che contiene i dati dei serpenti.</param>
+    /// <param name="maxSnakes">Il numero massimo di serpenti da processare.</param>
     public void ProjectBattlefield(Battlefield* battlefield, int maxSnakes)
     {
-        // Iterate over all possible snake slots.
+        // Itera su tutti i possibili slot per i serpenti.
         for (var i = 0; i < maxSnakes; i++)
         {
             var snake = battlefield->GetSnake(i);
             if (snake == null || snake->Health <= 0) continue;
 
-            // Use the snake's index + 1 as its ID on the board (0 is reserved for 'Empty').
+            // Usa l'indice del serpente + 1 come suo ID sulla griglia (0 è riservato per 'Vuoto').
             var snakeId = (byte)(i + 1);
 
-            // "Paint" the snake's body onto the grid.
+            // "Disegna" il corpo del serpente sulla griglia.
             var bodyPtr = (ushort*)((byte*)snake + BattleSnake.HeaderSize);
-            for (int j = 0; j < snake->Length; j++) _grid[bodyPtr[j]] = snakeId;
+            for (int j = 0; j < snake->Length; j++)
+            {
+                _grid[bodyPtr[j]] = snakeId;
+            }
             
-            // "Paint" the head over any body part that might have been there.
+            // "Disegna" la testa sopra qualsiasi parte del corpo che potesse trovarsi lì.
             _grid[snake->Head] = snakeId;
         }
     }
-    
+
     /// <summary>
-    /// Frees the unmanaged memory used by the grid.
-    /// Must be called when the GameBoard is no longer needed.
+    /// Libera la memoria non gestita utilizzata dalla griglia.
+    /// Deve essere chiamata quando la CollisionMatrix non è più necessaria.
     /// </summary>
     public void Dispose()
     {
