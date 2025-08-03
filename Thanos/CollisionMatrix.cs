@@ -27,11 +27,10 @@ public unsafe struct CollisionMatrix : IDisposable
     /// Inizializza la CollisionMatrix, allocando memoria allineata.
     /// Dovrebbe essere chiamata una volta all'inizio del gioco.
     /// </summary>
-    /// <param name="width">La larghezza della griglia di gioco.</param>
-    /// <param name="height">L'altezza della griglia di gioco.</param>
-    public void Initialize(int width, int height)
+    /// <param name="boardSize">Dimensioni della board</param>
+    public void Initialize(int boardSize)
     {
-        _boardSize = width * height;
+        _boardSize = boardSize;
 
         // Per le operazioni SIMD, la dimensione della memoria deve essere un multiplo della dimensione del vettore.
         // Aggiungiamo un padding per raggiungere il successivo multiplo della dimensione del vettore.
@@ -55,7 +54,6 @@ public unsafe struct CollisionMatrix : IDisposable
 
         // Unsafe.InitBlock viene sostituito dal compilatore JIT con le istruzioni macchina
         // più veloci possibili per l'azzeramento della memoria (es. REP STOSB su x86).
-        // È più performante di un loop manuale, anche se basato su SIMD.
         Unsafe.InitBlock(_grid, 0, (uint)_totalMemory);
     }
 
