@@ -9,13 +9,12 @@ namespace Thanos;
 /// A high-performance, minimalist grid representing the raw state of the board.
 /// It manages an unmanaged, aligned memory buffer for maximum performance.
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Pack = 64)]
+[StructLayout(LayoutKind.Sequential)]
 public unsafe struct BattleField : IDisposable
 {
     // --- Struct Fields (Total 64 bytes, 1 cache line) ---
     private byte* _grid;                    // 8 bytes: Pointer to the state grid (snakes, hazards)
     private ushort _boardSize;              // 2 bytes: Logical size of the board (width * height)
-    private fixed byte _manualPadding[54];  // 54 bytes: Fills the rest with the cache line
     
     /// <summary>
     /// Gets the content of a cell at a specific grid coordinate (index).
@@ -45,11 +44,11 @@ public unsafe struct BattleField : IDisposable
     /// <summary>
     /// Projects the current state of all snakes onto the grid.
     /// </summary>
-    public void ProjectBattlefield(Tesla* battlefield, int maxSnakes)
+    public void ProjectBattlefield(Tesla* tesla, int maxSnakes)
     {
         for (byte i = 0; i < maxSnakes; i++)
         {
-            var snake = battlefield->GetSnake(i);
+            var snake = tesla->GetSnake(i);
             if (snake->Health <= 0) continue;
 
             var snakeId = (byte)(i + 1);
