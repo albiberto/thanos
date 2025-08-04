@@ -1,4 +1,4 @@
-﻿using Thanos.BitMasks;
+﻿using Thanos.Enums;
 
 namespace Thanos.Tests;
 
