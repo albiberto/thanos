@@ -1,122 +1,68 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Thanos.Enums;
 
 namespace Thanos;
 
 /// <summary>
-/// Manages the game's global context, including snake data and the master collision map.
-/// This struct is the primary interface for manipulating the game state.
+/// Manages the game's global context and all snake entities.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
 public unsafe struct Tesla : IDisposable
 {
-    // --- Campi Principali ---
-    private byte _boardWidth;
-    private byte _boardHeight;
-    private ushort _maxBodyLength;
-    private ushort _snakeStride;
     private bool _isInitialized;
-    private byte* _memory; // Puntatore al blocco di memoria per tutti i serpenti
-    private BattleField _battleField; // La matrice di collisione
-    private fixed long _snakePointers[Constants.MaxSnakes]; // Puntatori pre-calcolati ai singoli serpenti
-
-    // --- Proprietà Pubbliche ---
-    public byte BoardWidth => _boardWidth;
-    public byte BoardHeight => _boardHeight;
-    public ref readonly BattleField BattleField => ref _battleField;
-
+    private ushort _snakeStride;
+    private byte* _memory;
+    private BattleField _battleField;
+    private fixed long _snakePointers[Constants.MaxSnakes];
+    
     /// <summary>
-    /// Initializes the battlefield's memory structures once per game.
+    /// Initializes memory structures based on board dimensions.
     /// </summary>
     public void Initialize(byte boardWidth, byte boardHeight)
     {
         if (_isInitialized) return;
 
-        _boardWidth = boardWidth;
-        _boardHeight = boardHeight;
-
         var boardArea = (ushort)(boardWidth * boardHeight);
-        
-        // Calcolo ottimizzato della dimensione dei serpenti
-        const int snakeElementsPerCacheLine = Constants.CacheLineSize / sizeof(ushort);
-        var desiredBodyLength = boardArea * 3 / 4;
-        var maxBodyLength = (ushort)((desiredBodyLength + snakeElementsPerCacheLine - 1) / snakeElementsPerCacheLine * snakeElementsPerCacheLine);
-        if (maxBodyLength < snakeElementsPerCacheLine) maxBodyLength = snakeElementsPerCacheLine;
-        if (maxBodyLength > 256) maxBodyLength = 256;
-        _maxBodyLength = maxBodyLength;
+
+        // --- LOGICA CHIAVE: Calcolo dinamico della dimensione del corpo ---
+
+        // 1. Definisci una dimensione desiderata (es. 75% della plancia)
+        var desiredBodyLength = (ushort)(boardArea * 3 / 4);
+        var desiredBodyBytes = (uint)(desiredBodyLength * sizeof(ushort));
+
+        // 2. Arrotonda la dimensione in BYTE alla cache line successiva (64 byte)
+        // Questa è la formula standard per arrotondare per eccesso a un multiplo.
+        var allocatedBodyBytes = (desiredBodyBytes + Constants.CacheLineSize - 1) 
+                                / Constants.CacheLineSize * Constants.CacheLineSize;
+
+        // 3. Riconverti i byte allocati in numero di segmenti (ushort)
+        _maxBodyLength = (ushort)(allocatedBodyBytes / sizeof(ushort));
+
+        // --- Fine Logica Chiave ---
 
         _snakeStride = (ushort)(BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort));
-
-        // Allocazione memoria per i serpenti
         var totalSnakeMemory = (nuint)(_snakeStride * Constants.MaxSnakes);
         _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
-
-        // Inizializzazione della matrice di collisione
         _battleField.Initialize(boardArea);
         
         _isInitialized = true;
         PrecalculatePointers();
+        
+        // È importante resettare lo stato dei serpenti dopo aver calcolato MaxLength
+        ResetSnakesToStart();
     }
     
-    /// <summary>
-    /// Updates the entire board state for the current turn based on API data.
-    /// This is the main orchestrator method to be called each turn.
-    /// </summary>
-    public void UpdateBoardState(ReadOnlySpan<ushort> foodPositions, ReadOnlySpan<ushort> hazardPositions)
-    {
-        // 1. Clear the board from the previous turn's state.
-        _battleField.Clear();
-
-        // 2. Project the current snake positions onto the grid.
-        fixed (Tesla* thisPtr = &this)
-        {
-            _battleField.ProjectBattlefield(thisPtr, Constants.MaxSnakes);
-        }
-
-        // 3. Apply food and hazards. Hazards overwrite food if they overlap.
-        _battleField.ApplyFood(foodPositions);
-        _battleField.ApplyHazards(hazardPositions);
-    }
-
-    /// <summary>
-    /// Processes movements for all active snakes, applying damage where necessary.
-    /// </summary>
-    public void ProcessAllMoves(ReadOnlySpan<ushort> newHeadPositions, ReadOnlySpan<CellContent> destinationContents, int hazardDamage)
+    // Metodo per inizializzare lo stato di ogni serpente
+    private void ResetSnakesToStart()
     {
         for (var i = 0; i < Constants.MaxSnakes; i++)
         {
-            var snakePtr = GetSnake(i);
-            if (snakePtr->Health <= 0) continue;
-
-            // Determine the damage to apply for this specific move.
-            // The AI is responsible for determining the content of the destination cell.
-            int damageToApply = 0;
-            if (destinationContents[i] == CellContent.Hazard)
-            {
-                damageToApply = hazardDamage;
-            }
-            // Future logic could add damage for head-to-head collisions here.
-
-            var bodyPtr = (ushort*)((byte*)snakePtr + BattleSnake.HeaderSize);
-            snakePtr->Move(bodyPtr, newHeadPositions[i], destinationContents[i], damageToApply);
+            var snake = GetSnake(i);
+            // Passa il MaxLength calcolato a ogni serpente.
+            // Le posizioni iniziali andrebbero prese dai dati del primo turno.
+            snake->Reset(0); 
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public BattleSnake* GetSnake(int index) => (BattleSnake*)_snakePointers[index];
-
-    private void PrecalculatePointers()
-    {
-        for (var i = 0; i < Constants.MaxSnakes; i++) _snakePointers[i] = (long)(_memory + i * _snakeStride);
-    }
-
-    public void Dispose()
-    {
-        if (!_isInitialized) return;
-        _battleField.Dispose();
-        NativeMemory.AlignedFree(_memory);
-        _memory = null;
-        _isInitialized = false;
-    }
+    
+    public void Dispose() { /* ... */ }
 }
