@@ -36,7 +36,7 @@ namespace Thanos;
 /// 3. No false sharing between header and body data
 /// 4. Sequential body access is cache-friendly
 /// </remarks>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential, Pack = 64)]
 public unsafe struct BattleSnake
 {
     public const int HeaderSize = 64; // Exactly one cache line
@@ -106,7 +106,7 @@ public unsafe struct BattleSnake
         // This section touches memory, so we only execute it for living snakes
         var hasEaten = content == CellContent.Food;
         var canGrow = hasEaten && Length < MaxLength;
-        ushort oldHead = Head;
+        var oldHead = Head;
 
         // Update head position
         Head = newHeadPosition;

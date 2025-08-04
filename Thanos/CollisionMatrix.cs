@@ -5,22 +5,20 @@ using System.Runtime.InteropServices;
 namespace Thanos;
 
 /// <summary>
-/// Represents a high-performance, cache and SIMD-optimized game grid for collision detection.
-/// It manages its own unmanaged and aligned memory buffer.
+/// A high-performance, minimalist grid representing the raw state of the board.
+/// It manages an unmanaged, aligned memory buffer for maximum performance.
 /// </summary>
+[StructLayout(LayoutKind.Sequential, Pack = 64)]
 public unsafe struct CollisionMatrix : IDisposable
 {
-    private byte* _grid;        // 8 bytes on x64 systems (pointer)
-    private int _boardSize;     // 4 bytes (32-bit integer)
-    private nuint _totalMemory; // 8 bytes on x64 systems (native-sized integer)
-
-    // --- Struct Size Analysis on x64 Systems ---
-    // _grid:        8 bytes
-    // _boardSize:   4 bytes
-    // (padding):    4 bytes (inserted by the compiler to align the next field)
-    // _totalMemory: 8 bytes
-    // --------------------
-    // Total:        24 bytes
+    // --- Struct Fields (Total 64 bytes, 1 cache line) ---
+    private byte* _grid;                    // 8 bytes: Pointer to the state grid (snakes, hazards)
+    private ushort _boardSize;              // 2 bytes: Logical size of the board (width * height)
+    private fixed byte _manualPadding[56];  // 48 bytes: Fills the rest with the cache line
+    
+    private const byte EMPTY_ID = 0;      // Reserved value for empty cells
+    private const byte FOOD_ID = HAZARD_ID / 2;     // Reserved value for foods
+    private const byte HAZARD_ID = byte.MaxValue;   // Reserved value for hazards
 
     /// <summary>
     /// Gets the content of a cell at a specific grid coordinate (index).
@@ -32,65 +30,62 @@ public unsafe struct CollisionMatrix : IDisposable
     }
 
     /// <summary>
-    /// Initializes the CollisionMatrix by allocating aligned memory.
-    /// This should be called once at the start of the game.
+    /// Initializes the CollisionMatrix by allocating the master memory buffer.
     /// </summary>
-    /// <param name="boardSize">The size of the board (width * height).</param>
-    public void Initialize(int boardSize)
+    /// <param name="boardSize">The logical size of the board (width * height).</param>
+    public void Initialize(ushort boardSize)
     {
         _boardSize = boardSize;
-
+        
+        // Calculate the physical memory size, padded to be a multiple of the SIMD vector size.
         var vectorSize = Vector<byte>.Count;
-        _totalMemory = (nuint)((_boardSize + vectorSize - 1) / vectorSize * vectorSize);
+        var totalAllocatedMemory = (nuint)((boardSize + vectorSize - 1) / vectorSize * vectorSize);
 
-        _grid = (byte*)NativeMemory.AlignedAlloc(_totalMemory, 64);
-        if (_grid == null)
-            throw new OutOfMemoryException($"Failed to allocate {_totalMemory} bytes for the CollisionMatrix");
+        // Allocate a 64-byte aligned memory block.
+        _grid = (byte*)NativeMemory.AlignedAlloc(totalAllocatedMemory, 64);
     }
 
     /// <summary>
-    /// Clears the entire game grid using the most efficient intrinsic method.
+    /// Projects the current state of all snakes onto the grid.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear()
-    {
-        if (_grid == null) return;
-        Unsafe.InitBlock(_grid, 0, (uint)_totalMemory);
-    }
-
-    /// <summary>
-    /// Projects the current state of all snakes from a Battlefield onto this grid.
-    /// </summary>
-    /// <param name="battlefield">A pointer to the Battlefield containing the snake data.</param>
-    /// <param name="maxSnakes">The maximum number of snakes to process.</param>
     public void ProjectBattlefield(Battlefield* battlefield, int maxSnakes)
     {
-        for (var i = 0; i < maxSnakes; i++)
+        for (byte i = 0; i < maxSnakes; i++)
         {
             var snake = battlefield->GetSnake(i);
-            if (snake == null || snake->Health <= 0) continue;
+            if (snake->Health <= 0) continue;
 
             var snakeId = (byte)(i + 1);
             var bodyPtr = (ushort*)((byte*)snake + BattleSnake.HeaderSize);
-            
-            for (int j = 0; j < snake->Length; j++)
-            {
-                _grid[bodyPtr[j]] = snakeId;
-            }
-            _grid[snake->Head] = snakeId;
+            for (var j = 0; j < snake->Length; j++) _grid[bodyPtr[j]] = snakeId;
         }
     }
 
     /// <summary>
-    /// Frees the unmanaged memory used by the grid.
+    /// Applies hazards to the grid by directly writing to the specified positions.
+    /// This method handles any possible hazard layout.
     /// </summary>
-    public void Dispose()
+    public void ApplyHazards(ReadOnlySpan<ushort> hazardPositions)
     {
-        if (_grid == null) return;
-
-        NativeMemory.AlignedFree(_grid);
-        _grid = null;
-        _boardSize = 0;
-        _totalMemory = 0;
+        foreach (var position in hazardPositions) _grid[position] = HAZARD_ID;
     }
+    
+    /// <summary>
+    /// Applica le posizioni del cibo alla griglia.
+    /// </summary>
+    public void ApplyFood(ReadOnlySpan<ushort> foodPositions)
+    {
+        foreach (var position in foodPositions) _grid[position] = FOOD_ID;
+    }
+ 
+    /// <summary>
+    /// Clears the grid by setting all bytes to zero, preparing it for the next turn.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Clear() => Unsafe.InitBlock(_grid, EMPTY_ID, (uint)_grid);
+    
+    /// <summary>
+    /// Disposes of the struct by freeing its unmanaged memory.
+    /// </summary>
+    public void Dispose() => NativeMemory.AlignedFree(_grid);
 }
