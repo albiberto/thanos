@@ -4,75 +4,80 @@ using Thanos.Enums;
 
 namespace Thanos;
 
-/// <summary>
-/// Manages the game's global context and all snake entities.
-/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct Tesla : IDisposable
 {
-    private const int HeaderSize = 64; // 1 cache line
-    
-    // === CACHE LINE 1 - HEADER + BATTLEFIELD ===
-    private bool _isInitialized;    // 1byte
-    private ushort _snakeStride;    // 2bytes
-    private byte* _memory;          // 8byte
-    private BattleField _battleField; // 10 bytes
-    private fixed byte _padding[HeaderSize - sizeof(bool) - sizeof(ushort) - 8 - 10];
-    
-    // === CACHE LINE 2 - SNAKES POINTERS ===
-    private fixed long _snakePointers[Constants.MaxSnakes]; // 64 bytes (8 bytes per pointer)
+    private const int HeaderSize = 64;
+
+    // === CACHE LINE 1 ===
+    private bool _isInitialized;
+    private ushort _snakeStride;
+    private ushort _maxBodyLength;
+    private byte _activeSnakes;
+    private byte* _memory;
+    private BattleField _battleField;
+    private fixed byte _padding[HeaderSize - (sizeof(bool) + sizeof(byte) + sizeof(ushort) * 2 + 8 + 10)];
+
+    // === CACHE LINE 2 ===
+    private fixed long _snakePointers[Constants.MaxSnakes];
 
     /// <summary>
-    /// Initializes memory structures based on board dimensions.
+    ///     Inizializza l'engine e il suo stato direttamente da un set di posizioni iniziali.
+    ///     Questo metodo alloca la quantità di memoria ESATTA per i serpenti forniti.
+    ///     Ideale per scenari di deserializzazione a singolo turno.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Initialize(byte boardWidth, byte boardHeight)
+    public void InitializeFromState(byte boardWidth, byte boardHeight, ReadOnlySpan<ushort> startingPositions)
     {
-        if (_isInitialized) return;
+        if (_isInitialized)
+            // Se l'engine era già inizializzato, dobbiamo prima liberare la vecchia memoria
+            Dispose();
 
+        _activeSnakes = (byte)startingPositions.Length;
         var boardArea = (ushort)(boardWidth * boardHeight);
+
+        // 1. CALCOLO MEMORIA
+        // I calcoli sono gli stessi, ma useremo _activeSnakes invece di Constants.MaxSnakes
         var desiredBodyLength = (ushort)(boardArea * Constants.MaxBodyLengthRatio);
         var desiredBodyBytes = (uint)(desiredBodyLength * sizeof(ushort));
         var allocatedBodyBytes = (desiredBodyBytes + Constants.CacheLineSize - 1) / Constants.CacheLineSize * Constants.CacheLineSize;
-        var snakeStride = (ushort)(BattleSnake.HeaderSize + allocatedBodyBytes);
-        var totalSnakeMemory = (nuint)(snakeStride * Constants.MaxSnakes);
-        
-        _snakeStride = snakeStride;
+        _maxBodyLength = (ushort)(allocatedBodyBytes / sizeof(ushort));
+        _snakeStride = (ushort)(BattleSnake.HeaderSize + allocatedBodyBytes);
+
+        // Alloca memoria ESATTA per i serpenti attivi
+        var totalSnakeMemory = (nuint)(_snakeStride * _activeSnakes);
+
+        // 2. ALLOCAZIONE E PRE-CALCOLO
         _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
         _battleField.Initialize(boardArea);
-        
-        _isInitialized = true;
-        
         PrecalculatePointers();
+
+        _isInitialized = true;
+
+        // 3. RESET DEI SERPENTI (nello stesso ciclo, come suggerito da te)
+        // Non serve un secondo ciclo, il reset è parte dell'inizializzazione.
+        // Lo facciamo qui per completezza, anche se PrecalculatePointers già cicla.
+        // Per ottimizzare al massimo, potremmo unire questo al ciclo di PrecalculatePointers.
+        for (byte i = 0; i < _activeSnakes; i++) GetSnake(i)->Reset(startingPositions[i], _maxBodyLength);
     }
-    
-    /// <summary>
-    /// Pre-calcola e memorizza i puntatori all'inizio di ogni struttura BattleSnake.
-    /// Questo evita calcoli ripetuti dell'offset durante il gioco.
-    /// </summary>
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PrecalculatePointers()
     {
-        for (var i = 0; i < Constants.MaxSnakes; i++) _snakePointers[i] = (long)_memory + i * _snakeStride;
+        for (var i = 0; i < _activeSnakes; i++) _snakePointers[i] = (long)(_memory + i * _snakeStride);
     }
 
-    /// <summary>
-    /// Restituisce un puntatore al serpente specificato dal suo indice.
-    /// Questo metodo è estremamente veloce grazie all'uso dell'array di puntatori pre-calcolati.
-    /// </summary>
-    /// <param name="index">L'indice del serpente (da 0 a MaxSnakes-1).</param>
-    /// <returns>Un puntatore a BattleSnake.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public BattleSnake* GetSnake(byte index) => (BattleSnake*)_snakePointers[index];
 
-    /// <summary>
-    /// Rilascia tutta la memoria non gestita allocata da questa istanza.
-    /// </summary>
     public void Dispose()
     {
-        NativeMemory.AlignedFree(_memory);
-        _battleField.Dispose();
+        if (!_isInitialized) return;
 
+        NativeMemory.AlignedFree(_memory);
+        _memory = null;
+
+        _battleField.Dispose();
         _isInitialized = false;
     }
 }
