@@ -14,9 +14,8 @@ public static class Constants
     public const int Enemy5 = 6;
     public const int Enemy6 = 7;
     public const int Enemy7 = 8;
-    public const int Enemy8 = 9;
     public const int Food = 127;
     public const int Hazard = 255;
     
-    public const int MaxBodyLengthRatio = 3/4;
+    public const int MaxBodyLength = 256;
 }
