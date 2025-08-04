@@ -98,9 +98,11 @@ public unsafe struct BattleSnake
         var oldHead = Head;
         Head = newHeadPosition;
 
-        // Use the pre-calculated mask for a fast, branchless wrap-around.
-        // This is equivalent to (HeadIndex + 1) % capacity but significantly faster.
-        var nextHeadIndex = (HeadIndex + 1) & CapacityMask;
+        // Store the old head position at the current HeadIndex
+        Body[HeadIndex] = oldHead;
+    
+        // Move HeadIndex forward
+        HeadIndex = (HeadIndex + 1) & CapacityMask;
 
         if (hasEaten)
         {
@@ -111,10 +113,6 @@ public unsafe struct BattleSnake
             // If the snake doesn't eat, its tail also moves forward.
             TailIndex = (TailIndex + 1) & CapacityMask;
         }
-        
-        // The previous head's position becomes the new body segment at the head of the buffer.
-        Body[nextHeadIndex] = oldHead;
-        HeadIndex = nextHeadIndex;
 
         return true;
     }
