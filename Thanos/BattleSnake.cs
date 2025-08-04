@@ -103,4 +103,11 @@ public unsafe struct BattleSnake
 
         return true;
     }
+
+    public void Reset(ushort head)
+    {
+        Health = 100;
+        Length = 1;
+        Head = head;
+    }
 }
