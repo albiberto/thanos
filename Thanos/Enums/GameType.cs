@@ -1,4 +1,4 @@
-﻿namespace Thanos.BitMasks;
+﻿namespace Thanos.Enums;
 
 public enum GameType : byte
 {
