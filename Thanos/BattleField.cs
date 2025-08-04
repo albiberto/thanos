@@ -38,6 +38,7 @@ public unsafe struct BattleField : IDisposable
     /// Initializes the BattleField by allocating an aligned memory buffer.
     /// </summary>
     /// <param name="boardSize">The logical size of the board (width * height).</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Initialize(uint boardSize)
     {
         _boardSize = boardSize;
@@ -54,6 +55,7 @@ public unsafe struct BattleField : IDisposable
     /// Projects the current state of all active snakes onto the grid.
     /// </summary>
     /// <param name="tesla">A pointer to the main Tesla engine struct.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ProjectBattlefield(Tesla* tesla)
     {
         // Loop only over the snakes active in the current game.
@@ -64,27 +66,24 @@ public unsafe struct BattleField : IDisposable
 
             var snakeId = (byte)(i + 1);
             
-            // Project the head first.
-            _grid[snake->Head] = snakeId;
-
-            // Project the rest of the body by iterating through the circular buffer.
+            // Project the entire body including head
             var bodyIndex = snake->TailIndex;
-            for (var j = 0; j < snake->Length - 1; j++)
+            for (var j = 0; j < snake->Length - 1; j++)  // Length - 1 because head is separate
             {
                 var bodyPos = snake->Body[bodyIndex];
                 _grid[bodyPos] = snakeId;
-                
-                // --- BUG CORRECTION ---
-                // Use the bitwise AND with the pre-calculated mask for performance,
-                // matching the optimization in the BattleSnake.Move method.
                 bodyIndex = (bodyIndex + 1) & snake->CapacityMask;
             }
+        
+            // Project the head separately
+            _grid[snake->Head] = snakeId;
         }
     }
 
     /// <summary>
     /// Applies hazard positions to the grid.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ApplyHazards(ReadOnlySpan<ushort> hazardPositions)
     {
         foreach (var position in hazardPositions) _grid[position] = Constants.Hazard;
@@ -93,6 +92,7 @@ public unsafe struct BattleField : IDisposable
     /// <summary>
     /// Applies food positions to the grid.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ApplyFood(ReadOnlySpan<ushort> foodPositions)
     {
         foreach (var position in foodPositions) _grid[position] = Constants.Food;
@@ -113,5 +113,49 @@ public unsafe struct BattleField : IDisposable
         
         NativeMemory.AlignedFree(_grid);
         _grid = null;
+    }
+    
+    /// <summary>
+    /// Applies a batch of turn updates to the battlefield grid.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Simulate(TurnUpdate* updates, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var update = updates + i;
+            _grid[update->NewHead] = update->SnakeId;
+            if (!update->HasEaten) _grid[update->OldTail] = Constants.Empty;
+        }
+    }
+    
+    /// <summary>
+    /// Removes all body segments of a dead snake from the grid.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void RemoveSnake(BattleSnake* snake)
+    {
+        var bodyIndex = snake->TailIndex;
+        for (var j = 0; j < snake->Length - 1; j++)
+        {
+            _grid[snake->Body[bodyIndex]] = Constants.Empty;
+            bodyIndex = (bodyIndex + 1) & snake->CapacityMask;
+        }
+    
+        // Rimuovi la testa
+        _grid[snake->Head] = Constants.Empty;
+    }
+    
+    /// <summary>
+    /// A struct to hold all necessary data for a single snake's grid update.
+    /// </summary>
+    public readonly struct TurnUpdate(ushort newHead, ushort oldTail, byte snakeId, bool hasEaten)
+    {
+        public const int TurnSize = sizeof(ushort) * 2 + sizeof(byte) + sizeof(bool);
+    
+        public readonly ushort NewHead = newHead;
+        public readonly ushort OldTail = oldTail;
+        public readonly byte SnakeId = (byte)(snakeId + 1);
+        public readonly bool HasEaten = hasEaten;
     }
 }
