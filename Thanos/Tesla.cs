@@ -17,7 +17,7 @@ public unsafe struct Tesla : IDisposable
     private ushort _snakeStride;    // 2bytes
     private byte* _memory;          // 8byte
     private BattleField _battleField; // 10 bytes
-    private fixed byte _padding[HeaderSize - (sizeof(bool) - sizeof(ushort) - 8 - 10)];
+    private fixed byte _padding[HeaderSize - sizeof(bool) - sizeof(ushort) - 8 - 10];
     
     // === CACHE LINE 2 - SNAKES POINTERS ===
     private fixed long _snakePointers[Constants.MaxSnakes]; // 64 bytes (8 bytes per pointer)
