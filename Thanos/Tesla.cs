@@ -48,23 +48,22 @@ public unsafe struct Tesla : IDisposable
         var totalSnakeMemory = (nuint)(_snakeStride * _activeSnakes);
 
         // 2. ALLOCAZIONE E PRE-CALCOLO
-        _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
         _battleField.Initialize(boardArea);
-        PrecalculatePointers();
+
+        _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
+        InitializeSnakes(startingPositions);
 
         _isInitialized = true;
-
-        // 3. RESET DEI SERPENTI (nello stesso ciclo, come suggerito da te)
-        // Non serve un secondo ciclo, il reset è parte dell'inizializzazione.
-        // Lo facciamo qui per completezza, anche se PrecalculatePointers già cicla.
-        // Per ottimizzare al massimo, potremmo unire questo al ciclo di PrecalculatePointers.
-        for (byte i = 0; i < _activeSnakes; i++) GetSnake(i)->Reset(startingPositions[i], _maxBodyLength);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void PrecalculatePointers()
+    private void InitializeSnakes(ReadOnlySpan<ushort> startingPositions)
     {
-        for (var i = 0; i < _activeSnakes; i++) _snakePointers[i] = (long)(_memory + i * _snakeStride);
+        for (byte i = 0; i < _activeSnakes; i++)
+        {
+            _snakePointers[i] = (long)(_memory + i * _snakeStride);
+            GetSnake(i)->Reset(startingPositions[i], _maxBodyLength);
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
