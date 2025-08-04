@@ -25,6 +25,7 @@ public unsafe struct Tesla : IDisposable
     /// <summary>
     /// Initializes memory structures based on board dimensions.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Initialize(byte boardWidth, byte boardHeight)
     {
         if (_isInitialized) return;
@@ -49,6 +50,7 @@ public unsafe struct Tesla : IDisposable
     /// Pre-calcola e memorizza i puntatori all'inizio di ogni struttura BattleSnake.
     /// Questo evita calcoli ripetuti dell'offset durante il gioco.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PrecalculatePointers()
     {
         for (var i = 0; i < Constants.MaxSnakes; i++) _snakePointers[i] = (long)_memory + i * _snakeStride;
