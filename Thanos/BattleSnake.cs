@@ -34,9 +34,8 @@ public unsafe struct BattleSnake
     // === CACHE LINE 1 - HEADER ===
     public int Health;
     public int Length;
-    public int MaxLength;
     public ushort Head;
-    private fixed byte _padding[HeaderSize - (sizeof(int) * 3 + sizeof(ushort))];
+    private fixed byte _padding[HeaderSize - (sizeof(int) * 2 + sizeof(ushort))];
     
     // === CACHE LINE 2+ - BODY ARRAY ===
     // The fixed array starts at offset 64 (a new cache line).
@@ -54,60 +53,54 @@ public unsafe struct BattleSnake
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Move(ushort* bodyPtr, ushort newHeadPosition, byte content, int hazardDamage)
     {
-        // --- Phase 1: Update Health based on Destination ---
-        // This logic handles all direct consequences of the move.
-        // It's structured as if/else if to handle the enemy range check efficiently.
+        // A flag to pass the result of the food check from Phase 1 to Phase 3
+        // without re-evaluating the 'content' variable.
+        var hasEaten = false;
 
+        // --- Phase 1: Update Health based on Destination ---
         switch (content)
         {
-            // The content is 'Me' or another snake. This is a collision.
             case >= Constants.Me and <= Constants.Enemy8:
                 Health = 0;
-                return false; // Early exit on death to save memory operations.
+                return false;
+
             case Constants.Food:
-                Health = 100; // Restore health to full.
+                Health = 100;
+                hasEaten = true; // Set the flag here
                 break;
+
             case Constants.Hazard:
-                Health -= hazardDamage; // Apply hazard damage.
+                Health -= hazardDamage;
                 break;
-            // content is Empty (or an unhandled value)
-            default:
-                Health -= 1; // Standard health decay per turn.
+        
+            default: // Assumed to be Empty
+                Health -= 1;
                 break;
         }
 
         // --- Phase 2: Post-Movement Death Check ---
-        // Check if damage or decay has killed the snake.
-        if (Health <= 0) return false; // Dead. Skip body update.
+        if (Health <= 0 || Length <= 0) return false;
 
         // --- Phase 3: Update Body Position (only if alive) ---
-        var hasEaten = content == Constants.Food;
-        var canGrow = hasEaten && Length < MaxLength;
+        // The 'canGrow' logic now uses the pre-calculated 'hasEaten' flag.
+        // This avoids a second check on 'content', optimizing the instruction flow.
         var oldHead = Head;
 
         Head = newHeadPosition;
 
-        if (canGrow)
+        if (hasEaten)
         {
-            // Growth Path: Append the old head to the body without removing the tail.
+            // Growth Path
             Body[Length] = oldHead;
             Length++;
         }
         else
         {
-            // Movement Path: Shift all body segments forward.
-            if (Length > 1)
-            {
-                // This block copy is highly optimized for sequential memory access.
-                Unsafe.CopyBlock(bodyPtr, bodyPtr + 1, (uint)(Length - 1) * sizeof(ushort));
-            }
-            if (Length > 0)
-            {
-                // The old head becomes the new tail segment.
-                Body[Length - 1] = oldHead;
-            }
+            // Movement Path
+            Unsafe.CopyBlock(bodyPtr, bodyPtr + 1, (uint)(Length - 1) * sizeof(ushort));
+            Body[Length - 1] = oldHead;
         }
 
-        return true; // Survived.
+        return true;
     }
 }

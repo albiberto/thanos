@@ -18,13 +18,13 @@ public unsafe struct Tesla : IDisposable
     private ushort _snakeStride;
     private bool _isInitialized;
     private byte* _memory; // Puntatore al blocco di memoria per tutti i serpenti
-    private BattelField _battelField; // La matrice di collisione
+    private BattleField _battleField; // La matrice di collisione
     private fixed long _snakePointers[Constants.MaxSnakes]; // Puntatori pre-calcolati ai singoli serpenti
 
     // --- Proprietà Pubbliche ---
     public byte BoardWidth => _boardWidth;
     public byte BoardHeight => _boardHeight;
-    public ref readonly BattelField BattelField => ref _battelField;
+    public ref readonly BattleField BattleField => ref _battleField;
 
     /// <summary>
     /// Initializes the battlefield's memory structures once per game.
@@ -53,7 +53,7 @@ public unsafe struct Tesla : IDisposable
         _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
 
         // Inizializzazione della matrice di collisione
-        _battelField.Initialize(boardArea);
+        _battleField.Initialize(boardArea);
         
         _isInitialized = true;
         PrecalculatePointers();
@@ -66,17 +66,17 @@ public unsafe struct Tesla : IDisposable
     public void UpdateBoardState(ReadOnlySpan<ushort> foodPositions, ReadOnlySpan<ushort> hazardPositions)
     {
         // 1. Clear the board from the previous turn's state.
-        _battelField.Clear();
+        _battleField.Clear();
 
         // 2. Project the current snake positions onto the grid.
         fixed (Tesla* thisPtr = &this)
         {
-            _battelField.ProjectBattlefield(thisPtr, Constants.MaxSnakes);
+            _battleField.ProjectBattlefield(thisPtr, Constants.MaxSnakes);
         }
 
         // 3. Apply food and hazards. Hazards overwrite food if they overlap.
-        _battelField.ApplyFood(foodPositions);
-        _battelField.ApplyHazards(hazardPositions);
+        _battleField.ApplyFood(foodPositions);
+        _battleField.ApplyHazards(hazardPositions);
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ public unsafe struct Tesla : IDisposable
     public void Dispose()
     {
         if (!_isInitialized) return;
-        _battelField.Dispose();
+        _battleField.Dispose();
         NativeMemory.AlignedFree(_memory);
         _memory = null;
         _isInitialized = false;

@@ -10,7 +10,7 @@ namespace Thanos;
 /// It manages an unmanaged, aligned memory buffer for maximum performance.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 64)]
-public unsafe struct BattelField : IDisposable
+public unsafe struct BattleField : IDisposable
 {
     // --- Struct Fields (Total 64 bytes, 1 cache line) ---
     private byte* _grid;                    // 8 bytes: Pointer to the state grid (snakes, hazards)
