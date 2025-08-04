@@ -17,4 +17,6 @@ public static class Constants
     public const int Enemy8 = 9;
     public const int Food = 127;
     public const int Hazard = 255;
+    
+    public const int MaxBodyLengthRatio = 3/4;
 }
