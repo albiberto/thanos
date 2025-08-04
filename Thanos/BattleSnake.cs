@@ -34,7 +34,10 @@ namespace Thanos;
 [StructLayout(LayoutKind.Sequential, Pack = 64)]
 public unsafe struct BattleSnake
 {
-    public const int HeaderSize = 64;
+    private const int PaddingCount = 1;
+    private const int PaddingSize = Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
+    
+    public const int HeaderSize = PaddingCount * Constants.CacheLineSize;
 
     // === CACHE LINE 1 - HEADER ===
     public int Health;
@@ -50,7 +53,7 @@ public unsafe struct BattleSnake
     public ushort Head;
     
     // Padding to fill the 64-byte cache line
-    private fixed byte _padding[HeaderSize - sizeof(int) * 5 - sizeof(ushort) * 1];
+    private fixed byte _padding[PaddingSize];
 
     // === CACHE LINE 2+ - BODY ARRAY (Circular Buffer) ===
     public fixed ushort Body[1];
