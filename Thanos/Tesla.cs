@@ -26,7 +26,11 @@ namespace Thanos;
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct Tesla : IDisposable
 {
-    private const int HeaderSize = 64;
+    private const int PaddingCount = 2;
+    private const int PaddingSize1 = Constants.CacheLineSize - sizeof(bool) - sizeof(int) * 3 - sizeof(long) - BattleField.Size;
+    private const int PaddingSize2 = 0;
+    
+    public const int HeaderSize = PaddingCount * Constants.CacheLineSize;
 
     // === CACHE LINE 1 - State Header ===
     private bool _isInitialized;    // 1 byte
@@ -37,7 +41,7 @@ public unsafe struct Tesla : IDisposable
     private BattleField _battleField; // 10 bytes
     
     // Padding to fill the 64-byte cache line: 64 - (1+4+4+4+8+10) = 33 bytes.
-    private fixed byte _padding[HeaderSize - (sizeof(bool) - sizeof(int) * 3 - sizeof(long) + BattleField.Size)];
+    private fixed byte _padding[PaddingSize1];
 
     // === CACHE LINE 2 - Pointer Table ===
     // This remains fixed-size because the struct layout must be known at compile time.
@@ -58,19 +62,14 @@ public unsafe struct Tesla : IDisposable
         var boardArea = boardWidth * boardHeight;
 
         // --- Step 1: Calculate Memory Layout ---
-        
-        // Find the next power of two for the board area to get an ideal capacity.
         var idealCapacity = (int)BitOperations.RoundUpToPowerOf2(boardArea);
-        
-        // Cap the capacity at 256 and store it as a uint, avoiding a cast from the calculation.
-        _maxBodyLength = Math.Min(idealCapacity, Constants.MaxBodyLength);
-
-        // Calculate byte sizes and the final stride for a single snake.
-        _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort);;
+        _maxBodyLength = Math.Min(idealCapacity, Constants.MaxBodyLength); // Cap the capacity at 256.
+        _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort); // Calculate byte sizes and the final stride for a single snake.
         
         // --- Step 2: Allocate Memory ---
         var totalSnakeMemory = (nuint)(_snakeStride * ActiveSnakes);
         _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
+        
         _battleField.Initialize(boardArea);
         
         // --- Step 3: Initialize All Snakes in a Single Pass ---
@@ -88,14 +87,10 @@ public unsafe struct Tesla : IDisposable
     {
         for (byte i = 0; i < ActiveSnakes; i++)
         {
-            // Calculate the memory address for the current snake.
-            var snakePtr = _memory + i * _snakeStride;
+            var snakePtr = _memory + i * _snakeStride; // Calculate the memory address for the current snake.
             
-            // Store the pointer in the lookup table.
-            _snakePointers[i] = (long)snakePtr;
-            
-            // Reset the snake's state at that memory location.
-            ((BattleSnake*)snakePtr)->Reset(startingPositions[i], _maxBodyLength);
+            _snakePointers[i] = (long)snakePtr; // Store the pointer in the lookup table.
+            ((BattleSnake*)snakePtr)->Reset(startingPositions[i], _maxBodyLength); // Reset the snake's state at that memory location.
         }
     }
 
