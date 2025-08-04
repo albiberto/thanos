@@ -27,7 +27,7 @@ namespace Thanos;
 public unsafe struct Tesla : IDisposable
 {
     private const int PaddingCount = 2;
-    private const int PaddingSize1 = Constants.CacheLineSize - sizeof(bool) - sizeof(int) * 3 - sizeof(long) - BattleField.Size;
+    private const int PaddingSize1 = Constants.CacheLineSize - sizeof(bool) - sizeof(int) * 3 - sizeof(long) * 2 - BattleField.Size; // 25 bytes
     private const int PaddingSize2 = 0;
     
     public const int HeaderSize = PaddingCount * Constants.CacheLineSize;
@@ -38,6 +38,7 @@ public unsafe struct Tesla : IDisposable
     private int _snakeStride;       // 4 bytes (int to avoid casting from HeaderSize)
     private int _maxBodyLength;    // 4 bytes (uint to match RoundUpToPowerOfTwo's return type)
     private byte* _memory;          // 8 bytes
+    private BattleField.TurnUpdate* _turnUpdates; // 8 bytes
     private BattleField _battleField; // 10 bytes
     
     // Padding to fill the 64-byte cache line: 64 - (1+4+4+4+8+10) = 33 bytes.
@@ -69,7 +70,7 @@ public unsafe struct Tesla : IDisposable
         // --- Step 2: Allocate Memory ---
         var totalSnakeMemory = (nuint)(_snakeStride * ActiveSnakes);
         _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
-        
+        _turnUpdates = (BattleField.TurnUpdate*)NativeMemory.AlignedAlloc(BattleField.TurnUpdate.TurnSize * 8, Constants.CacheLineSize);
         _battleField.Initialize(boardArea);
         
         // --- Step 3: Initialize All Snakes in a Single Pass ---
@@ -99,6 +100,48 @@ public unsafe struct Tesla : IDisposable
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public BattleSnake* GetSnake(byte index) => (BattleSnake*)_snakePointers[index];
+    
+    
+    /// <summary>
+    /// Simulates a full turn for all active snakes, processing their moves,
+    /// updating their internal state, and applying the results to the battlefield.
+    /// </summary>
+    /// <param name="moves">
+    /// A read-only span containing the moves (as cell indices) for each active snake.
+    /// The length must be at least equal to the number of active snakes.
+    /// </param>
+    /// <remarks>
+    /// The method performs the simulation in two phases:
+    /// 1. Evaluates each snake's move, updates its state, and records any changes.
+    /// 2. Apply all collected updates to the battlefield in a single operation.
+    /// Dead snakes are immediately removed from the battlefield.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Simulate(ReadOnlySpan<ushort> moves)
+    {
+        var updateCount = 0;
+    
+        for (byte i = 0; i < ActiveSnakes; i++)
+        {
+            var snake = GetSnake(i);
+            if (snake->Health <= 0) continue;
+        
+            var oldTail = snake->Body[snake->TailIndex];
+            var content = _battleField[moves[i]];
+            var hasEaten = (content == Constants.Food);
+        
+            if (snake->Move(moves[i], content, 14))
+            {
+                _turnUpdates[updateCount++] = new BattleField.TurnUpdate(snake->Head, oldTail, i, hasEaten);
+            }
+            else
+            {
+                _battleField.RemoveSnake(snake);
+            }
+        }
+    
+        if (updateCount > 0) _battleField.Simulate(_turnUpdates, updateCount);
+    }
 
     /// <summary>
     /// Frees all unmanaged memory allocated by this instance.
@@ -109,6 +152,9 @@ public unsafe struct Tesla : IDisposable
 
         NativeMemory.AlignedFree(_memory);
         _memory = null;
+        
+        NativeMemory.AlignedFree(_turnUpdates);
+        _turnUpdates = null;
 
         _battleField.Dispose();
         _isInitialized = false;
