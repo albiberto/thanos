@@ -64,7 +64,7 @@ public unsafe struct Tesla : IDisposable
 
         // --- Step 1: Calculate Memory Layout ---
         var idealCapacity = (int)BitOperations.RoundUpToPowerOf2(boardArea);
-        _maxBodyLength = Math.Min(idealCapacity, Constants.MaxBodyLength); // Cap the capacity at 256.
+        _maxBodyLength = Math.Min(idealCapacity, Constants.MaxBodyLength); // Cap the capacity at 256 (4 Cache Line).
         _snakeStride = BattleSnake.HeaderSize + _maxBodyLength * sizeof(ushort); // Calculate byte sizes and the final stride for a single snake.
         
         // --- Step 2: Allocate Memory ---
@@ -91,7 +91,7 @@ public unsafe struct Tesla : IDisposable
             var snakePtr = _memory + i * _snakeStride; // Calculate the memory address for the current snake.
             
             _snakePointers[i] = (long)snakePtr; // Store the pointer in the lookup table.
-            ((BattleSnake*)snakePtr)->Reset(startingPositions[i], _maxBodyLength); // Reset the snake's state at that memory location.
+            ((BattleSnake*)snakePtr)->Initialize(startingPositions[i], _maxBodyLength); // Reset the snake's state at that memory location.
         }
     }
 
@@ -120,27 +120,42 @@ public unsafe struct Tesla : IDisposable
     public void Simulate(ReadOnlySpan<ushort> moves)
     {
         var updateCount = 0;
-    
+
         for (byte i = 0; i < ActiveSnakes; i++)
         {
             var snake = GetSnake(i);
-            if (snake->Health <= 0) continue;
-        
-            var oldTail = snake->Body[snake->TailIndex];
-            var content = _battleField[moves[i]];
-            var hasEaten = (content == Constants.Food);
-        
-            if (snake->Move(moves[i], content, 14))
+            if (snake->Dead) continue;
+
+            var newHeadPosition = moves[i];
+            var content = _battleField[newHeadPosition];
+
+            // Check for collisions
+            if (content is >= Constants.Me)
             {
-                _turnUpdates[updateCount++] = new BattleField.TurnUpdate(snake->Head, oldTail, i, hasEaten);
+                snake->Kill();
+                _battleField.RemoveSnake(snake);
+                continue;
             }
-            else
+            
+            var hasEaten = content == Constants.Food;
+            var damage = content == Constants.Hazard 
+                ? 14 // TODO: Put the real hazard value here
+                : 1; 
+
+            var oldTail = snake->TailIndex;
+            snake->Move(newHeadPosition, hasEaten, damage);
+            
+            if (snake->Dead)
             {
                 _battleField.RemoveSnake(snake);
             }
+            else
+            {
+                _turnUpdates[updateCount++] = new BattleField.TurnUpdate(snake->Head, oldTail, i, hasEaten);
+            }
         }
-    
-        if (updateCount > 0) _battleField.Simulate(_turnUpdates, updateCount);
+
+        if (updateCount > 0) _battleField.Update(_turnUpdates, updateCount);
     }
 
     /// <summary>
