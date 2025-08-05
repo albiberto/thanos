@@ -6,114 +6,111 @@ namespace Thanos;
 
 /// <summary>
 /// Represents a single snake entity with a cache-optimized memory layout.
-/// The snake's body is managed as a circular buffer for O(1) move operations.
 /// </summary>
-/// <remarks>
-/// --- CACHE-OPTIMIZED MEMORY LAYOUT (x64) ---
-/// The struct is explicitly laid out to align with CPU cache lines (64 bytes),
-/// minimizing memory access latency. This is a form of Data-Oriented Design.
-///
-/// --- CACHE LINE 1: Header (0-63 bytes) ---
-/// Contains all frequently-accessed state data. By grouping this data into a single
-/// 64-byte block, a single CPU cache-fetch can load all the information needed
-/// for state checks and move logic, drastically improving performance.
-///
-/// - Health, Length: Core game state.
-/// - Head: The absolute board position of the snake's head for quick lookups.
-/// - CapacityMask, HeadIndex, TailIndex: Fields to manage the circular buffer logic.
-/// - _padding: Ensures the header perfectly fills the first cache line, so the
-///   body array starts on a new cache line boundary.
-///
-/// --- CACHE LINE 2+: Body (64+ bytes) ---
-/// The snake's body is stored in a circular buffer starting at a 64-byte offset.
-/// This layout prevents the larger body array from polluting the cache line
-/// that holds the critical header state. The actual size of this buffer is
-/// determined at runtime by the 'Tesla' struct and must be a power of two
-/// for bitwise optimizations to work.
-/// </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 64)]
 public unsafe struct BattleSnake
 {
-    private const int PaddingCount = 1;
+    // --- Constants for memory layout ---
+    private const int HeaderFieldCount = 7; // Health, Length, Capacity, HeadIndex, TailIndex, Head, Tail
     private const int PaddingSize = Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
-    
-    public const int HeaderSize = PaddingCount * Constants.CacheLineSize;
+    public const int HeaderSize = Constants.CacheLineSize;
 
-    // === CACHE LINE 1 - HEADER ===
-    public int Health;
-    public int Length;
+    // ===================================
+    // === CACHE LINE 1: HEADER (64 bytes)
+    // ===================================
+    // All critical and frequently-accessed data resides here.
     
-    /// <summary>
-    /// The bitmask for circular buffer operations, pre-calculated as (capacity - 1).
-    /// </summary>
-    public int CapacityMask;
+    private int _capacity; // The maximum capacity of the Body buffer.
+    private int _nextHeadIndex; // The index where the next head position will be written.
+    
+    public int Health { get; private set; } // The current health of the snake, which can be reduced by damage or reset to 100 when eating.
+    public int Length { get; private set; } // The current length of the snake, which is the number of segments in its body.
+    
+    public ushort Head { get; private set; } // The current position of the snake's head on the board.
+    public int TailIndex { get; private set; } // The index of the current tail position in the Body array.
 
-    public int HeadIndex;
-    public int TailIndex;
-    public ushort Head;
-    
-    // Padding to fill the 64-byte cache line
+    // Padding to fill the cache line and align the Body array
     private fixed byte _padding[PaddingSize];
 
-    // === CACHE LINE 2+ - BODY ARRAY (Circular Buffer) ===
+    // ========================================
+    // === CACHE LINE 2+: BODY (Circular Buffer)
+    // ========================================
     public fixed ushort Body[1];
 
+
     /// <summary>
-    /// Resets the snake to a default state at a specific position.
-    /// The provided capacity must be a power of two for move optimizations to work correctly.
+    /// Initializes the snake to a starting state.
     /// </summary>
-    /// <param name="head">The starting board position for the snake's head.</param>
-    /// <param name="capacityMask">The physical size of the allocated body buffer. Must be a power of two (e.g., 128).</param>
-    public void Reset(ushort head, int capacityMask)
+    /// <param name="startingHead">The starting board position for the snake's head.</param>
+    /// <param name="capacity">The physical size of the body buffer. Must be a power of two.</param>
+    public void Initialize(ushort startingHead, int capacity)
     {
+        _capacity = capacity;
+        _nextHeadIndex = 1;
+
         Health = 100;
         Length = 1;
-        Head = head;
-        CapacityMask = capacityMask - 1; // Pre-calculate and store the bitmask to avoid a subtraction in the hot path (Move method). 
-        HeadIndex = 0;
-        TailIndex = 0;
-        Body[0] = head;
+        Head = startingHead;
+        TailIndex = 0; 
+        Body[0] = startingHead;
     }
 
     /// <summary>
-    /// Processes a single turn for the snake, updating its state based on the move's outcome.
-    /// Uses a highly efficient circular buffer with bitwise operations for body management.
+    /// Processes a single turn for the snake, updating its state.
     /// </summary>
-    /// <returns>True if the snake survives the move; otherwise, false.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Move(ushort newHeadPosition, byte content, int hazardDamage)
+    public void Move(ushort newHeadPosition, bool hasEaten, int damage)
     {
-        var hasEaten = false;
-
-        switch (content)
-        {
-            case >= Constants.Me and <= Constants.Enemy7: Health = 0; return false;
-            case Constants.Food: Health = 100; hasEaten = true; break;
-            case Constants.Hazard: Health -= hazardDamage; break;
-            default: Health -= 1; break;
-        }
-
-        if (Health <= 0) return false;
-
-        var oldHead = Head;
-        Head = newHeadPosition;
-
-        // Store the old head position at the current HeadIndex
-        Body[HeadIndex] = oldHead;
-    
-        // Move HeadIndex forward
-        HeadIndex = (HeadIndex + 1) & CapacityMask;
-
+        // 1. Update health
         if (hasEaten)
         {
+            Health = 100;
+        }
+        else
+        {
+            Health -= damage;
+        }
+
+        // If the move is fatal, set state to dead and exit
+        if (Dead)
+        {
+            Kill();
+            return;
+        }
+        
+        // The bitwise mask for circular buffer operations, derived from Capacity
+        var capacityMask = _capacity - 1;
+
+        // 2. Update body and head position
+        Body[_nextHeadIndex] = Head;
+        Head = newHeadPosition;
+        _nextHeadIndex = (_nextHeadIndex + 1) & capacityMask;
+
+        // 3. Handle length and tail movement
+        if (hasEaten && Length < _capacity)
+        {
+            // Case 1: The snake eats and has room to grow.
             Length++;
         }
         else
         {
-            // If the snake doesn't eat, its tail also moves forward.
-            TailIndex = (TailIndex + 1) & CapacityMask;
+            // Case 2: The snake moves without eating.
+            TailIndex = (TailIndex + 1) & capacityMask;
         }
-
-        return true;
     }
+
+    /// <summary>
+    /// Indicates if the snake is dead (health is zero or less).
+    /// </summary>
+    public readonly bool Dead
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Health <= 0;
+    }
+
+    /// <summary>
+    /// Sets the snake's health to zero.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Kill() => Health = 0;
 }

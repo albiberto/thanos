@@ -72,7 +72,7 @@ public unsafe struct BattleField : IDisposable
             {
                 var bodyPos = snake->Body[bodyIndex];
                 _grid[bodyPos] = snakeId;
-                bodyIndex = (bodyIndex + 1) & snake->CapacityMask;
+                bodyIndex = (bodyIndex + 1) & snake->Length; // Wrap around using bitwise AND
             }
         
             // Project the head separately
@@ -119,7 +119,7 @@ public unsafe struct BattleField : IDisposable
     /// Applies a batch of turn updates to the battlefield grid.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Simulate(TurnUpdate* updates, int count)
+    public void Update(TurnUpdate* updates, int count)
     {
         for (var i = 0; i < count; i++)
         {
@@ -129,32 +129,30 @@ public unsafe struct BattleField : IDisposable
         }
     }
     
-    /// <summary>
-    /// Removes all body segments of a dead snake from the grid.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveSnake(BattleSnake* snake)
     {
-        var bodyIndex = snake->TailIndex;
-        for (var j = 0; j < snake->Length - 1; j++)
+        var currentIndex = snake->TailIndex;
+
+        for (var i = 0; i < snake->Length; i++)
         {
-            _grid[snake->Body[bodyIndex]] = Constants.Empty;
-            bodyIndex = (bodyIndex + 1) & snake->CapacityMask;
+            var position = snake->Body[currentIndex];
+        
+            _grid[position] = Constants.Empty;
+        
+            currentIndex = (currentIndex + 1) & snake->Length;
         }
-    
-        // Rimuovi la testa
-        _grid[snake->Head] = Constants.Empty;
     }
     
     /// <summary>
     /// A struct to hold all necessary data for a single snake's grid update.
     /// </summary>
-    public readonly struct TurnUpdate(ushort newHead, ushort oldTail, byte snakeId, bool hasEaten)
+    public readonly struct TurnUpdate(ushort newHead, int oldTail, byte snakeId, bool hasEaten)
     {
         public const int TurnSize = sizeof(ushort) * 2 + sizeof(byte) + sizeof(bool);
     
         public readonly ushort NewHead = newHead;
-        public readonly ushort OldTail = oldTail;
+        public readonly int OldTail = oldTail;
         public readonly byte SnakeId = (byte)(snakeId + 1);
         public readonly bool HasEaten = hasEaten;
     }
