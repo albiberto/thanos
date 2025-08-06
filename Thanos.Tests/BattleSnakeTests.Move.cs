@@ -7,24 +7,25 @@ public partial class BattleSnakeTests
     {
         // Arrange
         const ushort startingHead = 42;
+        
         _sut->Initialize(startingHead, Capacity);
+        _sut->Kill(); // L'azione di "uccidere" fa parte della preparazione
+
+        // Calcola lo stato finale atteso (deve essere identico a quello dopo Kill)
+        const bool expectedIsDead = true;
+        const int expectedLength = 1;
+        var expectedHealth = 0;
+        var expectedHead = startingHead;
+        var expectedTailIndex = 0;
     
-        // Act: Kill the snake and attempt to move it
-        _sut->Kill();
-        _sut->Move(999, false, 10);
-    
+        // Act
+        _sut->Move(999, false, 10); // Questa mossa non deve avere alcun effetto
+
         // Assert
-        const int expectedLength = 1; // Length should remain 1 since the snake is dead
-        AsserState(true, expectedLength);
-        
-        const int expectedTailIndex = 0; // The Tail index should remain 0 since the snake is dead
-        AssertHeadAndTail(startingHead, expectedTailIndex, 1);
-        
-        var body = _sut->Body;
-        var actualHead = body[0];
-        
-        Assert.That(actualHead, Is.EqualTo(startingHead), $"Mismatch at index {0}: expected {startingHead}, found {actualHead}");
-        for(var i = 1; i < Capacity - 1; i++) Assert.That(body[i], Is.EqualTo(EmptyCell), $"Body index {i} should be 0, but found {body[i]}");
+        AssertFinalState(expectedIsDead, expectedLength, expectedHealth, expectedHead, expectedTailIndex);
+        // Un'asserzione specifica per il corpo di un serpente appena inizializzato e morto
+        Assert.That(_sut->Body[0], Is.EqualTo(startingHead));
+        for(var i = 1; i < Capacity; i++) Assert.That(_sut->Body[i], Is.EqualTo(0));
     }
     
     [Test]
@@ -33,79 +34,53 @@ public partial class BattleSnakeTests
         // Arrange
         const ushort startingHead = 50;
         const int damagePerMove = 10;
-    
+        const int initialHealth = 100;
         _sut->Initialize(startingHead, Capacity);
-    
-        var initialHealth = _sut->Health;
-    
-        var dieBound = initialHealth / damagePerMove;
+
+        // Calcola lo stato finale atteso
+        var movesToDie = initialHealth / damagePerMove;
+        var successfulMoves = movesToDie - 1; // Lo stato si congela prima della mossa fatale
+
+        var expectedIsDead = true;
+        var expectedLength = 1; // Non ha mai mangiato
+        var expectedHealth = 0; // O <= 0
+        var expectedHead = (ushort)(startingHead + successfulMoves);
+        var expectedTailIndex = successfulMoves; // La coda si muove ad ogni mossa riuscita
     
         // Act
-        for (var i = 1; i <= dieBound; i++) _sut->Move((ushort)(startingHead + i), false, damagePerMove);
-    
+        for (var i = 1; i <= movesToDie; i++) _sut->Move((ushort)(startingHead + i), false, damagePerMove);
+
         // Assert
-        const int expectedLength = 1; // Length should remain 1 since the snake is dead
-        AsserState(true, expectedLength);
-        
-        var totalMoves = dieBound - 1; // Total moves made before death, less one because the loop starts from 1
-        var expectedHead = (ushort)(startingHead + totalMoves);
-        var expectedTailIndex = totalMoves; 
-        AssertHeadAndTail(expectedHead, expectedTailIndex, dieBound);
-        
-        // Check the garbage body
-        AssertBody(_sut->Body, startingHead, totalMoves);
+        AssertFinalState(expectedIsDead, expectedLength, expectedHealth, expectedHead, expectedTailIndex);
+        AssertBody(_sut->Body, startingHead, successfulMoves);
     }
     
     [Test]
     public unsafe void Move_WithoutEating_TakesDamageAndTailMoves()
     {
         // Arrange
-        const int totalMovesWithEating = 1;
-        const int totalMovesWithoutEating = 10;
         const ushort startingHead = 10;
-    
+        const int eatingMoves = 1;
+        const int nonEatingMoves = 9; // Eseguiamo 9 mosse senza mangiare
         _sut->Initialize(startingHead, Capacity);
 
-        var startingHealth = _sut->Health;
+        // Calcola lo stato finale atteso
+        var totalMoves = eatingMoves + nonEatingMoves;
+        var expectedIsDead = false;
+        var expectedLength = 1 + eatingMoves; // Cresce solo di 1
+        var expectedHealth = 100 - nonEatingMoves; // Danno solo per le mosse senza mangiare
+        var expectedHead = (ushort)(startingHead + totalMoves);
+        var movesThatAdvanceTail = totalMoves - eatingMoves; // La coda avanza solo quando non cresce
+        var expectedTailIndex = movesThatAdvanceTail;
 
         // Act
-        _sut->Move(startingHead + 1, true);
-        for (var i = 2; i <= totalMovesWithoutEating; i++) _sut->Move((ushort)(startingHead + i), false);
+        _sut->Move(startingHead + 1, true); // Mangia una volta
+        for (var i = 1; i <= nonEatingMoves; i++) _sut->Move((ushort)(startingHead + 1 + i), false);
     
         // Assert
-        const int expectedLength = 2; // Length should increase by 1 since the snake has eaten once
-        const int movesWithoutEating = totalMovesWithoutEating - 1; // decrease by 1 because the loop starts from 2
-        var expectedHealth = startingHealth - movesWithoutEating; // Health decreases by 1 for each move without eating
-        AsserState(false, expectedLength, expectedHealth);
-        
-        const int totalMoves = totalMovesWithEating + movesWithoutEating;
-        const ushort expectedHead = startingHead + totalMoves;
-        const int expectedTailIndex = totalMoves - 1; 
-        AssertHeadAndTail(expectedHead, expectedTailIndex, totalMoves);
-        
-        Print(_sut->Body);
-        
-        // Check the garbage body
+        AssertFinalState(expectedIsDead, expectedLength, expectedHealth, expectedHead, expectedTailIndex);
         AssertBody(_sut->Body, startingHead, totalMoves);
     }
-    
-    // [Test]
-    // public unsafe void Move_WhenDamageIsFatal_StateStopsUpdating()
-    // {
-    //     // Arrange
-    //     const ushort startingHead = 1001;
-    //
-    //     _sut->Initialize(startingHead, Capacity);
-    //
-    //     var startingLength = _sut->Length;
-    //     var startingTailIndex = _sut->TailIndex;
-    //
-    //     // Act
-    //     _sut->Move(35, false, 1000);
-    //
-    //     // Assert
-    //     AssertHeadAndTail(0, startingHead, startingTailIndex);
-    // }
 
     [Test]
     [TestCase(Capacity)]
@@ -116,44 +91,45 @@ public partial class BattleSnakeTests
     [TestCase(Capacity * 3 + Capacity / 4)]
     [TestCase(Capacity * 4)]
     [TestCase(Capacity * 4 + Capacity / 5)]
-    public unsafe void Move_WhenBufferIsSaturatedByEating_MaintainsCorrectState(int totalMoves)
+    public unsafe void Move_WhenEatingContinuously_MaintainsCorrectState(int totalMoves)
     {
         // Arrange
         const ushort startingHead = 1;
-
         _sut->Initialize(startingHead, Capacity);
 
-        var startingTailIndex = _sut->TailIndex;
+        // Calcola lo stato finale atteso
+        var expectedIsDead = false;
+        var expectedHealth = 100;
+        var expectedLength = Math.Min(Capacity, 1 + totalMoves);
+        var expectedHead = (ushort)(startingHead + totalMoves);
+        var movesThatAdvanceTail = totalMoves >= Capacity ? totalMoves - (Capacity - 1) : 0;
+        var expectedTailIndex = movesThatAdvanceTail & (Capacity - 1);
 
-        // Act: Move the snake, eating at each step to fill the buffer
+        // Act
         for (var i = 1; i <= totalMoves; i++) _sut->Move((ushort)(startingHead + i), true);
-        
+    
         // Assert
-        AsserState(false, Capacity, 100);
-        
-        var expectedLength = (ushort)(startingHead + totalMoves);
-        var expectedTailIndex = (startingTailIndex + totalMoves + 1) & (Capacity - 1);
-        AssertHeadAndTail(expectedLength, expectedTailIndex, totalMoves);
-        
-        AssertSaturatedBody(_sut->Body, Capacity, expectedLength, expectedTailIndex);
-    }
-
-    private unsafe void AsserState(bool expectedDead, int expectedLength, int? expectedHealth = null)
-    {
-        Assert.Multiple(() =>
-        {
-            Assert.That(_sut->Dead, Is.EqualTo(expectedDead), expectedDead ? "Snake should be dead." : "Snake should be alive.");
-            Assert.That(_sut->Health, expectedDead ? Is.LessThanOrEqualTo(0) : Is.EqualTo(expectedHealth), $"Health should be {expectedHealth}.");
-            Assert.That(_sut->Length, Is.EqualTo(expectedLength), $"Length should be {expectedLength}.");
-        });
+        AssertFinalState(expectedIsDead, expectedLength, expectedHealth, expectedHead, expectedTailIndex);
+        AssertSaturatedBody(_sut->Body, expectedLength, expectedHead, _sut->TailIndex);
     }
     
-    private unsafe void AssertHeadAndTail(ushort expectedHead, int expectedTailIndex, int steps)
+    private unsafe void AssertFinalState(
+        bool expectedDead, 
+        int expectedLength, 
+        int expectedHealth, 
+        ushort expectedHead, 
+        int expectedTailIndex)
     {
         Assert.Multiple(() =>
         {
-            Assert.That(_sut->Head, Is.EqualTo(expectedHead), $"Head should be {expectedHead} after {steps} moves.");
-            Assert.That(_sut->TailIndex, Is.EqualTo(expectedTailIndex), $"TailIndex should be {expectedTailIndex} after {steps} moves.");
+            // Stato generale
+            Assert.That(_sut->Dead, Is.EqualTo(expectedDead), expectedDead ? "Snake should be dead." : "Snake should be alive.");
+            Assert.That(_sut->Length, Is.EqualTo(expectedLength), $"Length should be {expectedLength}.");
+            Assert.That(_sut->Health, expectedDead ? Is.LessThanOrEqualTo(0) : Is.EqualTo(expectedHealth), $"Health should be {expectedHealth}.");
+        
+            // Posizione
+            Assert.That(_sut->Head, Is.EqualTo(expectedHead), $"Head should be at {expectedHead}.");
+            Assert.That(_sut->TailIndex, Is.EqualTo(expectedTailIndex), $"TailIndex should be at {expectedTailIndex}.");
         });
     }
 
