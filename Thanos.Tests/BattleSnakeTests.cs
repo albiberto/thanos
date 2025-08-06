@@ -3,12 +3,14 @@ using System.Runtime.InteropServices;
 
 namespace Thanos.Tests;
 
-[TestFixture]
-public unsafe partial class BattleSnakeTests
+// The source parameterizes the test fixture.
+[TestFixtureSource(nameof(CapacitiesToTest))]
+public unsafe partial class BattleSnakeTests(int capacity)
 {
+    // Step 1: Define the different capacities you want to run all tests against.
+    public static readonly int[] CapacitiesToTest = [64, 128, 256];
+
     private const byte EmptyCell = 0; // Health, Length, Capacity, HeadIndex, TailIndex, Head, Tail
-    private const int Capacity = 256; 
-    private const int SnakeStride = BattleSnake.HeaderSize + Capacity * sizeof(ushort);
     
     private byte* _memory = null;
     private BattleSnake* _sut = null;
@@ -16,9 +18,11 @@ public unsafe partial class BattleSnakeTests
     [SetUp]
     public void SetUp()
     {
-        _memory = (byte*)NativeMemory.AlignedAlloc(SnakeStride, 64);
-        Unsafe.InitBlockUnaligned(_memory, EmptyCell, SnakeStride);
+        var _snakeStride = BattleSnake.HeaderSize + capacity * sizeof(ushort);
+        _memory = (byte*)NativeMemory.AlignedAlloc((nuint)_snakeStride, 64);
         _sut = (BattleSnake*)_memory;
+        
+        Unsafe.InitBlockUnaligned(_memory, EmptyCell, (uint)_snakeStride);
     }
     
     [TearDown]
