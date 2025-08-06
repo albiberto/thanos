@@ -8,7 +8,7 @@ public partial class BattleSnakeTests
         // Arrange
         const ushort startingHead = 42;
 
-        _sut->Initialize(startingHead, Capacity);
+        _sut->Initialize(startingHead, capacity);
         _sut->Kill(); // Killing the snake is part of the setup
 
         // Calculate the expected final state
@@ -33,7 +33,7 @@ public partial class BattleSnakeTests
         const ushort startingHead = 50;
         const int damagePerMove = 10;
         const int initialHealth = 100;
-        _sut->Initialize(startingHead, Capacity);
+        _sut->Initialize(startingHead, capacity);
 
         // Calculate the expected final state
         const int movesToDie = initialHealth / damagePerMove;
@@ -60,7 +60,7 @@ public partial class BattleSnakeTests
         const ushort startingHead = 10;
         const int eatingMoves = 1;
         const int nonEatingMoves = 9; // Execute 9 moves without eating
-        _sut->Initialize(startingHead, Capacity);
+        _sut->Initialize(startingHead, capacity);
 
         // Calculate the expected final state
         const int totalMoves = eatingMoves + nonEatingMoves;
@@ -81,27 +81,28 @@ public partial class BattleSnakeTests
     }
 
     [Test]
-    [TestCase(Capacity)]
-    [TestCase(Capacity + Capacity / 2)]
-    [TestCase(Capacity * 2)]
-    [TestCase(Capacity * 2 + Capacity / 3)]
-    [TestCase(Capacity * 3)]
-    [TestCase(Capacity * 3 + Capacity / 4)]
-    [TestCase(Capacity * 4)]
-    [TestCase(Capacity * 4 + Capacity / 5)]
-    public unsafe void Move_WhenEatingContinuously_MaintainsCorrectState(int totalMoves)
+    [TestCase(1)]
+    [TestCase(1.25)]
+    [TestCase(2)]
+    [TestCase(1.5)]
+    [TestCase(3)]
+    [TestCase(3.75)]
+    [TestCase(4)]
+    public unsafe void Move_WhenEatingContinuously_MaintainsCorrectState(double percentage)
     {
+        var totalMoves = (int)(capacity * percentage);
+        
         // Arrange
         const ushort startingHead = 1;
-        _sut->Initialize(startingHead, Capacity);
+        _sut->Initialize(startingHead, capacity);
 
         // Calculate the expected final state
         const bool expectedIsDead = false;
         const int expectedHealth = 100;
-        var expectedLength = Math.Min(Capacity, 1 + totalMoves);
+        var expectedLength = Math.Min(capacity, 1 + totalMoves);
         var expectedHead = (ushort)(startingHead + totalMoves);
-        var movesThatAdvanceTail = totalMoves >= Capacity ? totalMoves - (Capacity - 1) : 0;
-        var expectedTailIndex = movesThatAdvanceTail & (Capacity - 1);
+        var movesThatAdvanceTail = totalMoves >= capacity ? totalMoves - (capacity - 1) : 0;
+        var expectedTailIndex = movesThatAdvanceTail & (capacity - 1);
 
         // Act
         for (var i = 1; i <= totalMoves; i++) _sut->Move((ushort)(startingHead + i), true);
@@ -156,6 +157,6 @@ public partial class BattleSnakeTests
 
     private unsafe void Print(ushort* body)
     {
-        for (var i = 0; i < Capacity; i++) Console.WriteLine($"Body[{i}] = {body[i]}");
+        for (var i = 0; i < capacity; i++) Console.WriteLine($"Body[{i}] = {body[i]}");
     }
 }
