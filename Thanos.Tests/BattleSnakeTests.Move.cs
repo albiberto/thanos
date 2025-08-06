@@ -23,9 +23,7 @@ public partial class BattleSnakeTests
 
         // Assert
         AssertFinalState(expectedIsDead, expectedLength, expectedHealth, expectedHead, expectedTailIndex);
-        // Un'asserzione specifica per il corpo di un serpente appena inizializzato e morto
-        Assert.That(_sut->Body[0], Is.EqualTo(startingHead));
-        for(var i = 1; i < Capacity; i++) Assert.That(_sut->Body[i], Is.EqualTo(0));
+        AssertBody(_sut->Body, startingHead, 0); // Il corpo non deve cambiare
     }
     
     [Test]
