@@ -2,33 +2,59 @@
 
 public partial class BattleSnakeTests
 {
-    // [Test]
-    // public void Move_WhenEating_HealthBecomes100AndLengthIncreases()
-    // {
-    //     // Arrange
-    //     var initialLength = _sut.Length;
-    //     var initialTailIndex = _sut.TailIndex;
-    //
-    //     // Act
-    //     _sut.Move(15, true, 1); // damage is ignored
-    //
-    //     Assert.Multiple(() =>
-    //     {
-    //         // Assert
-    //         Assert.That(_sut.Health, Is.EqualTo(100), "Health should be reset to 100 when eating.");
-    //         Assert.That(_sut.Length, Is.EqualTo(initialLength + 1), "Length should increase by 1.");
-    //     });
-    //     Assert.Multiple(() =>
-    //     {
-    //         Assert.That(_sut.Head, Is.EqualTo(15), "The head should be at the new position.");
-    //         Assert.That(_sut.TailIndex, Is.EqualTo(initialTailIndex), "The tail index should not move when eating.");
-    //     });
-    // }
+    [Test]
+    public unsafe void Move_OnDeadSnake_HasNoEffect()
+    {
+        // Arrange
+        const ushort startingHead = 42;
+        _sut->Initialize(startingHead, Capacity);
+    
+        // Uccidi il serpente
+        _sut->Kill();
+        Assert.That(_sut->Dead, Is.True, "Precondition: Snake must be dead.");
+
+        // Memorizza lo stato da "morto"
+        var deadStateHealth = _sut->Health;
+        var deadStateLength = _sut->Length;
+        var deadStateHead = _sut->Head;
+        var deadStateTailIndex = _sut->TailIndex;
+
+        // Act
+        // Prova a muovere il serpente morto
+        _sut->Move(999, false, 10);
+
+        // Assert
+        const int totalMoves = 0; // The snake is dead, so no moves should be counted.
+        AssertAll(true, 0, deadStateLength, totalMoves, startingHead, deadStateTailIndex);
+    }
+    
+    [Test]
+    public unsafe void Move_WhenTakingDamage_DiesWhenHealthReachesZero()
+    {
+        // Arrange
+        const ushort startingHead = 50;
+        const int damagePerMove = 10;
+        
+        _sut->Initialize(startingHead, Capacity);
+
+        var startingLength = _sut->Length;
+        var initialHealth = _sut->Health; 
+        var startingTailIndex = _sut->TailIndex;
+        
+        var totalMoves = initialHealth / damagePerMove;
+        
+        // Act
+        for (var i = 1; i <= totalMoves; i++) _sut->Move((ushort)(startingHead + i), false, damagePerMove);
+
+        // Assert
+        AssertAll(true, 0, startingLength, totalMoves -1, startingHead, startingTailIndex);
+    }
 
     [Test]
     public unsafe void Move_WithoutEating_TakesDamageAndTailMoves()
     {
         // Arrange
+        const int totalMovesWithEating = 1;
         const int totalMovesWithoutEating = 10;
         const ushort startingHead = 10;
 
@@ -69,7 +95,15 @@ public partial class BattleSnakeTests
     }
 
     [Test]
-    public unsafe void Move_WhenBufferIsSaturatedByEating_MaintainsCorrectState()
+    [TestCase(Capacity)]
+    [TestCase(Capacity + Capacity / 2)]
+    [TestCase(Capacity * 2)]
+    [TestCase(Capacity * 2 + Capacity / 3)]
+    [TestCase(Capacity * 3)]
+    [TestCase(Capacity * 3 + Capacity / 4)]
+    [TestCase(Capacity * 4)]
+    [TestCase(Capacity * 4 + Capacity / 5)]
+    public unsafe void Move_WhenBufferIsSaturatedByEating_MaintainsCorrectState(int totalMoves)
     {
         // Arrange
         const ushort startingHead = 1000;
@@ -83,10 +117,10 @@ public partial class BattleSnakeTests
         // Fill the buffer completely by eating 'Capacity' times.
         // The snake starts at length 1, so it needs 'Capacity - 1' meals to become full.
         // Then, one more meal to force the tail to move.
-        for (var i = 1; i <= Capacity; i++) _sut->Move((ushort)(startingHead + i), true);
+        for (var i = 1; i <= totalMoves; i++) _sut->Move((ushort)(startingHead + i), true);
 
         // Assert
-        AssertAll(false, 100, Capacity, Capacity, startingHead, startingTailIndex);
+        AssertAll(false, 100, Capacity, totalMoves, startingHead, startingTailIndex);
     }
 
     private unsafe void AssertAll(bool ExpectedDead, int ExpectedHealth, int expectedLength, int totalMoves, ushort startingHead, int startingTailIndex)
