@@ -140,7 +140,7 @@ public unsafe struct Tesla : IDisposable
             var hasEaten = content == Constants.Food;
             var damage = content == Constants.Hazard 
                 ? 14 // TODO: Put the real hazard value here
-                : 1; 
+                : 0; 
 
             var oldTail = snake->TailIndex;
             snake->Move(newHeadPosition, hasEaten, damage);

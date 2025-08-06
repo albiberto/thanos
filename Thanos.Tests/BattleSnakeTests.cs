@@ -5,7 +5,7 @@ namespace Thanos.Tests;
 [TestFixture]
 public unsafe partial class BattleSnakeTests
 {
-    private const int Capacity = 128; 
+    private const int Capacity = 256; 
     private const int SnakeStride = BattleSnake.HeaderSize + Capacity * sizeof(ushort);
     
     private byte* _memory = null;
