@@ -59,7 +59,7 @@ public unsafe struct BattleSnake
     /// Processes a single turn for the snake, updating its state.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Move(ushort newHeadPosition, bool hasEaten, int damage)
+    public void Move(ushort newHeadPosition, bool hasEaten, int damage = 0)
     {
         // 1. Update health
         if (hasEaten)
@@ -68,15 +68,11 @@ public unsafe struct BattleSnake
         }
         else
         {
-            Health -= damage;
+            Health -= damage + 1;
         }
 
         // If the move is fatal, set state to dead and exit
-        if (Dead)
-        {
-            Kill();
-            return;
-        }
+        if (Dead) return;
         
         // The bitwise mask for circular buffer operations, derived from Capacity
         var capacityMask = _capacity - 1;
