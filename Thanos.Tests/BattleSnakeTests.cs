@@ -8,7 +8,7 @@ namespace Thanos.Tests;
 public unsafe partial class BattleSnakeTests(int capacity)
 {
     // Step 1: Define the different capacities you want to run all tests against.
-    public static readonly int[] CapacitiesToTest = [64, 128, 256];
+    public static readonly int[] CapacitiesToTest = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
 
     private const byte EmptyCell = 0; // Health, Length, Capacity, HeadIndex, TailIndex, Head, Tail
     

@@ -39,20 +39,23 @@ public unsafe struct BattleSnake
 
 
     /// <summary>
-    /// Initializes the snake to a starting state.
+    /// Initializes the state of a snake at a specific pre-allocated memory address.
+    /// This acts as a placement constructor.
     /// </summary>
-    /// <param name="startingHead">The starting board position for the snake's head.</param>
-    /// <param name="capacity">The physical size of the body buffer. Must be a power of two.</param>
-    public void Initialize(ushort startingHead, int capacity)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void PlacementNew(BattleSnake* address, ushort startPosition, int capacity)
     {
-        _capacity = capacity;
-        _nextHeadIndex = 1;
+        var snake = address;
 
-        Health = 100;
-        Length = 1;
-        Head = startingHead;
-        TailIndex = 0; 
-        Body[0] = startingHead;
+        snake->Health = 100;
+        snake->Length = 1;
+        snake->_capacity = capacity;
+        snake->Head = startPosition;
+        
+        snake->_nextHeadIndex = 1;
+        snake->TailIndex = 0;
+        
+        snake->Body[0] = startPosition;
     }
 
     /// <summary>
