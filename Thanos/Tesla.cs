@@ -88,10 +88,12 @@ public unsafe struct Tesla : IDisposable
     {
         for (byte i = 0; i < ActiveSnakes; i++)
         {
-            var snakePtr = _memory + i * _snakeStride; // Calculate the memory address for the current snake.
-            
-            _snakePointers[i] = (long)snakePtr; // Store the pointer in the lookup table.
-            ((BattleSnake*)snakePtr)->Initialize(startingPositions[i], _maxBodyLength); // Reset the snake's state at that memory location.
+            // snakePtr is a generic pointer to the snake's memory location.
+            var snakePtr = _memory + i * _snakeStride;
+            _snakePointers[i] = (long)snakePtr;
+
+            // we need to cast the snakePtr to BattleSnake* to call the placement constructor.
+            BattleSnake.PlacementNew((BattleSnake*)snakePtr, startingPositions[i], _maxBodyLength);
         }
     }
 

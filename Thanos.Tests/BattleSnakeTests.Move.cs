@@ -8,7 +8,7 @@ public partial class BattleSnakeTests
         // Arrange
         const ushort startingHead = 42;
 
-        _sut->Initialize(startingHead, capacity);
+        BattleSnake.PlacementNew(_sut, startingHead, capacity);
         _sut->Kill(); // Killing the snake is part of the setup
 
         // Calculate the expected final state
@@ -33,7 +33,7 @@ public partial class BattleSnakeTests
         const ushort startingHead = 50;
         const int damagePerMove = 10;
         const int initialHealth = 100;
-        _sut->Initialize(startingHead, capacity);
+        BattleSnake.PlacementNew(_sut, startingHead, capacity);
 
         // Calculate the expected final state
         const int movesToDie = initialHealth / damagePerMove;
@@ -60,7 +60,7 @@ public partial class BattleSnakeTests
         const ushort startingHead = 10;
         const int eatingMoves = 1;
         const int nonEatingMoves = 9; // Execute 9 moves without eating
-        _sut->Initialize(startingHead, capacity);
+        BattleSnake.PlacementNew(_sut, startingHead, capacity);
 
         // Calculate the expected final state
         const int totalMoves = eatingMoves + nonEatingMoves;
@@ -94,7 +94,7 @@ public partial class BattleSnakeTests
         
         // Arrange
         const ushort startingHead = 1;
-        _sut->Initialize(startingHead, capacity);
+        BattleSnake.PlacementNew(_sut, startingHead, capacity);
 
         // Calculate the expected final state
         const bool expectedIsDead = false;
