@@ -1,19 +1,25 @@
 ﻿namespace Thanos.Tests;
 
+/// <summary>
+///     Contains tests related to killing the BattleSnake.
+/// </summary>
 public partial class BattleSnakeTests
 {
+    /// <summary>
+    ///     Verifies that calling Kill sets the health to zero without modifying other properties.
+    /// </summary>
     [Test]
     public unsafe void Kill_KillSnake_SetHealthToZeroAndDoesntTouchOtherProperties()
     {
-        // ARRANGE
-        // Salviamo lo stato iniziale completo prima di qualsiasi azione
+        // Arrange: capture initial state
         var initialLength = _sut->Length;
         var initialHead = _sut->Head;
         var initialTailIndex = _sut->TailIndex;
 
-        _sut->Kill(); // Uccidiamo il serpente
+        // Act: kill the snake
+        _sut->Kill();
 
-        // ASSERT
+        // Assert: verify only health is changed
         Assert.Multiple(() =>
         {
             Assert.That(_sut->Dead, Is.True, "Snake should be dead.");

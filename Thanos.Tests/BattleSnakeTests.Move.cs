@@ -1,50 +1,59 @@
 ﻿namespace Thanos.Tests;
 
+/// <summary>
+/// Unit tests for the BattleSnake Move behavior under different conditions.
+/// </summary>
 public partial class BattleSnakeTests
 {
+    /// <summary>
+    /// Tests that when the snake moves without eating, its length remains constant
+    /// and the tail index advances.
+    /// </summary>
     [Test]
     public unsafe void Move_WhenNotEating_LengthIsConstantAndTailMoves()
     {
-        // ARRANGE
-        // Lo stato iniziale è definito da `@case` e creato nel SetUp.
+        // Arrange initial state
         var initialLength = _sut->Length;
         var initialTailIndex = _sut->TailIndex;
-        const ushort newHeadPosition = 999; // Una posizione qualsiasi
+        const ushort newHeadPosition = 999; // Arbitrary new head position
 
-        // ACT
+        // Act: move without eating
         _sut->Move(newHeadPosition, false);
 
-        // ASSERT
+        // Assert: check length, head, and tail index
         Assert.Multiple(() =>
         {
             Assert.That(_sut->Length, Is.EqualTo(initialLength), "Length should not change when not eating.");
             Assert.That(_sut->Head, Is.EqualTo(newHeadPosition), "Head should update to the new position.");
 
-            // La coda avanza (con wrap-around del buffer circolare)
+            // Expect tail index to increment (circular buffer)
             var expectedTailIndex = (initialTailIndex + 1) % @case.Capacity;
             Assert.That(_sut->TailIndex, Is.EqualTo(expectedTailIndex), "TailIndex should advance by one.");
         });
     }
 
+    /// <summary>
+    /// Tests that when the snake eats, its length increases and tail index stays the same.
+    /// </summary>
     [Test]
     public unsafe void Move_WhenEating_LengthIncrementsAndTailIsConstant()
     {
-        // Non eseguiamo questo test se il serpente è già alla massima capacità
+        // Skip test if already full
         if (@case.Body.Length >= @case.Capacity)
         {
-            Assert.Ignore("Cannot test eating when snake is already at full capacity.");
+            Assert.Pass("Cannot test eating when snake is already at full capacity.");
             return;
         }
 
-        // ARRANGE
+        // Arrange initial state
         var initialLength = _sut->Length;
         var initialTailIndex = _sut->TailIndex;
         const ushort newHeadPosition = 888;
 
-        // ACT
+        // Act: move with eating
         _sut->Move(newHeadPosition, true);
 
-        // ASSERT
+        // Assert: check length increase, tail unchanged, health reset
         Assert.Multiple(() =>
         {
             Assert.That(_sut->Length, Is.EqualTo(initialLength + 1), "Length should increment by 1 when eating.");
@@ -54,31 +63,33 @@ public partial class BattleSnakeTests
         });
     }
 
+    /// <summary>
+    /// Tests that health is reduced correctly when the snake takes damage during a move.
+    /// </summary>
     [Test]
     public unsafe void Move_ReducesHealth_WhenTakingDamage()
     {
-        // ARRANGE
+        // Arrange initial health
         var initialHealth = _sut->Health;
         const int damage = 15;
 
-        // ACT
+        // Act: move with damage
         _sut->Move(777, false, damage);
 
-        // ASSERT
-        // The health should decrease by the damage amount plus 1 (for the move itself)
+        // Assert: health should decrease by damage + 1 (base move penalty)
         Assert.That(_sut->Health, Is.EqualTo(initialHealth - damage - 1));
     }
 
+    /// <summary>
+    /// Tests that repeated eating fills the snake to max capacity, maintaining consistent state.
+    /// </summary>
     [Test]
     public unsafe void Move_WhenEatingUntilFull_ReachesMaxCapacityAndStateIsCorrect()
     {
-        // ARRANGE
-        // Lo stato iniziale è fornito da `@case` e creato nel [SetUp].
-
-        // Calcoliamo quante volte il serpente deve mangiare per riempire la sua capacità.
+        // Arrange: calculate number of required moves to fill capacity
         var movesToFill = @case.Capacity - @case.Body.Length;
 
-        // Se il serpente è già pieno, non c'è nulla da fare. Il test è valido.
+        // If already full, confirm and exit
         if (movesToFill <= 0)
         {
             Assert.That(_sut->Length, Is.EqualTo(@case.Capacity));
@@ -86,35 +97,30 @@ public partial class BattleSnakeTests
             return;
         }
 
-        // Prendiamo la posizione iniziale della testa per calcolare le mosse successive.
+        // Get current head position
         var initialHead = @case.Body[0];
 
-        // ACT
-        // Simuliamo il serpente che mangia fino a riempirsi.
+        // Act: simulate multiple eating moves to reach full capacity
         for (var i = 1; i <= movesToFill; i++)
         {
-            // La nuova posizione della testa è sequenziale per avere un risultato prevedibile.
-            var nextHeadPosition = (ushort)(initialHead + i);
+            var nextHeadPosition = (ushort)(initialHead + i); // Sequential head positions
             _sut->Move(nextHeadPosition, true);
         }
 
-        // ASSERT
-        // Verifichiamo che lo stato finale sia quello di un serpente saturo e corretto.
+        // Assert: verify final state
         Assert.Multiple(() =>
         {
-            // 1. La lunghezza DEVE essere uguale alla capacità.
+            // Should reach full capacity
             Assert.That(_sut->Length, Is.EqualTo(@case.Capacity), "Snake should be at full capacity.");
 
-            // 2. La salute deve essere 100, perché l'ultima mossa era con cibo.
+            // Health should be reset by last eating move
             Assert.That(_sut->Health, Is.EqualTo(100), "Health should be reset to 100 after eating.");
 
-            // 3. La testa deve trovarsi nell'ultima posizione calcolata.
+            // Head should be at the last calculated position
             var expectedHead = (ushort)(initialHead + movesToFill);
             Assert.That(_sut->Head, Is.EqualTo(expectedHead), "Head is not at the final expected position.");
 
-            // 4. L'indice della coda NON deve essere cambiato.
-            // Dato che il serpente ha solo mangiato per crescere, non ha mai mosso la sua coda originale.
-            // L'indice della coda, quindi, deve rimanere quello impostato inizialmente da CreateFromState.
+            // The Tail should not have moved since the snake only grew
             var expectedTailIndex = @case.Body.Length > 0 ? @case.Body.Length - 1 : 0;
             Assert.That(_sut->TailIndex, Is.EqualTo(expectedTailIndex), "TailIndex should not have moved during growth phase.");
         });
