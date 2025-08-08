@@ -1,122 +1,102 @@
-﻿using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 
 namespace Thanos;
 
 /// <summary>
-/// A high-performance, minimalist grid representing the raw state of the board.
-/// It manages an unmanaged, aligned memory buffer for maximum performance,
-/// with padding for potential SIMD (Single Instruction, Multiple Data) operations.
+///     A high-performance, minimalist grid representing the raw state of the board.
+///     It manages an unmanaged, aligned memory buffer for maximum performance,
+///     with padding for potential SIMD (Single Instruction, Multiple Data) operations.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct BattleField : IDisposable
 {
-    public const int Size = sizeof(long) + sizeof(uint);
-    
+    public const uint Offset = sizeof(byte);
+
+    // ======================================================================
+    // === NO CACHE LINE MANAGMENT: 
+    // The purpose of cache line alignment is to ensure that an entire data structure fits within a single cache line, avoiding multiple memory accesses.
+    // When BattleArena allocates memory for BattleField, it is BattleArena itself that is responsible for ensuring that the start of that allocation is properly aligned.
+    // Adding internal padding to the BattleField only wastes space because alignment is already handled at a higher level.
+    // ======================================================================
+
     /// <summary>
-    /// Pointer to the unmanaged memory block for the grid.
+    ///     Pointer to the unmanaged memory block for the grid.
     /// </summary>
     private byte* _grid;
     
+
+    // ======================================================================
+    // === END CACHE LINES
+    // ======================================================================
+
     /// <summary>
-    /// The logical size of the board (width * height).
-    /// </summary>
-    private uint _boardSize;
-    
-    /// <summary>
-    /// Gets the content of a cell at a specific grid index.
+    ///     Gets the content of a cell at a specific grid index.
     /// </summary>
     public byte this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _grid[index];
     }
-    
-    /// <summary>
-    /// Initializes the BattleField by allocating an aligned memory buffer.
-    /// </summary>
-    /// <param name="boardSize">The logical size of the board (width * height).</param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void PlacementNew(uint boardSize)
-    {
-        _boardSize = boardSize;
-        
-        // Pad the physical memory size to be a multiple of the SIMD vector size.
-        // This optimizes memory access for vectorized operations.
-        var vectorSize = (uint)Vector<byte>.Count;
-        var totalAllocatedMemory = (nuint)((boardSize + vectorSize - 1) / vectorSize * vectorSize);
-
-        _grid = (byte*)NativeMemory.AlignedAlloc(totalAllocatedMemory, Constants.CacheLineSize);
-    }
 
     /// <summary>
-    /// Projects the current state of all active snakes onto the grid.
+    ///     Initializes the BattleField at a given memory location, using a pre-allocated grid buffer.
     /// </summary>
-    /// <param name="tesla">A pointer to the main Tesla engine struct.</param>
+    /// <param name="battleField">Pointer to the memory for the BattleField struct.</param>
+    /// <param name="gridMemory">Pointer to the pre-allocated memory for the grid.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ProjectBattlefield(Tesla* tesla)
+    public static void PlacementNew(BattleField* battleField, byte* gridMemory) => battleField->_grid = gridMemory;
+
+    /// <summary>
+    ///     Projects the current state of all active snakes onto the grid.
+    /// </summary>
+    /// <param name="arena">A pointer to the main Tesla engine struct.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ProjectBattleField(BattleArena* arena)
     {
         // Loop only over the snakes active in the current game.
-        for (byte i = 0; i < tesla->ActiveSnakes; i++)
+        for (byte i = 0; i < arena->SnakesCount; i++)
         {
-            var snake = tesla->GetSnake(i);
-            if (snake->Health <= 0) continue;
+            var snake = arena->GetSnake(i);
+            if (snake->Dead) continue;
 
             var snakeId = (byte)(i + 1);
-            
+
             // Project the entire body including head
             var bodyIndex = snake->TailIndex;
-            for (var j = 0; j < snake->Length - 1; j++)  // Length - 1 because head is separate
+            for (var j = 0; j < snake->Length - 1; j++) // Length - 1 because the head is separate
             {
                 var bodyPos = snake->Body[bodyIndex];
                 _grid[bodyPos] = snakeId;
                 bodyIndex = (bodyIndex + 1) & snake->Length; // Wrap around using bitwise AND
             }
-        
+
             // Project the head separately
             _grid[snake->Head] = snakeId;
         }
     }
 
     /// <summary>
-    /// Applies hazard positions to the grid.
+    ///     Applies hazard positions to the grid.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ApplyHazards(ReadOnlySpan<ushort> hazardPositions)
+    public void ApplyHazards(ushort* hazards, int count)
     {
-        foreach (var position in hazardPositions) _grid[position] = Constants.Hazard;
+        for (var i = 0; i < count; i++) _grid[hazards[i]] = Constants.Hazard;
     }
-    
-    /// <summary>
-    /// Applies food positions to the grid.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ApplyFood(ReadOnlySpan<ushort> foodPositions)
-    {
-        foreach (var position in foodPositions) _grid[position] = Constants.Food;
-    }
- 
-    /// <summary>
-    /// Clears the grid by setting all bytes to zero, preparing it for the next turn.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear() => Unsafe.InitBlock(_grid, Constants.Empty, _boardSize);
 
     /// <summary>
-    /// Disposes of the struct by freeing its unmanaged memory.
+    ///     Applies food positions to the grid.
     /// </summary>
-    public void Dispose()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ApplyFoods(ushort* foods, int count)
     {
-        if (_grid == null) return;
-        
-        NativeMemory.AlignedFree(_grid);
-        _grid = null;
+        for (var i = 0; i < count; i++) _grid[foods[i]] = Constants.Hazard;
     }
-    
+
     /// <summary>
-    /// Applies a batch of turn updates to the battlefield grid.
+    ///     Applies a batch of turn updates to the battlefield grid.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Update(TurnUpdate* updates, int count)
@@ -128,7 +108,7 @@ public unsafe struct BattleField : IDisposable
             if (!update->HasEaten) _grid[update->OldTail] = Constants.Empty;
         }
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveSnake(BattleSnake* snake)
     {
@@ -137,20 +117,25 @@ public unsafe struct BattleField : IDisposable
         for (var i = 0; i < snake->Length; i++)
         {
             var position = snake->Body[currentIndex];
-        
+
             _grid[position] = Constants.Empty;
-        
+
             currentIndex = (currentIndex + 1) & snake->Length;
         }
     }
-    
+
     /// <summary>
-    /// A struct to hold all necessary data for a single snake's grid update.
+    ///     Disposes of the struct by freeing its unmanaged memory.
+    /// </summary>
+    public void Dispose() => NativeMemory.AlignedFree(_grid);
+
+    /// <summary>
+    ///     A struct to hold all necessary data for a single snake's grid update.
     /// </summary>
     public readonly struct TurnUpdate(ushort newHead, int oldTail, byte snakeId, bool hasEaten)
     {
         public const int TurnSize = sizeof(ushort) * 2 + sizeof(byte) + sizeof(bool);
-    
+
         public readonly ushort NewHead = newHead;
         public readonly int OldTail = oldTail;
         public readonly byte SnakeId = (byte)(snakeId + 1);
