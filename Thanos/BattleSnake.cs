@@ -39,23 +39,28 @@ public unsafe struct BattleSnake
 
 
     /// <summary>
-    /// Initializes the state of a snake at a specific pre-allocated memory address.
-    /// This acts as a placement constructor.
+    /// Reconstructs a snake from an existing game state at a specific memory address.
+    /// Used for deserializing a game turn.
     /// </summary>
+    /// <param name="snake">Pointer to the memory to initialize.</param>
+    /// <param name="health">The snake's current health.</param>
+    /// <param name="length">The snake's current length.</param>
+    /// <param name="capacity">The capacity of the body buffer.</param>
+    /// <param name="sourceBody">A span containing the snake's body coordinates, from head to tail.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(BattleSnake* address, ushort startPosition, int capacity)
+    public static void PlacementNew(BattleSnake* snake, int health, int length, int capacity, ReadOnlySpan<ushort> sourceBody)
     {
-        var snake = address;
-
-        snake->Health = 100;
-        snake->Length = 1;
+        snake->Health = health;
+        snake->Length = length;
         snake->_capacity = capacity;
-        snake->Head = startPosition;
+
+        snake->Head = sourceBody[0];
+    
+        var destinationBody = new Span<ushort>(snake->Body, capacity);
+        sourceBody.CopyTo(destinationBody);
         
-        snake->_nextHeadIndex = 1;
-        snake->TailIndex = 0;
-        
-        snake->Body[0] = startPosition;
+        snake->_nextHeadIndex = length % capacity;
+        snake->TailIndex = length - 1;
     }
 
     /// <summary>
@@ -64,6 +69,9 @@ public unsafe struct BattleSnake
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHeadPosition, bool hasEaten, int damage = 0)
     {
+        // If the snake is dead, no further processing is needed.
+        // But for performance reasons, we check in the caller.
+        
         // 1. Update health
         if (hasEaten)
         {

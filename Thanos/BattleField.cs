@@ -39,7 +39,7 @@ public unsafe struct BattleField : IDisposable
     /// </summary>
     /// <param name="boardSize">The logical size of the board (width * height).</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Initialize(uint boardSize)
+    public void PlacementNew(uint boardSize)
     {
         _boardSize = boardSize;
         

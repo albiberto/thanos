@@ -71,7 +71,7 @@ public unsafe struct Tesla : IDisposable
         var totalSnakeMemory = (nuint)(_snakeStride * ActiveSnakes);
         _memory = (byte*)NativeMemory.AlignedAlloc(totalSnakeMemory, Constants.CacheLineSize);
         _turnUpdates = (BattleField.TurnUpdate*)NativeMemory.AlignedAlloc(BattleField.TurnUpdate.TurnSize * 8, Constants.CacheLineSize);
-        _battleField.Initialize(boardArea);
+        _battleField.PlacementNew(boardArea);
         
         // --- Step 3: Initialize All Snakes in a Single Pass ---
         InitializeSnakes(startingPositions);
@@ -93,7 +93,7 @@ public unsafe struct Tesla : IDisposable
             _snakePointers[i] = (long)snakePtr;
 
             // we need to cast the snakePtr to BattleSnake* to call the placement constructor.
-            BattleSnake.PlacementNew((BattleSnake*)snakePtr, startingPositions[i], _maxBodyLength);
+            // TODO: BattleSnake.PlacementNew((BattleSnake*)snakePtr, startingPositions[i], _maxBodyLength);
         }
     }
 
