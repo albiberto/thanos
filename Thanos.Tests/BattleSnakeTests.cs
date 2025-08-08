@@ -31,7 +31,7 @@ public unsafe partial class BattleSnakeTests(TestCase @case)
         Unsafe.InitBlockUnaligned(_memory, EmptyCell, (uint)_snakeStride);
 
         // Construct the BattleSnake in-place
-        BattleSnake.PlacementNew(_sut, @case.Health, @case.Body.Length, @case.Capacity, @case.Body);
+        BattleSnake.PlacementNew(_sut, @case.Health, @case.Body.Length, @case.Capacity, (ushort*)Unsafe.AsPointer(ref @case.Body[0]));
     }
 
     /// <summary>
