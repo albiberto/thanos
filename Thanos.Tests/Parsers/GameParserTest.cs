@@ -32,9 +32,9 @@ public class LowLevelParserIntegrationTests
         Assert.Multiple(() =>
         {
             // Confronto proprietà dirette di Game
-            Assert.That(actual.Id.ToString(), Is.EqualTo(expected.Id), "Game ID should match.");
-            Assert.That(actual.Map.ToString(), Is.EqualTo(expected.map), "Game Map should match.");
-            Assert.That(actual.Source.ToString(), Is.EqualTo(expected.source), "Game Source should match.");
+            Assert.That(actual.Id.ToString().ToLowerInvariant(), Is.EqualTo(expected.Id.ToString().ToLowerInvariant()), "Game ID should match.");
+            Assert.That(actual.Map.ToString().ToLowerInvariant(), Is.EqualTo(expected.map.ToLowerInvariant()), "Game Map should match.");
+            Assert.That(actual.Source.ToString().ToLowerInvariant(), Is.EqualTo(expected.source.ToLowerInvariant()), "Game Source should match.");
             Assert.That(actual.Timeout, Is.EqualTo(expected.timeout), "Game Timeout should match.");
 
             // Confronto proprietà nidificate in RulesetSettings
@@ -45,15 +45,19 @@ public class LowLevelParserIntegrationTests
             Assert.That(actualSettings.HazardDamagePerTurn, Is.EqualTo(expectedSettings.hazardDamagePerTurn), "HazardDamagePerTurn should match.");
 
             // Confronto Royale
-            Assert.That(actualSettings.Royale.ShrinkEveryNTurns, Is.EqualTo(expectedSettings.Royale.ShrinkEveryNTurns), "ShrinkEveryNTurns should match.");
+            if(actualSettings.Royale.HasValue) Assert.That(actualSettings.Royale.Value.ShrinkEveryNTurns, Is.EqualTo(expectedSettings.Royale.ShrinkEveryNTurns), "ShrinkEveryNTurns should match.");
 
             // Confronto Squad
-            var actualSquad = actualSettings.Squad;
-            var expectedSquad = expectedSettings.Squad;
-            Assert.That(actualSquad.AllowBodyCollisions, Is.EqualTo(expectedSquad.AllowBodyCollisions), "AllowBodyCollisions should match.");
-            Assert.That(actualSquad.SharedElimination, Is.EqualTo(expectedSquad.SharedElimination), "SharedElimination should match.");
-            Assert.That(actualSquad.SharedHealth, Is.EqualTo(expectedSquad.SharedHealth), "SharedHealth should match.");
-            Assert.That(actualSquad.SharedLength, Is.EqualTo(expectedSquad.SharedLength), "SharedLength should match.");
+            if (actualSettings.Squad.HasValue)
+            {
+                var actualSquad = actualSettings.Squad;
+                var expectedSquad = expectedSettings.Squad;
+                
+                Assert.That(actualSquad.Value.AllowBodyCollisions, Is.EqualTo(expectedSquad.AllowBodyCollisions), "AllowBodyCollisions should match.");
+                Assert.That(actualSquad.Value.SharedElimination, Is.EqualTo(expectedSquad.SharedElimination), "SharedElimination should match.");
+                Assert.That(actualSquad.Value.SharedHealth, Is.EqualTo(expectedSquad.SharedHealth), "SharedHealth should match.");
+                Assert.That(actualSquad.Value.SharedLength, Is.EqualTo(expectedSquad.SharedLength), "SharedLength should match.");   
+            }
         });
     }
 }

@@ -3,9 +3,9 @@
 namespace Thanos.Tests.Support.Model;
 
 [method: JsonConstructor]
-public class Game(string id, Ruleset ruleset, string map, string source, uint timeout)
+public class Game(Guid id, Ruleset ruleset, string map, string source, uint timeout)
 {
-    public string Id { get; } = id;
+    public Guid Id { get; } = id;
     public Ruleset Ruleset { get; } = ruleset;
     public string map { get; } = map;
     public string source { get; } = source;
