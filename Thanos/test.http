@@ -1,7 +1,7 @@
 ﻿### Battlesnake API Tests and Benchmarks
 ### Assicurati che il server sia in esecuzione su http://localhost:8080
 
-@origin = http://localhost:8080/
+@origin = https://localhost:7068/
 
 ### Info Endpoint
 GET {{origin}}
@@ -10,8 +10,6 @@ Accept: application/json
 ### Start Game
 POST {{origin}}start
 Content-Type: application/json
-
-{}
 
 ### End Game
 POST {{origin}}end
@@ -25,120 +23,152 @@ Content-Type: application/json
 
 {
   "game": {
-	"id": "test-game-001",
-	"ruleset": {
-	  "name": "standard",
-	  "version": "v1.1.15",
-	  "settings": {
-		"foodSpawnChance": 15,
-		"minimumFood": 1,
-		"hazardDamagePerTurn": 14
-	  }
-	},
-	"map": "standard",
-	"source": "testing",
-	"timeout": 500
+    "id": "473C8DC0-68F4-4A51-B091-78FECAE5EA6C",
+    "ruleset": {
+      "name": "standard",
+      "version": "v1.1.15",
+      "settings": {
+        "foodSpawnChance": 15,
+        "minimumFood": 1,
+        "hazardDamagePerTurn": 5,
+        "royale": {
+          "shrinkEveryNTurns": 3
+        },
+        "squad": {
+          "allowBodyCollisions": true,
+          "sharedElimination": true,
+          "sharedHealth": false,
+          "sharedLength": false
+        }
+      }
+    },
+    "map": "standard",
+    "source": "arena",
+    "timeout": 500
   },
   "turn": 14,
   "board": {
-	"height": 11,
-	"width": 11,
-	"food": [
-	  {"x": 5, "y": 5},
-	  {"x": 9, "y": 0},
-	  {"x": 2, "y": 6}
-	],
-	"hazards": [
-	  {"x": 3, "y": 2}
-	],
-	"snakes": [
-	  {
-		"id": "snake-001",
-		"name": "Test Snake",
-		"health": 54,
-		"body": [
-		  {"x": 0, "y": 0},
-		  {"x": 1, "y": 0},
-		  {"x": 2, "y": 0}
-		],
-		"latency": "111",
-		"head": {"x": 0, "y": 0},
-		"length": 3,
-		"shout": "",
-		"customizations":{
-		  "color":"#FF0000",
-		  "head":"pixel",
-		  "tail":"pixel"
-		}
-	  },
-	  {
-		"id": "snake-002",
-		"name": "Enemy Snake",
-		"health": 16,
-		"body": [
-		  {"x": 5, "y": 4},
-		  {"x": 5, "y": 3},
-		  {"x": 6, "y": 3},
-		  {"x": 6, "y": 2}
-		],
-		"latency": "222",
-		"head": {"x": 5, "y": 4},
-		"length": 4,
-		"shout": "",
-		"customizations":{
-		  "color":"#26CF04",
-		  "head":"silly",
-		  "tail":"curled"
-		}
-	  }
-	]
+    "height": 11,
+    "width": 11,
+    "food": [
+      {
+        "x": 5,
+        "y": 5
+      },
+      {
+        "x": 9,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 6
+      }
+    ],
+    "hazards": [
+      {
+        "x": 3,
+        "y": 2
+      }
+    ],
+    "snakes": [
+      {
+        "id": "snake-001",
+        "name": "Test Snake",
+        "health": 54,
+        "body": [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 2,
+            "y": 0
+          }
+        ],
+        "latency": "111",
+        "head": {
+          "x": 0,
+          "y": 0
+        },
+        "length": 3,
+        "shout": "",
+        "customizations": {
+          "color": "#FF0000",
+          "head": "pixel",
+          "tail": "pixel"
+        }
+      },
+      {
+        "id": "snake-002",
+        "name": "Enemy Snake",
+        "health": 16,
+        "body": [
+          {
+            "x": 5,
+            "y": 4
+          },
+          {
+            "x": 5,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 2
+          }
+        ],
+        "latency": "222",
+        "head": {
+          "x": 5,
+          "y": 4
+        },
+        "length": 4,
+        "shout": "",
+        "customizations": {
+          "color": "#26CF04",
+          "head": "silly",
+          "tail": "curled"
+        }
+      }
+    ]
   },
   "you": {
-	"id": "snake-001",
-	"name": "Test Snake",
-	"health": 54,
-	"body": [
-	  {"x": 0, "y": 0},
-	  {"x": 1, "y": 0},
-	  {"x": 2, "y": 0}
-	],
-	"latency": "111",
-	"head": {"x": 0, "y": 0},
-	"length": 3,
-	"shout": "",
-	"customizations": {
-	  "color":"#FF0000",
-	  "head":"pixel",
-	  "tail":"pixel"
-	}
-  }
-}
-
-### Move - Scenario Minimal (1 snake, no food)
-# @name moveMinimal
-POST {{origin}}move
-Content-Type: application/json
-
-{
-  "turn": 1,
-  "board": {
-	"height": 11,
-	"width": 11,
-	"food": [],
-	"hazards": [],
-	"snakes": [{
-	  "id": "test-snake",
-	  "name": "Solo Snake",
-	  "health": 100,
-	  "body": [{"x": 5, "y": 5}],
-	  "head": {"x": 5, "y": 5},
-	  "length": 1
-	}]
-  },
-  "you": {
-	"id": "test-snake",
-	"name": "Solo Snake",
-	"health": 100
+    "id": "snake-001",
+    "name": "Test Snake",
+    "health": 54,
+    "body": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      }
+    ],
+    "latency": "111",
+    "head": {
+      "x": 0,
+      "y": 0
+    },
+    "length": 3,
+    "shout": "",
+    "customizations": {
+      "color": "#FF0000",
+      "head": "pixel",
+      "tail": "pixel"
+    }
   }
 }
 
@@ -149,115 +179,373 @@ Content-Type: application/json
 
 {
   "game": {
-	"id": "complex-game",
-	"ruleset": {"name": "standard", "version": "v1.1.15"},
-	"map": "standard",
-	"timeout": 500
+    "id": "complex-game",
+    "ruleset": {
+      "name": "standard",
+      "version": "v1.1.15",
+      "settings": {
+        "foodSpawnChance": 15,
+        "minimumFood": 1,
+        "hazardDamagePerTurn": 5,
+        "royale": {
+          "shrinkEveryNTurns": 3
+        },
+        "squad": {
+          "allowBodyCollisions": true,
+          "sharedElimination": true,
+          "sharedHealth": false,
+          "sharedLength": false
+        }
+      }
+    },
+    "map": "standard",
+    "timeout": 500
   },
   "turn": 150,
   "board": {
-	"height": 11,
-	"width": 11,
-	"food": [
-	  {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0}, {"x": 3, "y": 0}, {"x": 4, "y": 0},
-	  {"x": 5, "y": 0}, {"x": 6, "y": 0}, {"x": 7, "y": 0}, {"x": 8, "y": 0}, {"x": 9, "y": 0},
-	  {"x": 10, "y": 0}, {"x": 0, "y": 1}, {"x": 1, "y": 1}, {"x": 2, "y": 1}, {"x": 3, "y": 1},
-	  {"x": 4, "y": 1}, {"x": 5, "y": 1}, {"x": 6, "y": 1}, {"x": 7, "y": 1}, {"x": 8, "y": 1}
-	],
-	"hazards": [
-	  {"x": 5, "y": 5}, {"x": 6, "y": 5}, {"x": 5, "y": 6}, {"x": 6, "y": 6},
-	  {"x": 4, "y": 5}, {"x": 7, "y": 5}, {"x": 5, "y": 4}, {"x": 5, "y": 7}
-	],
-	"snakes": [
-	  {
-		"id": "snake-1",
-		"name": "Snake 1",
-		"health": 78,
-		"body": [
-		  {"x": 0, "y": 10}, {"x": 1, "y": 10}, {"x": 2, "y": 10}, {"x": 3, "y": 10},
-		  {"x": 4, "y": 10}, {"x": 5, "y": 10}, {"x": 6, "y": 10}, {"x": 7, "y": 10},
-		  {"x": 8, "y": 10}, {"x": 9, "y": 10}, {"x": 10, "y": 10}, {"x": 10, "y": 9}
-		],
-		"head": {"x": 0, "y": 10},
-		"length": 12
-	  },
-	  {
-		"id": "snake-2",
-		"name": "Snake 2",
-		"health": 45,
-		"body": [
-		  {"x": 0, "y": 5}, {"x": 0, "y": 4}, {"x": 0, "y": 3}, {"x": 0, "y": 2},
-		  {"x": 1, "y": 2}, {"x": 2, "y": 2}, {"x": 3, "y": 2}
-		],
-		"head": {"x": 0, "y": 5},
-		"length": 7
-	  },
-	  {
-		"id": "snake-3",
-		"name": "Snake 3",
-		"health": 92,
-		"body": [
-		  {"x": 10, "y": 5}, {"x": 10, "y": 4}, {"x": 10, "y": 3}, {"x": 10, "y": 2},
-		  {"x": 9, "y": 2}, {"x": 8, "y": 2}, {"x": 7, "y": 2}, {"x": 6, "y": 2},
-		  {"x": 5, "y": 2}, {"x": 4, "y": 2}
-		],
-		"head": {"x": 10, "y": 5},
-		"length": 10
-	  },
-	  {
-		"id": "snake-4",
-		"name": "My Snake",
-		"health": 31,
-		"body": [
-		  {"x": 5, "y": 8}, {"x": 6, "y": 8}, {"x": 7, "y": 8}, {"x": 8, "y": 8},
-		  {"x": 8, "y": 7}, {"x": 8, "y": 6}
-		],
-		"head": {"x": 5, "y": 8},
-		"length": 6
-	  }
-	]
+    "height": 11,
+    "width": 11,
+    "food": [
+      {
+        "x": 0,
+        "y": 0
+      },
+      {
+        "x": 1,
+        "y": 0
+      },
+      {
+        "x": 2,
+        "y": 0
+      },
+      {
+        "x": 3,
+        "y": 0
+      },
+      {
+        "x": 4,
+        "y": 0
+      },
+      {
+        "x": 5,
+        "y": 0
+      },
+      {
+        "x": 6,
+        "y": 0
+      },
+      {
+        "x": 7,
+        "y": 0
+      },
+      {
+        "x": 8,
+        "y": 0
+      },
+      {
+        "x": 9,
+        "y": 0
+      },
+      {
+        "x": 10,
+        "y": 0
+      },
+      {
+        "x": 0,
+        "y": 1
+      },
+      {
+        "x": 1,
+        "y": 1
+      },
+      {
+        "x": 2,
+        "y": 1
+      },
+      {
+        "x": 3,
+        "y": 1
+      },
+      {
+        "x": 4,
+        "y": 1
+      },
+      {
+        "x": 5,
+        "y": 1
+      },
+      {
+        "x": 6,
+        "y": 1
+      },
+      {
+        "x": 7,
+        "y": 1
+      },
+      {
+        "x": 8,
+        "y": 1
+      }
+    ],
+    "hazards": [
+      {
+        "x": 5,
+        "y": 5
+      },
+      {
+        "x": 6,
+        "y": 5
+      },
+      {
+        "x": 5,
+        "y": 6
+      },
+      {
+        "x": 6,
+        "y": 6
+      },
+      {
+        "x": 4,
+        "y": 5
+      },
+      {
+        "x": 7,
+        "y": 5
+      },
+      {
+        "x": 5,
+        "y": 4
+      },
+      {
+        "x": 5,
+        "y": 7
+      }
+    ],
+    "snakes": [
+      {
+        "id": "snake-1",
+        "name": "Snake 1",
+        "health": 78,
+        "body": [
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 10
+          },
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 3,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          },
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 9,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 9
+          }
+        ],
+        "head": {
+          "x": 0,
+          "y": 10
+        },
+        "length": 12
+      },
+      {
+        "id": "snake-2",
+        "name": "Snake 2",
+        "health": 45,
+        "body": [
+          {
+            "x": 0,
+            "y": 5
+          },
+          {
+            "x": 0,
+            "y": 4
+          },
+          {
+            "x": 0,
+            "y": 3
+          },
+          {
+            "x": 0,
+            "y": 2
+          },
+          {
+            "x": 1,
+            "y": 2
+          },
+          {
+            "x": 2,
+            "y": 2
+          },
+          {
+            "x": 3,
+            "y": 2
+          }
+        ],
+        "head": {
+          "x": 0,
+          "y": 5
+        },
+        "length": 7
+      },
+      {
+        "id": "snake-3",
+        "name": "Snake 3",
+        "health": 92,
+        "body": [
+          {
+            "x": 10,
+            "y": 5
+          },
+          {
+            "x": 10,
+            "y": 4
+          },
+          {
+            "x": 10,
+            "y": 3
+          },
+          {
+            "x": 10,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "head": {
+          "x": 10,
+          "y": 5
+        },
+        "length": 10
+      },
+      {
+        "id": "snake-4",
+        "name": "My Snake",
+        "health": 31,
+        "body": [
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 6
+          }
+        ],
+        "head": {
+          "x": 5,
+          "y": 8
+        },
+        "length": 6
+      }
+    ]
   },
   "you": {
-	"id": "snake-4",
-	"name": "My Snake",
-	"health": 31,
-	"body": [
-	  {"x": 5, "y": 8}, {"x": 6, "y": 8}, {"x": 7, "y": 8}, {"x": 8, "y": 8},
-	  {"x": 8, "y": 7}, {"x": 8, "y": 6}
-	],
-	"head": {"x": 5, "y": 8},
-	"length": 6
-  }
-}
-
-### Move - Edge Case: Near Border
-# @name moveEdgeCase
-POST {{origin}}move
-Content-Type: application/json
-
-{
-  "turn": 50,
-  "board": {
-	"height": 11,
-	"width": 11,
-	"food": [{"x": 0, "y": 10}],
-	"hazards": [],
-	"snakes": [{
-	  "id": "edge-snake",
-	  "name": "Edge Snake",
-	  "health": 25,
-	  "body": [
-		{"x": 0, "y": 0},
-		{"x": 1, "y": 0},
-		{"x": 1, "y": 1}
-	  ],
-	  "head": {"x": 0, "y": 0},
-	  "length": 3
-	}]
-  },
-  "you": {
-	"id": "edge-snake",
-	"name": "Edge Snake",
-	"health": 25
+    "id": "snake-4",
+    "name": "My Snake",
+    "health": 31,
+    "body": [
+      {
+        "x": 5,
+        "y": 8
+      },
+      {
+        "x": 6,
+        "y": 8
+      },
+      {
+        "x": 7,
+        "y": 8
+      },
+      {
+        "x": 8,
+        "y": 8
+      },
+      {
+        "x": 8,
+        "y": 7
+      },
+      {
+        "x": 8,
+        "y": 6
+      }
+    ],
+    "head": {
+      "x": 5,
+      "y": 8
+    },
+    "length": 6
   }
 }

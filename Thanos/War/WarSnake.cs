@@ -2,13 +2,13 @@
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 
-namespace Thanos;
+namespace Thanos.War;
 
 /// <summary>
 /// Represents a single snake entity with a cache-optimized memory layout.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 64)]
-public unsafe struct BattleSnake
+public unsafe struct WarSnake
 {
     // --- Constants for memory layout ---
     private const int PaddingSize = (int)Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
@@ -51,7 +51,7 @@ public unsafe struct BattleSnake
     /// <param name="capacity">The capacity of the body buffer.</param>
     /// <param name="sourceBody">A span containing the snake's body coordinates, from head to tail.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(BattleSnake* snake, int health, int length, int capacity, ushort* sourceBody)
+    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ushort* sourceBody)
     {
         snake->Health = health;
         snake->Length = length;
