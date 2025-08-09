@@ -17,7 +17,7 @@ public class LowLevelParserIntegrationTests
         var expectedGame = @case.Game;
         var actualGame = LowLevelParser.Parse(@case.Raw);
         
-        AssertGamesAreEqual(actualGame, expectedGame);
+        AssertGamesAreEqual(actualGame.Game, expectedGame);
     }
 
     /// <summary>

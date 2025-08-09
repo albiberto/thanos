@@ -13,10 +13,10 @@ public static class LowLevelParser
     
     #endregion
     
-    public static Game Parse(string json)
+    public static MoveRequest Parse(string json)
     {
         Game game = default;
-        int turn = default;
+        var turn = 0;
 
         var jsonBytes = Encoding.UTF8.GetBytes(json);
         var reader = new Utf8JsonReader(jsonBytes);
@@ -42,7 +42,6 @@ public static class LowLevelParser
             }
         }
 
-        return game;
+        return new(game, turn, new());
     }
-
 }
