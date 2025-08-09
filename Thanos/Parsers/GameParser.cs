@@ -33,17 +33,17 @@ public static class GameParser
     private static ReadOnlySpan<byte> SharedLengthBytes => "sharedLength"u8;
     
     // Valori per l'enum Map
-    private static ReadOnlySpan<byte> MapStandardBytes => "Standard"u8;
-    private static ReadOnlySpan<byte> MapRoyaleBytes => "Royale"u8;
-    private static ReadOnlySpan<byte> MapConstrictorBytes => "Constrictor"u8;
-    private static ReadOnlySpan<byte> MapSnailModeBytes => "SnailMode"u8;
+    private static ReadOnlySpan<byte> MapStandardBytes => "standard"u8;
+    private static ReadOnlySpan<byte> MapRoyaleBytes => "royale"u8;
+    private static ReadOnlySpan<byte> MapConstrictorBytes => "constrictor"u8;
+    private static ReadOnlySpan<byte> MapSnailModeBytes => "snailMode"u8;
 
     // Valori per l'enum Source
-    private static ReadOnlySpan<byte> SourceTournamentBytes => "Tournament"u8;
-    private static ReadOnlySpan<byte> SourceLeagueBytes => "League"u8;
-    private static ReadOnlySpan<byte> SourceArenaBytes => "Arena"u8;
-    private static ReadOnlySpan<byte> SourceChallengeBytes => "Challenge"u8;
-    private static ReadOnlySpan<byte> SourceCustomBytes => "Custom"u8;
+    private static ReadOnlySpan<byte> SourceTournamentBytes => "tournament"u8;
+    private static ReadOnlySpan<byte> SourceLeagueBytes => "league"u8;
+    private static ReadOnlySpan<byte> SourceArenaBytes => "arena"u8;
+    private static ReadOnlySpan<byte> SourceChallengeBytes => "challenge"u8;
+    private static ReadOnlySpan<byte> SourceCustomBytes => "custom"u8;
 
 
     #endregion
@@ -229,7 +229,7 @@ public static class GameParser
 
     private static Map ParseMap(ref Utf8JsonReader reader)
     {
-        if (reader.TokenType != JsonTokenType.String) throw new JsonException("...");
+        if (reader.TokenType != JsonTokenType.String) throw new JsonException("Expected a string for 'map'.");
 
         // Usa i campi statici pre-compilati
         if (reader.ValueTextEquals(MapStandardBytes)) return Map.Standard;
@@ -242,8 +242,7 @@ public static class GameParser
 
     private static Source ParseSource(ref Utf8JsonReader reader)
     {
-        if (reader.TokenType != JsonTokenType.String)
-            throw new JsonException();
+        if (reader.TokenType != JsonTokenType.String) throw new JsonException("Expected a string for 'source'.");
 
         // Usa i campi statici pre-compilati
         if (reader.ValueTextEquals(SourceTournamentBytes)) return Source.Tournament;

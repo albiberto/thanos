@@ -12,7 +12,7 @@ public unsafe struct BattleArena : IDisposable
     public readonly Game* Game; 
     
     // La board mutabile che contiene campo e serpenti
-    public Board* Board;
+    // public Board* Board;
     
     // Dati di stato
     public readonly int Turn;
@@ -32,14 +32,15 @@ public unsafe struct BattleArena : IDisposable
         // l'arena dovrebbe memorizzare un array di puntatori/offset.
         // Per semplicità, assumiamo che il deserializzatore li piazzi contigui.
         
-        byte* current = (byte*)Board->Snakes;
-        for (int i = 0; i < index; i++)
-        {
-            // Avanza il puntatore della dimensione del serpente precedente
-            var snake = (BattleSnake*)current;
-            current += GetSizeOfBattleSnake(snake);
-        }
-        return (BattleSnake*)current;
+        // byte* current = (byte*)Board->Snakes;
+        // for (int i = 0; i < index; i++)
+        // {
+        //     // Avanza il puntatore della dimensione del serpente precedente
+        //     var snake = (BattleSnake*)current;
+        //     current += GetSizeOfBattleSnake(snake);
+        // }
+        // return (BattleSnake*)current;
+        return null; // Placeholder
     }
     
     // Helper per calcolare la dimensione di un BattleSnake, inclusa la sua body capacity.
