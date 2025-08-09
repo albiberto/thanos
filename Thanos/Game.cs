@@ -28,7 +28,7 @@ public readonly struct Ruleset(RulesetSettings settings)
 /// <summary>
 /// Contiene le impostazioni specifiche delle regole.
 /// </summary>
-public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int hazardDamagePerTurn, Royale royale, Squad squad)
+public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int hazardDamagePerTurn, Royale? royale, Squad? squad)
 {
     public int FoodSpawnChance { get; } = foodSpawnChance;
     public int MinimumFood { get; } = minimumFood;
