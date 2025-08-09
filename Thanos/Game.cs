@@ -10,7 +10,7 @@ namespace Thanos;
 [StructLayout(LayoutKind.Sequential, Size = Constants.CacheLineSize)]
 public readonly unsafe struct Game(Guid id, Ruleset ruleset, Map map, Source source, int timeout)
 {
-    private const int Size = 16 /*GUID*/ + Ruleset.Size + sizeof(Map) + sizeof(Source) + sizeof(uint);
+    private const int Size = 64; // In the worst case size is less than 64 bytes, so we can use a single cache line.
 
     public Guid Id { get; } = id;
     public Ruleset Ruleset { get; } = ruleset;
@@ -21,8 +21,6 @@ public readonly unsafe struct Game(Guid id, Ruleset ruleset, Map map, Source sou
 
 public readonly struct Ruleset(RulesetSettings settings)
 {
-    public const int Size = RulesetSettings.Size;
-    
     public RulesetSettings Settings { get; } = settings;
 }
 
@@ -32,14 +30,12 @@ public readonly struct Ruleset(RulesetSettings settings)
 /// </summary>
 public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int hazardDamagePerTurn, Royale royale, Squad squad)
 {
-    public const int Size = sizeof(uint) * 3 + Royale.Size + Squad.Size;
-    
     public int FoodSpawnChance { get; } = foodSpawnChance;
     public int MinimumFood { get; } = minimumFood;
     public int HazardDamagePerTurn { get; } = hazardDamagePerTurn;
 
-    public Royale Royale { get; } = royale;
-    public Squad Squad { get; } = squad;
+    public Royale? Royale { get; } = royale;
+    public Squad? Squad { get; } = squad;
 }
 
 /// <summary>
@@ -47,8 +43,6 @@ public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int
 /// </summary>
 public readonly struct Royale(int shrinkEveryNTurns)
 {
-    public const int Size = sizeof(int);
-    
     public int ShrinkEveryNTurns { get; } = shrinkEveryNTurns;
 }
 
@@ -57,8 +51,6 @@ public readonly struct Royale(int shrinkEveryNTurns)
 /// </summary>
 public readonly struct Squad(bool allowBodyCollisions, bool sharedElimination, bool sharedHealth, bool sharedLength)
 {
-    public const int Size = sizeof(bool) * 4;
-    
     public bool AllowBodyCollisions { get; } = allowBodyCollisions;
     public bool SharedElimination { get; } = sharedElimination;
     public bool SharedHealth { get; } = sharedHealth;
