@@ -1,4 +1,6 @@
-﻿using Thanos.Tests.Support;
+﻿using System.Text.Json;
+using Thanos.Parsers;
+using Thanos.Tests.Support;
 
 namespace Thanos.Tests.Parsers;
 
@@ -14,10 +16,21 @@ public class LowLevelParserIntegrationTests
     {
         var @case = _testsProvider[test];
         
-        var expectedGame = @case.Game;
-        var actualGame = LowLevelParser.Parse(@case.Raw);
+        var expected = @case.Game;
+        var actual = LowLevelParser.Parse(@case.Raw);
         
-        AssertGamesAreEqual(actualGame.Game, expectedGame);
+        AssertGamesAreEqual(actual.Game, expected);
+    }
+    
+    [TestCaseSource(nameof(GetTestCaseNames))]
+    public void Parse_WithProvidedTestCase_ShouldMatchJsonSourceGeneratorResult(string test)
+    {
+        var @case = _testsProvider[test];
+        
+        var expected = @case.Game;
+        var actual = JsonSerializer.Deserialize(@case.Raw, AppJsonSerializerContext.Default.MoveRequest);
+        
+        AssertGamesAreEqual(actual.Game, expected);
     }
 
     /// <summary>
