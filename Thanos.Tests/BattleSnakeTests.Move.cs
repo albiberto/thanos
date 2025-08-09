@@ -3,7 +3,7 @@
 /// <summary>
 /// Unit tests for the BattleSnake Move behavior under different conditions.
 /// </summary>
-public partial class BattleSnakeTests
+public partial class SnakeTests
 {
     /// <summary>
     /// Tests that when the snake moves without eating, its length remains constant

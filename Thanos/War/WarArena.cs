@@ -1,11 +1,12 @@
 ﻿// Thanos/BattleArena.cs
 
 using System.Runtime.InteropServices;
-using Thanos;
-using BattleSnake = Thanos.SourceGen.BattleSnake;
+using Thanos.SourceGen;
+
+namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct BattleArena : IDisposable
+public unsafe struct WarArena : IDisposable
 {
     // --- Membri Principali ---
     
@@ -25,7 +26,7 @@ public unsafe struct BattleArena : IDisposable
     /// Ottiene un puntatore a un serpente specifico tramite il suo indice.
     /// L'indice 0 è sempre il serpente "you".
     /// </summary>
-    public BattleSnake* GetSnake(int index)
+    public Snake* GetSnake(int index)
     {
         // L'aritmetica dei puntatori qui è complessa perché i BattleSnake hanno dimensione variabile.
         // La logica per trovare l'offset corretto risiederà nel deserializzatore.
@@ -45,7 +46,7 @@ public unsafe struct BattleArena : IDisposable
     }
     
     // Helper per calcolare la dimensione di un BattleSnake, inclusa la sua body capacity.
-    public static uint GetSizeOfBattleSnake(BattleSnake* snake)
+    public static uint GetSizeOfBattleSnake(Snake* snake)
     {
         // NOTA: Questa funzione non è presente nella tua struct originale, ma è necessaria
         // per l'aritmetica dei puntatori. Assumiamo che _capacity sia accessibile.

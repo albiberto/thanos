@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 
-namespace Thanos;
+namespace Thanos.War;
 
 /// <summary>
 ///     A high-performance, minimalist grid representing the raw state of the board.
@@ -10,7 +10,7 @@ namespace Thanos;
 ///     with padding for potential SIMD (Single Instruction, Multiple Data) operations.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct BattleField : IDisposable
+public unsafe struct WarField : IDisposable
 {
     public const uint Offset = sizeof(byte);
 
@@ -46,34 +46,34 @@ public unsafe struct BattleField : IDisposable
     /// <param name="battleField">Pointer to the memory for the BattleField struct.</param>
     /// <param name="gridMemory">Pointer to the pre-allocated memory for the grid.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(BattleField* battleField, byte* gridMemory) => battleField->_grid = gridMemory;
+    public static void PlacementNew(WarField* battleField, byte* gridMemory) => battleField->_grid = gridMemory;
 
     /// <summary>
     ///     Projects the current state of all active snakes onto the grid.
     /// </summary>
     /// <param name="arena">A pointer to the main Tesla engine struct.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ProjectBattleField(BattleArena* arena)
+    public void ProjectBattleField(WarArena* arena)
     {
         // Loop only over the snakes active in the current game.
         for (byte i = 0; i < arena->SnakesCount; i++)
         {
             var snake = arena->GetSnake(i);
-            if (snake->Dead) continue;
+            // if (snake->Dead) continue;
 
             var snakeId = (byte)(i + 1);
 
             // Project the entire body including head
-            var bodyIndex = snake->TailIndex;
-            for (var j = 0; j < snake->Length - 1; j++) // Length - 1 because the head is separate
-            {
-                var bodyPos = snake->Body[bodyIndex];
-                _grid[bodyPos] = snakeId;
-                bodyIndex = (bodyIndex + 1) & snake->Length; // Wrap around using bitwise AND
-            }
-
-            // Project the head separately
-            _grid[snake->Head] = snakeId;
+            // var bodyIndex = snake->TailIndex;
+            // for (var j = 0; j < snake->Length - 1; j++) // Length - 1 because the head is separate
+            // {
+            //     var bodyPos = snake->Body[bodyIndex];
+            //     _grid[bodyPos] = snakeId;
+            //     bodyIndex = (bodyIndex + 1) & snake->Length; // Wrap around using bitwise AND
+            // }
+            //
+            // // Project the head separately
+            // _grid[snake->Head] = snakeId;
         }
     }
 
@@ -110,7 +110,7 @@ public unsafe struct BattleField : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RemoveSnake(BattleSnake* snake)
+    public void RemoveSnake(WarSnake* snake)
     {
         var currentIndex = snake->TailIndex;
 

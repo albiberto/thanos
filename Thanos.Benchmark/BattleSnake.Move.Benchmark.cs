@@ -12,7 +12,7 @@ public unsafe partial class BattleSnakeBenchmark
     private const int Capacity = 256;
     
     private byte* _memory;
-    private BattleSnake* _snake;
+    private Snake* _snake;
 
     // This parameter controls whether the snake has eaten or not
     [Params(true, false)]
@@ -21,9 +21,9 @@ public unsafe partial class BattleSnakeBenchmark
     [GlobalSetup]
     public void GlobalSetup()
     {
-        const int snakeStride = BattleSnake.HeaderSize + Capacity * sizeof(ushort);
+        const int snakeStride = Snake.HeaderSize + Capacity * sizeof(ushort);
         _memory = (byte*)NativeMemory.AlignedAlloc((nuint)snakeStride, 64);
-        _snake = (BattleSnake*)_memory;
+        _snake = (Snake*)_memory;
     }
 
     [GlobalCleanup]
@@ -43,7 +43,7 @@ public unsafe partial class BattleSnakeBenchmark
         var startBody = new ushort[] { 1 }; // Il corpo contiene solo la testa
 
         // 2. Chiama il nuovo metodo con tutti i parametri richiesti
-        BattleSnake.PlacementNew(
+        Snake.PlacementNew(
             snake: _snake, 
             health: startHealth, 
             length: startLength, 

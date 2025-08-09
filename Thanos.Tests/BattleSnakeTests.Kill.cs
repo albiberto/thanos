@@ -3,7 +3,7 @@
 /// <summary>
 ///     Contains tests related to killing the BattleSnake.
 /// </summary>
-public partial class BattleSnakeTests
+public partial class SnakeTests
 {
     /// <summary>
     ///     Verifies that calling Kill sets the health to zero without modifying other properties.

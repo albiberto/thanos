@@ -3,7 +3,7 @@
 /// <summary>
 ///     Contains tests for validating the initial state of the BattleSnake.
 /// </summary>
-public partial class BattleSnakeTests
+public partial class SnakeTests
 {
     /// <summary>
     ///     Verifies that CreateFromState correctly initializes the snake based on the TestCase.
