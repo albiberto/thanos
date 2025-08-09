@@ -1,9 +1,9 @@
-using Thanos.Tests.Support.Requests;
+using GameTest = Thanos.Tests.Support.Model.Game;
 
 namespace Thanos.Tests.Support;
 
-public class TestModel(byte[] json, MoveRequest state)
+public class TestModel(string raw, GameTest game)
 {
-    public byte[] Json { get; } = json;
-    public MoveRequest State { get; } = state;
+    public string Raw { get; } = raw;
+    public GameTest Game { get; } = game;
 }

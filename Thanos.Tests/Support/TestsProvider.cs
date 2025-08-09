@@ -1,16 +1,12 @@
-﻿using System.Text;
-using System.Text.Json;
-using Thanos.Tests.Support.Requests;
+﻿using System.Text.Json;
+using GameTest = Thanos.Tests.Support.Model.Game;
 
 namespace Thanos.Tests.Support;
 
-public class TestsProvider
+public class TestsProvider(string field, string filename, string directory = "JsonTests")
 {
-    private const string TestDataDirectory = "TestData";
-    private const string TestDataFileName = "battlesnake_test_cases";
-    
-    private readonly Dictionary<string, TestModel> _testCases = LoadTestCases();
-    
+    private readonly Dictionary<string, TestModel> _testCases = LoadTestCases(directory, filename, field);
+
     public IEnumerable<string> Names => _testCases.Keys;
     
     public TestModel this[string name]
@@ -24,9 +20,9 @@ public class TestsProvider
         }
     }
 
-    private static Dictionary<string, TestModel> LoadTestCases()
+    private static Dictionary<string, TestModel> LoadTestCases(string directory, string filename, string field)
     {
-        var testDataPath = Path.Combine(TestContext.CurrentContext.TestDirectory, TestDataDirectory, $"{TestDataFileName}.json");
+        var testDataPath = Path.Combine(TestContext.CurrentContext.TestDirectory, directory, $"{filename}.json");
         
         if (!File.Exists(testDataPath)) throw new FileNotFoundException($"Test data file not found: {testDataPath}");
 
@@ -38,20 +34,18 @@ public class TestsProvider
         foreach (var property in document.RootElement.EnumerateObject())
         {
             var name = property.Name;
-            var section = property.Value.GetRawText();
+            
+            var raw = property.Value.GetRawText();
+            var nestedRaw = property.Value.GetProperty(field).GetRawText();
+            var gameState = Deserialize(nestedRaw);
 
-            var jsonBytes = BuildContent(section);
-            var gameState = Deserialize(section);
-
-            testCases[name] = new TestModel(jsonBytes, gameState);
+            testCases[name] = new TestModel(raw, gameState);
         }
 
         return testCases;
     }
 
-    private static byte[] BuildContent(string section) => Encoding.UTF8.GetBytes(section);
-
-    private static MoveRequest Deserialize(string section)
+    private static GameTest Deserialize(string section)
     {
         var options = new JsonSerializerOptions
         {
@@ -59,6 +53,6 @@ public class TestsProvider
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        return JsonSerializer.Deserialize<MoveRequest>(section, options) ?? throw new JsonException("Failed to deserialize GameState from section.");
+        return JsonSerializer.Deserialize<GameTest>(section, options) ?? throw new JsonException("Failed to deserialize game state from test case.");
     }
 }
