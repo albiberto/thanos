@@ -124,8 +124,8 @@ public static class GameParser
     private static RulesetSettings ParseRulesetSettings(ref Utf8JsonReader reader)
     {
         int foodSpawnChance = 0, minimumFood = 0, hazardDamagePerTurn = 0;
-        Royale royale = default;
-        Squad squad = default;
+        Royale? royale = null;
+        Squad? squad = null;
 
         if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException("Expected start of RulesetSettings object.");
 
