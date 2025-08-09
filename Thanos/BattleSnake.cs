@@ -11,8 +11,8 @@ namespace Thanos;
 public unsafe struct BattleSnake
 {
     // --- Constants for memory layout ---
-    private const int PaddingSize = (int)Constants.CacheLine - sizeof(int) * 5 - sizeof(ushort) * 1;
-    public const uint HeaderSize = Constants.CacheLine;
+    private const int PaddingSize = (int)Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
+    public const uint HeaderSize = Constants.CacheLineSize;
 
     // ======================================================================
     // === CACHE LINE 1: HEADER (64 bytes)
