@@ -3,7 +3,7 @@
 public static class Constants
 {
     public const int MaxSnakes = 8; 
-    public const uint CacheLine = 64;
+    public const int CacheLineSize = 64;
     
     public const byte Empty = 0; 
     public const byte Me = 1;    
