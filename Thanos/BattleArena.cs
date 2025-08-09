@@ -2,6 +2,7 @@
 
 using System.Runtime.InteropServices;
 using Thanos;
+using BattleSnake = Thanos.SourceGen.BattleSnake;
 
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct BattleArena : IDisposable

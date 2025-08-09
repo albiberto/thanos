@@ -39,7 +39,7 @@ public class TestsProvider(string field, string filename, string directory = "Js
             var nestedRaw = property.Value.GetProperty(field).GetRawText();
             var gameState = Deserialize(nestedRaw);
 
-            testCases[name] = new TestModel(raw, gameState);
+            testCases[name] = new TestModel(raw, nestedRaw, gameState);
         }
 
         return testCases;

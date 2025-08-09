@@ -8,7 +8,7 @@ namespace Thanos;
 /// Convertito in uno struct immutabile.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Size = Constants.CacheLineSize)]
-public readonly unsafe struct Game(Guid id, Ruleset ruleset, Map map, Source source, int timeout)
+public readonly struct Game(Guid id, Ruleset ruleset, Map map, Source source, int timeout)
 {
     private const int Size = 64; // In the worst case size is less than 64 bytes, so we can use a single cache line.
 
