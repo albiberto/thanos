@@ -1,152 +1,133 @@
 ﻿{
-  "complex-game": {
+  "1_snake_empty_board": {
     "game": {
-      "id": "473C8DC0-68F4-4A51-B091-78FECAE5EA6C",
+      "id": "6F819B0A-BAB5-49F1-88A9-C6DC3DD80619",
       "ruleset": {
         "name": "standard",
-        "version": "v1.1.15",
+        "version": "v1.3.0",
         "settings": {
           "foodSpawnChance": 15,
           "minimumFood": 1,
-          "hazardDamagePerTurn": 5,
-          "royale": {
-            "shrinkEveryNTurns": 3
-          },
-          "squad": {
-            "allowBodyCollisions": true,
-            "sharedElimination": true,
-            "sharedHealth": false,
-            "sharedLength": false
-          }
+          "hazardDamagePerTurn": 0
         }
       },
-      "map": "standard",
-      "source": "arena",
-      "timeout": 500
+      "map": "standard", "source": "custom", "timeout": 500
     },
-    "turn": 14,
+    "turn": 0,
     "board": {
-      "height": 11,
-      "width": 11,
-      "food": [
-        {
-          "x": 5,
-          "y": 5
-        },
-        {
-          "x": 9,
-          "y": 0
-        },
-        {
-          "x": 2,
-          "y": 6
-        }
-      ],
-      "hazards": [
-        {
-          "x": 3,
-          "y": 2
-        }
-      ],
+      "height": 11, "width": 11,
+      "food": [],
+      "hazards": [],
       "snakes": [
         {
-          "id": "snake-001",
-          "name": "Test Snake",
-          "health": 54,
-          "body": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 1,
-              "y": 0
-            },
-            {
-              "x": 2,
-              "y": 0
-            }
-          ],
-          "latency": "111",
-          "head": {
-            "x": 0,
-            "y": 0
-          },
-          "length": 3,
-          "shout": "",
-          "customizations": {
-            "color": "#FF0000",
-            "head": "pixel",
-            "tail": "pixel"
-          }
-        },
-        {
-          "id": "snake-002",
-          "name": "Enemy Snake",
-          "health": 16,
-          "body": [
-            {
-              "x": 5,
-              "y": 4
-            },
-            {
-              "x": 5,
-              "y": 3
-            },
-            {
-              "x": 6,
-              "y": 3
-            },
-            {
-              "x": 6,
-              "y": 2
-            }
-          ],
-          "latency": "222",
-          "head": {
-            "x": 5,
-            "y": 4
-          },
-          "length": 4,
-          "shout": "",
-          "customizations": {
-            "color": "#26CF04",
-            "head": "silly",
-            "tail": "curled"
-          }
+          "id": "s1", "name": "Solo", "health": 100,
+          "body": [{"x": 5, "y": 5}, {"x": 5, "y": 4}, {"x": 5, "y": 3}],
+          "head": {"x": 5, "y": 5}, "length": 3, "latency": "10", "shout": "Start!",
+          "customizations": {"color": "#888888", "head": "default", "tail": "default"}
         }
       ]
     },
     "you": {
-      "id": "snake-001",
-      "name": "Test Snake",
-      "health": 54,
-      "body": [
-        {
-          "x": 0,
-          "y": 0
-        },
-        {
-          "x": 1,
-          "y": 0
-        },
-        {
-          "x": 2,
-          "y": 0
-        }
-      ],
-      "latency": "111",
-      "head": {
-        "x": 0,
-        "y": 0
-      },
-      "length": 3,
-      "shout": "",
-      "customizations": {
-        "color": "#FF0000",
-        "head": "pixel",
-        "tail": "pixel"
-      }
+      "id": "s1", "name": "Solo", "health": 100,
+      "body": [{"x": 5, "y": 5}, {"x": 5, "y": 4}, {"x": 5, "y": 3}],
+      "head": {"x": 5, "y": 5}, "length": 3, "latency": "10", "shout": "Start!",
+      "customizations": {"color": "#888888", "head": "default", "tail": "default"}
     }
+  },
+  "2_snakes_royale_hazard": {
+    "game": {
+      "id": "6F819B0A-BAB5-49F1-88A9-C6DC3DD80619",
+      "ruleset": {
+        "name": "royale",
+        "version": "v1.3.0",
+        "settings": {
+          "foodSpawnChance": 15, "minimumFood": 1, "hazardDamagePerTurn": 14,
+          "royale": { "shrinkEveryNTurns": 5 }
+        }
+      },
+      "map": "royale", "source": "custom", "timeout": 500
+    },
+    "turn": 25,
+    "board": {
+      "height": 11, "width": 11,
+      "food": [],
+      "hazards": [{"x": 0, "y": 0}, {"x": 10, "y": 0}, {"x": 0, "y": 10}, {"x": 10, "y": 10}],
+      "snakes": [
+        {
+          "id": "s1", "name": "Thanos", "health": 85,
+          "body": [{"x": 1, "y": 1}, {"x": 1, "y": 2}], "head": {"x": 1, "y": 1}, "length": 2, "latency": "12",
+          "customizations": {"color": "#FF0000", "head": "safe", "tail": "round-bum"}
+        },
+        {
+          "id": "s2", "name": "Snake1", "health": 92,
+          "body": [{"x": 9, "y": 9}, {"x": 9, "y": 8}], "head": {"x": 9, "y": 9}, "length": 2, "latency": "15",
+          "customizations": {"color": "#0000FF", "head": "evil", "tail": "sharp"}
+        }
+      ]
+    },
+    "you": {
+      "id": "snake-2-you", "name": "My Royale Snake", "health": 85,
+      "body": [{"x": 1, "y": 1}, {"x": 1, "y": 2}], "head": {"x": 1, "y": 1}, "length": 2, "latency": "12",
+      "customizations": {"color": "#FF0000", "head": "safe", "tail": "round-bum"}
+    }
+  },
+  "4_snakes_squad_food": {
+    "game": {
+      "id": "6F819B0A-BAB5-49F1-88A9-C6DC3DD80619",
+      "ruleset": {
+        "name": "squad",
+        "version": "v1.3.0",
+        "settings": {
+          "foodSpawnChance": 15, "minimumFood": 1, "hazardDamagePerTurn": 0,
+          "squad": { "allowBodyCollisions": true, "sharedElimination": true, "sharedHealth": true, "sharedLength": true }
+        }
+      },
+      "map": "standard", "source": "custom", "timeout": 500
+    },
+    "turn": 50,
+    "board": {
+      "height": 11, "width": 11,
+      "food": [{"x": 5, "y": 5}, {"x": 0, "y": 5}, {"x": 10, "y": 5}, {"x": 5, "y": 0}, {"x": 5, "y": 10}],
+      "hazards": [],
+      "snakes": [
+        {"id": "s1", "name": "Thanos", "health": 100, "body": [{"x": 1, "y": 1}], "head": {"x": 1, "y": 1}, "length": 1, "squad": "A", "customizations": {"color": "#00FF00", "head": "smile", "tail": "curled"}},
+        {"id": "s2", "name": "Snake1", "health": 30, "body": [{"x": 1, "y": 9}], "head": {"x": 1, "y": 9}, "length": 1, "squad": "A", "customizations": {"color": "#00FF00", "head": "smile", "tail": "curled"}},
+        {"id": "s3", "name": "Snake2", "health": 20, "body": [{"x": 9, "y": 1}], "head": {"x": 9, "y": 1}, "length": 1, "squad": "B", "customizations": {"color": "#FF00FF", "head": "tongue", "tail": "blocky"}},
+        {"id": "s4", "name": "Snake3", "health": 10, "body": [{"x": 9, "y": 9}], "head": {"x": 9, "y": 9}, "length": 1, "squad": "B", "customizations": {"color": "#FF00FF", "head": "tongue", "tail": "blocky"}}
+      ]
+    },
+    "you": {"id": "s1", "name": "Thanos", "health": 100, "body": [{"x": 1, "y": 1}], "head": {"x": 1, "y": 1}, "length": 1, "squad": "A", "customizations": {"color": "#00FF00", "head": "smile", "tail": "curled"}}
+  },
+  "8_snakes_full_mode": {
+    "game": {
+      "id": "6F819B0A-BAB5-49F1-88A9-C6DC3DD80619",
+      "ruleset": {
+        "name": "royale-squad",
+        "version": "v1.3.0",
+        "settings": {
+          "foodSpawnChance": 15, "minimumFood": 1, "hazardDamagePerTurn": 14,
+          "royale": { "shrinkEveryNTurns": 3 },
+          "squad": { "allowBodyCollisions": true, "sharedElimination": true, "sharedHealth": true, "sharedLength": true }
+        }
+      },
+      "map": "royale", "source": "custom", "timeout": 500
+    },
+    "turn": 100,
+    "board": {
+      "height": 11, "width": 11,
+      "food": [{"x": 5, "y": 5}],
+      "hazards": [{"x": 0, "y": 5}, {"x": 10, "y": 5}, {"x": 5, "y": 0}, {"x": 5, "y": 10}],
+      "snakes": [
+        {"id": "s1", "name": "Thanos", "health": 50, "body": [{"x": 1, "y": 1}], "head": {"x": 1, "y": 1}, "length": 1, "squad": "A"},
+        {"id": "s2", "name": "Snake 1", "health": 50, "body": [{"x": 1, "y": 3}], "head": {"x": 1, "y": 3}, "length": 1, "squad": "A"},
+        {"id": "s3", "name": "Snake 2", "health": 50, "body": [{"x": 3, "y": 1}], "head": {"x": 3, "y": 1}, "length": 1, "squad": "B"},
+        {"id": "s4", "name": "Snake 3", "health": 50, "body": [{"x": 3, "y": 3}], "head": {"x": 3, "y": 3}, "length": 1, "squad": "B"},
+        {"id": "s5", "name": "Snake 4", "health": 50, "body": [{"x": 9, "y": 9}], "head": {"x": 9, "y": 9}, "length": 1, "squad": "C"},
+        {"id": "s6", "name": "Snake 5", "health": 50, "body": [{"x": 9, "y": 7}], "head": {"x": 9, "y": 7}, "length": 1, "squad": "C"},
+        {"id": "s7", "name": "Snake 6", "health": 50, "body": [{"x": 7, "y": 9}], "head": {"x": 7, "y": 9}, "length": 1, "squad": "D"},
+        {"id": "s8", "name": "Snake 7", "health": 50, "body": [{"x": 7, "y": 7}], "head": {"x": 7, "y": 7}, "length": 1, "squad": "D"}
+      ]
+    },
+    "you": {"id": "s1", "name": "Thanos", "health": 50, "body": [{"x": 1, "y": 1}], "head": {"x": 1, "y": 1}, "length": 1, "squad": "A"}
   }
 }
