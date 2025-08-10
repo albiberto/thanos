@@ -9,8 +9,6 @@ namespace Thanos.War;
 public unsafe struct WarArena : IDisposable
 {
     private readonly byte* _snakesMemory;
-    private readonly uint _activeSnakes;
-    private readonly uint _snakeStride;
 
     private fixed long _snakePointers[Constants.MaxSnakes];
 
@@ -19,14 +17,14 @@ public unsafe struct WarArena : IDisposable
         ref readonly var board = ref request.Board;
         var width = board.Width;
 
-        _activeSnakes = (uint)board.Snakes.Length;
+        var activeSnakes = (uint)board.Snakes.Length;
         var capacity = board.Capacity;
-        _snakeStride = (uint)(WarSnake.HeaderSize + capacity * sizeof(ushort));
+        var snakeStride = (uint)(WarSnake.HeaderSize + capacity * sizeof(ushort));
 
-        var snakesMemorySize = _snakeStride * _activeSnakes;
+        var snakesMemorySize = snakeStride * activeSnakes;
         _snakesMemory = (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);
         
-        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, _snakeStride, in request.You, board.Snakes, capacity, width);
+        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, snakeStride, in request.You, board.Snakes, capacity, width);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
