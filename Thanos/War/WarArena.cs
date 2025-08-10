@@ -1,4 +1,4 @@
-﻿// Thanos/BattleArena.cs
+﻿// Thanos/War/WarArena.cs
 
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -11,66 +11,93 @@ namespace Thanos.War;
 public unsafe struct WarArena : IDisposable
 {
     private readonly byte* _snakesMemory;
-    private readonly byte* _fieldMemory;
-    private readonly byte* _boardMemory;
+    private readonly uint _activeSnakes;
+    private readonly uint _snakeStride;
     
     private fixed long _snakePointers[Constants.MaxSnakes];
-    private WarField* _field;
     
     public WarArena(Request request)
     {
         var board = request.Board;
-        var height = board.Height;
         var width = board.Width;
-
-        var activeSnakes = (uint)board.Snakes.Length;
-
-        var area = width * height;
-
-        // --- Step 1: Calculate Memory Layout ---
-        var idealBodyCapacity = (int)BitOperations.RoundUpToPowerOf2(area);
-        var realBodyCapacity = Math.Min(idealBodyCapacity, Constants.MaxBodyLength); // Cap the capacity at 256 (4 Cache Line).
-        var snakeStride = (uint)(WarSnake.HeaderSize + realBodyCapacity * sizeof(ushort)); // Calculate byte sizes and the final stride for a single snake.
+        var height = board.Height;
         
-        // --- Step 2: Allocate Memory ---
-        _boardMemory = (byte*)NativeMemory.AlignedAlloc(area * sizeof(byte), Constants.CacheLineSize);
+        _activeSnakes = (uint)board.Snakes.Length;
+
+        var area = (uint)(width * height);
+
+        // --- Step 1: Calcolo Layout di Memoria ---
+        var idealCapacity = (int)BitOperations.RoundUpToPowerOf2(area);
+        var realCapacity = Math.Min(idealCapacity, Constants.MaxBodyLength);
+        _snakeStride = (uint)(WarSnake.HeaderSize + realCapacity * sizeof(ushort));
         
-        var snakesMemorySize = snakeStride * activeSnakes;
+        // --- Step 2: Allocazione Memoria ---
+        var snakesMemorySize = _snakeStride * _activeSnakes;
         _snakesMemory = (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);
         
-        var fieldMemorySize = area * sizeof(byte);
-        _fieldMemory = (byte*)NativeMemory.AlignedAlloc(fieldMemorySize, Constants.CacheLineSize);
-        
-        // --- Step 3: Initialize the WarSnakes ---
-        PlacementNewSnake(request, activeSnakes, realBodyCapacity, snakeStride);
-
-        // --- Step 4: Initialize the WarField ---
-        _field = (WarField*)_fieldMemory;
-    }
-
-    private void PlacementNewSnake(Request request, uint activeSnakes, int capacity, uint snakeStride)
-    {
-        var me = request.You;
-        
-        WarSnake.PlacementNew((WarSnake*)_snakePointers[0], me.Health, me.Length, capacity, me.Body.AsSpan());
-        
-        var myId = me.Id;
-        
-        
-        for (byte i = 0; i < activeSnakes; i++)
-        {
-            var snakePtr = _snakesMemory + i * snakeStride;
-            _snakePointers[i] = (long)snakePtr;
-        }
+        // --- Step 3: Inizializzazione dei Serpenti ("Me" a indice 0) ---
+        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, _snakeStride, request.You, request.Board.Snakes, realCapacity, width);
     }
     
-    private static int To1D(Coordinate coord, int width) => coord.Y * width + coord.X;
+    private static void InitializeSnakes(long* pointers, byte* memory, uint stride, Snake meData, ReadOnlySpan<Snake> snakesData, int capacity, int width)
+    {
+        // **PASSO 1: Inizializza il TUO serpente all'indice 0.**
+        InitializeSingleSnake(pointers, memory, stride, meData, 0, capacity, width);
 
-    private WarSnake* GetSnake(int index) => (WarSnake*)_snakePointers[index];
+        // **PASSO 2: Inizializza gli avversari.**
+        byte opponentPointerIndex = 1; 
+        foreach (var snakeData in snakesData)
+        {
+            if (snakeData.Id == meData.Id) continue;
+
+            InitializeSingleSnake(pointers, memory, stride, snakeData, opponentPointerIndex, capacity, width);
+            opponentPointerIndex++;
+        }
+    }
+
+    private static void InitializeSingleSnake(long* pointers, byte* memory, uint stride, Snake snakeData, byte pointerIndex, int capacity, int boardWidth)
+    {
+        var lenght = Math.Min(snakeData.Length, capacity);
+
+        // Calcola il puntatore alla memoria per questo serpente usando i parametri.
+        var snakePtr = memory + pointerIndex * stride;
+        pointers[pointerIndex] = (long)snakePtr;
+
+        // Converte il corpo in 1D sullo stack.
+        var body1D = stackalloc ushort[lenght];
+        UnrollSnakeBody(lenght, body1D, snakeData, boardWidth);
+
+        // Inizializza la struct WarSnake in-place.
+        WarSnake.PlacementNew((WarSnake*)snakePtr, snakeData.Health, lenght, capacity, body1D);
+    }
+
+    private static void UnrollSnakeBody(int length, ushort* body1D, Snake snakeData, int boardWidth)
+    {
+        var sourceBody = snakeData.Body;
+        for (var i = 0; i < length; i++)
+        {
+            body1D[i] = To1D(sourceBody[i], boardWidth);
+        }
+    }
+
+    private static ushort To1D(Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
+
+    /// <summary>
+    /// Ottiene un puntatore al tuo serpente. Accesso O(1).
+    /// </summary>
+    public WarSnake* GetMySnake() => (WarSnake*)_snakePointers[0];
+
+    /// <summary>
+    /// Ottiene un puntatore a un serpente specifico tramite il suo indice nel buffer.
+    /// ATTENZIONE: l'indice non corrisponde all'ordine della richiesta API per gli avversari.
+    /// </summary>
+    public WarSnake* GetSnake(int index) => (WarSnake*)_snakePointers[index];
 
     public void Dispose()
     {
-        NativeMemory.AlignedFree(_snakesMemory);
-        NativeMemory.AlignedFree(_fieldMemory);
+        if (_snakesMemory != null)
+        {
+            NativeMemory.AlignedFree(_snakesMemory);
+        }
     }
 }

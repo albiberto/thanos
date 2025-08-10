@@ -52,7 +52,7 @@ public unsafe struct WarSnake
     /// <param name="capacity">The capacity of the body buffer.</param>
     /// <param name="sourceBody">A span containing the snake's body coordinates, from head to tail.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ReadOnlySpan<Coordinate> sourceBody)
+    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ushort* sourceBody)
     {
         snake->Health = health;
         snake->Length = length;
@@ -61,7 +61,7 @@ public unsafe struct WarSnake
         // Dereference the pointer to get the first element (the head).
         // Accesses the value stored at the memory address pointed to by the pointer,
         // which corresponds to the first element in the sequence (the snake's head).
-        snake->Head = sourceBody[0];
+        snake->Head = *sourceBody;
 
         Unsafe.CopyBlock(snake->Body, sourceBody, (uint)(length * sizeof(ushort)));
         
