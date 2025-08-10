@@ -25,12 +25,7 @@ public unsafe struct WarSnake
     public fixed ushort Body[1];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(
-        WarSnake* snake,
-        int health,
-        int length,
-        int capacity,
-        ushort* sourceBody) // Riceve il corpo in ordine [Coda, ..., Testa]
+    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ushort* sourceBody)
     {
         snake->Health = health;
         snake->Length = length;
@@ -57,11 +52,15 @@ public unsafe struct WarSnake
         ref var tailIndex = ref TailIndex;
         ref var nextHeadIndex = ref _nextHeadIndex;
         ref var capacity = ref _capacity;
-        
+
         if (hasEaten)
+        {
             health = 100;
+        }
         else
+        {
             health -= damage + 1;
+        }
 
         if (Dead) return;
 
@@ -70,11 +69,15 @@ public unsafe struct WarSnake
         Body[nextHeadIndex] = Head;
         Head = newHeadPosition;
         nextHeadIndex = (nextHeadIndex + 1) & capacityMask;
-        
+
         if (hasEaten && length < capacity)
+        {
             length++;
+        }
         else
+        {
             tailIndex = (tailIndex + 1) & capacityMask;
+        }
     }
 
     public readonly bool Dead

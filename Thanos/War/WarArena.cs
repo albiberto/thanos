@@ -31,7 +31,7 @@ public unsafe struct WarArena : IDisposable
     private static void InitializeSnakes(long* pointers, byte* memory, uint stride, in Snake meData, ReadOnlySpan<Snake> snakesData, int capacity, int width)
     {
         // Inizializza il tuo serpente a indice 0
-        InitializeSingleSnake(pointers, memory, stride, in meData, 0, capacity, width);
+        InitializeSnake(pointers, memory, stride, in meData, 0, capacity, width);
 
         // Inizializza gli avversari a partire da indice 1
         byte opponentPointerIndex = 1;
@@ -39,13 +39,13 @@ public unsafe struct WarArena : IDisposable
         {
             if (snakeData.Id == meData.Id) continue;
             
-            InitializeSingleSnake(pointers, memory, stride, in snakeData, opponentPointerIndex, capacity, width);
+            InitializeSnake(pointers, memory, stride, in snakeData, opponentPointerIndex, capacity, width);
             opponentPointerIndex++;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void InitializeSingleSnake(long* pointers, byte* memory, uint stride, in Snake snakeData, byte pointerIndex, int capacity, int boardWidth)
+    private static void InitializeSnake(long* pointers, byte* memory, uint stride, in Snake snakeData, byte pointerIndex, int capacity, int boardWidth)
     {
         var length = Math.Min(snakeData.Length, capacity);
 
@@ -53,16 +53,16 @@ public unsafe struct WarArena : IDisposable
         pointers[pointerIndex] = (long)snakePtr;
 
         var body1D = stackalloc ushort[length];
-        UnrollSnakeBody(length, body1D, in snakeData, boardWidth);
+        UnrollBody(length, body1D, in snakeData, boardWidth);
 
         WarSnake.PlacementNew((WarSnake*)snakePtr, snakeData.Health, length, capacity, body1D);
     }
 
+    // Cicla all'indietro per memorizzare il serpente in ordine Coda -> Testa, come richiesto dalla logica a coda circolare del metodo Move().
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void UnrollSnakeBody(int length, ushort* body1D, in Snake snakeData, int boardWidth)
+    private static void UnrollBody(int length, ushort* body1D, in Snake snakeData, int boardWidth)
     {
         var sourceBody = snakeData.Body;
-        // Cicla all'indietro per memorizzare il serpente in ordine Coda -> Testa, come richiesto dalla logica a coda circolare del metodo Move().
         for (var i = 0; i < length; i++) body1D[i] = To1D(in sourceBody[length - 1 - i], boardWidth);
     }
 
