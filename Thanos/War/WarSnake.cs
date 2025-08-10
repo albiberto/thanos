@@ -25,23 +25,23 @@ public unsafe struct WarSnake
     public fixed ushort Body[1];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ushort* sourceBody)
+    public static void PlacementNew(WarSnake* snakePtr, ushort* bodyPtr, int health, int length, int capacity)
     {
-        snake->Health = health;
-        snake->Length = length;
-        snake->_capacity = capacity;
+        snakePtr->Health = health;
+        snakePtr->Length = length;
+        snakePtr->_capacity = capacity;
         
         // La testa è l'ULTIMO elemento del buffer invertito
-        snake->Head = sourceBody[length - 1];
+        snakePtr->Head = bodyPtr[length - 1];
 
         // Copia il corpo invertito nel buffer
-        Unsafe.CopyBlock(snake->Body, sourceBody, (uint)(length * sizeof(ushort)));
+        Unsafe.CopyBlock(snakePtr->Body, bodyPtr, (uint)(length * sizeof(ushort)));
 
         // Il segmento più vecchio (la coda) è ora all'inizio del buffer
-        snake->TailIndex = 0;
+        snakePtr->TailIndex = 0;
         
         // Il prossimo segmento verrà scritto dopo la fine del blocco attuale
-        snake->_nextHeadIndex = length & (capacity - 1);
+        snakePtr->_nextHeadIndex = length & (capacity - 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

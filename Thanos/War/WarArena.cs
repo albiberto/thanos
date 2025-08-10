@@ -55,7 +55,7 @@ public unsafe struct WarArena : IDisposable
         var body1D = stackalloc ushort[length];
         UnrollBody(length, body1D, in snakeData, boardWidth);
 
-        WarSnake.PlacementNew((WarSnake*)snakePtr, snakeData.Health, length, capacity, body1D);
+        WarSnake.PlacementNew((WarSnake*)snakePtr, body1D, snakeData.Health, length, capacity);
     }
 
     // Cicla all'indietro per memorizzare il serpente in ordine Coda -> Testa, come richiesto dalla logica a coda circolare del metodo Move().
