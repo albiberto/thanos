@@ -102,10 +102,10 @@ public readonly struct Squad(bool allowBodyCollisions, bool sharedElimination, b
 }
 
 [method: JsonConstructor]
-public readonly struct Board(int height, int width, Coordinate[] food, Coordinate[] hazards, Snake[] snakes)
+public readonly struct Board(uint height, uint width, Coordinate[] food, Coordinate[] hazards, Snake[] snakes)
 {
-    [JsonPropertyName("height")] public readonly int Height = height;
-    [JsonPropertyName("width")] public readonly int Width = width;
+    [JsonPropertyName("height")] public readonly uint Height = height;
+    [JsonPropertyName("width")] public readonly uint Width = width;
     [JsonPropertyName("food")] public readonly Coordinate[] Food = food;
     [JsonPropertyName("hazards")] public readonly Coordinate[] Hazards = hazards;
     [JsonPropertyName("snakes")] public readonly Snake[] Snakes = snakes;

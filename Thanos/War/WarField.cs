@@ -12,8 +12,6 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct WarField : IDisposable
 {
-    public const uint Offset = sizeof(byte);
-
     // ======================================================================
     // === NO CACHE LINE MANAGMENT: 
     // The purpose of cache line alignment is to ensure that an entire data structure fits within a single cache line, avoiding multiple memory accesses.
@@ -26,7 +24,6 @@ public unsafe struct WarField : IDisposable
     /// </summary>
     private byte* _grid;
     
-
     // ======================================================================
     // === END CACHE LINES
     // ======================================================================
@@ -56,7 +53,7 @@ public unsafe struct WarField : IDisposable
     public void ProjectBattleField(WarArena* arena)
     {
         // Loop only over the snakes active in the current game.
-        for (byte i = 0; i < arena->SnakesCount; i++)
+        for (byte i = 0; i < arena->ActiveSnakes; i++)
         {
             var snake = arena->GetSnake(i);
             // if (snake->Dead) continue;
@@ -64,16 +61,16 @@ public unsafe struct WarField : IDisposable
             var snakeId = (byte)(i + 1);
 
             // Project the entire body including head
-            // var bodyIndex = snake->TailIndex;
-            // for (var j = 0; j < snake->Length - 1; j++) // Length - 1 because the head is separate
-            // {
-            //     var bodyPos = snake->Body[bodyIndex];
-            //     _grid[bodyPos] = snakeId;
-            //     bodyIndex = (bodyIndex + 1) & snake->Length; // Wrap around using bitwise AND
-            // }
-            //
-            // // Project the head separately
-            // _grid[snake->Head] = snakeId;
+            var bodyIndex = snake.TailIndex;
+            for (var j = 0; j < snake.Length - 1; j++) // Length - 1 because the head is separate
+            {
+                var bodyPos = snake.Body[bodyIndex];
+                _grid[bodyPos] = snakeId;
+                bodyIndex = (bodyIndex + 1) & snake.Length; // Wrap around using bitwise AND
+            }
+            
+            // Project the head separately
+            _grid[snake.Head] = snakeId;
         }
     }
 
