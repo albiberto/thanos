@@ -110,7 +110,8 @@ public readonly struct Board(uint height, uint width, Coordinate[] food, Coordin
     [JsonPropertyName("hazards")] public readonly Coordinate[] Hazards = hazards;
     [JsonPropertyName("snakes")] public readonly Snake[] Snakes = snakes;
 
-    [JsonIgnore] public readonly int Capacity = Math.Min((int)BitOperations.RoundUpToPowerOf2((uint)(height * width)), Constants.MaxBodyLength);
+    [JsonIgnore] public readonly uint Area = height * width;
+    [JsonIgnore] public readonly uint Capacity = Math.Min(BitOperations.RoundUpToPowerOf2(height * width), Constants.MaxBodyLength);
 }
 
 [method: JsonConstructor]
