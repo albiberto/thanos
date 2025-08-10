@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
+using Thanos.SourceGen;
 
 namespace Thanos.War;
 
@@ -11,8 +12,8 @@ namespace Thanos.War;
 public unsafe struct WarSnake
 {
     // --- Constants for memory layout ---
-    private const int PaddingSize = (int)Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
-    public const uint HeaderSize = Constants.CacheLineSize;
+    private const int PaddingSize = Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
+    public const int HeaderSize = Constants.CacheLineSize;
 
     // ======================================================================
     // === CACHE LINE 1: HEADER (64 bytes)
@@ -51,7 +52,7 @@ public unsafe struct WarSnake
     /// <param name="capacity">The capacity of the body buffer.</param>
     /// <param name="sourceBody">A span containing the snake's body coordinates, from head to tail.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ushort* sourceBody)
+    public static void PlacementNew(WarSnake* snake, int health, int length, int capacity, ReadOnlySpan<Coordinate> sourceBody)
     {
         snake->Health = health;
         snake->Length = length;
@@ -60,7 +61,7 @@ public unsafe struct WarSnake
         // Dereference the pointer to get the first element (the head).
         // Accesses the value stored at the memory address pointed to by the pointer,
         // which corresponds to the first element in the sequence (the snake's head).
-        snake->Head = *sourceBody;
+        snake->Head = sourceBody[0];
 
         Unsafe.CopyBlock(snake->Body, sourceBody, (uint)(length * sizeof(ushort)));
         

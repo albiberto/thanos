@@ -149,13 +149,13 @@ public readonly struct Coordinate(uint x, uint y)
 }
 
 [method: JsonConstructor]
-public readonly struct Snake(string id, uint health, Coordinate[] body, Coordinate head, uint length)
+public readonly struct Snake(string id, int health, Coordinate[] body, Coordinate head, int length)
 {
     [JsonPropertyName("id")] public string Id { get; } = id;
 
     // [JsonPropertyName("name")] public string Name { get; } = name;
 
-    [JsonPropertyName("health")] public uint Health { get; } = health;
+    [JsonPropertyName("health")] public int Health { get; } = health;
 
     [JsonPropertyName("body")] public Coordinate[] Body { get; } = body;
 
@@ -163,7 +163,7 @@ public readonly struct Snake(string id, uint health, Coordinate[] body, Coordina
 
     [JsonPropertyName("head")] public Coordinate Head { get; } = head;
 
-    [JsonPropertyName("length")] public uint Length { get; } = length;
+    [JsonPropertyName("length")] public int Length { get; } = length;
 
     // [JsonPropertyName("shout")] public string Shout { get; } = shout;
 

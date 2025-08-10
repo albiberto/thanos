@@ -1,6 +1,8 @@
 ﻿// Thanos/BattleArena.cs
 
+using System.Numerics;
 using System.Runtime.InteropServices;
+using Thanos.Enums;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
@@ -8,55 +10,67 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct WarArena : IDisposable
 {
-    // --- Membri Principali ---
+    private readonly byte* _snakesMemory;
+    private readonly byte* _fieldMemory;
+    private readonly byte* _boardMemory;
     
-    // Puntatore alla sezione readonly con le info della partita
-    public readonly Game* Game; 
+    private fixed long _snakePointers[Constants.MaxSnakes];
+    private WarField* _field;
     
-    // La board mutabile che contiene campo e serpenti
-    // public Board* Board;
-    
-    // Dati di stato
-    public readonly int Turn;
-    public readonly int SnakesCount;
-    public readonly int Width;
-    public readonly int Height;
-    
-    /// <summary>
-    /// Ottiene un puntatore a un serpente specifico tramite il suo indice.
-    /// L'indice 0 è sempre il serpente "you".
-    /// </summary>
-    public Snake* GetSnake(int index)
+    public WarArena(Request request)
     {
-        // L'aritmetica dei puntatori qui è complessa perché i BattleSnake hanno dimensione variabile.
-        // La logica per trovare l'offset corretto risiederà nel deserializzatore.
-        // Per ora, questo è un placeholder concettuale. In una implementazione completa,
-        // l'arena dovrebbe memorizzare un array di puntatori/offset.
-        // Per semplicità, assumiamo che il deserializzatore li piazzi contigui.
+        var board = request.Board;
+        var height = board.Height;
+        var width = board.Width;
+
+        var activeSnakes = (uint)board.Snakes.Length;
+
+        var area = width * height;
+
+        // --- Step 1: Calculate Memory Layout ---
+        var idealBodyCapacity = (int)BitOperations.RoundUpToPowerOf2(area);
+        var realBodyCapacity = Math.Min(idealBodyCapacity, Constants.MaxBodyLength); // Cap the capacity at 256 (4 Cache Line).
+        var snakeStride = (uint)(WarSnake.HeaderSize + realBodyCapacity * sizeof(ushort)); // Calculate byte sizes and the final stride for a single snake.
         
-        // byte* current = (byte*)Board->Snakes;
-        // for (int i = 0; i < index; i++)
-        // {
-        //     // Avanza il puntatore della dimensione del serpente precedente
-        //     var snake = (BattleSnake*)current;
-        //     current += GetSizeOfBattleSnake(snake);
-        // }
-        // return (BattleSnake*)current;
-        return null; // Placeholder
+        // --- Step 2: Allocate Memory ---
+        _boardMemory = (byte*)NativeMemory.AlignedAlloc(area * sizeof(byte), Constants.CacheLineSize);
+        
+        var snakesMemorySize = snakeStride * activeSnakes;
+        _snakesMemory = (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);
+        
+        var fieldMemorySize = area * sizeof(byte);
+        _fieldMemory = (byte*)NativeMemory.AlignedAlloc(fieldMemorySize, Constants.CacheLineSize);
+        
+        // --- Step 3: Initialize the WarSnakes ---
+        PlacementNewSnake(request, activeSnakes, realBodyCapacity, snakeStride);
+
+        // --- Step 4: Initialize the WarField ---
+        _field = (WarField*)_fieldMemory;
+    }
+
+    private void PlacementNewSnake(Request request, uint activeSnakes, int capacity, uint snakeStride)
+    {
+        var me = request.You;
+        
+        WarSnake.PlacementNew((WarSnake*)_snakePointers[0], me.Health, me.Length, capacity, me.Body.AsSpan());
+        
+        var myId = me.Id;
+        
+        
+        for (byte i = 0; i < activeSnakes; i++)
+        {
+            var snakePtr = _snakesMemory + i * snakeStride;
+            _snakePointers[i] = (long)snakePtr;
+        }
     }
     
-    // Helper per calcolare la dimensione di un BattleSnake, inclusa la sua body capacity.
-    public static uint GetSizeOfBattleSnake(Snake* snake)
-    {
-        // NOTA: Questa funzione non è presente nella tua struct originale, ma è necessaria
-        // per l'aritmetica dei puntatori. Assumiamo che _capacity sia accessibile.
-        // La implementeremo nel deserializzatore.
-        return 0; // Placeholder
-    }
+    private static int To1D(Coordinate coord, int width) => coord.Y * width + coord.X;
+
+    private WarSnake* GetSnake(int index) => (WarSnake*)_snakePointers[index];
 
     public void Dispose()
     {
-        // L'intero blocco di memoria viene liberato in un colpo solo dal deserializzatore.
-        // Questa Dispose è qui per conformità all'interfaccia.
+        NativeMemory.AlignedFree(_snakesMemory);
+        NativeMemory.AlignedFree(_fieldMemory);
     }
 }
