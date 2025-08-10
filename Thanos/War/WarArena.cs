@@ -20,23 +20,20 @@ public unsafe struct WarArena : IDisposable
     {
         var board = request.Board;
         var width = board.Width;
-        var height = board.Height;
-        
+
         _activeSnakes = (uint)board.Snakes.Length;
 
-        var area = (uint)(width * height);
+        var capacity = board.Capacity;
 
         // --- Step 1: Calcolo Layout di Memoria ---
-        var idealCapacity = (int)BitOperations.RoundUpToPowerOf2(area);
-        var realCapacity = Math.Min(idealCapacity, Constants.MaxBodyLength);
-        _snakeStride = (uint)(WarSnake.HeaderSize + realCapacity * sizeof(ushort));
+        _snakeStride = (uint)(WarSnake.HeaderSize + capacity * sizeof(ushort));
         
         // --- Step 2: Allocazione Memoria ---
         var snakesMemorySize = _snakeStride * _activeSnakes;
         _snakesMemory = (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);
         
         // --- Step 3: Inizializzazione dei Serpenti ("Me" a indice 0) ---
-        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, _snakeStride, request.You, request.Board.Snakes, realCapacity, width);
+        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, _snakeStride, request.You, request.Board.Snakes, capacity, width);
     }
     
     private static void InitializeSnakes(long* pointers, byte* memory, uint stride, Snake meData, ReadOnlySpan<Snake> snakesData, int capacity, int width)
