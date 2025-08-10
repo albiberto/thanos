@@ -4,7 +4,7 @@ using Thanos.Enums;
 
 namespace Thanos.War;
 
-[StructLayout(LayoutKind.Sequential, Pack = Constants.CacheLineSize)]
+[StructLayout(LayoutKind.Sequential)]
 public unsafe struct WarSnake
 {
     private const int PaddingSize = Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
@@ -25,7 +25,7 @@ public unsafe struct WarSnake
     public fixed ushort Body[1];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(WarSnake* snakePtr, ushort* bodyPtr, int health, int length, int capacity)
+    public static void PlacementNew(WarSnake* snakePtr, ushort* bodyPtr, int length, int health, int capacity)
     {
         snakePtr->Health = health;
         snakePtr->Length = length;
