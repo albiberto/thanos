@@ -17,7 +17,7 @@ public class LowLevelParserIntegrationTests
     {
         var rawJson = _testsProvider[testCaseName];
 
-        // JsonSerializer (expected) - **Aggiunte le opzioni necessarie**
+        // JsonSerializer (expected)
         var expectedOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var expected = JsonSerializer.Deserialize<TestRequest>(rawJson, expectedOptions);
 
