@@ -1,6 +1,4 @@
-﻿// Thanos/War/WarArena.cs
-
-using System.Numerics;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 using Thanos.SourceGen;
@@ -13,88 +11,75 @@ public unsafe struct WarArena : IDisposable
     private readonly byte* _snakesMemory;
     private readonly uint _activeSnakes;
     private readonly uint _snakeStride;
-    
+
     private fixed long _snakePointers[Constants.MaxSnakes];
-    
-    public WarArena(Request request)
+
+    public WarArena(in Request request)
     {
-        var board = request.Board;
+        ref readonly var board = ref request.Board;
         var width = board.Width;
 
         _activeSnakes = (uint)board.Snakes.Length;
-
         var capacity = board.Capacity;
-
-        // --- Step 1: Calcolo Layout di Memoria ---
         _snakeStride = (uint)(WarSnake.HeaderSize + capacity * sizeof(ushort));
-        
-        // --- Step 2: Allocazione Memoria ---
+
         var snakesMemorySize = _snakeStride * _activeSnakes;
         _snakesMemory = (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);
         
-        // --- Step 3: Inizializzazione dei Serpenti ("Me" a indice 0) ---
-        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, _snakeStride, request.You, request.Board.Snakes, capacity, width);
+        fixed (long* pointersPtr = _snakePointers) InitializeSnakes(pointersPtr, _snakesMemory, _snakeStride, in request.You, board.Snakes, capacity, width);
     }
-    
-    private static void InitializeSnakes(long* pointers, byte* memory, uint stride, Snake meData, ReadOnlySpan<Snake> snakesData, int capacity, int width)
-    {
-        // **PASSO 1: Inizializza il TUO serpente all'indice 0.**
-        InitializeSingleSnake(pointers, memory, stride, meData, 0, capacity, width);
 
-        // **PASSO 2: Inizializza gli avversari.**
-        byte opponentPointerIndex = 1; 
-        foreach (var snakeData in snakesData)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InitializeSnakes(long* pointers, byte* memory, uint stride, in Snake meData, ReadOnlySpan<Snake> snakesData, int capacity, int width)
+    {
+        // Inizializza il tuo serpente a indice 0
+        InitializeSingleSnake(pointers, memory, stride, in meData, 0, capacity, width);
+
+        // Inizializza gli avversari a partire da indice 1
+        byte opponentPointerIndex = 1;
+        foreach (ref readonly var snakeData in snakesData)
         {
             if (snakeData.Id == meData.Id) continue;
-
-            InitializeSingleSnake(pointers, memory, stride, snakeData, opponentPointerIndex, capacity, width);
+            
+            InitializeSingleSnake(pointers, memory, stride, in snakeData, opponentPointerIndex, capacity, width);
             opponentPointerIndex++;
         }
     }
 
-    private static void InitializeSingleSnake(long* pointers, byte* memory, uint stride, Snake snakeData, byte pointerIndex, int capacity, int boardWidth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InitializeSingleSnake(long* pointers, byte* memory, uint stride, in Snake snakeData, byte pointerIndex, int capacity, int boardWidth)
     {
-        var lenght = Math.Min(snakeData.Length, capacity);
+        var length = Math.Min(snakeData.Length, capacity);
 
-        // Calcola il puntatore alla memoria per questo serpente usando i parametri.
         var snakePtr = memory + pointerIndex * stride;
         pointers[pointerIndex] = (long)snakePtr;
 
-        // Converte il corpo in 1D sullo stack.
-        var body1D = stackalloc ushort[lenght];
-        UnrollSnakeBody(lenght, body1D, snakeData, boardWidth);
+        var body1D = stackalloc ushort[length];
+        UnrollSnakeBody(length, body1D, in snakeData, boardWidth);
 
-        // Inizializza la struct WarSnake in-place.
-        WarSnake.PlacementNew((WarSnake*)snakePtr, snakeData.Health, lenght, capacity, body1D);
+        WarSnake.PlacementNew((WarSnake*)snakePtr, snakeData.Health, length, capacity, body1D);
     }
 
-    private static void UnrollSnakeBody(int length, ushort* body1D, Snake snakeData, int boardWidth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void UnrollSnakeBody(int length, ushort* body1D, in Snake snakeData, int boardWidth)
     {
         var sourceBody = snakeData.Body;
-        for (var i = 0; i < length; i++)
-        {
-            body1D[i] = To1D(sourceBody[i], boardWidth);
-        }
+        // Cicla all'indietro per memorizzare il serpente in ordine Coda -> Testa, come richiesto dalla logica a coda circolare del metodo Move().
+        for (var i = 0; i < length; i++) body1D[i] = To1D(in sourceBody[length - 1 - i], boardWidth);
     }
 
-    private static ushort To1D(Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ushort To1D(in Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
 
-    /// <summary>
-    /// Ottiene un puntatore al tuo serpente. Accesso O(1).
-    /// </summary>
-    public WarSnake* GetMySnake() => (WarSnake*)_snakePointers[0];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref WarSnake GetMySnake() => ref *(WarSnake*)_snakePointers[0];
 
-    /// <summary>
-    /// Ottiene un puntatore a un serpente specifico tramite il suo indice nel buffer.
-    /// ATTENZIONE: l'indice non corrisponde all'ordine della richiesta API per gli avversari.
-    /// </summary>
-    public WarSnake* GetSnake(int index) => (WarSnake*)_snakePointers[index];
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref WarSnake GetSnake(int index) => ref *(WarSnake*)_snakePointers[index];
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Dispose()
     {
-        if (_snakesMemory != null)
-        {
-            NativeMemory.AlignedFree(_snakesMemory);
-        }
+        if (_snakesMemory != null) NativeMemory.AlignedFree(_snakesMemory);
     }
 }
