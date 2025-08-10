@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Thanos;
 using Thanos.SourceGen;
+using Thanos.War;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +25,7 @@ app.MapPost("/move", async context =>
 
     try
     {
-        Request? request;
+        Request request;
 
         if (sequence.IsSingleSegment)
         {
@@ -36,6 +37,8 @@ app.MapPost("/move", async context =>
             request = JsonSerializer.Deserialize(bytes, ThanosSerializerContext.Default.Request);
         }
 
+        var arena = new WarArena(in request);
+        
         // Usa l'oggetto deserializzato
         await context.Response.WriteAsync("OK");
     }
