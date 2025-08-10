@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Thanos.Enums;
 
 namespace Thanos.SourceGen;
 
@@ -138,6 +139,8 @@ public readonly struct Board(int height, int width, Coordinate[] food, Coordinat
     [JsonPropertyName("hazards")] public Coordinate[] Hazards { get; } = hazards;
 
     [JsonPropertyName("snakes")] public Snake[] Snakes { get; } = snakes;
+    
+    [JsonIgnore] public int Capacity { get; } = Math.Min((int)System.Numerics.BitOperations.RoundUpToPowerOf2((uint)(height * width)), Constants.MaxBodyLength);
 }
 
 [method: JsonConstructor]
