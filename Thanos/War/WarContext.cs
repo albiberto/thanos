@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Thanos.Enums;
 using Thanos.SourceGen;
 
@@ -8,27 +7,22 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct WarContext
 {
-    public readonly uint Width;
-    public readonly uint Height;
-    public readonly uint Area;
-    public readonly int Capacity;
-    public readonly uint InitialActiveSnakes;
-    public readonly uint SnakeStride;
-    public readonly uint BitboardsMemorySize;
-    public readonly uint SnakesMemorySize;
+    public readonly uint Width, Height, Area;
 
-    public WarContext(in Board board)
+    public readonly uint WarSnakeCount;
+    
+    private WarContext(uint width, uint height, uint warSnakeCount)
     {
-        Width = board.Width;
-        Height = board.Height;
+        Width = width;
+        Height = height;
         Area = Width * Height;
-        Capacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2(Height * Width), Constants.MaxBodyLength);
-        InitialActiveSnakes = (uint)board.Snakes.Length;
         
-        var bitboardSegments = (Area + 63) >> 6;
-        BitboardsMemorySize = bitboardSegments * WarField.TotalBitboards * sizeof(ulong);
-        
-        SnakeStride = (uint)(WarSnake.HeaderSize + Capacity * sizeof(ushort));
-        SnakesMemorySize = SnakeStride * InitialActiveSnakes;
+        WarSnakeCount = warSnakeCount;
     }
+    
+    public WarContext(in Board board) : this(board.Width, board.Height, (uint)board.Snakes.Length)
+    {
+    }
+    
+    public static WarContext Worst => new(Constants.MaxWidth, Constants.MaxHeight, Constants.MaxSnakes);
 }

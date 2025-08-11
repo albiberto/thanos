@@ -10,7 +10,8 @@ namespace Thanos.War;
 public readonly unsafe struct WarField
 {
     public const int TotalBitboards = 3; // Food, Hazard, AllSnakes
-
+    public const int HeaderSize = 64;
+    
     public readonly uint Width;
     private readonly uint _height;
     public readonly uint Area;
@@ -99,5 +100,76 @@ public readonly unsafe struct WarField
         // Una casella è occupata se il bit corrispondente è acceso
         // nel bitboard dei pericoli OPPURE nel bitboard di tutti i serpenti.
         return ((HazardBoard[ulongIndex] | AllSnakesBoard[ulongIndex]) & bitMask) != 0;
+    }
+    
+    /// <summary>
+    /// Controlla se in una data casella è presente del cibo. Operazione O(1).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsFood(ushort position1D)
+    {
+        if (position1D >= Area) return false;
+        var index = position1D >> 6;
+        var mask = 1UL << (position1D & 63);
+        return (FoodBoard[index] & mask) != 0;
+    }
+
+    /// <summary>
+    /// Controlla se una data casella è un pericolo. Operazione O(1).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsHazard(ushort position1D)
+    {
+        if (position1D >= Area) return false;
+        var index = position1D >> 6;
+        var mask = 1UL << (position1D & 63);
+        return (HazardBoard[index] & mask) != 0;
+    }
+
+    /// <summary>
+    /// Aggiorna i bitboard per riflettere il movimento di un serpente.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
+    {
+        // Accende il bit della nuova testa sulla mappa dei serpenti
+        SetBit(AllSnakesBoard, newHead);
+    
+        // Spegne il bit della vecchia coda solo se il serpente non ha mangiato (e quindi si è accorciato)
+        if (!hasEaten)
+        {
+            ClearBit(AllSnakesBoard, oldTail);
+        }
+    
+        // Se il cibo è stato mangiato, lo rimuove dal bitboard del cibo
+        if (hasEaten)
+        {
+            ClearBit(FoodBoard, newHead);
+        }
+    }
+
+ /// <summary>
+ /// Rimuove completamente un serpente dal bitboard dei serpenti.
+ /// </summary>
+ [MethodImpl(MethodImplOptions.AggressiveInlining)]
+ public void RemoveSnake(ushort* body, int length)
+ {
+     for (int i = 0; i < length; i++)
+     {
+         ClearBit(AllSnakesBoard, body[i]);
+     }
+ }
+
+    /// <summary>
+    /// Metodo helper privato per spegnere un singolo bit in un dato bitboard.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ClearBit(ulong* board, ushort position1D)
+    {
+        var ulongIndex = position1D >> 6;
+        var bitIndex = position1D & 63;
+        // Crea una maschera con tutti i bit a 1 tranne quello da spegnere,
+        // poi applicala con un AND per forzare quel bit a 0.
+        board[ulongIndex] &= ~(1UL << bitIndex);
     }
 }

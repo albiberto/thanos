@@ -1,61 +1,67 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Runtime.InteropServices;
+using Thanos.Enums;
 using Thanos.War;
 
 namespace Thanos.MCST;
 
-public class MctsNode : IDisposable
+/// <summary>
+/// Un nodo dell'albero MCTS, ottimizzato per l'allocazione in un MemoryPool.
+/// È una struct non gestita, quindi non ci sono allocazioni sul GC heap.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct Node
 {
-    private static readonly double ExplorationConstant = 1.414; // sqrt(2)
+    private const double ExplorationConstant = 1.414; // sqrt(2)
 
-    public WarArena WarArea { get; private set; }
-    public MctsNode? Parent { get; }
-    public List<MctsNode> Children { get; } = new();
-    public MoveDirection MoveThatLedToThisNode { get; }
+    // Dati per la logica MCTS
+    public Node* Parent;
+    public double Wins;
+    public int Visits;
+    public MoveDirection MoveThatLedToThisNode;
 
-    public int Visits { get; private set; }
-    public double Wins { get; private set; }
-    public bool IsTerminalNode { get; } // Un nodo è "terminale" se la partita è finita
+    // Struttura ad albero (sostituisce List<MctsNode>)
+    public Node** Children; // Un puntatore a un array di puntatori ai figli
+    public int ChildCount;
 
-    /// <summary>
-    /// Costruttore per il nodo radice.
-    /// </summary>
-    public MctsNode(in WarArena initialWarArea)
-    {
-        WarArea = initialWarArea;
-        Parent = null;
-        MoveThatLedToThisNode = MoveDirection.None;
-        // CORREZIONE: Controlla l'esito per vedere se la partita è già finita
-        IsTerminalNode = WarArea.AssessOutcome().outcome != WarOutcome.Ongoing;
-    }
+    // Stato del gioco
+    public WarArena* WarArena; // Puntatore all'arena di questo nodo
+    public bool IsTerminal;
     
-    /// <summary>
-    /// Costruttore per i nodi figli.
-    /// </summary>
-    public MctsNode(in WarArena newWarArea, MctsNode parent, MoveDirection move)
+    public void Initialize(WarArena* arena, Node* parent, MoveDirection move)
     {
-        WarArea = newWarArea;
+        WarArena = arena;
         Parent = parent;
         MoveThatLedToThisNode = move;
-        // CORREZIONE: Controlla l'esito per vedere se la partita è finita
-        IsTerminalNode = WarArea.AssessOutcome().outcome != WarOutcome.Ongoing;
+        Wins = 0;
+        Visits = 0;
+        Children = null;
+        ChildCount = 0;
+        IsTerminal = WarArena->AssessOutcome().outcome != WarOutcome.Ongoing;
     }
 
-    /// <summary>
-    /// Seleziona il figlio più promettente usando la formula UCB1.
-    /// </summary>
-    public MctsNode? FindBestChildUcb1()
+    public void UpdateStats(double result)
     {
-        MctsNode? bestChild = null;
+        Visits++;
+        Wins += result;
+    }
+
+    public Node* FindBestChildUcb1()
+    {
+        Node* bestChild = null;
         double bestScore = double.MinValue;
 
-        foreach (var child in Children)
+        for (int i = 0; i < ChildCount; i++)
         {
-            if (child.Visits == 0) return child;
+            var child = Children[i];
+            if (child->Visits == 0)
+            {
+                // Questo figlio non è mai stato esplorato, è la scelta prioritaria
+                return child;
+            }
 
-            double ucb1 = (child.Wins / child.Visits) + 
-                          ExplorationConstant * Math.Sqrt(Math.Log(Visits) / child.Visits);
-            
+            double ucb1 = (child->Wins / child->Visits) +
+                          ExplorationConstant * Math.Sqrt(Math.Log(Visits) / child->Visits);
+
             if (ucb1 > bestScore)
             {
                 bestScore = ucb1;
@@ -63,20 +69,5 @@ public class MctsNode : IDisposable
             }
         }
         return bestChild;
-    }
-    
-    public void UpdateStats(double result)
-    {
-        Visits++;
-        Wins += result;
-    }
-    
-    public void Dispose()
-    {
-        WarArea.Dispose();
-        foreach (var child in Children)
-        {
-            child.Dispose();
-        }
     }
 }

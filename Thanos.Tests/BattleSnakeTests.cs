@@ -22,7 +22,7 @@ public unsafe partial class SnakeTests(TestCase @case)
     public void SetUp()
     {
         // Calculate required memory size
-        var _snakeStride = WarSnake.HeaderSize + @case.Capacity * sizeof(ushort);
+        var _snakeStride = WarSnake.SizeOfHeader + @case.Capacity * sizeof(ushort);
 
         // Allocate aligned memory
         _memory = (byte*)NativeMemory.AlignedAlloc((nuint)_snakeStride, 64);
