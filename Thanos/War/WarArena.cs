@@ -37,11 +37,12 @@ public unsafe struct WarArena : IDisposable
         _fieldMemory =  (ulong*)NativeMemory.AlignedAlloc(bitboardsMemorySize, Constants.CacheLineSize);
         _snakesMemory =  (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);  
         
-        // --- Inizializziamo la plancia di gioco con cibo e hazards ---
+        // --- Inizializziamo la plancia di gioco (WarField) con cibo e hazards ---
         var field = new WarField(_fieldMemory, width, bitboardsMemorySize);
         field.AddFood(board.Food);
         field.AddHazard(board.Hazards);
         
+        // --- Inizializziamo i serpenti sia sulla plancia di gioco (WarField) che nella struttura dedicata alla loro gestione (WarSnake) ---
         InitializeSnakes(in field, in request.You, board.Snakes, (int)capacity, snakeSize);
     }
 
