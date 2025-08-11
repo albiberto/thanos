@@ -9,9 +9,9 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct WarSnake
 {
-    public const int HeaderSize = Constants.CacheLineSize;
-    private const int PaddingSize = Constants.CacheLineSize - sizeof(int) * 5 - sizeof(ushort) * 1;
-
+    private const int PaddingSize = Constants.SizeOfCacheLine - sizeof(int) * 5 - sizeof(ushort) * 1;
+    public const int SizeOfHeader = 64;
+    
     // --- Header ---
     private int _capacity;
     private int _nextHeadIndex;
@@ -78,6 +78,9 @@ public unsafe struct WarSnake
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ushort GetTailPosition() => Body[TailIndex];
+    
     public readonly bool Dead => Health <= 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

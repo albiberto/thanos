@@ -2,8 +2,16 @@
 
 public static class Constants
 {
+    public const int SizeOfCacheLine = 64;
+
+    public const int MaxNodes = 500_000;
+    
+    public const int MaxWidth = 19;
+    public const int MaxHeight = 19;
+    public const int MaxArea = MaxWidth * MaxHeight;
+    
     public const int MaxSnakes = 8; 
-    public const int CacheLineSize = 64;
+    public const uint MaxSnakeBodyCapacity = 256;
     
     public const byte Empty = 0; 
     public const byte Me = 1;    
@@ -17,5 +25,4 @@ public static class Constants
     public const byte Food = 127;
     public const byte Hazard = 255;
     
-    public const int MaxBodyLength = 256;
 }

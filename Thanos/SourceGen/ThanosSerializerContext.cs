@@ -109,6 +109,8 @@ public readonly struct Board(uint height, uint width, Coordinate[] food, Coordin
     [JsonPropertyName("food")] public readonly Coordinate[] Food = food;
     [JsonPropertyName("hazards")] public readonly Coordinate[] Hazards = hazards;
     [JsonPropertyName("snakes")] public readonly Snake[] Snakes = snakes;
+    
+    [JsonIgnore] public readonly uint SnakeCount = (uint)snakes.Length;
 }
 
 [method: JsonConstructor]
