@@ -20,6 +20,7 @@ public readonly unsafe struct WarField
     private ulong* HazardBoard => _memory + _ulongsPerBitboard;
     private ulong* AllSnakesBoard => _memory + _ulongsPerBitboard * 2;
     
+    // CORREZIONE: Il costruttore calcola da solo il numero di ulong necessari
     public WarField(ulong* memory, uint width, uint area)
     {
         _width = width;
@@ -27,14 +28,10 @@ public readonly unsafe struct WarField
         _memory = memory;
         _ulongsPerBitboard = (_area + 63) / 64;
 
-        // Il costruttore garantisce che l'oggetto sia creato in uno stato valido (pulito)
         var totalUlongs = _ulongsPerBitboard * TotalBitboards;
         NativeMemory.Clear(_memory, (uint)(totalUlongs * sizeof(ulong)));
     }
 
-    /// <summary>
-    /// Inizializza i bitboard statici (Cibo e Pericoli) a partire dai dati del DTO.
-    /// </summary>
     public void InitializeStaticBoards(in Board board)
     {
         foreach (ref readonly var foodCoord in board.Food.AsSpan())
@@ -44,14 +41,11 @@ public readonly unsafe struct WarField
             SetBit(HazardBoard, To1D(in hazardCoord));
     }
 
-    /// <summary>
-    /// Accende un bit nel bitboard dei serpenti. Chiamato da WarSnake durante la sua inizializzazione.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetSnakeBit(ushort position1D) => SetBit(AllSnakesBoard, position1D);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SetBit(ulong* board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
+    private void SetBit(ulong* board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
