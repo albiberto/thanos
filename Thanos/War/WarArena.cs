@@ -13,7 +13,10 @@ public unsafe struct WarArena : IDisposable
     private readonly byte* _snakesMemory;
     private readonly ulong* _fieldMemory;
 
+    private readonly int _snakeSize;
+
     private fixed long _snakePointers[Constants.MaxSnakes];
+    private readonly WarField _field;
 
     public WarArena(in Request request)
     {
@@ -38,19 +41,19 @@ public unsafe struct WarArena : IDisposable
         _snakesMemory =  (byte*)NativeMemory.AlignedAlloc(snakesMemorySize, Constants.CacheLineSize);  
         
         // --- Inizializziamo la plancia di gioco (WarField) con cibo e hazards ---
-        var field = new WarField(_fieldMemory, width, bitboardsMemorySize);
-        field.AddFood(board.Food);
-        field.AddHazard(board.Hazards);
+        _field = new WarField(_fieldMemory, width, bitboardsMemorySize);
+        _field.AddFood(board.Food);
+        _field.AddHazard(board.Hazards);
         
         // --- Inizializziamo i serpenti sia sulla plancia di gioco (WarField) che nella struttura dedicata alla loro gestione (WarSnake) ---
-        InitializeSnakes(in field, in request.You, board.Snakes, (int)capacity, snakeSize);
+        InitializeSnakes(in request.You, board.Snakes, (int)capacity, snakeSize);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void InitializeSnakes(in WarField field, in Snake me, ReadOnlySpan<Snake> snakes, int capacity, uint snakeSize)
+    private void InitializeSnakes(in Snake me, ReadOnlySpan<Snake> snakes, int capacity, uint snakeSize)
     {
         // Inizializza il tuo serpente a indice 0 (Me)
-        InitializeSnake(field, me.Body, 0, me.Health, capacity, snakeSize);
+        InitializeSnake(me, 0, capacity);
 
         // Inizializza gli avversari a partire da indice 1 (Enemies)
         var myId = me.Id;
@@ -60,27 +63,55 @@ public unsafe struct WarArena : IDisposable
         {
             if (snake.Id == myId) continue;
         
-            InitializeSnake(field, snake.Body, opponentPointerIndex, me.Health, capacity, snakeSize);
+            InitializeSnake(snake, opponentPointerIndex, capacity);
             opponentPointerIndex++;
         }
     }
     
-    private void InitializeSnake(in WarField field, in ReadOnlySpan<Coordinate> Body, int index, int health, int capacity, uint snakeSize)
+    private void InitializeSnake(in Snake snakeDto, byte snakeIndex, int capacity)
     {
-        var length = Math.Min(Body.Length, capacity);
-        var body1D = stackalloc ushort[length];
-        for (var i = 0; i < length; i++) body1D[i] = field.To1D(in Body[length - 1 - i]);
-        
-        var snakePtr = (WarSnake*)(_snakesMemory + index * snakeSize);
-        _snakePointers[index] = (long)snakePtr;
-        
-        WarSnake.PlacementNew((WarSnake*)_snakePointers[index], body1D, Body.Length, health, capacity);
-        
-        field.AddSnake(body1D, length);
+        var length = Math.Min(snakeDto.Length, capacity);
+        var sourceBody = snakeDto.Body.AsSpan();
+
+        // 1. Ottieni il puntatore alla destinazione finale del WarSnake e inizializza i campi.
+        var snakePtr = (WarSnake*)(_snakesMemory + snakeIndex * _snakeSize);
+        _snakePointers[snakeIndex] = (long)snakePtr;
+
+        snakePtr->Health = snakeDto.Health;
+        snakePtr->Length = length;
+        snakePtr->Capacity = capacity;
+        snakePtr->TailIndex = 0;
+        snakePtr->NextHeadIndex = length & (capacity - 1);
+
+        // 2. Esegui un UNICO CICLO per convertire le coordinate e popolarle in TUTTE le destinazioni.
+        for (var i = 0; i < length; i++)
+        {
+            // Converte la coordinata 2D in 1D UNA SOLA VOLTA.
+            // Leggiamo dall'array originale in ordine inverso.
+            var coord1D = _field.To1D(sourceBody[length - 1 - i]);
+
+            // a) Scrive direttamente nella memoria del corpo del WarSnake.
+            // Scriviamo in ordine Coda -> Testa.
+            snakePtr->Body[i] = coord1D;
+
+            // b) Usa lo stesso valore per accendere il bit nel WarField.
+            _field.SetSnakeBit(coord1D);
+        }
+
+        // 3. Imposta la testa del serpente, che è l'ultimo elemento che abbiamo scritto.
+        if (length > 0)
+        {
+            snakePtr->Head = snakePtr->Body[length - 1];
+        }
+        else
+        {
+            // Gestisce il caso raro di un serpente di lunghezza 0
+            snakePtr->Head = ushort.MaxValue; // O un altro valore sentinella
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ref WarSnake GetMySnake() => ref *(WarSnake*)_snakePointers[0];
+    public ref WarSnake GetMe() => ref *(WarSnake*)_snakePointers[0];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ref WarSnake GetSnake(int index) => ref *(WarSnake*)_snakePointers[index];
