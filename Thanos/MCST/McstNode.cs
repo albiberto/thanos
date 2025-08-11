@@ -8,7 +8,7 @@ public class MctsNode : IDisposable
 {
     private static readonly double ExplorationConstant = 1.414; // sqrt(2)
 
-    public WarArena GameState { get; private set; }
+    public WarArena WarArea { get; private set; }
     public MctsNode? Parent { get; }
     public List<MctsNode> Children { get; } = new();
     public MoveDirection MoveThatLedToThisNode { get; }
@@ -20,25 +20,25 @@ public class MctsNode : IDisposable
     /// <summary>
     /// Costruttore per il nodo radice.
     /// </summary>
-    public MctsNode(in WarArena initialGameState)
+    public MctsNode(in WarArena initialWarArea)
     {
-        GameState = initialGameState;
+        WarArea = initialWarArea;
         Parent = null;
         MoveThatLedToThisNode = MoveDirection.None;
         // CORREZIONE: Controlla l'esito per vedere se la partita è già finita
-        IsTerminalNode = GameState.AssessOutcome().outcome != WarOutcome.Ongoing;
+        IsTerminalNode = WarArea.AssessOutcome().outcome != WarOutcome.Ongoing;
     }
     
     /// <summary>
     /// Costruttore per i nodi figli.
     /// </summary>
-    public MctsNode(in WarArena newGameState, MctsNode parent, MoveDirection move)
+    public MctsNode(in WarArena newWarArea, MctsNode parent, MoveDirection move)
     {
-        GameState = newGameState;
+        WarArea = newWarArea;
         Parent = parent;
         MoveThatLedToThisNode = move;
         // CORREZIONE: Controlla l'esito per vedere se la partita è finita
-        IsTerminalNode = GameState.AssessOutcome().outcome != WarOutcome.Ongoing;
+        IsTerminalNode = WarArea.AssessOutcome().outcome != WarOutcome.Ongoing;
     }
 
     /// <summary>
@@ -73,7 +73,7 @@ public class MctsNode : IDisposable
     
     public void Dispose()
     {
-        GameState.Dispose();
+        WarArea.Dispose();
         foreach (var child in Children)
         {
             child.Dispose();
