@@ -10,8 +10,8 @@ public readonly unsafe struct WarField
 {
     public const int TotalBitboards = 3; // Food, Hazard, AllSnakes
 
-    private readonly uint _width;
-    private readonly uint _area;
+    public readonly uint Width;
+    public readonly uint Area;
     private readonly uint _ulongsPerBitboard;
     private readonly ulong* _memory;
 
@@ -23,10 +23,10 @@ public readonly unsafe struct WarField
     // CORREZIONE: Il costruttore calcola da solo il numero di ulong necessari
     public WarField(ulong* memory, uint width, uint area)
     {
-        _width = width;
-        _area = area;
+        Width = width;
+        Area = area;
         _memory = memory;
-        _ulongsPerBitboard = (_area + 63) / 64;
+        _ulongsPerBitboard = (Area + 63) / 64;
 
         var totalUlongs = _ulongsPerBitboard * TotalBitboards;
         NativeMemory.Clear(_memory, (uint)(totalUlongs * sizeof(ulong)));
@@ -48,5 +48,5 @@ public readonly unsafe struct WarField
     private void SetBit(ulong* board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
+    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
 }
