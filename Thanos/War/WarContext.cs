@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Numerics;
+using System.Runtime.InteropServices;
+using Thanos.Enums;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
@@ -7,6 +9,7 @@ namespace Thanos.War;
 public readonly struct WarContext
 {
     public readonly uint Width;
+    public readonly uint Height;
     public readonly uint Area;
     public readonly int Capacity;
     public readonly uint InitialActiveSnakes;
@@ -17,8 +20,9 @@ public readonly struct WarContext
     public WarContext(in Board board)
     {
         Width = board.Width;
-        Area = board.Area;
-        Capacity = board.Capacity;
+        Height = board.Height;
+        Area = Width * Height;
+        Capacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2(Height * Width), Constants.MaxBodyLength);
         InitialActiveSnakes = (uint)board.Snakes.Length;
         
         var bitboardSegments = (Area + 63) >> 6;
