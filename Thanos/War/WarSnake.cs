@@ -11,13 +11,13 @@ public unsafe struct WarSnake
     public const int HeaderSize = Constants.CacheLineSize;
 
     // === CACHE LINE 1 ===
-    private int _capacity;
-    private int _nextHeadIndex;
-
     public int Health;
     public int Length;
     public ushort Head;
+    
+    public int NextHeadIndex;
     public int TailIndex;
+    public int Capacity;
 
     private fixed byte _padding[PaddingSize];
 
@@ -25,33 +25,13 @@ public unsafe struct WarSnake
     public fixed ushort Body[1];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void PlacementNew(WarSnake* snakePtr, ushort* bodyPtr, int length, int health, int capacity)
-    {
-        snakePtr->Health = health;
-        snakePtr->Length = length;
-        snakePtr->_capacity = capacity;
-        
-        // La testa è l'ULTIMO elemento del buffer invertito
-        snakePtr->Head = bodyPtr[length - 1];
-
-        // Copia il corpo invertito nel buffer
-        Unsafe.CopyBlock(snakePtr->Body, bodyPtr, (uint)(length * sizeof(ushort)));
-
-        // Il segmento più vecchio (la coda) è ora all'inizio del buffer
-        snakePtr->TailIndex = 0;
-        
-        // Il prossimo segmento verrà scritto dopo la fine del blocco attuale
-        snakePtr->_nextHeadIndex = length & (capacity - 1);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHeadPosition, bool hasEaten, int damage = 0)
     {
         ref var health = ref Health;
         ref var length = ref Length;
         ref var tailIndex = ref TailIndex;
-        ref var nextHeadIndex = ref _nextHeadIndex;
-        ref var capacity = ref _capacity;
+        ref var nextHeadIndex = ref NextHeadIndex;
+        ref var capacity = ref Capacity;
 
         if (hasEaten)
         {
