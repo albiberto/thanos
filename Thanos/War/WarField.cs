@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 
@@ -10,51 +11,48 @@ public readonly unsafe struct WarField
     public const int TotalBitboards = 3; // Food, Hazard, AllSnakes
 
     private readonly uint _width;
+    private readonly uint _area;
+    private readonly uint _ulongsPerBitboard;
+    private readonly ulong* _memory;
+
+    // --- Mappatura dei Bitboard ---
+    private ulong* FoodBoard => _memory;
+    private ulong* HazardBoard => _memory + _ulongsPerBitboard;
+    private ulong* AllSnakesBoard => _memory + _ulongsPerBitboard * 2;
     
-    private readonly ulong* _foodBoard;
-    private readonly ulong* _hazardBoard;
-    private readonly ulong* _snakesBoard;
-    
-    public WarField(ulong* memory, uint width, uint bitboardSize)
+    public WarField(ulong* memory, uint width, uint area)
     {
         _width = width;
-        
-        _foodBoard = memory;
-        _hazardBoard = memory + bitboardSize;
-        _snakesBoard = memory + bitboardSize * 2;
-        
-        var bitBoardsSegments = bitboardSize * 3;
-        NativeMemory.Clear(memory, bitBoardsSegments * sizeof(ulong));
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddFood(ReadOnlySpan<Coordinate> foods)
-    {
-        foreach (ref readonly var food in foods) SetBit(_foodBoard, To1D(food));
+        _area = area;
+        _memory = memory;
+        _ulongsPerBitboard = (_area + 63) / 64;
+
+        // Il costruttore garantisce che l'oggetto sia creato in uno stato valido (pulito)
+        var totalUlongs = _ulongsPerBitboard * TotalBitboards;
+        NativeMemory.Clear(_memory, (uint)(totalUlongs * sizeof(ulong)));
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddHazard(ReadOnlySpan<Coordinate> hazards)
+    /// <summary>
+    /// Inizializza i bitboard statici (Cibo e Pericoli) a partire dai dati del DTO.
+    /// </summary>
+    public void InitializeStaticBoards(in Board board)
     {
-        foreach (ref readonly var hazard in hazards) SetBit(_hazardBoard, To1D(hazard));
+        foreach (ref readonly var foodCoord in board.Food.AsSpan())
+            SetBit(FoodBoard, To1D(in foodCoord));
+
+        foreach (ref readonly var hazardCoord in board.Hazards.AsSpan())
+            SetBit(HazardBoard, To1D(in hazardCoord));
     }
-    
+
+    /// <summary>
+    /// Accende un bit nel bitboard dei serpenti. Chiamato da WarSnake durante la sua inizializzazione.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetSnakeBit(ushort position1D) => SetBit(_snakesBoard, position1D);
+    public void SetSnakeBit(ushort position1D) => SetBit(AllSnakesBoard, position1D);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SetBit(ulong* board, ushort position1D)
-    {
-        // Calcola in quale ulong dell'array si trova la nostra casella
-        var ulongIndex = position1D >> 6;        // divisione per 64
-        
-        // Calcola la posizione del bit all'interno di quell'ulong
-        var bitIndex = position1D & 63;          // modulo 64
+    private static void SetBit(ulong* board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
 
-        // Imposta quel bit a 1 usando una maschera e un'operazione OR
-        board[ulongIndex] |= 1UL << bitIndex;
-    }
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort To1D(Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
+    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
 }
