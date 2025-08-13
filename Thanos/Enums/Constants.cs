@@ -5,6 +5,7 @@ public static class Constants
     public const int SizeOfCacheLine = 64;
 
     public const int MaxNodes = 500_000;
+    public const int TimeLimitMs = 490; // Lasciamo 10ms di margine sui 500ms totali
     
     public const int MaxWidth = 19;
     public const int MaxHeight = 19;

@@ -11,39 +11,42 @@ var app = builder.Build();
 var agent = new BattleSnakeAgent();
 app.Lifetime.ApplicationStopping.Register(() => agent.Dispose());
 
-
 app.MapGet("/", () => new
 {
     apiversion = "1",
-    author = "Il tuo Nome",
-    color = "#8B0000", // Un bel rosso scuro per Thanos
+    author = "Thanos",
+    color = "#8B0000",
     head = "safe",
     tail = "round-bum"
 });
 
-app.MapPost("/start", (Request game) =>
+app.MapPost("/start", async context =>
 {
-    Console.WriteLine($"--- Inizio Partita: {game.Game.Id} ---");
-    return Results.Ok();
+    var request = await Read(context);
+    agent.Start(request);
 });
 
 app.MapPost("/move", async context =>
 {
-    var readResult = await context.Request.BodyReader.ReadAsync();
-    var sequence = readResult.Buffer;
-    
-    var request = sequence.IsSingleSegment
-        ? JsonSerializer.Deserialize(sequence.FirstSpan, ThanosSerializerContext.Default.Request)
-        : JsonSerializer.Deserialize(sequence.ToArray(), ThanosSerializerContext.Default.Request);
-
-    var result = await agent.HandleMoveAsync(request);
+    var request = await Read(context);
+    var result = agent.Move(request);
 });
 
-app.MapPost("/end", (Request game) =>
+app.MapPost("/end", async context =>
 {
-    Console.WriteLine($"--- Fine Partita: {game.Game.Id} ---");
-    return Results.Ok();
+    var request = await Read(context);
+    agent.End(request);
 });
-
 
 app.Run();
+return;
+
+async Task<Request> Read(HttpContext httpContext)
+{
+    var readResult = await httpContext.Request.BodyReader.ReadAsync();
+    var sequence = readResult.Buffer;
+    
+    return sequence.IsSingleSegment
+        ? JsonSerializer.Deserialize(sequence.FirstSpan, ThanosSerializerContext.Default.Request)
+        : JsonSerializer.Deserialize(sequence.ToArray(), ThanosSerializerContext.Default.Request);
+}
