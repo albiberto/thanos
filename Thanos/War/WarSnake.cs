@@ -9,78 +9,79 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct WarSnake
 {
-    private const int PaddingSize = Constants.SizeOfCacheLine - sizeof(int) * 5 - sizeof(ushort) * 1;
-    public const int SizeOfHeader = 64;
-    
     // --- Header ---
-    private int _capacity;
+    private uint _capacity;
     private int _nextHeadIndex;
 
     public int Health;
     public int Length;
     public ushort Head;
     public int TailIndex;
-
-    private fixed byte _padding[PaddingSize];
-
+    
     // --- Body ---
-    public fixed ushort Body[1];
+    public ushort* Body;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Initialize(in Snake snakeDto, in WarField field, int capacity)
+    public static void PlacementNew(
+        Span<byte> headerSpan, 
+        Span<ushort> bodySpan, 
+        in Snake snakeDto, 
+        in WarField field)
     {
-        var length = Math.Min(snakeDto.Length, capacity);
+        ref var snake = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnake>(headerSpan));
+        
+        snake._capacity = (uint)bodySpan.Length;
         var sourceBody = snakeDto.Body.AsSpan();
 
-        Health = snakeDto.Health;
-        Length = length;
-        _capacity = capacity;
-        TailIndex = 0;
-        _nextHeadIndex = length & (capacity - 1);
+        snake.Health = snakeDto.Health;
+        snake.Length = System.Math.Min(snakeDto.Length, (int)snake._capacity);
 
-        for (var i = 0; i < length; i++)
+        snake.TailIndex = 0;
+        snake._nextHeadIndex = snake.Length & ((int)snake._capacity - 1);
+        
+        snake.Body = (ushort*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(bodySpan));
+
+        for (var i = 0; i < snake.Length; i++)
         {
-            var coord1D = field.To1D(in sourceBody[length - 1 - i]);
-            Body[i] = coord1D;
+            var coord1D = field.To1D(in sourceBody[snake.Length - 1 - i]);
+            snake.Body[i] = coord1D;
             field.SetSnakeBit(coord1D);
         }
-    
-        Head = length > 0 ? Body[length - 1] : ushort.MaxValue;
+
+        snake.Head = snake.Length > 0 ? snake.Body[snake.Length - 1] : ushort.MaxValue;
     }
 
+    /// <summary>
+    /// Esegue il movimento del serpente. Questa è una funzione sull'hot-path
+    /// e continua a usare l'accesso diretto ai puntatori per le massime performance.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Move(ushort newHeadPosition, bool hasEaten, int damage = 0)
+    public void Move(ushort newHeadPosition, bool hasEaten, int damage = 1)
     {
-        if (hasEaten)
-        {
-            Health = 100;
-        }
-        else
-        {
-            Health -= damage + 1;
-        }
-
+        Health = hasEaten ? 100 : Health - damage;
         if (Dead) return;
-        
-        var capacityMask = _capacity - 1;
 
+        var capacityMask = (int)_capacity - 1;
+
+        // Il corpo è un buffer circolare. La vecchia testa prende il posto della "prossima testa".
         Body[_nextHeadIndex] = Head;
         Head = newHeadPosition;
         _nextHeadIndex = (_nextHeadIndex + 1) & capacityMask;
 
         if (hasEaten && Length < _capacity)
         {
+            // Se il serpente mangia e non è alla massima capacità, cresce in lunghezza.
             Length++;
         }
         else
         {
+            // Altrimenti, la coda avanza nel buffer circolare.
             TailIndex = (TailIndex + 1) & capacityMask;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort GetTailPosition() => Body[TailIndex];
-    
+
     public readonly bool Dead => Health <= 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

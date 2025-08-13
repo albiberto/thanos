@@ -1,175 +1,145 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.MCST;
+using Thanos.Enums;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly unsafe struct WarField
+public unsafe struct WarField
 {
-    public const int TotalBitboards = 3; // Food, Hazard, AllSnakes
-    public const int HeaderSize = 64;
-    
-    public readonly uint Width;
-    private readonly uint _height;
-    public readonly uint Area;
-    private readonly uint _ulongsPerBitboard;
-    private readonly ulong* _memory;
+    public const int TotalBitboards = 3;
 
-    // --- Mappatura dei Bitboard ---
-    private ulong* FoodBoard => _memory;
-    private ulong* HazardBoard => _memory + _ulongsPerBitboard;
-    private ulong* AllSnakesBoard => _memory + _ulongsPerBitboard * 2;
-    
-    // CORREZIONE: Il costruttore calcola da solo il numero di ulong necessari
-    public WarField(ulong* memory, uint width, uint height, uint area)
+    // Campi pubblici per un facile accesso
+    public uint Width;
+    public uint Height;
+    public uint Area;
+    private uint _bitboardSegmentCount; // Aggiunto per creare Span della dimensione corretta
+
+    // I puntatori rimangono, perché la struct non può contenere Span.
+    // Sono l'implementazione interna, non l'API pubblica.
+    private ulong* _foodBitboard;
+    private ulong* _hazardBitboard;
+    private ulong* _snakesBitboard;
+
+    /// <summary>
+    /// Metodo "costruttore" che inizializza la struct partendo da aree di memoria sicure (Span).
+    /// Questa è la nuova API pubblica per l'inizializzazione.
+    /// </summary>
+    public static void PlacementNew(
+        Span<byte> fieldSpan,
+        Span<ulong> foodBitboardSpan,
+        Span<ulong> hazardBitboardSpan,
+        Span<ulong> snakesBitboardSpan,
+        in WarContext context,
+        in Board board)
     {
-        Width = width;
-        _height = height;
-        Area = area;
-        _memory = memory;
-        _ulongsPerBitboard = (Area + 63) / 64;
+        // Ottiene un riferimento alla nostra istanza di WarField.
+        ref var field = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarField>(fieldSpan));
 
-        var totalUlongs = _ulongsPerBitboard * TotalBitboards;
-        NativeMemory.Clear(_memory, (uint)(totalUlongs * sizeof(ulong)));
-    }
+        // Inizializza le proprietà.
+        field.Width = context.Width;
+        field.Height = context.Height;
+        field.Area = context.Area;
+        // Salva il numero di segmenti, ci servirà per creare gli Span dopo.
+        field._bitboardSegmentCount = (uint)foodBitboardSpan.Length;
 
-    public void InitializeStaticBoards(in Board board)
-    {
+        // Assegna i puntatori interni in modo sicuro, partendo dagli Span.
+        // Questa è l'unica parte "unsafe" e rimane incapsulata qui.
+        field._foodBitboard = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(foodBitboardSpan));
+        field._hazardBitboard = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(hazardBitboardSpan));
+        field._snakesBitboard = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(snakesBitboardSpan));
+
+        // Popola i bitboard usando gli span, che è più sicuro e leggibile.
         foreach (ref readonly var foodCoord in board.Food.AsSpan())
-            SetBit(FoodBoard, To1D(in foodCoord));
-
+        {
+            SetBit(foodBitboardSpan, To1D(in foodCoord, field.Width));
+        }
         foreach (ref readonly var hazardCoord in board.Hazards.AsSpan())
-            SetBit(HazardBoard, To1D(in hazardCoord));
+        {
+            SetBit(hazardBitboardSpan, To1D(in hazardCoord, field.Width));
+        }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetSnakeBit(ushort position1D) => SetBit(AllSnakesBoard, position1D);
+    // --- METODI DI SCRITTURA (usano Span per sicurezza) ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void SetBit(ulong* board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
-    
-    /// <summary>
-    /// Calcola la posizione 1D di una casella adiacente a una data posizione.
-    /// </summary>
-    /// <returns>La coordinata 1D del vicino, o ushort.MaxValue se la mossa porta fuori dalla scacchiera.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort GetNeighbor(ushort position1D, MoveDirection direction)
+    public readonly void SetSnakeBit(ushort position1D)
     {
-        // Converte temporaneamente 1D in 2D per un calcolo sicuro dei bordi
-        var x = position1D % Width;
-        var y = position1D / Width;
-
-        switch (direction)
-        {
-            case MoveDirection.Up:    y--; break;
-            case MoveDirection.Down:  y++; break;
-            case MoveDirection.Left:  x--; break;
-            case MoveDirection.Right: x++; break;
-        }
-
-        // Controlla se siamo finiti fuori dalla scacchiera (collisione con un muro)
-        if (x < 0 || x >= Width || y < 0 || y >= _height)
-        {
-            return ushort.MaxValue; // Un valore sentinella per indicare "fuori dai limiti"
-        }
-
-        // Riconverte le coordinate 2D valide in un indice 1D
-        return (ushort)(y * Width + x);
-    }
-
-    /// <summary>
-    /// Controlla se una casella è occupata da un ostacolo (muro, pericolo o un altro serpente).
-    /// Questa è un'operazione O(1) ultra-veloce grazie ai bitboard.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsOccupied(ushort position1D)
-    {
-        // Se la posizione è il nostro valore sentinella, è un muro.
-        if (position1D == ushort.MaxValue) return true;
-
-        // Calcola l'indice e la maschera per interrogare i bitboard
-        var ulongIndex = position1D >> 6;
-        var bitMask = 1UL << (position1D & 63);
-
-        // Una casella è occupata se il bit corrispondente è acceso
-        // nel bitboard dei pericoli OPPURE nel bitboard di tutti i serpenti.
-        return ((HazardBoard[ulongIndex] | AllSnakesBoard[ulongIndex]) & bitMask) != 0;
+        SetBit(new Span<ulong>(_snakesBitboard, (int)_bitboardSegmentCount), position1D);
     }
     
-    /// <summary>
-    /// Controlla se in una data casella è presente del cibo. Operazione O(1).
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsFood(ushort position1D)
-    {
-        if (position1D >= Area) return false;
-        var index = position1D >> 6;
-        var mask = 1UL << (position1D & 63);
-        return (FoodBoard[index] & mask) != 0;
-    }
-
-    /// <summary>
-    /// Controlla se una data casella è un pericolo. Operazione O(1).
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsHazard(ushort position1D)
-    {
-        if (position1D >= Area) return false;
-        var index = position1D >> 6;
-        var mask = 1UL << (position1D & 63);
-        return (HazardBoard[index] & mask) != 0;
-    }
-
     /// <summary>
     /// Aggiorna i bitboard per riflettere il movimento di un serpente.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
     {
-        // Accende il bit della nuova testa sulla mappa dei serpenti
-        SetBit(AllSnakesBoard, newHead);
-    
-        // Spegne il bit della vecchia coda solo se il serpente non ha mangiato (e quindi si è accorciato)
+        var snakesSpan = new Span<ulong>(_snakesBitboard, (int)_bitboardSegmentCount);
+        SetBit(snakesSpan, newHead);
+
         if (!hasEaten)
         {
-            ClearBit(AllSnakesBoard, oldTail);
+            ClearBit(snakesSpan, oldTail);
         }
-    
-        // Se il cibo è stato mangiato, lo rimuove dal bitboard del cibo
-        if (hasEaten)
+        else
         {
-            ClearBit(FoodBoard, newHead);
+            // Se il cibo è stato mangiato, lo rimuove dal bitboard del cibo.
+            ClearBit(new Span<ulong>(_foodBitboard, (int)_bitboardSegmentCount), newHead);
         }
     }
-
- /// <summary>
- /// Rimuove completamente un serpente dal bitboard dei serpenti.
- /// </summary>
- [MethodImpl(MethodImplOptions.AggressiveInlining)]
- public void RemoveSnake(ushort* body, int length)
- {
-     for (int i = 0; i < length; i++)
-     {
-         ClearBit(AllSnakesBoard, body[i]);
-     }
- }
 
     /// <summary>
-    /// Metodo helper privato per spegnere un singolo bit in un dato bitboard.
+    /// Rimuove completamente un serpente dal bitboard dei serpenti, usando uno Span per sicurezza.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ClearBit(ulong* board, ushort position1D)
+    public void RemoveSnake(ReadOnlySpan<ushort> body)
     {
-        var ulongIndex = position1D >> 6;
-        var bitIndex = position1D & 63;
-        // Crea una maschera con tutti i bit a 1 tranne quello da spegnere,
-        // poi applicala con un AND per forzare quel bit a 0.
-        board[ulongIndex] &= ~(1UL << bitIndex);
+        var snakesSpan = new Span<ulong>(_snakesBitboard, (int)_bitboardSegmentCount);
+        foreach (var position in body) ClearBit(snakesSpan, position);
     }
+
+    // --- METODI DI LETTURA "HOT PATH" (usano puntatori per massime performance) ---
+
+    /// <summary>
+    /// Controlla se una casella è occupata. Operazione O(1) ultra-veloce.
+    /// Manteniamo i puntatori qui perché è un "hot path" di sola lettura
+    /// e il JIT può ottimizzare l'accesso diretto in modo eccezionale.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly bool IsOccupied(ushort position1D)
+    {
+        if (position1D == ushort.MaxValue) return true; // Collisione con un muro
+        var ulongIndex = position1D >> 6;
+        var bitMask = 1UL << (position1D & 63);
+        return ((_hazardBitboard[ulongIndex] | _snakesBitboard[ulongIndex]) & bitMask) != 0;
+    }
+
+    /// <summary>
+    /// Controlla se in una data casella è presente del cibo. Operazione O(1).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly bool IsFood(ushort position1D)
+    {
+        if (position1D >= Area) return false;
+        var index = position1D >> 6;
+        var mask = 1UL << (position1D & 63);
+        return (_foodBitboard[index] & mask) != 0;
+    }
+    
+    // --- METODI HELPER ---
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ushort To1D(in Coordinate coord, uint width) => (ushort)(coord.Y * width + coord.X);
+
+    // Helper privati che ora operano su Span<ulong> per coerenza e sicurezza.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void SetBit(Span<ulong> board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ClearBit(Span<ulong> board, ushort position1D) => board[position1D >> 6] &= ~(1UL << (position1D & 63));
 }
