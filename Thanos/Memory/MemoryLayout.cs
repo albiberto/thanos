@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
-using Thanos.Extensions; // Assumo che AlignUp() sia qui
+using Thanos.Extensions;
 using Thanos.MCST;
 using Thanos.War;
 
@@ -12,36 +12,32 @@ public readonly struct MemoryLayout
 {
     public readonly uint SnakeBodyCapacity;
     
-    public readonly SizesLayout Sizes;
-    public readonly OffsetsLayout Offsets;
+    public readonly Size Sizes;
+    public readonly Offset Offsets;
     
     public MemoryLayout(in WarContext context, uint maxNodes)
     {
-        // Calcolo della capacità del corpo del serpente, arrotondata alla potenza di 2 più vicina.
         SnakeBodyCapacity = System.Math.Min(BitOperations.RoundUpToPowerOf2(context.Area), Constants.MaxSnakeBodyCapacity);
         
-        // Calcolo delle dimensioni principali, con allineamento per performance.
-        var snakeStride = (SizesLayout.WarSnakeHeader + SnakeBodyCapacity * sizeof(ushort)).AlignUp();
-        var sizeOfSnakes = (snakeStride * context.SnakeCount).AlignUp();
+        var snakeStride = (Size.WarSnakeHeader + SnakeBodyCapacity * sizeof(ushort)).AlignUp();
+        var sizeOfSnakes = snakeStride * context.SnakeCount;
 
         var bitboardSegments = (context.Area + 63) >> 6;
-        var bitboardStride = bitboardSegments * sizeof(ulong);
-        var sizeOfBitboards = (bitboardStride * WarField.TotalBitboards).AlignUp();
+        var bitboardStride = (bitboardSegments * sizeof(ulong)).AlignUp();
+        var sizeOfBitboards = bitboardStride * WarField.TotalBitboards;
 
-        // Inizializzazione delle struct di layout.
-        Offsets = new OffsetsLayout(sizeOfSnakes, bitboardSegments);
-        Sizes = new SizesLayout(snakeStride, sizeOfSnakes, bitboardStride, sizeOfBitboards, maxNodes);
+        Offsets = new Offset(sizeOfSnakes, bitboardSegments);
+        Sizes = new Size(snakeStride, sizeOfSnakes, bitboardStride, sizeOfBitboards, maxNodes);
     }
 
-    // Rinominato in SizesLayout per evitare conflitto di nomi con System.Drawing.Size
     [StructLayout(LayoutKind.Sequential)]
-    public readonly unsafe struct SizesLayout
+    public readonly unsafe struct Size
     {
         // Dimensioni allineate dei componenti principali di uno Slot.
-        public static readonly uint Node = (uint)sizeof(Node).AlignUp();
-        public static readonly uint WarArena = (uint)sizeof(WarArena).AlignUp();
-        public static readonly uint WarSnakeHeader = (uint)sizeof(WarSnake).AlignUp();
-        public static readonly uint WarFieldHeader = (uint)sizeof(WarField).AlignUp();
+        public static readonly uint Node = sizeof(Node).AlignUp();
+        public static readonly uint WarArena = sizeof(WarArena).AlignUp();
+        public static readonly uint WarSnakeHeader = sizeof(WarSnake).AlignUp();
+        public static readonly uint WarFieldHeader = sizeof(WarField).AlignUp();
 
         // Dimensioni calcolate dinamicamente in base al contesto del gioco.
         public readonly uint SnakeStride;      // Dimensione di 1 serpente (header + corpo)
@@ -51,7 +47,7 @@ public readonly struct MemoryLayout
         public readonly uint Slot;             // Dimensione totale di un MemorySlot
         public readonly nuint Pool;            // Dimensione totale di tutta la memoria
 
-        public SizesLayout(uint snakeStride, uint sizeOfSnakes, uint bitboardStride, uint sizeOfBitboards, uint maxNodes)
+        public Size(uint snakeStride, uint sizeOfSnakes, uint bitboardStride, uint sizeOfBitboards, uint maxNodes)
         {
             SnakeStride = snakeStride;
             Snakes = sizeOfSnakes;
@@ -66,7 +62,7 @@ public readonly struct MemoryLayout
 
     // Rinominato in OffsetsLayout per coerenza
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct OffsetsLayout
+    public readonly struct Offset
     {
         // Offset (in byte) dall'inizio di un MemorySlot.
         public readonly uint Node;
@@ -78,13 +74,13 @@ public readonly struct MemoryLayout
         // Questo non è un offset, ma una dimensione/conteggio, ma lo teniamo se ti serve qui.
         public readonly uint BitboardSegments;
 
-        public OffsetsLayout(uint sizeOfSnakes, uint bitboardSegments)
+        public Offset(uint sizeOfSnakes, uint bitboardSegments)
         {
             // Gli offset sono calcolati sequenzialmente.
             Node = 0;
-            WarArena = Node + SizesLayout.Node;
-            WarField = WarArena + SizesLayout.WarArena;
-            Snakes = WarField + SizesLayout.WarFieldHeader;
+            WarArena = Node + Size.Node;
+            WarField = WarArena + Size.WarArena;
+            Snakes = WarField + Size.WarFieldHeader;
             Bitboards = Snakes + sizeOfSnakes;
             
             BitboardSegments = bitboardSegments;
