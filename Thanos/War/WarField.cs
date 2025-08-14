@@ -21,7 +21,7 @@ public unsafe struct WarField
     public Bitboard Hazard => new(_hazardBitboard, _bitboardSegments);
     public Bitboard Snakes => new(_snakesBitboard, _bitboardSegments);
 
-    public static void PlacementNew(WarField* fieldPtr, in WarContext context, uint bitboardSegments, ulong* foodBitboardPtr, ulong* hazardBitboardPtr, ulong* snakesBitboardPtr)
+    public static void PlacementNew(WarField* fieldPtr, in WarContext context, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards, uint bitboardSegments, ulong* foodBitboardPtr, ulong* hazardBitboardPtr, ulong* snakesBitboardPtr)
     {
         // 1. Inizializza i campi e salva i puntatori
         fieldPtr->Width = context.Width;
@@ -37,18 +37,10 @@ public unsafe struct WarField
         fieldPtr->Hazard.ClearAll();
         fieldPtr->Snakes.ClearAll();
 
-        // 4. Popola i bitboard con i dati iniziali
-        // foreach (ref readonly var foodCoord in board.Food.AsSpan())
-        // {
-        //     SetBit(fieldPtr->_foodBitboard, To1D(in foodCoord, fieldPtr->Width));
-        // }
-        // foreach (ref readonly var hazardCoord in board.Hazards.AsSpan())
-        // {
-        //     SetBit(fieldPtr->_hazardBitboard, To1D(in hazardCoord, fieldPtr->Width));
-        // }
+        // 3. Popola i bitboard usando l'API delle proprietà
+        foreach (ref readonly var coordinate in food) fieldPtr->Food.Set(To1D(in coordinate, fieldPtr->Width));
+        foreach (ref readonly var coordinate in hazards) fieldPtr->Hazard.Set(To1D(in coordinate, fieldPtr->Width));
     }
-
-    // --- METODI DI SCRITTURA (usano Span per sicurezza) ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void SetSnakeBit(ushort position1D)
@@ -121,11 +113,4 @@ public unsafe struct WarField
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ushort To1D(in Coordinate coord, uint width) => (ushort)(coord.Y * width + coord.X);
-
-    // Helper privati che ora operano su Span<ulong> per coerenza e sicurezza.
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void SetBit(Span<ulong> board, ushort position1D) => board[position1D >> 6] |= 1UL << (position1D & 63);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ClearBit(Span<ulong> board, ushort position1D) => board[position1D >> 6] &= ~(1UL << (position1D & 63));
 }

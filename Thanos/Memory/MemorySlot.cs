@@ -7,49 +7,48 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-public readonly unsafe ref struct MemorySlot
+// ┌─────────────── NODE (64B) ────────────────┐┌──── WAR FIELD HDR (64B) ─────┐┌═══════════════════ BITBOARDS ═════════════════════┐┌═══════════════════ SNAKES ═══════════════════┐┌──────────── WAR ARENA (64B) ────────────┐
+// │ Pointers, visits, etc.                    ││ Width, Height, bitboard ptrs ││ [Food (64B)] | [Hazard (64B)] | [All Snakes (64B)]││ [Snake0: Header+Body (64B)] | [Snake1: ...]  ││ Snakes ptrs, field ptrs, stats          │
+public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext context, in MemoryLayout layout)
 {
+    private readonly WarContext _context = context;
+    private readonly MemoryLayout _layout = layout;
     
-    
-    private readonly byte* _slotPtr;
-    private readonly WarContext _context;
-    private readonly MemoryLayout _layout;
-
-    // ┌─────────────── NODE (64B) ────────────────┐┌──── WAR FIELD HDR (64B) ─────┐┌═══════════════════ BITBOARDS ═════════════════════┐┌═══════════════════ SNAKES ═══════════════════┐┌──────────── WAR ARENA (64B) ────────────┐
-    // │ Pointers, visits, etc.                    ││ Width, Height, bitboard ptrs ││ [Food (64B)] | [Hazard (64B)] | [All Snakes (64B)]││ [Snake0: Header+Body (64B)] | [Snake1: ...]  ││ Snakes ptrs, field ptrs, stats          │
-    public MemorySlot(byte* slotPtr, in WarContext context, in MemoryLayout layout)
+    public void CloneFrom(in Request request)
     {
-        _slotPtr = slotPtr;
-        _context = context;
-        _layout = layout;
-        
-        var nodePtr = (Node*)(_slotPtr + _layout.Offsets.Node);
+        var nodePtr = (Node*)(slotPtr + _layout.Offsets.Node);
         PlacementNewNode(nodePtr);
         
-        var fieldPtr = (WarField*)(_slotPtr + _layout.Offsets.WarField);
-        var bitboardsPtr = (ulong*)(fieldPtr + layout.Offsets.Bitboards);
-        PlacementNewWarField(fieldPtr, bitboardsPtr, _context, _layout);
+        var fieldPtr = (WarField*)(slotPtr + _layout.Offsets.WarField);
+        var bitboardsPtr = (ulong*)(fieldPtr + _layout.Offsets.Bitboards);
+        PlacementNewWarField(fieldPtr, bitboardsPtr, in _context, in _layout, in request.Board);
         
         // var snakesPtr = _slotPtr + _layout.Offsets.Snakes;
         // PlacementNewWarSnakes(snakesPtr, _context, _layout);
     }
     
+    public void CloneFrom(MemorySlot other)
+    {
+        
+    }
+    
     private static void PlacementNewNode(Node* nodePtr) => Node.PlacementNew(nodePtr);
 
-    private static WarField* PlacementNewWarField(WarField* fieldPtr, ulong* bitboardsPtr, in WarContext context, in MemoryLayout layout)
+    private static void PlacementNewWarField(WarField* fieldPtr, ulong* bitboardsPtr, in WarContext context, in MemoryLayout layout, in Board board)
     {
         // 1. Calcola i puntatori specifici per ogni singolo bitboard.
         var segmentsPerBitboard = layout.Offsets.BitboardSegments;
     
+        // 2. Pulisci l'INTERO blocco dei bitboard in un colpo solo 
+        NativeMemory.Clear(bitboardsPtr, layout.Sizes.Bitboards);
+        
+        // 3. Ora calcola i puntatori ai singoli bitboard...
         var foodBitboardPtr = bitboardsPtr;
         var hazardBitboardPtr = foodBitboardPtr + segmentsPerBitboard;
         var snakesBitboardPtr = hazardBitboardPtr + segmentsPerBitboard;
-
-        // 2. Chiama il metodo di inizializzazione di WarField, passando tutti i puntatori calcolati.
-        WarField.PlacementNew(fieldPtr, in context, layout.Offsets.BitboardSegments, foodBitboardPtr, hazardBitboardPtr, snakesBitboardPtr);
-
-        // 3. Restituisce il puntatore all'header di WarField per poterlo usare in seguito (es. per WarArena).
-        return fieldPtr;
+        
+        // 3. Chiama il metodo di inizializzazione di WarField, passando tutti i puntatori calcolati.
+        WarField.PlacementNew(fieldPtr, in context, board.Food, board.Hazards, layout.Offsets.BitboardSegments, foodBitboardPtr, hazardBitboardPtr, snakesBitboardPtr);
     }
 
     private void PlacementNewWarSnakes(byte* ptr, in WarContext context)
