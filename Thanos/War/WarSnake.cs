@@ -21,11 +21,7 @@ public unsafe struct WarSnake
     // --- Body ---
     public ushort* Body;
 
-    public static void PlacementNew(
-        Span<byte> headerSpan, 
-        Span<ushort> bodySpan, 
-        in Snake snakeDto, 
-        in WarField field)
+    public static void PlacementNew(Span<byte> headerSpan, Span<ushort> bodySpan, in Snake snakeDto, in WarField field)
     {
         ref var snake = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnake>(headerSpan));
         
