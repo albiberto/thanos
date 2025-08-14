@@ -70,14 +70,14 @@ public readonly struct MemoryLayout
 
         public readonly uint BitboardSegments;
 
-        // Schema: NODE | SNAKES | BITBOARDS | WARFIELD | ARENA
+        // Schema: NODE | BITBOARDS | WARFIELD | SNAKES | ARENA
         public OffsetsLayout(uint sizeOfSnakes, uint sizeOfBitboards, uint bitboardSegments)
         {
             Node = 0;
-            Snakes = Node + SizesLayout.Node;
-            Bitboards = Snakes + sizeOfSnakes;
-            WarField = Bitboards + sizeOfBitboards;
-            WarArena = WarField + SizesLayout.WarFieldHeader;
+            WarField = Node + SizesLayout.Node;
+            Bitboards = WarField + SizesLayout.WarFieldHeader;
+            Snakes = Bitboards + sizeOfBitboards;
+            WarArena = Snakes + sizeOfSnakes;
             
             BitboardSegments = bitboardSegments;
         }

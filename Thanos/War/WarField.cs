@@ -10,56 +10,42 @@ namespace Thanos.War;
 public unsafe struct WarField
 {
     public const int TotalBitboards = 3;
+    
+    public uint Width, Height, Area, _bitboardSegments;
 
-    // Campi pubblici per un facile accesso
-    public uint Width;
-    public uint Height;
-    public uint Area;
-    private uint _bitboardSegmentCount; // Aggiunto per creare Span della dimensione corretta
-
-    // I puntatori rimangono, perché la struct non può contenere Span.
-    // Sono l'implementazione interna, non l'API pubblica.
     private ulong* _foodBitboard;
     private ulong* _hazardBitboard;
     private ulong* _snakesBitboard;
 
-    /// <summary>
-    /// Metodo "costruttore" che inizializza la struct partendo da aree di memoria sicure (Span).
-    /// Questa è la nuova API pubblica per l'inizializzazione.
-    /// </summary>
-    public static void PlacementNew(
-        Span<byte> fieldSpan,
-        Span<ulong> foodBitboardSpan,
-        Span<ulong> hazardBitboardSpan,
-        Span<ulong> snakesBitboardSpan,
-        in WarContext context,
-        in Board board)
+    public Bitboard Food => new(_foodBitboard, _bitboardSegments);
+    public Bitboard Hazard => new(_hazardBitboard, _bitboardSegments);
+    public Bitboard Snakes => new(_snakesBitboard, _bitboardSegments);
+
+    public static void PlacementNew(WarField* fieldPtr, in WarContext context, uint bitboardSegments, ulong* foodBitboardPtr, ulong* hazardBitboardPtr, ulong* snakesBitboardPtr)
     {
-        // Ottiene un riferimento alla nostra istanza di WarField.
-        ref var field = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarField>(fieldSpan));
+        // 1. Inizializza i campi e salva i puntatori
+        fieldPtr->Width = context.Width;
+        fieldPtr->Height = context.Height;
+        fieldPtr->Area = context.Area;
+        fieldPtr->_bitboardSegments = bitboardSegments;
+        fieldPtr->_foodBitboard = foodBitboardPtr;
+        fieldPtr->_hazardBitboard = hazardBitboardPtr;
+        fieldPtr->_snakesBitboard = snakesBitboardPtr;
 
-        // Inizializza le proprietà.
-        field.Width = context.Width;
-        field.Height = context.Height;
-        field.Area = context.Area;
-        // Salva il numero di segmenti, ci servirà per creare gli Span dopo.
-        field._bitboardSegmentCount = (uint)foodBitboardSpan.Length;
+        // 2. Pulisce e popola i bitboard usando la nuova API pulita!
+        fieldPtr->Food.ClearAll();
+        fieldPtr->Hazard.ClearAll();
+        fieldPtr->Snakes.ClearAll();
 
-        // Assegna i puntatori interni in modo sicuro, partendo dagli Span.
-        // Questa è l'unica parte "unsafe" e rimane incapsulata qui.
-        field._foodBitboard = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(foodBitboardSpan));
-        field._hazardBitboard = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(hazardBitboardSpan));
-        field._snakesBitboard = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(snakesBitboardSpan));
-
-        // Popola i bitboard usando gli span, che è più sicuro e leggibile.
-        foreach (ref readonly var foodCoord in board.Food.AsSpan())
-        {
-            SetBit(foodBitboardSpan, To1D(in foodCoord, field.Width));
-        }
-        foreach (ref readonly var hazardCoord in board.Hazards.AsSpan())
-        {
-            SetBit(hazardBitboardSpan, To1D(in hazardCoord, field.Width));
-        }
+        // 4. Popola i bitboard con i dati iniziali
+        // foreach (ref readonly var foodCoord in board.Food.AsSpan())
+        // {
+        //     SetBit(fieldPtr->_foodBitboard, To1D(in foodCoord, fieldPtr->Width));
+        // }
+        // foreach (ref readonly var hazardCoord in board.Hazards.AsSpan())
+        // {
+        //     SetBit(fieldPtr->_hazardBitboard, To1D(in hazardCoord, fieldPtr->Width));
+        // }
     }
 
     // --- METODI DI SCRITTURA (usano Span per sicurezza) ---
@@ -67,7 +53,7 @@ public unsafe struct WarField
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void SetSnakeBit(ushort position1D)
     {
-        SetBit(new Span<ulong>(_snakesBitboard, (int)_bitboardSegmentCount), position1D);
+        SetBit(new Span<ulong>(_snakesBitboard, (int)_bitboardSegments), position1D);
     }
     
     /// <summary>
@@ -76,7 +62,7 @@ public unsafe struct WarField
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
     {
-        var snakesSpan = new Span<ulong>(_snakesBitboard, (int)_bitboardSegmentCount);
+        var snakesSpan = new Span<ulong>(_snakesBitboard, (int)_bitboardSegments);
         SetBit(snakesSpan, newHead);
 
         if (!hasEaten)
@@ -86,7 +72,7 @@ public unsafe struct WarField
         else
         {
             // Se il cibo è stato mangiato, lo rimuove dal bitboard del cibo.
-            ClearBit(new Span<ulong>(_foodBitboard, (int)_bitboardSegmentCount), newHead);
+            ClearBit(new Span<ulong>(_foodBitboard, (int)_bitboardSegments), newHead);
         }
     }
 
@@ -96,7 +82,7 @@ public unsafe struct WarField
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveSnake(ReadOnlySpan<ushort> body)
     {
-        var snakesSpan = new Span<ulong>(_snakesBitboard, (int)_bitboardSegmentCount);
+        var snakesSpan = new Span<ulong>(_snakesBitboard, (int)_bitboardSegments);
         foreach (var position in body) ClearBit(snakesSpan, position);
     }
 

@@ -7,55 +7,16 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-/* INIZIO DELLO SLOT (allineato a 64B)
-    +--------------------------+
-    | NODE                     |
-    | (puntatori, visite, ...) |
-    | Size: 64B aligned        |
-    +--------------------------+
-    | WAR ARENA                |
-    | (ptr snakes/field, stats)|
-    | Size: 64B aligned        |
-    +--------------------------+
-    | WAR FIELD HEADER         |
-    | (width, height, bitboards)
-    | Size: 64B aligned       |
-    +-------------------------+
-    | SNAKES BLOCK            |
-    | Size: allineato 64B     |
-    |  +-------------------+  |
-    |  | Snake0 Header 64B |  |
-    |  +-------------------+  |
-    |  | Snake0 Body + Pad |  |
-    |  +-------------------+  |
-    |  | Snake1 Header ... |  |
-    |  | Snake1 Body + Pad |  |
-    |  +-------------------+  |
-    |          ...             |
-    |  | SnakeN Header ... |   |
-    |  | SnakeN Body + Pad |   |
-    |  +-------------------+  |
-    +-------------------------+
-    | BITBOARDS BLOCK         |
-    | Size: allineato 64B     |
-    |  +-------------------+  |
-    |  | Food Bitboard     |  |
-    |  +-------------------+  |
-    |  | Hazard Bitboard   |  |
-    |  +-------------------+  |
-    |  | AllSnakes Bitboard|  |
-    |  +-------------------+  |
-    +-------------------------+
-    FINE DELLO SLOT
-    */
 public readonly unsafe ref struct MemorySlot
 {
+    
+    
     private readonly byte* _slotPtr;
     private readonly WarContext _context;
     private readonly MemoryLayout _layout;
 
-    // ┌─────────────── NODE (64B) ────────────────┐┌═══════════════════ SNAKES ═══════════════════┐┌═══════════════════ BITBOARDS ═════════════════════┐┌──── WAR FIELD HDR (64B) ─────┐┌──────────── WAR ARENA (64B) ────────────┐
-    // │ Pointers, visits, etc.                    ││ [Snake0: Header+Body (64B)] | [Snake1: ...]  ││ [Food (64B)] | [Hazard (64B)] | [All Snakes (64B)]││ Width, Height, bitboard ptrs ││ Snakes ptrs, field ptrs, stats          │
+    // ┌─────────────── NODE (64B) ────────────────┐┌──── WAR FIELD HDR (64B) ─────┐┌═══════════════════ BITBOARDS ═════════════════════┐┌═══════════════════ SNAKES ═══════════════════┐┌──────────── WAR ARENA (64B) ────────────┐
+    // │ Pointers, visits, etc.                    ││ Width, Height, bitboard ptrs ││ [Food (64B)] | [Hazard (64B)] | [All Snakes (64B)]││ [Snake0: Header+Body (64B)] | [Snake1: ...]  ││ Snakes ptrs, field ptrs, stats          │
     public MemorySlot(byte* slotPtr, in WarContext context, in MemoryLayout layout)
     {
         _slotPtr = slotPtr;
@@ -65,31 +26,33 @@ public readonly unsafe ref struct MemorySlot
         var nodePtr = (Node*)(_slotPtr + _layout.Offsets.Node);
         PlacementNewNode(nodePtr);
         
-        var snakesPtr = _slotPtr + _layout.Offsets.Snakes;
-        PlacementNewWarSnakes(snakesPtr, _)
+        var fieldPtr = (WarField*)(_slotPtr + _layout.Offsets.WarField);
+        var bitboardsPtr = (ulong*)(fieldPtr + layout.Offsets.Bitboards);
+        PlacementNewWarField(fieldPtr, bitboardsPtr, _context, _layout);
+        
+        // var snakesPtr = _slotPtr + _layout.Offsets.Snakes;
+        // PlacementNewWarSnakes(snakesPtr, _context, _layout);
     }
     
-    private static void PlacementNewNode(Node* ptr) => Node.PlacementNew(ptr);
+    private static void PlacementNewNode(Node* nodePtr) => Node.PlacementNew(nodePtr);
+
+    private static WarField* PlacementNewWarField(WarField* fieldPtr, ulong* bitboardsPtr, in WarContext context, in MemoryLayout layout)
+    {
+        // 1. Calcola i puntatori specifici per ogni singolo bitboard.
+        var segmentsPerBitboard = layout.Offsets.BitboardSegments;
+    
+        var foodBitboardPtr = bitboardsPtr;
+        var hazardBitboardPtr = foodBitboardPtr + segmentsPerBitboard;
+        var snakesBitboardPtr = hazardBitboardPtr + segmentsPerBitboard;
+
+        // 2. Chiama il metodo di inizializzazione di WarField, passando tutti i puntatori calcolati.
+        WarField.PlacementNew(fieldPtr, in context, layout.Offsets.BitboardSegments, foodBitboardPtr, hazardBitboardPtr, snakesBitboardPtr);
+
+        // 3. Restituisce il puntatore all'header di WarField per poterlo usare in seguito (es. per WarArena).
+        return fieldPtr;
+    }
 
     private void PlacementNewWarSnakes(byte* ptr, in WarContext context)
-    {
-        for (var i = 0; i < _context.SnakeCount; i++)
-        {
-            
-        }
-    }
-    
-    private void PlacementNewWarField(Span<byte> fieldHeaderSpan, Span<ulong> bitboardsBlockSpan, in Board board)
-    {
-        bitboardsBlockSpan.Clear();
-        var segments = (int)_layout.Offsets.BitboardSegments;
-        var foodBitboard = bitboardsBlockSpan[..segments];
-        var hazardBitboard = bitboardsBlockSpan.Slice(segments, segments);
-        var snakesBitboard = bitboardsBlockSpan.Slice(segments * 2, segments);
-        WarField.PlacementNew(fieldHeaderSpan, foodBitboard, hazardBitboard, snakesBitboard, in _context, in board);
-    }
-
-    private void PlacementNewWarSnakes(Span<byte> snakesBlockSpan, in Board board, WarField* fieldPtr)
     {
         for (var i = 0; i < _context.SnakeCount; i++)
         {
