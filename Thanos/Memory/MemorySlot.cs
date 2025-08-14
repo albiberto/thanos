@@ -45,8 +45,8 @@ public readonly unsafe ref struct MemorySlot
     }
 
     // Metodi helper per ottenere gli Span
-    private Span<byte> GetArenaSpan() => new(_slotPtr + _layout.Offsets.WarArena, (int)MemoryLayout.SizesLayout.WarArena);
-    private Span<byte> GetFieldHeaderSpan() => new(_slotPtr + _layout.Offsets.WarField, (int)MemoryLayout.SizesLayout.WarFieldHeader);
+    private Span<byte> GetArenaSpan() => new(_slotPtr + _layout.Offsets.WarArena, (int)MemoryLayout.Size.WarArena);
+    private Span<byte> GetFieldHeaderSpan() => new(_slotPtr + _layout.Offsets.WarField, (int)MemoryLayout.Size.WarFieldHeader);
     private Span<byte> GetSnakesBlockSpan() => new(_slotPtr + _layout.Offsets.Snakes, (int)_layout.Sizes.Snakes);
     private Span<ulong> GetBitboardsBlockSpan() => new((ulong*)(_slotPtr + _layout.Offsets.Bitboards), (int)(_layout.Sizes.Bitboards / sizeof(ulong)));
 
@@ -77,8 +77,8 @@ public readonly unsafe ref struct MemorySlot
         {
             var singleSnakeBlock = snakesBlockSpan.Slice(i * (int)_layout.Sizes.SnakeStride, (int)_layout.Sizes.SnakeStride);
             
-            var headerSpan = singleSnakeBlock[..(int)MemoryLayout.SizesLayout.WarSnakeHeader];
-            var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[(int)MemoryLayout.SizesLayout.WarSnakeHeader..]);
+            var headerSpan = singleSnakeBlock[..(int)MemoryLayout.Size.WarSnakeHeader];
+            var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[(int)MemoryLayout.Size.WarSnakeHeader..]);
             
             // CORREZIONE: Passa tutti i parametri richiesti dal nuovo WarSnake.PlacementNew
             WarSnake.PlacementNew(headerSpan, bodySpan, in board.Snakes[i], in *fieldPtr);
