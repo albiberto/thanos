@@ -7,56 +7,78 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
+/* INIZIO DELLO SLOT (allineato a 64B)
+    +--------------------------+
+    | NODE                     |
+    | (puntatori, visite, ...) |
+    | Size: 64B aligned        |
+    +--------------------------+
+    | WAR ARENA                |
+    | (ptr snakes/field, stats)|
+    | Size: 64B aligned        |
+    +--------------------------+
+    | WAR FIELD HEADER         |
+    | (width, height, bitboards)
+    | Size: 64B aligned       |
+    +-------------------------+
+    | SNAKES BLOCK            |
+    | Size: allineato 64B     |
+    |  +-------------------+  |
+    |  | Snake0 Header 64B |  |
+    |  +-------------------+  |
+    |  | Snake0 Body + Pad |  |
+    |  +-------------------+  |
+    |  | Snake1 Header ... |  |
+    |  | Snake1 Body + Pad |  |
+    |  +-------------------+  |
+    |          ...             |
+    |  | SnakeN Header ... |   |
+    |  | SnakeN Body + Pad |   |
+    |  +-------------------+  |
+    +-------------------------+
+    | BITBOARDS BLOCK         |
+    | Size: allineato 64B     |
+    |  +-------------------+  |
+    |  | Food Bitboard     |  |
+    |  +-------------------+  |
+    |  | Hazard Bitboard   |  |
+    |  +-------------------+  |
+    |  | AllSnakes Bitboard|  |
+    |  +-------------------+  |
+    +-------------------------+
+    FINE DELLO SLOT
+    */
 public readonly unsafe ref struct MemorySlot
 {
     private readonly byte* _slotPtr;
     private readonly WarContext _context;
     private readonly MemoryLayout _layout;
 
+    // ┌─────────────── NODE (64B) ────────────────┐┌═══════════════════ SNAKES ═══════════════════┐┌═══════════════════ BITBOARDS ═════════════════════┐┌──── WAR FIELD HDR (64B) ─────┐┌──────────── WAR ARENA (64B) ────────────┐
+    // │ Pointers, visits, etc.                    ││ [Snake0: Header+Body (64B)] | [Snake1: ...]  ││ [Food (64B)] | [Hazard (64B)] | [All Snakes (64B)]││ Width, Height, bitboard ptrs ││ Snakes ptrs, field ptrs, stats          │
     public MemorySlot(byte* slotPtr, in WarContext context, in MemoryLayout layout)
     {
         _slotPtr = slotPtr;
         _context = context;
         _layout = layout;
-    }
-
-    public void Build(in Board board)
-    {
-        // 1. Inizializza il Node.
-        PlacementNewNode();
-
-        // 2. Ottieni gli "Span" che rappresentano le sezioni di memoria.
-        var arenaSpan = GetArenaSpan();
-        var fieldHeaderSpan = GetFieldHeaderSpan();
-        var snakesBlockSpan = GetSnakesBlockSpan();
-        var bitboardsBlockSpan = GetBitboardsBlockSpan();
-
-        // 3. ORDINE CORRETTO: Crea prima il WarField, perché WarSnake ne ha bisogno.
-        PlacementNewWarField(fieldHeaderSpan, bitboardsBlockSpan, in board);
         
-        // Ottieni un puntatore al WarField appena creato.
-        var fieldPtr = (WarField*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(fieldHeaderSpan));
-
-        // 4. Ora crea i WarSnake, passando loro il puntatore al field e i dati della board.
-        var snakesPtr = PlacementNewWarSnakes(snakesBlockSpan, in board, fieldPtr);
-        
-        // 5. Infine, crea la WarArena con i puntatori corretti.
-        PlacementNewWarArena(arenaSpan, snakesPtr, fieldPtr);
-    }
-
-    // Metodi helper per ottenere gli Span
-    private Span<byte> GetArenaSpan() => new(_slotPtr + _layout.Offsets.WarArena, (int)MemoryLayout.Size.WarArena);
-    private Span<byte> GetFieldHeaderSpan() => new(_slotPtr + _layout.Offsets.WarField, (int)MemoryLayout.Size.WarFieldHeader);
-    private Span<byte> GetSnakesBlockSpan() => new(_slotPtr + _layout.Offsets.Snakes, (int)_layout.Sizes.Snakes);
-    private Span<ulong> GetBitboardsBlockSpan() => new((ulong*)(_slotPtr + _layout.Offsets.Bitboards), (int)(_layout.Sizes.Bitboards / sizeof(ulong)));
-
-
-    private void PlacementNewNode()
-    {
         var nodePtr = (Node*)(_slotPtr + _layout.Offsets.Node);
-        Node.PlacementNew(nodePtr);
+        PlacementNewNode(nodePtr);
+        
+        var snakesPtr = _slotPtr + _layout.Offsets.Snakes;
+        PlacementNewWarSnakes(snakesPtr, _)
     }
+    
+    private static void PlacementNewNode(Node* ptr) => Node.PlacementNew(ptr);
 
+    private void PlacementNewWarSnakes(byte* ptr, in WarContext context)
+    {
+        for (var i = 0; i < _context.SnakeCount; i++)
+        {
+            
+        }
+    }
+    
     private void PlacementNewWarField(Span<byte> fieldHeaderSpan, Span<ulong> bitboardsBlockSpan, in Board board)
     {
         bitboardsBlockSpan.Clear();
@@ -67,26 +89,12 @@ public readonly unsafe ref struct MemorySlot
         WarField.PlacementNew(fieldHeaderSpan, foodBitboard, hazardBitboard, snakesBitboard, in _context, in board);
     }
 
-    /// <summary>
-    /// Metodo corretto. Ora accetta 'board' e 'fieldPtr' per inizializzare completamente
-    /// i serpenti e restituisce un puntatore, non uno Span.
-    /// </summary>
-    private WarSnake* PlacementNewWarSnakes(Span<byte> snakesBlockSpan, in Board board, WarField* fieldPtr)
+    private void PlacementNewWarSnakes(Span<byte> snakesBlockSpan, in Board board, WarField* fieldPtr)
     {
         for (var i = 0; i < _context.SnakeCount; i++)
         {
-            var singleSnakeBlock = snakesBlockSpan.Slice(i * (int)_layout.Sizes.SnakeStride, (int)_layout.Sizes.SnakeStride);
             
-            var headerSpan = singleSnakeBlock[..(int)MemoryLayout.Size.WarSnakeHeader];
-            var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[(int)MemoryLayout.Size.WarSnakeHeader..]);
-            
-            // CORREZIONE: Passa tutti i parametri richiesti dal nuovo WarSnake.PlacementNew
-            WarSnake.PlacementNew(headerSpan, bodySpan, in board.Snakes[i], in *fieldPtr);
         }
-
-        // CORREZIONE: Restituisce un puntatore all'inizio del blocco. Non si può usare
-        // uno Span<WarSnake> perché gli oggetti non sono contigui a causa dello stride.
-        return (WarSnake*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(snakesBlockSpan));
     }
 
     private void PlacementNewWarArena(Span<byte> arenaSpan, WarSnake* snakesPtr, WarField* fieldPtr)
