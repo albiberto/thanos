@@ -46,7 +46,7 @@ public readonly struct MemoryLayout
         public readonly uint BitboardStride;
         public readonly uint Bitboards;
         public readonly uint Slot;
-        public readonly ulong Pool;
+        public readonly nuint Pool;
 
         public SizesLayout(uint snakeStride, uint sizeOfSnakes, uint bitboardStride, uint sizeOfBitboards, uint maxNodes)
         {
@@ -55,7 +55,7 @@ public readonly struct MemoryLayout
             BitboardStride = bitboardStride;
             Bitboards = sizeOfBitboards;
             Slot = Node + WarArena + WarFieldHeader + Snakes + Bitboards;
-            Pool = (ulong)Slot * maxNodes;
+            Pool = Slot * maxNodes;
         }
     }
 
