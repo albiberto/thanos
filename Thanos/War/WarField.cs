@@ -32,13 +32,8 @@ public unsafe struct WarField
         fieldPtr->_hazardBitboard = hazardBitboardPtr;
         fieldPtr->_snakesBitboard = snakesBitboardPtr;
 
-        // 2. Pulisce e popola i bitboard usando la nuova API pulita!
-        fieldPtr->Food.ClearAll();
-        fieldPtr->Hazard.ClearAll();
-        fieldPtr->Snakes.ClearAll();
-
         // 3. Popola i bitboard usando l'API delle proprietà
-        foreach (ref readonly var coordinate in food) fieldPtr->Food.Set(To1D(in coordinate, fieldPtr->Width));
+        foreach (ref readonly var coordinate in food) {fieldPtr->Food.Set(To1D(in coordinate, fieldPtr->Width));}
         foreach (ref readonly var coordinate in hazards) fieldPtr->Hazard.Set(To1D(in coordinate, fieldPtr->Width));
     }
 

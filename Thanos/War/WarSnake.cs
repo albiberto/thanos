@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.Enums;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
@@ -10,88 +9,111 @@ namespace Thanos.War;
 public unsafe struct WarSnake
 {
     // --- Header ---
+    public int Health; // Lasciamo Health pubblica per un accesso facile.
+
+    // Ora sono tutti privati! L'accesso esterno è impossibile.
     private uint _capacity;
-    private int _nextHeadIndex;
-    public int Health;
-    public int Length;
-    public ushort Head;
-    public int TailIndex;
+    private uint _length;
+    
+    private ushort _head;
+    
+    private uint _nextHeadIndex;
+    private uint _tailIndex;
     
     // --- Body ---
-    public ushort* Body;
+    private ushort* _body;
 
     /// <summary>
-    /// API sicura per accedere al corpo del serpente.
-    /// Crea un wrapper leggero al volo senza costi di allocazione.
+    /// Inizializza la struct in una data locazione di memoria e la popola con i dati di gioco.
     /// </summary>
-    public WarSnakeBody BodyAsWrapper => new(Body, _capacity, Length);
-
-    /// <summary>
-    /// Metodo corretto che accetta Span e inizializza la struct.
-    /// </summary>
-    public static void PlacementNew(Span<byte> headerSpan, Span<ushort> bodySpan, in Snake snakeDto, in WarField field)
+    public static void PlacementNew(WarSnake* snakePtr, ushort* bodyPtr, in WarField* field, in Snake snake, ReadOnlySpan<Coordinate> body, uint capacity)
     {
-        ref var snake = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnake>(headerSpan));
+        var lenght = (uint)System.Math.Min(snake.Length, capacity);
         
         // Assegna il puntatore grezzo
-        snake.Body = (ushort*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(bodySpan));
+        snakePtr->_body = bodyPtr;
         
-        // Inizializza l'header
-        snake._capacity = (uint)bodySpan.Length;
-        snake.Health = snakeDto.Health;
-        snake.Length = System.Math.Min(snakeDto.Length, (int)snake._capacity);
-        snake.TailIndex = 0;
-        snake._nextHeadIndex = snake.Length & ((int)snake._capacity - 1);
-
-        var sourceBody = snakeDto.Body.AsSpan();
+        // Inizializza header
+        snakePtr->_capacity = capacity;
+        snakePtr->_length = lenght;
+        snakePtr->Health = snake.Health;
+        snakePtr->_tailIndex = 0;
+        snakePtr->_nextHeadIndex = lenght & (capacity - 1);
 
         // Popola il corpo usando lo Span sicuro che ci è stato passato
-        for (var i = 0; i < snake.Length; i++)
+        for (var i = 0; i < lenght; i++)
         {
-            ref readonly var coordinate = ref sourceBody[snake.Length - 1 - i];
-            var coord1D = field.To1D(in coordinate);
-            
-            bodySpan[i] = coord1D; // Scrive nello Span
-            field.SetSnakeBit(coord1D);
+            var index = (int)(lenght - 1 - i); // Invertiamo l'ordine per il corpo
+            ref readonly var coordinate = ref body[index];
+            var coord1D = field->To1D(in coordinate);
+
+            bodyPtr[i] = coord1D;
+            field->SetSnakeBit(coord1D);
         }
 
-        snake.Head = snake.Length > 0 ? bodySpan[snake.Length - 1] : ushort.MaxValue;
+        snakePtr->_head = lenght > 0
+            ? bodyPtr[lenght - 1]
+            : ushort.MaxValue;
     }
 
-    /// <summary>
-    /// Esegue il movimento del serpente. Questa è una funzione sull'hot-path
-    /// e continua a usare l'accesso diretto ai puntatori per le massime performance.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHeadPosition, bool hasEaten, int damage = 1)
     {
         Health = hasEaten ? 100 : Health - damage;
+        
         if (Dead) return;
-
-        var capacityMask = (int)_capacity - 1;
-
-        // Il corpo è un buffer circolare. La vecchia testa prende il posto della "prossima testa".
-        Body[_nextHeadIndex] = Head;
-        Head = newHeadPosition;
-        _nextHeadIndex = (_nextHeadIndex + 1) & capacityMask;
-
-        if (hasEaten && Length < _capacity)
-        {
-            // Se il serpente mangia e non è alla massima capacità, cresce in lunghezza.
-            Length++;
-        }
-        else
-        {
-            // Altrimenti, la coda avanza nel buffer circolare.
-            TailIndex = (TailIndex + 1) & capacityMask;
-        }
+        
+        var body = this.AsBody();
+        
+        body.PushHead(newHeadPosition);
+        
+        if (hasEaten) 
+            body.IncrementLength(); 
+        else 
+            body.PopTail();
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort GetTailPosition() => Body[TailIndex];
-
     public readonly bool Dead => Health <= 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    
     public void Kill() => Health = 0;
+
+    //  nested type
+    /// <summary>
+    /// Un wrapper ref struct che fornisce un accesso sicuro e strutturato
+    /// ai campi PRIVATI della WarSnake che lo contiene.
+    /// </summary>
+    public readonly ref struct WarSnakeBody(ref WarSnake snake)
+    {
+        private readonly ref WarSnake _snake = ref snake;
+
+        // Le proprietà ora accedono ai campi privati di _snake
+        public ushort Head => _snake._head;
+        public ushort Tail => _snake._body[_snake._tailIndex];
+        public uint Length => _snake._length;
+
+        // I metodi ora modificano i campi privati di _snake
+        public void PushHead(ushort newHeadPosition)
+        {
+            _snake._body[_snake._nextHeadIndex] = _snake._head;
+            _snake._head = newHeadPosition;
+            _snake._nextHeadIndex = (_snake._nextHeadIndex + 1) & (_snake._capacity - 1);
+        }
+
+        public void PopTail() => _snake._tailIndex = (_snake._tailIndex + 1) & (_snake._capacity - 1);
+
+        public void IncrementLength()
+        {
+            if (_snake._length < _snake._capacity) _snake._length++;
+        }
+    }
+}
+
+public static class WarSnakeExtensions
+{
+    /// <summary>
+    /// Metodo di estensione che crea un wrapper WarSnakeBody per una data WarSnake.
+    /// Sostituisce la proprietà Body per eliminare il warning di Rider.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static WarSnake.WarSnakeBody AsBody(this ref WarSnake snake) => new(ref snake);
 }
