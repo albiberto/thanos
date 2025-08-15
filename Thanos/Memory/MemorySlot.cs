@@ -48,42 +48,42 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
         WarField.PlacementNew(fieldPtr, in context, board.Food, board.Hazards, layout.Offsets.BitboardSegments, foodBitboardPtr, hazardBitboardPtr, snakesBitboardPtr);
     }
     
+    // All'interno del MemorySlotBuilder
+
     private static WarSnake* PlacementNewWarSnakes(byte* slotPtr, WarField* fieldPtr, in WarContext context, in MemoryLayout layout, in Snake me, ReadOnlySpan<Snake> snakes)
     {
+        var sizeOfHeader = MemoryLayout.SizesLayout.WarSnakeHeader;
+        
+        // Puntatore all'inizio del blocco di tutti i serpenti
         var snakesBlockPtr = slotPtr + layout.Offsets.Snakes;
-        var snakesBlockSpan = new Span<byte>(snakesBlockPtr, (int)layout.Sizes.Snakes);
+        var capacity = layout.SnakeBodyCapacity;
 
-        // --- 1. Inizializza il NOSTRO serpente ("You") usando il parametro `me` ---
-        var mySnakeBlock = snakesBlockSpan.Slice(0, (int)layout.Sizes.SnakeStride);
-        var myHeaderSpan = mySnakeBlock[..(int)layout.Sizes.WarSnakeHeader];
-        var myBodySpan = MemoryMarshal.Cast<byte, ushort>(mySnakeBlock[(int)layout.Sizes.WarSnakeHeader..]);
-    
-        WarSnake.PlacementNew(myHeaderSpan, myBodySpan, in me, in *fieldPtr);
+        // --- 1. Inizializza il NOSTRO serpente ("You") in posizione 0 ---
+        var mySnakePtr = (WarSnake*)snakesBlockPtr;
+        var myBodyPtr = (ushort*)((byte*)mySnakePtr + sizeOfHeader);
+        WarSnake.PlacementNew(mySnakePtr, myBodyPtr, fieldPtr, in me, me.Body, capacity);
 
-        // --- 2. Inizializza gli ALTRI serpenti usando il parametro `snakes` ---
+        // --- 2. Inizializza tutti gli ALTRI serpenti nelle posizioni successive ---
         uint otherSnakesIndex = 1;
-    
-        // Itera sullo `snakes` span passato come argomento
-        foreach (ref readonly var snakeDto in snakes)
+        foreach (ref readonly var snake in snakes)
         {
-            // Salta il nostro serpente, il cui ID è ora letto da `me.Id`
-            if (snakeDto.Id == me.Id)
-            {
-                continue;
-            }
+            if (snake.Id == me.Id) continue;
 
-            var snakeBlock = snakesBlockSpan.Slice((int)(otherSnakesIndex * layout.Sizes.SnakeStride), (int)layout.Sizes.SnakeStride);
-            var headerSpan = snakeBlock[..(int)layout.Sizes.WarSnakeHeader];
-            var bodySpan = MemoryMarshal.Cast<byte, ushort>(snakeBlock[(int)layout.Sizes.WarSnakeHeader..]);
+            // Calcola il puntatore al blocco del serpente corrente
+            var currentSnakePtrBytes = snakesBlockPtr + otherSnakesIndex * layout.Sizes.SnakeStride;
         
-            WarSnake.PlacementNew(headerSpan, bodySpan, in snakeDto, in *fieldPtr);
+            // Calcola i puntatori specifici per header e body
+            var currentSnakeHeaderPtr = (WarSnake*)currentSnakePtrBytes;
+            var currentSnakeBodyPtr = (ushort*)(currentSnakePtrBytes + sizeOfHeader);
         
+            WarSnake.PlacementNew(currentSnakeHeaderPtr, currentSnakeBodyPtr, fieldPtr, in snake, snake.Body, capacity);
+
             otherSnakesIndex++;
         }
-    
+
         return (WarSnake*)snakesBlockPtr;
     }
-
+    
     private void PlacementNewWarArena(Span<byte> arenaSpan, WarSnake* snakesPtr, WarField* fieldPtr)
     {
         WarArena.PlacementNew(arenaSpan, in _context, snakesPtr, fieldPtr);
