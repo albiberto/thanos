@@ -29,15 +29,10 @@ public unsafe struct WarArena
     /// <summary>
     /// TIPO ANNIDATO: Il wrapper per l'array di serpenti.
     /// </summary>
-    public readonly ref struct WarSnakeArray
+    public readonly ref struct WarSnakeArray(ref WarArena arena)
     {
-        private readonly ref WarArena _arena;
+        private readonly ref WarArena _arena = ref arena;
 
-        public WarSnakeArray(ref WarArena arena)
-        {
-            _arena = ref arena;
-        }
-        
         public ref WarSnake this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
