@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.MCST;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
@@ -93,6 +94,18 @@ public unsafe struct WarField
         return (_foodBitboard[index] & mask) != 0;
     }
     
+    /// <summary>
+    /// Controlla se una data casella è un pericolo. Operazione O(1).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly bool IsHazard(ushort position1D)
+    {
+        if (position1D >= Area) return false;
+        var index = position1D >> 6;
+        var mask = 1UL << (position1D & 63);
+        return (_hazardBitboard[index] & mask) != 0;
+    }
+    
     // --- METODI HELPER ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,4 +113,22 @@ public unsafe struct WarField
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ushort To1D(in Coordinate coord, uint width) => (ushort)(coord.Y * width + coord.X);
+    
+    /// <summary>
+    /// Calcola la posizione 1D di una casella adiacente a una data posizione.
+    /// Usa un'aritmetica ottimizzata per evitare divisioni.
+    /// </summary>
+    /// <returns>La coordinata 1D del vicino, o ushort.MaxValue se la mossa porta fuori dalla scacchiera.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly ushort GetNeighbor(ushort position1D, MoveDirection direction)
+    {
+        return direction switch
+        {
+            MoveDirection.Up => position1D < Width ? ushort.MaxValue : (ushort)(position1D - Width),
+            MoveDirection.Down => position1D >= Area - Width ? ushort.MaxValue : (ushort)(position1D + Width),
+            MoveDirection.Left => position1D % Width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
+            MoveDirection.Right => (position1D + 1) % Width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
+            _ => ushort.MaxValue
+        };
+    }
 }
