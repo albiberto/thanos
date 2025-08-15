@@ -17,7 +17,7 @@ public unsafe struct WarField
     private ulong* _snakesBitboard;
 
     // Le proprietà sono il punto di accesso corretto
-    private Bitboard Food => new(_foodBitboard, _bitboardSegments);
+    public Bitboard Food => new(_foodBitboard, _bitboardSegments);
     private Bitboard Hazard => new(_hazardBitboard, _bitboardSegments);
     public Bitboard Snakes => new(_snakesBitboard, _bitboardSegments);
 
