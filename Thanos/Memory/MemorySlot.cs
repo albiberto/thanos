@@ -22,11 +22,14 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
         PlacementNewNode(nodePtr);
         
         var fieldPtr = (WarField*)(slotPtr + _layout.Offsets.WarField);
-        var bitboardsPtr = (ulong*)(fieldPtr + _layout.Offsets.Bitboards);
+        var bitboardsPtr = (ulong*)(slotPtr + _layout.Offsets.Bitboards);
         PlacementNewWarField(fieldPtr, bitboardsPtr, in _context, in _layout, in request.Board);
         
         var snakesPtr = slotPtr + _layout.Offsets.Snakes;
         PlacementNewWarSnakes(snakesPtr, fieldPtr, _context, _layout, in request.You,request.Board.Snakes);
+        
+        var arenaPtr = (WarArena*)(slotPtr + _layout.Offsets.WarArena);
+        PlacementNewWarArena(arenaPtr, (WarSnake*)snakesPtr, fieldPtr, in request.Board);
     }
     
     private static void PlacementNewNode(Node* nodePtr) => Node.PlacementNew(nodePtr);
@@ -84,8 +87,5 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
         return (WarSnake*)snakesBlockPtr;
     }
     
-    private void PlacementNewWarArena(Span<byte> arenaSpan, WarSnake* snakesPtr, WarField* fieldPtr)
-    {
-        WarArena.PlacementNew(arenaSpan, in _context, snakesPtr, fieldPtr);
-    }
+    private void PlacementNewWarArena(WarArena* ptr, WarSnake* snakesPtr, WarField* fieldPtr, in Board board) => WarArena.PlacementNew(ptr, snakesPtr, fieldPtr, (uint)board.Snakes.Length);
 }
