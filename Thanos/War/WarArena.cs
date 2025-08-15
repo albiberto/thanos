@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using Thanos.Memory;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Thanos.War;
@@ -7,7 +9,6 @@ namespace Thanos.War;
 public unsafe struct WarArena
 {
     // --- DATI PRIVATI ---
-    // Dettagli implementativi completamente incapsulati.
     private WarContext _context;
     private WarField* _field;
     private WarSnake* _snakes;
@@ -26,33 +27,70 @@ public unsafe struct WarArena
     }
 
     /// <summary>
-    /// TIPO ANNIDATO: Il wrapper per l'array di serpenti ora vive qui.
-    /// Essendo annidato, ha accesso ai campi privati di WarArena.
+    /// TIPO ANNIDATO: Il wrapper per l'array di serpenti.
     /// </summary>
-    public readonly ref struct WarSnakeArray(ref WarArena arena)
+    public readonly ref struct WarSnakeArray
     {
-        private readonly ref WarArena _arena = ref arena;
+        private readonly ref WarArena _arena;
+
+        public WarSnakeArray(ref WarArena arena)
+        {
+            _arena = ref arena;
+        }
         
         public ref WarSnake this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                // Calcola l'offset usando i campi privati dell'arena
                 var snakePtr = (byte*)_arena._snakes + (index * _arena._snakeStride);
                 return ref Unsafe.AsRef<WarSnake>(snakePtr);
             }
         }
 
         public uint Length => _arena._snakeCount;
+        
+        /// <summary>
+        /// Restituisce un enumeratore per iterare sull'array di serpenti.
+        /// </summary>
+        public Enumerator GetEnumerator() => new(ref _arena);
+
+        /// <summary>
+        /// Un enumeratore leggero che itera sui WarSnake usando lo stride.
+        /// </summary>
+        public ref struct Enumerator
+        {
+            private readonly ref WarArena _arena;
+            private int _index;
+
+            public Enumerator(ref WarArena arena)
+            {
+                _arena = ref arena;
+                _index = -1;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                _index++;
+                return _index < _arena._snakeCount;
+            }
+            
+            public ref WarSnake Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    var snakePtr = (byte*)_arena._snakes + (_index * _arena._snakeStride);
+                    return ref Unsafe.AsRef<WarSnake>(snakePtr);
+                }
+            }
+        }
     }
 }
 
 public static class WarArenaExtensions
 {
-    /// <summary>
-    /// Metodo di estensione che crea un wrapper WarSnakeArray per una data WarArena.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static WarArena.WarSnakeArray Snakes(this ref WarArena arena) => new(ref arena);
 }
