@@ -73,42 +73,110 @@ public unsafe struct WarArena
             return moveCount;
         }
 
-        /// <summary>
-        /// Applica una mossa per il nostro serpente, aggiornando lo stato dell'arena.
-        /// </summary>
-        public void ApplyMove(MoveDirection move)
+/// <summary>
+/// Simula un intero turno di gioco, muovendo tutti i serpenti e risolvendo le collisioni.
+/// </summary>
+public void SimulateTurn(MoveDirection myMove)
+{
+    var snakes = Snakes;
+    var snakeCount = (int)snakes.Length;
+
+    // --- 1. PREPARAZIONE: Raccogli le mosse e calcola le nuove posizioni ---
+    Span<MoveDirection> moves = stackalloc MoveDirection[snakeCount];
+    Span<ushort> newHeadPositions = stackalloc ushort[snakeCount];
+    Span<bool> hasEaten = stackalloc bool[snakeCount];
+    Span<bool> isDead = stackalloc bool[snakeCount]; // Traccia chi muore
+
+    // Raccogli le mosse per tutti i serpenti vivi
+    for (int i = 0; i < snakeCount; i++)
+    {
+        ref var snake = ref snakes[i];
+        if (snake.Dead)
         {
-            ref var me = ref Snakes[0];
-            if (me.Dead) return;
+            isDead[i] = true;
+            continue;
+        }
 
-            var body = me.AsBody();
-            var oldTail = body.Tail; // Salva la vecchia coda prima di muovere
-            var newHead = _arena._field->GetNeighbor(body.Head, move);
-            
-            // Controlli di base
-            var hasEaten = _arena._field->IsFood(newHead);
-            var hazardDamage = _arena._field->IsHazard(newHead) ? 15 : 0;
+        moves[i] = (i == 0) ? myMove : GetSimpleMove(ref snake);
+        newHeadPositions[i] = _arena._field->GetNeighbor(snake.AsBody().Head, moves[i]);
+    }
 
-            // Muovi il nostro serpente
-            me.Move(newHead, hasEaten, hazardDamage);
-            
-            // Aggiorna la mappa (bitboard)
-            if (!me.Dead)
+    // --- 2. RISOLUZIONE: Cibo e collisioni testa-a-testa ---
+    for (int i = 0; i < snakeCount; i++)
+    {
+        if (isDead[i]) continue;
+        
+        // Chi mangia?
+        hasEaten[i] = _arena._field->IsFood(newHeadPositions[i]);
+
+        // Collisioni testa-a-testa
+        for (int j = i + 1; j < snakeCount; j++)
+        {
+            if (isDead[j]) continue;
+
+            if (newHeadPositions[i] == newHeadPositions[j])
             {
-                _arena._field->UpdateSnakePosition(oldTail, newHead, hasEaten);
-            }
-
-            // QUI ANDREBBE LA LOGICA PER MUOVERE GLI AVVERSARI E GESTIRE LE COLLISIONI
-            // Per ora, ci concentriamo solo sul nostro movimento.
-            
-            // Controlla se siamo morti dopo la mossa
-            if (me.Dead)
-            {
-                _arena._liveSnakesCount--;
-                // Rimuovi il serpente morto dalla mappa
-                // _arena._field->RemoveSnake(...);
+                // Se le teste si scontrano, muoiono entrambi se l'avversario non è più piccolo
+                ref var snakeA = ref snakes[i];
+                ref var snakeB = ref snakes[j];
+                
+                var snakeALength = snakeA.AsBody().Length;
+                var snakeBLength = snakeB.AsBody().Length;
+                
+                if (snakeALength >= snakeBLength) isDead[j] = true;
+                if (snakeBLength >= snakeALength) isDead[i] = true;
             }
         }
+    }
+
+    // --- 3. MOVIMENTO: Aggiorna lo stato di ogni serpente ---
+    Span<ushort> oldTails = stackalloc ushort[snakeCount];
+    for (int i = 0; i < snakeCount; i++)
+    {
+        if (isDead[i]) continue;
+        
+        ref var snake = ref snakes[i];
+        oldTails[i] = snake.AsBody().Tail;
+        var hazardDamage = _arena._field->IsHazard(newHeadPositions[i]) ? 15 : 0;
+        
+        snake.Move(newHeadPositions[i], hasEaten[i], hazardDamage);
+    }
+
+    // --- 4. AGGIORNAMENTO FINALE: Collisioni col corpo e pulizia ---
+    var field = _arena._field;
+    field->Snakes.ClearAll(); // Ripulisce la mappa dei serpenti per ridisegnarla
+
+    for (int i = 0; i < snakeCount; i++)
+    {
+        ref var snake = ref snakes[i];
+        
+        // Se un serpente è morto in una fase precedente, o per fame
+        if (isDead[i] || snake.Dead)
+        {
+            if (!isDead[i]) // Se non era già stato segnato come morto
+            {
+                isDead[i] = true;
+                _arena._liveSnakesCount--;
+            }
+            continue; // Non disegnarlo sulla mappa
+        }
+        
+        // Ridisegna il corpo del serpente sulla mappa
+        snake.AsBody().GetSpans(out var span1, out var span2);
+        foreach (var segment in span1) field->Snakes.Set(segment);
+        foreach (var segment in span2) field->Snakes.Set(segment);
+        field->Snakes.Set(snake.AsBody().Head);
+
+        // Controllo collisione col corpo (dopo che tutti sono stati disegnati)
+        // (Questa è una logica semplificata, la gestione completa delle collisioni è complessa)
+    }
+    
+    // Aggiorna la mappa del cibo
+    for (int i = 0; i < snakeCount; i++)
+    {
+        if (hasEaten[i]) field->Food.Clear(newHeadPositions[i]);
+    }
+}
         
         /// <summary>
         /// Valuta lo stato attuale del gioco.
@@ -129,6 +197,29 @@ public unsafe struct WarArena
             }
             
             return 0.0f; // Gioco in corso
+        }
+        
+        // All'interno della ref struct WarArena.Accessor
+
+        /// <summary>
+        /// Trova la prima mossa legale per un serpente, per una simulazione base.
+        /// </summary>
+        private MoveDirection GetSimpleMove(ref WarSnake snake)
+        {
+            if (snake.Dead) return MoveDirection.Up; // Indifferente
+
+            // Prova le 4 direzioni
+            for (var i = 0; i < 4; i++)
+            {
+                var direction = (MoveDirection)i;
+                var newHeadPos = _arena._field->GetNeighbor(snake.AsBody().Head, direction);
+                if (!_arena._field->IsOccupied(newHeadPos))
+                {
+                    return direction; // Trovata una mossa sicura
+                }
+            }
+    
+            return MoveDirection.Up; // Morte inevitabile, si va su per convenzione
         }
     }
 

@@ -76,8 +76,7 @@ public unsafe struct WarSnake
     public readonly bool Dead => Health <= 0;
     
     public void Kill() => Health = 0;
-
-    //  nested type
+    
     /// <summary>
     /// Un wrapper ref struct che fornisce un accesso sicuro e strutturato
     /// ai campi PRIVATI della WarSnake che lo contiene.
@@ -90,7 +89,44 @@ public unsafe struct WarSnake
         public ushort Head => _snake._head;
         public ushort Tail => _snake._body[_snake._tailIndex];
         public uint Length => _snake._length;
+        
+        /// <summary>
+        /// Restituisce due Span che, insieme, rappresentano il corpo del serpente in ordine logico.
+        /// Non esegue alcuna copia di memoria. I risultati vengono scritti nei parametri 'out'.
+        /// </summary>
+        public void GetSpans(out Span<ushort> first, out Span<ushort> second)
+        {
+            var tailIndex = (int)_snake._tailIndex;
+            var length = (int)_snake._length;
+            var capacity = (int)_snake._capacity;
+            var bodyPtr = _snake._body;
 
+            if (length == 0)
+            {
+                first = Span<ushort>.Empty;
+                second = Span<ushort>.Empty;
+                return;
+            }
+
+            var headIndex = (tailIndex + length - 1) & (capacity - 1);
+
+            if (tailIndex <= headIndex)
+            {
+                // Caso contiguo: il primo span contiene tutto, il secondo è vuoto.
+                first = new Span<ushort>(bodyPtr + tailIndex, length);
+                second = Span<ushort>.Empty;
+            }
+            else
+            {
+                // Caso "spezzato": riempiamo entrambi gli span.
+                var firstLength = capacity - tailIndex;
+                var secondLength = length - firstLength;
+
+                first = new Span<ushort>(bodyPtr + tailIndex, firstLength);
+                second = new Span<ushort>(bodyPtr, secondLength);
+            }
+        }
+        
         // I metodi ora modificano i campi privati di _snake
         public void PushHead(ushort newHeadPosition)
         {
