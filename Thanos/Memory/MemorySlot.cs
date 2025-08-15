@@ -87,5 +87,17 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
         return (WarSnake*)snakesBlockPtr;
     }
     
-    private void PlacementNewWarArena(WarArena* ptr, WarSnake* snakesPtr, WarField* fieldPtr, in Board board) => WarArena.PlacementNew(ptr, snakesPtr, fieldPtr, (uint)board.Snakes.Length);
+    // All'interno della tua ref struct MemorySlot
+
+    private void PlacementNewWarArena(WarArena* ptr, WarSnake* snakesPtr, WarField* fieldPtr, in Board board)
+    {
+        // 1. Il conteggio dei serpenti, dal parametro `board`
+        var liveSnakeCount = (uint)board.Snakes.Length;
+    
+        // 2. Lo stride dei serpenti, dal campo `_layout` di MemorySlot
+        var snakeStride = _layout.Sizes.SnakeStride;
+
+        // Chiamiamo il nuovo metodo PlacementNew con tutti i parametri corretti
+        WarArena.PlacementNew(ptr, snakesPtr, fieldPtr, in _context, liveSnakeCount, snakeStride);
+    }
 }
