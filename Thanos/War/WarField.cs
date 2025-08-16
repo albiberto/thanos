@@ -6,109 +6,88 @@ using Thanos.SourceGen;
 namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct WarField
+public readonly ref struct WarField
 {
     public const int TotalBitboards = 3;
-    
-    public uint Width { get; }
-    public uint Height { get; }
-    public uint Area { get; }
 
-    private readonly Span<ulong> _allBitboards;
-    private readonly int _segmentLength;
+    private uint _width { get; }
+    private uint _height { get; }
+    private uint _area { get; }
 
-    private readonly Bitboard Food => new(_allBitboards[.._segmentLength]);
-    private readonly Bitboard Hazard => new(_allBitboards[_segmentLength .. (_segmentLength * 2)]);
-    private readonly Bitboard Snakes => new(_allBitboards[(_segmentLength * 2) .. (_segmentLength * 3)]);
+    private readonly Bitboard _foodBitboard;
+    private readonly Bitboard _hazardsBitboard;
+    private readonly Bitboard _snakesBitboard;
 
-    public WarField(in WarContext context, Span<ulong> allBitboardsMemory, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
+    public WarField(in WarContext context, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
     {
-        Width = context.Width;
-        Height = context.Height;
-        Area = context.Area;
+        _width = context.Width;
+        _height = context.Height;
+        _area = context.Area;
         
-        _allBitboards = allBitboardsMemory;
-        _segmentLength = allBitboardsMemory.Length / TotalBitboards;
-
+        _foodBitboard = new Bitboard(foodBitboard);
+        _hazardsBitboard = new Bitboard(hazardsBitboard);
+        _snakesBitboard = new Bitboard(snakesBitboard);
+        
         // Initialize board state
-        foreach (ref readonly var coordinate in food) { Food.Set(To1D(in coordinate)); }
-        foreach (ref readonly var coordinate in hazards) { Hazard.Set(To1D(in coordinate)); }
+        foreach (ref readonly var coordinate in food) { _foodBitboard.Set(To1D(in coordinate)); }
+        foreach (ref readonly var coordinate in hazards) { _hazardsBitboard.Set(To1D(in coordinate)); }
     }
 
     // --- WRITE METHODS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetSnakeBit(ushort position1D) => Snakes.Set(position1D);
+    public void SetSnakeBit(ushort position1D) => _snakesBitboard.Set(position1D);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
     {
-        Snakes.Set(newHead);
-        if (!hasEaten)
-        {
-            Snakes.Clear(oldTail);
-        }
-        else
-        {
-            Food.Clear(newHead);
-        }
+        var snakes = _snakesBitboard;
+        snakes.Set(newHead);
+        snakes.Clear(!hasEaten ? oldTail : newHead);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveSnake(ReadOnlySpan<ushort> body)
     {
-        foreach (var position in body)
-        {
-            Snakes.Clear(position);
-        }
+        foreach (var position in body) _snakesBitboard.Clear(position);
     }
 
     // --- "HOT PATH" READ METHODS (Safe and highly optimized) ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly bool IsOccupied(ushort position1D)
+    public bool IsOccupied(ushort position1D)
     {
         if (position1D == ushort.MaxValue) return true;
         var ulongIndex = position1D >> 6;
         var bitMask = 1UL << (position1D & 63);
         
         // Direct span access via GetRawData() for maximum performance.
-        var hazardData = Hazard.GetRawData();
-        var snakesData = Snakes.GetRawData();
+        var snakesData = _snakesBitboard.GetRawData();
+        var hazardData = _hazardsBitboard.GetRawData();
         
         return ((hazardData[ulongIndex] | snakesData[ulongIndex]) & bitMask) != 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly bool IsFood(ushort position1D)
-    {
-        if (position1D >= Area) return false;
-        // The IsSet method on the Bitboard property is perfectly fine here,
-        // as the overhead is minimal and JIT can optimize it well.
-        return Food.IsSet(position1D);
-    }
-    
+    public bool IsFood(ushort position1D) => _foodBitboard.IsSet(position1D);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly bool IsHazard(ushort position1D)
-    {
-        if (position1D >= Area) return false;
-        return Hazard.IsSet(position1D);
-    }
-    
+    public bool IsHazard(ushort position1D) => _hazardsBitboard.IsSet(position1D);
+
     // --- HELPER METHODS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
+    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly ushort GetNeighbor(ushort position1D, MoveDirection direction)
+    public ushort GetNeighbor(ushort position1D, MoveDirection direction)
     {
         return direction switch
         {
-            MoveDirection.Up => position1D < Width ? ushort.MaxValue : (ushort)(position1D - Width),
-            MoveDirection.Down => position1D >= Area - Width ? ushort.MaxValue : (ushort)(position1D + Width),
-            MoveDirection.Left => position1D % Width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
-            MoveDirection.Right => (position1D + 1) % Width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
+            MoveDirection.Up => position1D < _width ? ushort.MaxValue : (ushort)(position1D - _width),
+            MoveDirection.Down => position1D >= _area - _width ? ushort.MaxValue : (ushort)(position1D + _width),
+            MoveDirection.Left => position1D % _width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
+            MoveDirection.Right => (position1D + 1) % _width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
             _ => ushort.MaxValue
         };
     }
