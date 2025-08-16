@@ -1,85 +1,77 @@
-﻿using System.Numerics;
+﻿// Thanos.Memory/MemoryLayout.cs
+
+using System.Buffers;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.Enums;
 using Thanos.Extensions;
 using Thanos.MCST;
 using Thanos.War;
-
-namespace Thanos.Memory;
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct MemoryLayout
 {
     public readonly uint SnakeBodyCapacity;
-    
     public readonly SizesLayout Sizes;
     public readonly OffsetsLayout Offsets;
     
     public MemoryLayout(in WarContext context, uint maxNodes)
     {
-        SnakeBodyCapacity = System.Math.Min(BitOperations.RoundUpToPowerOf2(context.Area), Constants.MaxSnakeBodyCapacity);
+        SnakeBodyCapacity = Math.Min(BitOperations.RoundUpToPowerOf2(context.Area), Constants.MaxSnakeBodyCapacity);
         
-        // I calcoli delle dimensioni rimangono invariati
-        var snakeStride = (SizesLayout.WarSnakeHeader + SnakeBodyCapacity * sizeof(ushort)).AlignUp();
+        var sizeOfSnakeHeader = (uint)Unsafe.SizeOf<WarSnakeHeader>().AlignUp();
+        var snakeStride = (sizeOfSnakeHeader + SnakeBodyCapacity * sizeof(ushort)).AlignUp();
         var sizeOfSnakes = snakeStride * context.SnakeCount;
 
         var bitboardSegments = (context.Area + 63) >> 6;
-        var bitboardStride = (bitboardSegments * sizeof(ulong)).AlignUp();
-        var sizeOfBitboards = bitboardStride * WarField.TotalBitboards;
+        var bitboardStrideInBytes = (uint)(bitboardSegments * sizeof(ulong)).AlignUp();
+        var sizeOfBitboards = bitboardStrideInBytes * WarField.TotalBitboards;
 
-        // Passiamo sizeOfBitboards al costruttore di OffsetsLayout per il nuovo calcolo
-        Offsets = new OffsetsLayout(sizeOfSnakes, sizeOfBitboards, bitboardSegments);
-        Sizes = new SizesLayout(snakeStride, sizeOfSnakes, bitboardStride, sizeOfBitboards, maxNodes);
+        Sizes = new SizesLayout(snakeStride, sizeOfSnakes, bitboardStrideInBytes, sizeOfBitboards, maxNodes);
+        Offsets = new OffsetsLayout(Sizes);
     }
     
-    // La struct SizesLayout non necessita di modifiche
     [StructLayout(LayoutKind.Sequential)]
-    public readonly unsafe struct SizesLayout
+    public readonly struct SizesLayout
     {
-        public readonly int Node = sizeof(Node).AlignUp();
-        public readonly int WarArena = sizeof(WarArena).AlignUp();
-        public readonly int WarSnakeHeader = sizeof(WarSnake).AlignUp(); // Dimensione del blocco header, non della struct
-        public readonly int WarFieldHeader = sizeof(WarField).AlignUp();
-
+        public readonly int Node = Unsafe.SizeOf<Node>().AlignUp();
+        // NON CI SONO PIÙ WarArena e WarFieldHeader!
+        
         public readonly int SnakeStride;
         public readonly int Snakes;
-        public readonly int BitboardStride;
+        public readonly int BitboardStride; // Dimensione in bytes
+        public readonly int BitboardStrideInUlongs; // Dimensione in ulongs
         public readonly int Bitboards;
         public readonly int Slot;
         public readonly nuint Pool;
 
         public SizesLayout(uint snakeStride, uint sizeOfSnakes, uint bitboardStride, uint sizeOfBitboards, uint maxNodes)
         {
-            SnakeStride = snakeStride;
-            Snakes = sizeOfSnakes;
-            BitboardStride = bitboardStride;
-            Bitboards = sizeOfBitboards;
-            Slot = (nint)(Node + WarArena + WarFieldHeader + Snakes + Bitboards);
-            Pool = (nint)(Slot * maxNodes);
+            SnakeStride = (int)snakeStride;
+            Snakes = (int)sizeOfSnakes;
+            BitboardStride = (int)bitboardStride;
+            BitboardStrideInUlongs = (int)bitboardStride / sizeof(ulong);
+            Bitboards = (int)sizeOfBitboards;
+            // Lo slot ora contiene solo i dati reali
+            Slot = Node + Bitboards + Snakes;
+            Pool = (nuint)((long)Slot * maxNodes);
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct OffsetsLayout
     {
+        // Schema di memoria semplificato: [NODE] [BITBOARDS] [SNAKES]
         public readonly int Node;
-        public readonly int Snakes;
         public readonly int Bitboards;
-        public readonly int WarField;
-        public readonly int WarArena;
+        public readonly int Snakes;
+        // ARENA e FIELD non hanno più un offset, perché sono viste temporanee.
 
-        public readonly uint BitboardSegments;
-
-        // Schema: NODE | BITBOARDS | WARFIELD | SNAKES | ARENA
-        public OffsetsLayout(uint sizeOfSnakes, uint sizeOfBitboards, uint bitboardSegments)
+        public OffsetsLayout(in SizesLayout sizes)
         {
             Node = 0;
-            WarField = Node + SizesLayout.Node;
-            Bitboards = WarField + SizesLayout.WarFieldHeader;
-            Snakes = Bitboards + sizeOfBitboards;
-            WarArena = Snakes + sizeOfSnakes;
-            
-            BitboardSegments = bitboardSegments;
+            Bitboards = Node + sizes.Node;
+            Snakes = Bitboards + sizes.Bitboards;
         }
     }
 }
