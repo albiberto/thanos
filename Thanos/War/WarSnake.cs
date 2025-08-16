@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.SourceGen;
 
 namespace Thanos.War;
 
@@ -16,25 +17,66 @@ public struct WarSnakeHeader
 
 public ref struct WarSnake
 {
-    // Riferimenti ai dati, non i dati stessi
+    // Riferimenti ai dati sottostanti
     private ref WarSnakeHeader _header;
     private readonly Span<ushort> _body;
 
-    // Il costruttore assembla la "vista"
+    /// <summary>
+    /// COSTRUTTORE 2 (per la "vista"):
+    /// Si collega semplicemente alla memoria già inizializzata.
+    /// </summary>
     public WarSnake(ref WarSnakeHeader header, Span<ushort> body)
     {
         _header = ref header;
         _body = body;
     }
+    
+    /// <summary>
+    /// COSTRUTTORE "TUTTOFARE":
+    /// 1. Si collega alla memoria grezza (header e body).
+    /// 2. Inizializza quella memoria usando i dati forniti (initialSnakeData).
+    /// </summary>
+    public WarSnake(ref WarSnakeHeader header, Span<ushort> body, in Snake snake, ref WarField field)
+    {
+        // Fase 1: Collegamento alla memoria
+        _header = ref header;
+        _body = body;
 
-    // --- PROPRIETÀ AD ACCESSO DIRETTO ---
-    public readonly int Health { get => _header.Health; private set => _header.Health = value; }
+        // Fase 2: Inizializzazione della memoria (la logica del vecchio metodo statico è ora qui)
+        var capacity = (uint)_body.Length;
+        var length = (uint)System.Math.Min(snake.Length, capacity);
+
+        _header.Capacity = capacity;
+        _header.Length = length;
+        _header.Health = snake.Health;
+        _header.TailIndex = 0;
+        _header.NextHeadIndex = length & (capacity - 1); // Ottimo per capacità che sono potenze di 2
+
+        // Popola il corpo e aggiorna la bitboard in WarField
+        for (var j = 0; j < length; j++)
+        {
+            var index = (int)(length - 1 - j);
+            ref readonly var coordinate = ref snake.Body[index];
+            var coord1D = field.To1D(in coordinate);
+
+            _body[j] = coord1D;
+            field.SetSnakeBit(coord1D);
+        }
+
+        _header.Head = length > 0
+            ? _body[(int)length - 1]
+            : ushort.MaxValue;
+    }
+
+    // --- PROPRIETÀ ---
+    // Health ora ha un setter pubblico, che è corretto. Rimosso 'readonly'.
+    public int Health { readonly get => _header.Health; private set => _header.Health = value; }
     public readonly ushort Head => _header.Head;
     public readonly ushort Tail => _body[(int)_header.TailIndex];
     public readonly uint Length => _header.Length;
     public readonly bool Dead => Health <= 0;
     
-    // --- METODI PRINCIPALI ---
+    // --- METODI ---
     public void Kill() => Health = 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,7 +121,6 @@ public ref struct WarSnake
         }
     }
     
-    // --- METODI PRIVATI DI LOGICA INTERNA ---
     private void PushHead(ushort newHeadPosition)
     {
         _body[(int)_header.NextHeadIndex] = _header.Head;

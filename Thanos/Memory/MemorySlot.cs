@@ -52,47 +52,21 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
     {
         for (var i = 0; i < context.SnakeCount; i++)
         {
-            // Dividi il blocco di memoria per il singolo serpente
+            // Prepara i pezzi di memoria grezza
             var singleSnakeBlock = snakesSpan.Slice(i * layout.Sizes.SnakeStride, layout.Sizes.SnakeStride);
             var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
             var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<WarSnakeHeader>()..]);
-
-            // Ottieni un riferimento alla memoria dell'header e inizializzala
             ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
         
-            var initialSnakeData = board.Snakes[i];
-            var capacity = (uint)bodySpan.Length;
-            var length = (uint)System.Math.Min(initialSnakeData.Length, capacity);
-
-            header.Capacity = capacity;
-            header.Length = length;
-            header.Health = initialSnakeData.Health;
-            header.TailIndex = 0;
-            header.NextHeadIndex = length & (capacity - 1);
-
-            // Popola il corpo e aggiorna la bitboard in WarField
-            for (var j = 0; j < length; j++)
-            {
-                // Il corpo del serpente nei dati iniziali è in ordine inverso (testa alla fine)
-                var index = (int)(length - 1 - j);
-                ref readonly var coordinate = ref initialSnakeData.Body[index];
-                var coord1D = field.To1D(in coordinate);
-
-                bodySpan[j] = coord1D;
-                field.SetSnakeBit(coord1D);
-            }
-
-            header.Head = length > 0
-                ? bodySpan[(int)length - 1] // La testa è l'ultimo elemento scritto
-                : ushort.MaxValue;
+            // Una singola, chiara chiamata al costruttore che fa tutto il lavoro.
+            new WarSnake(ref header, bodySpan, in board.Snakes[i], ref field);
         }
     }
     
-    private static void PlacementNewWarArena(Span<byte> arenaSpan, WarSnake* snakesPtr, ref WarField field, in WarContext context, in MemoryLayout layout)
-    {
-        fixed (WarField* fieldPtr = &field) // Ottieni il puntatore da passare
-        {
-            WarArena.PlacementNew(MemoryMarshal.Cast<byte, WarArena>(arenaSpan), snakesPtr, fieldPtr, context, layout);
-        }
-    }
+    /// <summary>
+    /// Crea una "vista" WarArena che opera sui dati di gioco forniti.
+    /// Sostituisce il vecchio metodo PlacementNewWarArena.
+    /// </summary>
+    private static WarArena PlacementNewWarArena(ref WarField field, Span<byte> snakesMemory, in WarContext context, in MemoryLayout layout) => 
+        new(ref field, snakesMemory, in context, layout.Sizes.SnakeStride);
 }
