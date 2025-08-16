@@ -18,57 +18,74 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
         var nodeSpan = _slot.Slice(_layout.Offsets.Node, _layout.Sizes.Node);
         PlacementNewNode(nodeSpan);
         
-        var fieldSpan = _slot.Slice(_layout.Offsets.WarField, _layout.Sizes.WarFieldHeader);
         var bitboardsSpan = _slot.Slice(_layout.Offsets.Bitboards, _layout.Sizes.Bitboards);
         bitboardsSpan.Clear();
-        ref var fieldRef = ref PlacementNewWarField(fieldSpan, bitboardsSpan, in _context, in _layout, in request.Board);
+        var warField = PlacementNewWarField(bitboardsSpan, in _context, in _layout, in request.Board);
 
         var snakesSpan = _slot.Slice(_layout.Offsets.Snakes, _layout.Sizes.Snakes);
-        var snakesPtr = PlacementNewWarSnakes(snakesSpan, ref fieldRef, in _context, in _layout, in request.Board);
+        PlacementNewWarSnakes(snakesSpan, ref warField, in _context, in _layout, in request.Board);
 
         var arenaSpan = _slot.Slice(_layout.Offsets.WarArena, _layout.Sizes.WarArena);
         PlacementNewWarArena(arenaSpan, snakesPtr, ref fieldRef, in _context, in _layout);
     }
     
-
-
     private static void PlacementNewNode(Span<byte> nodeSpan)
     {
         ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(nodeSpan));
         node = new Node();
     }
 
-    private static ref WarField PlacementNewWarField(Span<byte> fieldSpan, Span<byte> bitboardsByteSpan, in WarContext context, in MemoryLayout layout, in Board board)
+    private static WarField PlacementNewWarField(Span<byte> bitboardsByteSpan, in WarContext context, in MemoryLayout layout, in Board board)
     {
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsByteSpan);
 
         var offsetThirdElement = layout.Sizes.BitboardStride * 2;
-        
+    
         var food = bitboardsUlongSpan[..layout.Sizes.BitboardStride];
         var hazards = bitboardsUlongSpan[layout.Sizes.BitboardStride .. offsetThirdElement];
-        var snakes = bitboardsUlongSpan[offsetThirdElement..];
-        
-        ref var field = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarField>(fieldSpan));
-        field = new WarField();
-
-        return ref field;
+        var snakes = bitboardsUlongSpan[offsetThirdElement .. (layout.Sizes.BitboardStride * 3)];
+    
+        return new WarField(in context, food, hazards, snakes, board.Food,board.Hazards);
     }
     
-    private static WarSnake* PlacementNewWarSnakes(Span<byte> snakesSpan, ref WarField field, in WarContext context, in MemoryLayout layout, in Board board)
+    private static void PlacementNewWarSnakes(Span<byte> snakesSpan, ref WarField field, in WarContext context, in MemoryLayout layout, in Board board)
     {
-        // Il corpo di questo metodo ora usa lo span ricevuto
-        for (int i = 0; i < context.SnakeCount; i++)
+        for (var i = 0; i < context.SnakeCount; i++)
         {
+            // Dividi il blocco di memoria per il singolo serpente
             var singleSnakeBlock = snakesSpan.Slice(i * layout.Sizes.SnakeStride, layout.Sizes.SnakeStride);
-            var headerSpan = singleSnakeBlock[..layout.Sizes.WarSnakeHeader];
-            var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[layout.Sizes.WarSnakeHeader..]);
+            var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
+            var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<WarSnakeHeader>()..]);
 
-            fixed (WarField* fieldPtr = &field) // Ottieni il puntatore da passare
+            // Ottieni un riferimento alla memoria dell'header e inizializzala
+            ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
+        
+            var initialSnakeData = board.Snakes[i];
+            var capacity = (uint)bodySpan.Length;
+            var length = (uint)System.Math.Min(initialSnakeData.Length, capacity);
+
+            header.Capacity = capacity;
+            header.Length = length;
+            header.Health = initialSnakeData.Health;
+            header.TailIndex = 0;
+            header.NextHeadIndex = length & (capacity - 1);
+
+            // Popola il corpo e aggiorna la bitboard in WarField
+            for (var j = 0; j < length; j++)
             {
-                WarSnake.PlacementNew(headerSpan, bodySpan, in board.Snakes[i], in *fieldPtr);
+                // Il corpo del serpente nei dati iniziali è in ordine inverso (testa alla fine)
+                var index = (int)(length - 1 - j);
+                ref readonly var coordinate = ref initialSnakeData.Body[index];
+                var coord1D = field.To1D(in coordinate);
+
+                bodySpan[j] = coord1D;
+                field.SetSnakeBit(coord1D);
             }
+
+            header.Head = length > 0
+                ? bodySpan[(int)length - 1] // La testa è l'ultimo elemento scritto
+                : ushort.MaxValue;
         }
-        return (WarSnake*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(snakesSpan));
     }
     
     private static void PlacementNewWarArena(Span<byte> arenaSpan, WarSnake* snakesPtr, ref WarField field, in WarContext context, in MemoryLayout layout)
