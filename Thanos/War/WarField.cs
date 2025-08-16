@@ -14,9 +14,9 @@ public readonly ref struct WarField
     private uint _height { get; }
     private uint _area { get; }
 
-    private readonly Bitboard _foodBitboard;
-    private readonly Bitboard _hazardsBitboard;
-    private readonly Bitboard _snakesBitboard;
+    public readonly Bitboard Food;
+    public readonly Bitboard Hazards;
+    public readonly Bitboard Snakes;
 
     public WarField(in WarContext context, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
     {
@@ -24,24 +24,24 @@ public readonly ref struct WarField
         _height = context.Height;
         _area = context.Area;
         
-        _foodBitboard = new Bitboard(foodBitboard);
-        _hazardsBitboard = new Bitboard(hazardsBitboard);
-        _snakesBitboard = new Bitboard(snakesBitboard);
+        Food = new Bitboard(foodBitboard);
+        Hazards = new Bitboard(hazardsBitboard);
+        Snakes = new Bitboard(snakesBitboard);
         
         // Initialize board state
-        foreach (ref readonly var coordinate in food) { _foodBitboard.Set(To1D(in coordinate)); }
-        foreach (ref readonly var coordinate in hazards) { _hazardsBitboard.Set(To1D(in coordinate)); }
+        foreach (ref readonly var coordinate in food) { Food.Set(To1D(in coordinate)); }
+        foreach (ref readonly var coordinate in hazards) { Hazards.Set(To1D(in coordinate)); }
     }
 
     // --- WRITE METHODS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetSnakeBit(ushort position1D) => _snakesBitboard.Set(position1D);
+    public void SetSnakeBit(ushort position1D) => Snakes.Set(position1D);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
     {
-        var snakes = _snakesBitboard;
+        var snakes = Snakes;
         snakes.Set(newHead);
         snakes.Clear(!hasEaten ? oldTail : newHead);
     }
@@ -49,7 +49,7 @@ public readonly ref struct WarField
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveSnake(ReadOnlySpan<ushort> body)
     {
-        foreach (var position in body) _snakesBitboard.Clear(position);
+        foreach (var position in body) Snakes.Clear(position);
     }
 
     // --- "HOT PATH" READ METHODS (Safe and highly optimized) ---
@@ -62,17 +62,17 @@ public readonly ref struct WarField
         var bitMask = 1UL << (position1D & 63);
         
         // Direct span access via GetRawData() for maximum performance.
-        var snakesData = _snakesBitboard.GetRawData();
-        var hazardData = _hazardsBitboard.GetRawData();
+        var snakesData = Snakes.GetRawData();
+        var hazardData = Hazards.GetRawData();
         
         return ((hazardData[ulongIndex] | snakesData[ulongIndex]) & bitMask) != 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsFood(ushort position1D) => _foodBitboard.IsSet(position1D);
+    public bool IsFood(ushort position1D) => Food.IsSet(position1D);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsHazard(ushort position1D) => _hazardsBitboard.IsSet(position1D);
+    public bool IsHazard(ushort position1D) => Hazards.IsSet(position1D);
 
     // --- HELPER METHODS ---
 

@@ -7,7 +7,8 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct WarContext
 {
-    public readonly uint Width, Height, Area, SnakeCount;
+    public readonly uint Width, Height, Area;
+    public readonly int SnakeCount;
 
     public static readonly WarContext Worst = new(Constants.MaxWidth, Constants.MaxHeight, Constants.MaxSnakes);
 
@@ -17,7 +18,7 @@ public readonly struct WarContext
         Height = height;
         Area = width * height;
 
-        SnakeCount = (uint)snakeCount;
+        SnakeCount = snakeCount;
     }
 
     public WarContext(in Board board) : this(board.Width, board.Height, board.Snakes.Length)
