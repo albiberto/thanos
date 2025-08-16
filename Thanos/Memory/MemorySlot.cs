@@ -26,7 +26,7 @@ public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext contex
         PlacementNewWarSnakes(snakesSpan, ref warField, in _context, in _layout, in request.Board);
 
         var arenaSpan = _slot.Slice(_layout.Offsets.WarArena, _layout.Sizes.WarArena);
-        PlacementNewWarArena(arenaSpan, snakesPtr, ref fieldRef, in _context, in _layout);
+        PlacementNewWarArena(ref warField, snakesSpan, in _context, in _layout);
     }
     
     private static void PlacementNewNode(Span<byte> nodeSpan)
