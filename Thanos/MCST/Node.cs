@@ -15,22 +15,6 @@ public unsafe struct Node
     public long Visits;
     public double Wins;
 
-    public MoveDirection MoveThatLedToThisNode; // La mossa che ha generato questo stato
+    public MoveDirection? MoveThatLedToThisNode; // La mossa che ha generato questo stato
     public bool IsTerminal; // True se lo stato del gioco è finale (vittoria/sconfitta)
-    
-    public static void PlacementNew(Node* ptr, Node* parent = null, MoveDirection move = MoveDirection.Up)
-    {
-        ptr->Parent = parent;
-        ptr->Child1 = null;
-        ptr->Child2 = null;
-        ptr->Child3 = null;
-    
-        ptr->ChildrenCount = 0;
-
-        ptr->Visits = 0;
-        ptr->Wins = 0;
-        
-        ptr->MoveThatLedToThisNode = move;
-        ptr->IsTerminal = false; // Sarà aggiornato dopo la simulazione
-    }
 }

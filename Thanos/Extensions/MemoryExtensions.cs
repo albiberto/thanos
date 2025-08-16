@@ -6,8 +6,5 @@ namespace Thanos.Extensions;
 public static class MemoryExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint AlignUp(this uint value, uint alignment = Constants.SizeOfCacheLine) => (value + alignment - 1) & ~(alignment - 1);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static uint AlignUp(this int value, uint alignment = Constants.SizeOfCacheLine) => ((uint)value).AlignUp(alignment);
+    public static int AlignUp(this int value, int alignment = Constants.SizeOfCacheLine) => (value + alignment - 1) & ~(alignment - 1);
 }
