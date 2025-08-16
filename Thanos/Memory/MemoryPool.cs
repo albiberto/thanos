@@ -1,48 +1,46 @@
-﻿using Thanos.War;
+﻿using System.Buffers;
+using Thanos.War;
 
 namespace Thanos.Memory;
 
-public sealed unsafe class MemoryPool(byte* poolStartPtr)
+public sealed class MemoryPool : IDisposable
 {
+    private readonly IMemoryOwner<byte> _memoryOwner;
+    private readonly Memory<byte> _poolMemory;
     private long _currentOffset;
     
-    private MemoryLayout _layout;
-    private WarContext _context;
+    private readonly MemoryLayout _layout;
+    private readonly WarContext _context;
 
-    /// <summary>
-    /// Tenta di ottenere il prossimo slot di memoria in modo thread-safe.
-    /// Può essere chiamato da più thread contemporaneamente senza rischi di corruzione dei dati.
-    /// </summary>
-    public bool TryGetNext(out MemorySlot builder)
+    public MemoryPool(in WarContext context, in MemoryLayout layout)
     {
-        // 1. Aggiunge atomicamente la dimensione dello slot all'offset corrente. 'newOffset' è il valore dell'offset DOPO l'aggiunta.
-        var newOffset = Interlocked.Add(ref _currentOffset, _layout.Sizes.Slot);
+        _context = context;
+        _layout = layout;
+        // Il pool ora gestisce memoria gestita
+        _memoryOwner = MemoryPool<byte>.Shared.Rent((int)layout.Sizes.Pool);
+        _poolMemory = _memoryOwner.Memory;
+        _poolMemory.Span.Clear(); // Azzera la memoria all'inizio
+    }
 
-        // 2. Controlla se abbiamo superato la capacità totale del pool. Se il nuovo offset è maggiore della dimensione del pool, l'allocazione fallisce.
-        if (newOffset > _layout.Sizes.Pool)
+    public bool TryGetNext(out MemorySlot slot)
+    {
+        var slotSize = _layout.Sizes.Slot;
+        var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
+
+        if (newOffset > _poolMemory.Length)
         {
-            builder = default;
+            slot = default;
             return false;
         }
 
-        // 3. Calcola l'offset di inizio del nostro slot, che è quello PRIMA dell'aggiunta.
-        var startOffset = newOffset - _layout.Sizes.Slot;
-    
-        // 4. Calcola il puntatore alla nostra area di memoria.
-        var currentSlotPtr = poolStartPtr + startOffset;
-
-        // 5. Crea lo slot e restituisce successo.
-        builder = new MemorySlot(currentSlotPtr, _context, _layout);
+        var startOffset = (int)(newOffset - slotSize);
+        // Il pool ora distribuisce Span<byte> sicuri
+        var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
+        slot = new MemorySlot(slotSpan, _context, _layout);
         return true;
     }
 
     public void Reset() => _currentOffset = 0;
-
-    public void Reset(in WarContext context, in MemoryLayout layout)
-    {
-        Reset();
-
-        _context = context;
-        _layout = layout;
-    }
+    
+    public void Dispose() => _memoryOwner.Dispose();
 }
