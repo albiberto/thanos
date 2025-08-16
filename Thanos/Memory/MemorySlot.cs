@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Thanos.MCST;
 using Thanos.SourceGen;
@@ -7,97 +6,76 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-// ┌─────────────── NODE (64B) ────────────────┐┌──── WAR FIELD HDR (64B) ─────┐┌═══════════════════ BITBOARDS ═════════════════════┐┌═══════════════════ SNAKES ═══════════════════┐┌──────────── WAR ARENA (64B) ────────────┐
-// │ Pointers, visits, etc.                    ││ Width, Height, bitboard ptrs ││ [Food (64B)] | [Hazard (64B)] | [All Snakes (64B)]││ [Snake0: Header+Body (64B)] | [Snake1: ...]  ││ Snakes ptrs, field ptrs, stats          │
 public readonly unsafe ref struct MemorySlot(byte* slotPtr, in WarContext context, in MemoryLayout layout)
 {
+    private readonly Span<byte> _slot = new(slotPtr, layout.Sizes.Slot);
+
     private readonly WarContext _context = context;
     private readonly MemoryLayout _layout = layout;
-    
-    public void CloneFrom(MemorySlot other) => throw new NotImplementedException("CloneFrom(MemorySlot) is not implemented yet.");
-    
+
     public void CloneFrom(in Request request)
     {
-        var nodePtr = (Node*)(slotPtr + _layout.Offsets.Node);
-        PlacementNewNode(nodePtr);
+        var nodeSpan = _slot.Slice(_layout.Offsets.Node, _layout.Sizes.Node);
+        PlacementNewNode(nodeSpan);
         
-        var fieldPtr = (WarField*)(slotPtr + _layout.Offsets.WarField);
-        var bitboardsPtr = (ulong*)(slotPtr + _layout.Offsets.Bitboards);
-        PlacementNewWarField(fieldPtr, bitboardsPtr, in _context, in _layout, in request.Board);
-        
-        var snakesPtr = slotPtr + _layout.Offsets.Snakes;
-        PlacementNewWarSnakes(snakesPtr, fieldPtr, _context, _layout, in request.You,request.Board.Snakes);
-        
-        var arenaPtr = (WarArena*)(slotPtr + _layout.Offsets.WarArena);
-        PlacementNewWarArena(arenaPtr, (WarSnake*)snakesPtr, fieldPtr, in request.Board);
+        var fieldSpan = _slot.Slice(_layout.Offsets.WarField, _layout.Sizes.WarFieldHeader);
+        var bitboardsSpan = _slot.Slice(_layout.Offsets.Bitboards, _layout.Sizes.Bitboards);
+        bitboardsSpan.Clear();
+        ref var fieldRef = ref PlacementNewWarField(fieldSpan, bitboardsSpan, in _context, in _layout, in request.Board);
+
+        var snakesSpan = _slot.Slice(_layout.Offsets.Snakes, _layout.Sizes.Snakes);
+        var snakesPtr = PlacementNewWarSnakes(snakesSpan, ref fieldRef, in _context, in _layout, in request.Board);
+
+        var arenaSpan = _slot.Slice(_layout.Offsets.WarArena, _layout.Sizes.WarArena);
+        PlacementNewWarArena(arenaSpan, snakesPtr, ref fieldRef, in _context, in _layout);
     }
     
-    private static void PlacementNewNode(Node* nodePtr) => Node.PlacementNew(nodePtr);
 
-    private static void PlacementNewWarField(WarField* fieldPtr, ulong* bitboardsPtr, in WarContext context, in MemoryLayout layout, in Board board)
+
+    private static void PlacementNewNode(Span<byte> nodeSpan)
     {
-        // 1. Calcola i puntatori specifici per ogni singolo bitboard.
-        var segmentsPerBitboard = layout.Offsets.BitboardSegments;
-    
-        // 2. Pulisci l'INTERO blocco dei bitboard in un colpo solo 
-        NativeMemory.Clear(bitboardsPtr, layout.Sizes.Bitboards);
+        ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(nodeSpan));
+        node = new Node();
+    }
+
+    private static ref WarField PlacementNewWarField(Span<byte> fieldSpan, Span<byte> bitboardsByteSpan, in WarContext context, in MemoryLayout layout, in Board board)
+    {
+        var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsByteSpan);
+
+        var offsetThirdElement = layout.Sizes.BitboardStride * 2;
         
-        // 3. Ora calcola i puntatori ai singoli bitboard...
-        var foodBitboardPtr = bitboardsPtr;
-        var hazardBitboardPtr = foodBitboardPtr + segmentsPerBitboard;
-        var snakesBitboardPtr = hazardBitboardPtr + segmentsPerBitboard;
+        var food = bitboardsUlongSpan[..layout.Sizes.BitboardStride];
+        var hazards = bitboardsUlongSpan[layout.Sizes.BitboardStride .. offsetThirdElement];
+        var snakes = bitboardsUlongSpan[offsetThirdElement..];
         
-        // 4. Chiama il metodo di inizializzazione di WarField, passando tutti i puntatori calcolati.
-        WarField.PlacementNew(fieldPtr, in context, board.Food, board.Hazards, layout.Offsets.BitboardSegments, foodBitboardPtr, hazardBitboardPtr, snakesBitboardPtr);
+        ref var field = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarField>(fieldSpan));
+        field = new WarField();
+
+        return ref field;
     }
     
-    // All'interno del MemorySlotBuilder
-
-    private static WarSnake* PlacementNewWarSnakes(byte* slotPtr, WarField* fieldPtr, in WarContext context, in MemoryLayout layout, in Snake me, ReadOnlySpan<Snake> snakes)
+    private static WarSnake* PlacementNewWarSnakes(Span<byte> snakesSpan, ref WarField field, in WarContext context, in MemoryLayout layout, in Board board)
     {
-        var sizeOfHeader = MemoryLayout.SizesLayout.WarSnakeHeader;
-        
-        // Puntatore all'inizio del blocco di tutti i serpenti
-        var snakesBlockPtr = slotPtr + layout.Offsets.Snakes;
-        var capacity = layout.SnakeBodyCapacity;
-
-        // --- 1. Inizializza il NOSTRO serpente ("You") in posizione 0 ---
-        var mySnakePtr = (WarSnake*)snakesBlockPtr;
-        var myBodyPtr = (ushort*)((byte*)mySnakePtr + sizeOfHeader);
-        WarSnake.PlacementNew(mySnakePtr, myBodyPtr, fieldPtr, in me, me.Body, capacity);
-
-        // --- 2. Inizializza tutti gli ALTRI serpenti nelle posizioni successive ---
-        uint otherSnakesIndex = 1;
-        foreach (ref readonly var snake in snakes)
+        // Il corpo di questo metodo ora usa lo span ricevuto
+        for (int i = 0; i < context.SnakeCount; i++)
         {
-            if (snake.Id == me.Id) continue;
+            var singleSnakeBlock = snakesSpan.Slice(i * layout.Sizes.SnakeStride, layout.Sizes.SnakeStride);
+            var headerSpan = singleSnakeBlock[..layout.Sizes.WarSnakeHeader];
+            var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[layout.Sizes.WarSnakeHeader..]);
 
-            // Calcola il puntatore al blocco del serpente corrente
-            var currentSnakePtrBytes = snakesBlockPtr + otherSnakesIndex * layout.Sizes.SnakeStride;
-        
-            // Calcola i puntatori specifici per header e body
-            var currentSnakeHeaderPtr = (WarSnake*)currentSnakePtrBytes;
-            var currentSnakeBodyPtr = (ushort*)(currentSnakePtrBytes + sizeOfHeader);
-        
-            WarSnake.PlacementNew(currentSnakeHeaderPtr, currentSnakeBodyPtr, fieldPtr, in snake, snake.Body, capacity);
-
-            otherSnakesIndex++;
+            fixed (WarField* fieldPtr = &field) // Ottieni il puntatore da passare
+            {
+                WarSnake.PlacementNew(headerSpan, bodySpan, in board.Snakes[i], in *fieldPtr);
+            }
         }
-
-        return (WarSnake*)snakesBlockPtr;
+        return (WarSnake*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(snakesSpan));
     }
     
-    // All'interno della tua ref struct MemorySlot
-
-    private void PlacementNewWarArena(WarArena* ptr, WarSnake* snakesPtr, WarField* fieldPtr, in Board board)
+    private static void PlacementNewWarArena(Span<byte> arenaSpan, WarSnake* snakesPtr, ref WarField field, in WarContext context, in MemoryLayout layout)
     {
-        // 1. Il conteggio dei serpenti, dal parametro `board`
-        var liveSnakeCount = (uint)board.Snakes.Length;
-    
-        // 2. Lo stride dei serpenti, dal campo `_layout` di MemorySlot
-        var snakeStride = _layout.Sizes.SnakeStride;
-
-        // Chiamiamo il nuovo metodo PlacementNew con tutti i parametri corretti
-        WarArena.PlacementNew(ptr, snakesPtr, fieldPtr, in _context, liveSnakeCount, snakeStride);
+        fixed (WarField* fieldPtr = &field) // Ottieni il puntatore da passare
+        {
+            WarArena.PlacementNew(MemoryMarshal.Cast<byte, WarArena>(arenaSpan), snakesPtr, fieldPtr, context, layout);
+        }
     }
 }

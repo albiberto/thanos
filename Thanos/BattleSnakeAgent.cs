@@ -23,7 +23,6 @@ public sealed unsafe class BattleSnakeAgent : IDisposable
         var worstLayout = new MemoryLayout(worstContext, maxNodes);
         
         _memoryPtr =  (byte*)NativeMemory.AlignedAlloc(worstLayout.Sizes.Pool, Constants.SizeOfCacheLine);
-        
         _pool = new MemoryPool(_memoryPtr);
         _engine = new MonteCarloEngine(_pool);
     }

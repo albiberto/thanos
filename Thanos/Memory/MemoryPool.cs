@@ -19,7 +19,7 @@ public sealed unsafe class MemoryPool(byte* poolStartPtr)
         var newOffset = Interlocked.Add(ref _currentOffset, _layout.Sizes.Slot);
 
         // 2. Controlla se abbiamo superato la capacità totale del pool. Se il nuovo offset è maggiore della dimensione del pool, l'allocazione fallisce.
-        if (newOffset > (long)_layout.Sizes.Pool)
+        if (newOffset > _layout.Sizes.Pool)
         {
             builder = default;
             return false;

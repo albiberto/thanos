@@ -36,16 +36,16 @@ public readonly struct MemoryLayout
     [StructLayout(LayoutKind.Sequential)]
     public readonly unsafe struct SizesLayout
     {
-        public static readonly uint Node = sizeof(Node).AlignUp();
-        public static readonly uint WarArena = sizeof(WarArena).AlignUp();
-        public static readonly uint WarSnakeHeader = sizeof(WarSnake).AlignUp(); // Dimensione del blocco header, non della struct
-        public static readonly uint WarFieldHeader = sizeof(WarField).AlignUp();
+        public readonly int Node = sizeof(Node).AlignUp();
+        public readonly int WarArena = sizeof(WarArena).AlignUp();
+        public readonly int WarSnakeHeader = sizeof(WarSnake).AlignUp(); // Dimensione del blocco header, non della struct
+        public readonly int WarFieldHeader = sizeof(WarField).AlignUp();
 
-        public readonly uint SnakeStride;
-        public readonly uint Snakes;
-        public readonly uint BitboardStride;
-        public readonly uint Bitboards;
-        public readonly uint Slot;
+        public readonly int SnakeStride;
+        public readonly int Snakes;
+        public readonly int BitboardStride;
+        public readonly int Bitboards;
+        public readonly int Slot;
         public readonly nuint Pool;
 
         public SizesLayout(uint snakeStride, uint sizeOfSnakes, uint bitboardStride, uint sizeOfBitboards, uint maxNodes)
@@ -54,19 +54,19 @@ public readonly struct MemoryLayout
             Snakes = sizeOfSnakes;
             BitboardStride = bitboardStride;
             Bitboards = sizeOfBitboards;
-            Slot = Node + WarArena + WarFieldHeader + Snakes + Bitboards;
-            Pool = Slot * maxNodes;
+            Slot = (nint)(Node + WarArena + WarFieldHeader + Snakes + Bitboards);
+            Pool = (nint)(Slot * maxNodes);
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct OffsetsLayout
     {
-        public readonly uint Node;
-        public readonly uint Snakes;
-        public readonly uint Bitboards;
-        public readonly uint WarField;
-        public readonly uint WarArena;
+        public readonly int Node;
+        public readonly int Snakes;
+        public readonly int Bitboards;
+        public readonly int WarField;
+        public readonly int WarArena;
 
         public readonly uint BitboardSegments;
 
