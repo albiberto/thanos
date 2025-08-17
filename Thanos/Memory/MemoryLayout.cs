@@ -17,11 +17,13 @@ public readonly struct MemoryLayout
     public readonly int SnakeStride;
     public readonly int BitboardStrideInBytes;
     public readonly int BitboardStrideInUlongs;
+    public readonly int WarArenaHeaderSize; // NUOVO
 
     // --- Offset ---
     public readonly int NodeOffset;
     public readonly int BitboardsOffset;
     public readonly int SnakesOffset;
+    public readonly int WarArenaHeaderOffset; // NUOVO
 
     // --- Totali ---
     public readonly int SlotSize;
@@ -45,9 +47,10 @@ public readonly struct MemoryLayout
         var snakeHeaderSize = Unsafe.SizeOf<WarSnakeHeader>().AlignUp();
         SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
         SnakesSize = SnakeStride * context.SnakeCount;
+        WarArenaHeaderSize = Unsafe.SizeOf<WarArenaHeader>().AlignUp(); // NUOVO
 
         // --- 2. Calcolo Totali ---
-        SlotSize = NodeSize + BitboardsSize + SnakesSize;
+        SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize;
         // Moltiplichiamo come 'long' per evitare overflow con 'maxNodes' molto grandi
         PoolSize = (long)SlotSize * maxNodes;
 
@@ -55,6 +58,7 @@ public readonly struct MemoryLayout
         NodeOffset = 0;
         BitboardsOffset = NodeOffset + NodeSize;
         SnakesOffset = BitboardsOffset + BitboardsSize;
+        WarArenaHeaderOffset = SnakesOffset + SnakesSize; // NUOVO
     }
 }
 

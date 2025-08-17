@@ -1,5 +1,4 @@
-﻿using System.Runtime.InteropServices;
-using Thanos.Enums;
+﻿using Thanos.Enums;
 using Thanos.MCST;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -7,44 +6,70 @@ using Thanos.War;
 
 namespace Thanos;
 
-public sealed unsafe class BattleSnakeAgent : IDisposable
+public sealed class BattleSnakeAgent : IDisposable
 {
-    private readonly byte* _memoryPtr;
-
-    private WarContext _context;
-    private MemoryLayout _layout;
-    
+    // I campi ora sono readonly perché inizializzati una sola volta nel costruttore.
     private readonly MemoryPool _pool;
     private readonly MonteCarloEngine _engine;
 
-    public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
+    /// <summary>
+    /// Costruttore (Bootstrap): Alloca tutta la memoria necessaria per il caso peggiore.
+    /// </summary>
+    public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
-        var worstContext = WarContext.Worst;
+        // 1. Calcola il layout per il caso peggiore possibile per allocare abbastanza memoria.
+        var worstContext = WarContext.Worst; // Un contesto con il massimo numero di serpenti, area massima, etc.
         var worstLayout = new MemoryLayout(worstContext, maxNodes);
         
-        _memoryPtr =  (byte*)NativeMemory.AlignedAlloc(worstLayout.Sizes.Pool, Constants.SizeOfCacheLine);
-        _pool = new MemoryPool(_memoryPtr);
-        _engine = new MonteCarloEngine(_pool);
+        // 2. Crea il Pool e l'Engine una sola volta.
+        _pool = new MemoryPool(worstContext, worstLayout);
+        _engine = new MonteCarloEngine(_pool, worstContext, worstLayout);
     }
 
+    /// <summary>
+    /// Chiamato all'inizio di una partita. Riconfigura le strutture esistenti.
+    /// </summary>
     public void Start(in Request request)
     {
-        _context = new WarContext(in request.Board);
-        _layout = new MemoryLayout(_context, Constants.MaxNodes);
+        // 1. Calcola il contesto e il layout specifici per QUESTA partita.
+        var context = new WarContext(in request.Board);
+        var layout = new MemoryLayout(context, Constants.MaxNodes);
         
-        _pool.Reset(_context, _layout);
-        _engine.Reset(in request, _context, _layout);
+        // 2. Riconfigura il Pool e l'Engine con i nuovi parametri.
+        _pool.Reset(context, layout);
+        _engine.Reset(context, layout);
+        
+        // 3. Imposta lo stato iniziale dell'albero per il turno 0.
+        _engine.Reset(in request);
     }
     
-    public MoveDirection Move(in Request request)
+    /// <summary>
+    /// Chiamato a ogni turno per decidere la mossa.
+    /// </summary>
+    public string Move(in Request request)
     {
-        _pool.Reset();
+        // 1. Resetta l'albero di ricerca allo stato del turno corrente.
         _engine.Reset(in request);
         
-        return MoveDirection.Down;
+        // 2. Esegui la ricerca MCTS.
+        //    Il numero di iterazioni dipende dal tempo concesso dall'API di BattleSnake (es. < 500ms).
+        byte bestMoveByte = _engine.FindBestMove(iterations: 50000);
+        
+        // 3. Traduci il risultato nel formato stringa richiesto dall'API.
+        return ToApiMove(bestMoveByte);
     }
 
     public void End(in Request request) => Console.WriteLine($"End: {request.Game.Id} - {request.Turn}");
+    
+    public void Dispose() => _pool.Dispose();
 
-    public void Dispose() => NativeMemory.AlignedFree(_memoryPtr);
+    private static string ToApiMove(byte move) =>
+        move switch
+        {
+            Moves.Up => "up",
+            Moves.Down => "down",
+            Moves.Left => "left",
+            Moves.Right => "right",
+            _ => "up"
+        };
 }

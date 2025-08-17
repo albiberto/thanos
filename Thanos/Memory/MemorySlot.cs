@@ -20,6 +20,7 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
         InitializeNode();
         var warField = InitializeWarField(in request.Board);
         InitializeWarSnakes(ref warField, in request.Board);
+        InitializeArenaHeader(); // NUOVO
     }
 
     /// <summary>
@@ -95,7 +96,18 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
     {
         var field = GetField();
         var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
+        
+        // Estrae il riferimento all'header dalla memoria
+        var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
+        ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
 
-        return new WarArena(field, snakesMemory, _context.SnakeCount, _layout.SnakeStride);
+        return new WarArena(ref header, field, snakesMemory, _context.SnakeCount, _layout.SnakeStride);
+    }
+    
+    private void InitializeArenaHeader()
+    {
+        var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
+        ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
+        header.LiveSnakesCount = _context.SnakeCount;
     }
 }

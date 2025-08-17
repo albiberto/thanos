@@ -6,8 +6,6 @@ namespace Thanos.MCST;
 
 public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext context, in MemoryLayout layout)
 {
-    private readonly WarContext _context = context;
-    private readonly MemoryLayout _layout = layout;
     private Node* _root;
 
     /// <summary>
@@ -18,12 +16,9 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
     /// </summary>
     public void Reset(in Request request)
     {
-        pool.Reset();
-
-        // La chiamata ora è più diretta: otteniamo subito ciò che ci serve.
+        // Chiede al pool il primo slot, già pronto all'uso
         if (pool.TryGetNext(out var rootSlot))
         {
-            // Non serve più creare 'rootSlot' manualmente.
             rootSlot.CloneFrom(in request);
             _root = rootSlot.GetNodePtr();
         }
@@ -70,10 +65,8 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
 
         var parentSlot = pool.GetSlotFromPointer(parentNode);
         var parentArena = parentSlot.GetArena();
-
-        // CORREZIONE 1: Memorizza 'Snakes' in una variabile locale stabile.
         var snakes = parentArena.Snakes;
-        // Ora possiamo passare 'snakes[0]' per riferimento in modo sicuro.
+
         byte legalMoveSet = parentArena.GetLegalMoves(snakes[0]);
 
         if (legalMoveSet == Moves.None)
@@ -81,9 +74,9 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
             parentNode->SetTerminal();
             return parentNode;
         }
-
-        // CORREZIONE 2: Sposta lo stackalloc fuori dal ciclo.
-        scoped Span<byte> chosenMoves = stackalloc byte[_context.SnakeCount];
+    
+        // CORREZIONE: Usa il conteggio dei serpenti preso direttamente dall'arena corrente.
+        scoped Span<byte> chosenMoves = stackalloc byte[snakes.Length];
 
         foreach (byte move in Moves.AllDirections)
         {
@@ -92,12 +85,10 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
                 if (pool.TryGetNext(out var childSlot))
                 {
                     childSlot.CloneFrom(in parentSlot);
-                
                     var childArena = childSlot.GetArena();
                 
-                    // Riutilizza lo stesso span, cambiando solo i valori necessari.
-                    chosenMoves.Fill(Moves.Up); // Mossa di default per gli avversari
-                    chosenMoves[0] = move;      // Mossa del nostro serpente
+                    chosenMoves.Fill(Moves.Up);
+                    chosenMoves[0] = move;
                     childArena.SimulateTurn(chosenMoves);
                 
                     parentNode->AddChild(childSlot.GetNodePtr(), move);
@@ -105,7 +96,6 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
             }
         }
     
-        // Ritorna il primo figlio creato, o il genitore se l'allocazione è fallita e non ci sono figli.
         return parentNode->ChildrenCount > 0 ? (*parentNode)[0] : parentNode;
     }
 
@@ -113,15 +103,13 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
     {
         var slot = pool.GetSlotFromPointer(node);
         var arena = slot.GetArena();
-
-        // Alloca lo spazio per i set di mosse legali e per le mosse scelte
-        scoped Span<byte> allLegalMoveSets = stackalloc byte[_context.SnakeCount];
-        scoped Span<byte> chosenMoves = stackalloc byte[_context.SnakeCount];
+    
+        // CORREZIONE: Usa il conteggio dei serpenti preso direttamente dall'arena.
+        scoped Span<byte> chosenMoves = stackalloc byte[arena.Snakes.Length];
 
         while (arena.Evaluate() == 0.0f)
         {
             var snakes = arena.Snakes;
-    
             for (int i = 0; i < snakes.Length; i++)
             {
                 var snake = snakes[i];
@@ -132,12 +120,6 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
                 }
 
                 byte legalMoveSet = arena.GetLegalMoves(snake);
-        
-                // --- INTEGRAZIONE QUI ---
-                // PRIMA:
-                // chosenMoves[i] = PickRandomMove(legalMoveSet);
-        
-                // DOPO:
                 var finder = new HeuristicMoveFinder(ref snake, arena, legalMoveSet);
                 chosenMoves[i] = finder.FindBestMove();
             }

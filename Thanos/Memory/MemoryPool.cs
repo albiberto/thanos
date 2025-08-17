@@ -11,8 +11,8 @@ public sealed class MemoryPool : IDisposable
     private readonly Memory<byte> _poolMemory;
     private long _currentOffset;
     
-    private readonly WarContext _context;
-    private readonly MemoryLayout _layout;
+    private WarContext _context;
+    private MemoryLayout _layout;
 
     public MemoryPool(in WarContext context, in MemoryLayout layout)
     {
@@ -20,7 +20,6 @@ public sealed class MemoryPool : IDisposable
         _layout = layout;
         _memoryOwner = MemoryPool<byte>.Shared.Rent((int)layout.PoolSize);
         _poolMemory = _memoryOwner.Memory;
-        _poolMemory.Span.Clear(); 
     }
 
     /// <summary>
@@ -56,6 +55,16 @@ public sealed class MemoryPool : IDisposable
     }
 
     public void Reset() => _currentOffset = 0;
+    
+    /// <summary>
+    /// Riconfigura il pool con i parametri di una nuova partita.
+    /// </summary>
+    public void Reset(in WarContext context, in MemoryLayout layout)
+    {
+        _context = context;
+        _layout = layout;
+        Reset(); // Chiama il reset dell'offset
+    }
     
     // Restituisce la memoria al pool condiviso quando il nostro pool viene eliminato.
     public void Dispose() => _memoryOwner.Dispose();

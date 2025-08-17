@@ -4,6 +4,12 @@ using Thanos.MCST; // Assicurati che i tuoi 'using' siano corretti
 
 namespace Thanos.War;
 
+[StructLayout(LayoutKind.Sequential)]
+public struct WarArenaHeader
+{
+    public int LiveSnakesCount;
+}
+
 /// <summary>
 /// Rappresenta la vista principale e l'API per interagire con uno stato di gioco completo.
 /// È una ref struct sicura e ad alte prestazioni che opera su memoria pre-allocata.
@@ -12,6 +18,7 @@ namespace Thanos.War;
 public ref struct WarArena
 {
     // --- CAMPI PRIVATI ---
+    private ref readonly WarArenaHeader _header;
     private WarField _field;
     private readonly Span<byte> _snakesMemory;
     private readonly int _snakeStride;
@@ -20,8 +27,9 @@ public ref struct WarArena
     /// <summary>
     /// Crea una nuova vista WarArena per uno stato di gioco esistente.
     /// </summary>
-    public WarArena(WarField field, Span<byte> snakesMemory, int liveSnakesCount, int snakeStride)
+    public WarArena(ref WarArenaHeader header, WarField field, Span<byte> snakesMemory, int liveSnakesCount, int snakeStride)
     {
+        _header = ref header;
         _field = field;
         _snakesMemory = snakesMemory;
         _snakeStride = snakeStride;
