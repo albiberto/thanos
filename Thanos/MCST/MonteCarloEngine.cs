@@ -1,176 +1,188 @@
 ﻿using Thanos.Memory;
 using Thanos.SourceGen;
+using Thanos.War;
 
 namespace Thanos.MCST;
 
-public sealed unsafe class MonteCarloEngine(MemoryPool pool)
+public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext context, in MemoryLayout layout)
 {
+    private readonly WarContext _context = context;
+    private readonly MemoryLayout _layout = layout;
     private Node* _root;
-    
+
+    /// <summary>
+    /// Resetta l'albero di ricerca per una nuova posizione di partenza.
+    /// </summary>
     /// <summary>
     /// Resetta l'albero di ricerca per una nuova posizione di partenza.
     /// </summary>
     public void Reset(in Request request)
     {
-        // Resetta il puntatore del pool, rendendo tutta la memoria di nuovo disponibile
         pool.Reset();
 
-        // Richiede il primo slot di memoria per il nodo radice
+        // La chiamata ora è più diretta: otteniamo subito ciò che ci serve.
         if (pool.TryGetNext(out var rootSlot))
         {
-            // Inizializza lo slot con lo stato di gioco iniziale
+            // Non serve più creare 'rootSlot' manualmente.
             rootSlot.CloneFrom(in request);
-            
-            // Memorizza il puntatore al nodo radice per iniziare le ricerche
-            _root = rootSlot.GetNodePtr(); // Assumendo un nuovo helper in MemorySlot
+            _root = rootSlot.GetNodePtr();
         }
         else
         {
-            // Gestisci l'errore: il pool non è abbastanza grande neanche per un nodo
             throw new OutOfMemoryException("Memory Pool is too small for the root node.");
         }
     }
 
     /// <summary>
-    /// Esegue la ricerca MCTS per un numero fisso di iterazioni e restituisce la mossa migliore.
+    /// Esegue la ricerca MCTS e restituisce la mossa migliore (come bitmask).
     /// </summary>
     public byte FindBestMove(int iterations)
     {
         for (var i = 0; i < iterations; i++)
         {
-            // LE 4 FASI DI MCTS
             var leaf = Selection(_root);
             var expandedNode = Expansion(leaf);
+            if (expandedNode == null) continue; 
+            
             var result = Simulation(expandedNode);
             Backpropagation(expandedNode, result);
         }
-
-        // Dopo le iterazioni, scegli la mossa che porta al figlio più visitato
-        // (Logica da implementare)
+        
         return GetBestMoveFromRoot();
     }
     
     // --- LE 4 FASI DI MCTS ---
 
-    /// <summary>
-    /// 1. SELEZIONE: Scende lungo l'albero scegliendo i nodi migliori fino a raggiungere una foglia.
-    /// </summary>
     private Node* Selection(Node* node)
     {
-        while (!node->IsLeaf) node = node->GetBestChild();
+        while (!node->IsLeaf)
+        {
+            var bestChild = node->GetBestChild();
+            if (bestChild == null) return node; // Se non ci sono figli validi da selezionare, ci fermiamo qui.
+            node = bestChild;
+        }
         return node;
     }
 
-    /// <summary>
-    /// 2. ESPANSIONE: Crea uno o più figli della foglia selezionata.
-    /// </summary>
-    private Node* Expansion(Node* node)
+    private Node* Expansion(Node* parentNode)
     {
-        // Ottieni la vista MemorySlot e l'API WarArena per il nodo corrente
-        var slot = pool.GetSlotFromPointer(node);
-        var arena = slot.GetArena(); // Assumendo un nuovo helper in MemorySlot
-        
-        // Calcola le mosse legali da questo stato
-        Span<byte> legalMoves = stackalloc byte[_context.SnakeCount]; // 3 mosse per serpente
-        var moveCount = arena.GetLegalMoves(legalMoves);
+        if (parentNode->IsTerminal) return parentNode;
 
-        if (moveCount == 0) return node; // Nodo terminale, non si può espandere
+        var parentSlot = pool.GetSlotFromPointer(parentNode);
+        var parentArena = parentSlot.GetArena();
 
-        // Espandi creando un nuovo nodo figlio
-        for (var i = 0; i < moveCount; i++)
+        // CORREZIONE 1: Memorizza 'Snakes' in una variabile locale stabile.
+        var snakes = parentArena.Snakes;
+        // Ora possiamo passare 'snakes[0]' per riferimento in modo sicuro.
+        byte legalMoveSet = parentArena.GetLegalMoves(snakes[0]);
+
+        if (legalMoveSet == Moves.None)
         {
-            if (pool.TryGetNext(out var childSlot))
-            {
-                // Clona lo stato del genitore nel nuovo slot
-                childSlot.CloneFrom(slot); // Assumendo un CloneFrom che accetta MemorySlot
+            parentNode->SetTerminal();
+            return parentNode;
+        }
 
-                // Ottieni l'arena del figlio e applica la mossa
-                var childArena = childSlot.GetArena();
-                childArena.SimulateTurn(legalMoves[i]);
+        // CORREZIONE 2: Sposta lo stackalloc fuori dal ciclo.
+        scoped Span<byte> chosenMoves = stackalloc byte[_context.SnakeCount];
+
+        foreach (byte move in Moves.AllDirections)
+        {
+            if ((legalMoveSet & move) != 0)
+            {
+                if (pool.TryGetNext(out var childSlot))
+                {
+                    childSlot.CloneFrom(in parentSlot);
                 
-                // Collega il figlio al genitore nell'albero (da implementare)
-                node->AddChild(childSlot.GetNodePtr(), legalMoves[i]);
+                    var childArena = childSlot.GetArena();
+                
+                    // Riutilizza lo stesso span, cambiando solo i valori necessari.
+                    chosenMoves.Fill(Moves.Up); // Mossa di default per gli avversari
+                    chosenMoves[0] = move;      // Mossa del nostro serpente
+                    childArena.SimulateTurn(chosenMoves);
+                
+                    parentNode->AddChild(childSlot.GetNodePtr(), move);
+                }
             }
         }
-        
-        // Per la simulazione, scegliamo il primo nuovo figlio creato
-        return node->Child1;
+    
+        // Ritorna il primo figlio creato, o il genitore se l'allocazione è fallita e non ci sono figli.
+        return parentNode->ChildrenCount > 0 ? (*parentNode)[0] : parentNode;
     }
 
-    /// <summary>
-    /// 3. SIMULAZIONE (Rollout): Simula una partita casuale a partire dal nuovo nodo.
-    /// </summary>
     private float Simulation(Node* node)
     {
         var slot = pool.GetSlotFromPointer(node);
         var arena = slot.GetArena();
 
-        // Alloca la memoria per le mosse una sola volta
-        scoped Span<MoveDirection> legalMoves = stackalloc MoveDirection[4];
-        scoped Span<MoveDirection> chosenMoves = stackalloc MoveDirection[context.SnakeCount];
+        scoped Span<byte> chosenMoves = stackalloc byte[_context.SnakeCount];
 
         while (arena.Evaluate() == 0.0f)
         {
             var snakes = arena.Snakes;
-
-            // CAMBIAMENTO: L'Engine ora decide la mossa per ogni serpente
-            for (int i = 0; i < snakes.Length; i++)
+            for (var i = 0; i < snakes.Length; i++)
             {
                 var snake = snakes[i];
-                if (snake.Dead) continue;
-
-                var moveCount = arena.GetLegalMovesForSnake(ref snake, legalMoves);
-                if (moveCount > 0)
+                if (snake.Dead)
                 {
-                    // Crea, usa e distruggi la struct per la ricerca euristica. Pulito e performante.
-                    var finder = new HeuristicMoveFinder(ref snake, arena, legalMoves.Slice(0, moveCount));
-                    chosenMoves[i] = finder.FindBestMove();
+                    chosenMoves[i] = Moves.None;
+                    continue;
                 }
+
+                var legalMoveSet = arena.GetLegalMoves(snake);
+                chosenMoves[i] = PickRandomMove(legalMoveSet);
             }
 
-            // Passa il set completo di mosse al "motore fisico"
             arena.SimulateTurn(chosenMoves);
         }
-
         return arena.Evaluate();
     }
 
-    /// <summary>
-    /// 4. BACKPROPAGATION: Propaga il risultato della simulazione a ritroso lungo l'albero.
-    /// </summary>
-    private void Backpropagation(Node* node, double result)
+    private void Backpropagation(Node* node, float result)
     {
         while (node != null)
         {
             node->Visits++;
             node->Wins += result;
-            node = node->Parent; // Risali al genitore
+            node = node->Parent;
         }
     }
     
     private byte GetBestMoveFromRoot()
     {
         long maxVisits = -1;
-        // Inizializza con una mossa di default nel caso non ci siano figli (improbabile ma sicuro)
-        byte bestMove = Moves.Left; 
+        var bestMove = Moves.Up;
 
-        // Mettiamo i figli della radice in un array per iterare facilmente
-        // NOTA: Assicurati che il numero di figli qui corrisponda alla tua struct Node
-        Node*[] children = [_root->Child1, _root->Child2, _root->Child3]; // Assumendo 4 figli
-
-        foreach (var child in children)
+        // CORREZIONE: Itera usando l'indexer del Node per evitare allocazioni.
+        for (var i = 0; i < _root->ChildrenCount; i++)
         {
-            if (child == null) continue;
-
-            // Controlla se questo figlio è stato visitato più di quello che avevamo trovato finora
+            var child = (*_root)[i]; // Usa l'indexer
             if (child->Visits > maxVisits)
             {
                 maxVisits = child->Visits;
-                // La mossa che cerchiamo è quella che ha generato questo figlio super-visitato
                 bestMove = child->MoveThatLedToThisNode;
             }
         }
-
         return bestMove;
+    }
+    
+    private static byte PickRandomMove(byte legalMoveSet)
+    {
+        if (legalMoveSet == Moves.None) return Moves.Up;
+        
+        var moveCount = System.Numerics.BitOperations.PopCount(legalMoveSet);
+        if (moveCount == 0) return Moves.Up; // Sicurezza extra
+        
+        var choice = Random.Shared.Next(moveCount);
+        var current = 0;
+
+        foreach (byte move in Moves.AllDirections)
+        {
+            if ((legalMoveSet & move) != 0)
+            {
+                if (current == choice) return move;
+                current++;
+            }
+        }
+        return Moves.Up; // Fallback
     }
 }

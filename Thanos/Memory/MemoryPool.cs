@@ -1,7 +1,9 @@
-﻿using System.Buffers; // Necessario per IMemoryOwner
+﻿using System.Buffers;
 using Thanos.MCST;
-using Thanos.Memory;
 using Thanos.War;
+// Necessario per IMemoryOwner
+
+namespace Thanos.Memory;
 
 public sealed class MemoryPool : IDisposable
 {
@@ -22,21 +24,25 @@ public sealed class MemoryPool : IDisposable
     }
 
     /// <summary>
-    /// Tenta di ottenere il prossimo Span di memoria libera per un nuovo slot.
+    /// Tenta di ottenere il prossimo slot di memoria e restituisce la vista MemorySlot già pronta.
     /// </summary>
-    public bool TryGetNext(out Span<byte> slotSpan)
+    public bool TryGetNext(out MemorySlot slot)
     {
         var slotSize = _layout.SlotSize;
         var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
 
         if (newOffset > _poolMemory.Length)
         {
-            slotSpan = default;
+            // Se non c'è spazio, il parametro 'out' deve essere inizializzato.
+            slot = default;
             return false;
         }
 
         var startOffset = (int)(newOffset - slotSize);
-        slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
+        var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
+    
+        // CORREZIONE: Crea l'istanza di MemorySlot e la assegna al parametro 'out'.
+        slot = new MemorySlot(slotSpan, _context, _layout);
         return true;
     }
 

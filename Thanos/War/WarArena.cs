@@ -43,14 +43,14 @@ public ref struct WarArena
         for (var i = 0; i < snakes.Length; i++)
         {
             var snake = snakes[i];
-            legalMoveSets[i] = snake.Dead ? Moves.None : GetLegalMoves(ref snake);
+            legalMoveSets[i] = snake.Dead ? Moves.None : GetLegalMoves(snake);
         }
     }
     
     /// <summary>
     /// Calcola il set di mosse legali per un singolo serpente come maschera di bit.
     /// </summary>
-    public byte GetLegalMoves(ref WarSnake snake)
+    public byte GetLegalMoves(WarSnake snake)
     {
         var legalMoveSet = Moves.None;
         if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, Moves.Up))) legalMoveSet |= Moves.Up;

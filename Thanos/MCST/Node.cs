@@ -21,7 +21,7 @@ public unsafe struct Node
     /// INDEXER: Fornisce un accesso simile a un array ai campi Child1-4.
     /// Questa è la chiave per avere codice pulito nei metodi sottostanti.
     /// </summary>
-    private Node* this[int index]
+    public Node* this[int index]
     {
         get
         {
