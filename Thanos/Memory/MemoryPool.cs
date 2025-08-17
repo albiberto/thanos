@@ -1,8 +1,7 @@
-﻿using System.Buffers;
+﻿using System.Buffers; // Necessario per IMemoryOwner
 using Thanos.MCST;
+using Thanos.Memory;
 using Thanos.War;
-
-namespace Thanos.Memory;
 
 public sealed class MemoryPool : IDisposable
 {
@@ -10,34 +9,39 @@ public sealed class MemoryPool : IDisposable
     private readonly Memory<byte> _poolMemory;
     private long _currentOffset;
     
-    private readonly MemoryLayout _layout;
     private readonly WarContext _context;
+    private readonly MemoryLayout _layout;
 
     public MemoryPool(in WarContext context, in MemoryLayout layout)
     {
         _context = context;
         _layout = layout;
-        // Il pool ora gestisce memoria gestita
         _memoryOwner = MemoryPool<byte>.Shared.Rent((int)layout.Sizes.Pool);
         _poolMemory = _memoryOwner.Memory;
-        _poolMemory.Span.Clear(); // Azzera la memoria all'inizio
+        _poolMemory.Span.Clear(); 
     }
 
-    public bool TryGetNext(out MemorySlot slot)
+    /// <summary>
+    /// Tenta di ottenere il prossimo Span di memoria libera per un nuovo slot.
+    /// </summary>
+    public bool TryGetNext(out Span<byte> slotSpan)
     {
         var slotSize = _layout.Sizes.Slot;
         var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
 
+        if (newOffset > _poolMemory.Length)
+        {
+            slotSpan = default;
+            return false;
+        }
+
         var startOffset = (int)(newOffset - slotSize);
-        // Il pool ora distribuisce Span<byte> sicuri
-        var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
-        slot = new MemorySlot(slotSpan, _context, _layout);
+        slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
         return true;
     }
-    
+
     /// <summary>
-    /// NUOVO METODO: Dato un puntatore a un nodo, restituisce la "vista" MemorySlot
-    /// per interagire con l'intero blocco di memoria di quel nodo.
+    /// Dato un puntatore a un nodo, restituisce la "vista" MemorySlot corrispondente.
     /// </summary>
     public unsafe MemorySlot GetSlotFromPointer(Node* nodePtr)
     {
@@ -47,5 +51,6 @@ public sealed class MemoryPool : IDisposable
 
     public void Reset() => _currentOffset = 0;
     
+    // Restituisce la memoria al pool condiviso quando il nostro pool viene eliminato.
     public void Dispose() => _memoryOwner.Dispose();
 }

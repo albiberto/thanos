@@ -20,7 +20,7 @@ public ref struct WarArena
     /// <summary>
     /// Crea una nuova vista WarArena per uno stato di gioco esistente.
     /// </summary>
-    public WarArena(ref WarField field, Span<byte> snakesMemory, int liveSnakesCount, int snakeStride)
+    public WarArena(WarField field, Span<byte> snakesMemory, int liveSnakesCount, int snakeStride)
     {
         _field = field;
         _snakesMemory = snakesMemory;
