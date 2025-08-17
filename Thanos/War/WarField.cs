@@ -91,15 +91,13 @@ public readonly ref struct WarField
     public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort GetNeighbor(ushort position1D, MoveDirection direction)
-    {
-        return direction switch
+    public ushort GetNeighbor(ushort position1D, byte move) =>
+        move switch
         {
-            MoveDirection.Up => position1D < _width ? ushort.MaxValue : (ushort)(position1D - _width),
-            MoveDirection.Down => position1D >= _area - _width ? ushort.MaxValue : (ushort)(position1D + _width),
-            MoveDirection.Left => position1D % _width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
-            MoveDirection.Right => (position1D + 1) % _width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
+            Moves.Up => position1D < _width ? ushort.MaxValue : (ushort)(position1D - _width),
+            Moves.Down => position1D >= _area - _width ? ushort.MaxValue : (ushort)(position1D + _width),
+            Moves.Left => position1D % _width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
+            Moves.Right => (position1D + 1) % _width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
             _ => ushort.MaxValue
         };
-    }
 }
