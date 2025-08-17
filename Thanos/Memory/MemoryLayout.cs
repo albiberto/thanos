@@ -1,23 +1,16 @@
-﻿using System;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
-using Thanos.Extensions; // Per il metodo AlignUp()
 using Thanos.MCST;
 using Thanos.War;
 
 namespace Thanos.Memory;
 
-/// <summary>
-/// Calcola e memorizza le dimensioni e gli offset per un singolo blocco di memoria (Slot)
-/// basandosi sul contesto di gioco. Questa struct è immutabile e contiene tutte le informazioni
-/// necessarie per partizionare correttamente la memoria.
-/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct MemoryLayout
 {
-    // --- Dimensioni dei Componenti ---
+    // --- Dimensioni ---
     public readonly int NodeSize;
     public readonly int BitboardsSize;
     public readonly int SnakesSize;
@@ -25,44 +18,50 @@ public readonly struct MemoryLayout
     public readonly int BitboardStrideInBytes;
     public readonly int BitboardStrideInUlongs;
 
-    // --- Offset dei Componenti ---
+    // --- Offset ---
     public readonly int NodeOffset;
     public readonly int BitboardsOffset;
     public readonly int SnakesOffset;
 
-    // --- Dimensioni Totali ---
+    // --- Totali ---
     public readonly int SlotSize;
-    public readonly int PoolSize;
+    public readonly long PoolSize; // Usiamo long per la massima sicurezza
 
-    public MemoryLayout(in WarContext context, uint maxNodes)
+    public MemoryLayout(in WarContext context, int maxNodes) // Accetta int
     {
-        // --- 1. Calcolo Dimensioni dei Blocchi ---
-
+        // --- 1. Calcolo Dimensioni ---
         NodeSize = Unsafe.SizeOf<Node>().AlignUp();
 
-        // Calcolo per i Bitboards
+        // I calcoli ora usano 'int'
         var bitboardSegments = (context.Area + 63) >> 6;
-        BitboardStrideInBytes = (int)(bitboardSegments * sizeof(ulong)).AlignUp();
+        BitboardStrideInBytes = (bitboardSegments * sizeof(ulong)).AlignUp();
         BitboardStrideInUlongs = BitboardStrideInBytes / sizeof(ulong);
         BitboardsSize = BitboardStrideInBytes * WarField.TotalBitboards;
 
-        // Calcolo per i Serpenti
-        var snakeBodyCapacity = Math.Min(BitOperations.RoundUpToPowerOf2(context.Area), Constants.MaxSnakeBodyCapacity);
+        // La capacità del corpo è ora 'int', ma RoundUpToPowerOf2 richiede 'uint'.
+        // Questa è una delle poche conversioni esplicite e necessarie.
+        var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)context.Area), Constants.MaxSnakeBodyCapacity);
+        
         var snakeHeaderSize = Unsafe.SizeOf<WarSnakeHeader>().AlignUp();
-        SnakeStride = (int)(snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
+        SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
         SnakesSize = SnakeStride * context.SnakeCount;
 
-        // --- 2. Calcolo Dimensioni Totali ---
-        
-        // Lo Slot contiene solo i dati reali e persistenti
+        // --- 2. Calcolo Totali ---
         SlotSize = NodeSize + BitboardsSize + SnakesSize;
-        PoolSize = (int)(SlotSize * maxNodes);
+        // Moltiplichiamo come 'long' per evitare overflow con 'maxNodes' molto grandi
+        PoolSize = (long)SlotSize * maxNodes;
 
         // --- 3. Calcolo Offset ---
-        
-        // Lo schema di memoria è [NODE] [BITBOARDS] [SNAKES]
         NodeOffset = 0;
         BitboardsOffset = NodeOffset + NodeSize;
         SnakesOffset = BitboardsOffset + BitboardsSize;
     }
+}
+
+public static class MemoryExtensions
+{
+    private const long Alignment = Constants.SizeOfCacheLine;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int AlignUp(this int value) => (int)((value + Alignment - 1) & ~(Alignment - 1));
 }

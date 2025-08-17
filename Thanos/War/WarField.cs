@@ -10,15 +10,15 @@ public readonly ref struct WarField
 {
     public const int TotalBitboards = 3;
 
-    private uint _width { get; }
-    private uint _height { get; }
-    private uint _area { get; }
+    private int _width { get; }
+    private int _height { get; }
+    private int _area { get; }
 
     public readonly Bitboard Food;
     public readonly Bitboard Hazards;
     public readonly Bitboard Snakes;
 
-    public WarField(uint width, uint height, uint area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
+    public WarField(int width, int height, int area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
     {
         _width = width;
         _height = height;
@@ -29,7 +29,7 @@ public readonly ref struct WarField
         Snakes = new Bitboard(snakesBitboard);
     }
     
-    public WarField(uint width, uint height, uint area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
+    public WarField(int width, int height, int area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
     {
         _width = width;
         _height = height;
