@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Reflection.Metadata;
+using Thanos.Enums;
 using Thanos.Memory;
 using Thanos.SourceGen;
 
@@ -7,15 +9,15 @@ namespace Thanos.MCST;
 public sealed unsafe class MonteCarloEngine(MemoryPool pool)
 {
     private Node* _root;
+    private int _timeoutMs = 475; // Timeout di default per la ricerca
 
-    /// <summary>
-    /// Resetta l'albero di ricerca per una nuova posizione di partenza.
-    /// </summary>
     /// <summary>
     /// Resetta l'albero di ricerca per una nuova posizione di partenza.
     /// </summary>
     public void Reset(in Request request)
     {
+        _timeoutMs = Math.Max(request.Game.Timeout * Constants.TimeoutRatio / 100, Constants.MinTimeout);
+        
         // Chiede al pool il primo slot, già pronto all'uso
         if (pool.TryGetNext(out var rootSlot))
         {
@@ -31,12 +33,12 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
     /// <summary>
     /// Esegue la ricerca MCTS e restituisce la mossa migliore (come bitmask).
     /// </summary>
-    public byte FindBestMove(int timeLimitMs)
+    public byte FindBestMove()
     {
         var stopwatch = Stopwatch.StartNew();
     
         // Esegui il ciclo MCTS finché non siamo vicini al limite di tempo.
-        while (stopwatch.ElapsedMilliseconds < timeLimitMs)
+        while (stopwatch.ElapsedMilliseconds < _timeoutMs)
         {
             // Le 4 fasi rimangono identiche
             var leaf = Selection(_root);

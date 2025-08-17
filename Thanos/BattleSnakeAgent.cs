@@ -25,14 +25,11 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void Start(in Request request)
     {
-        var context = new WarContext(in request.Board);
+        var context = new WarContext(in request);
         var layout = new MemoryLayout(context, Constants.MaxNodes);
         
         // Riconfigura solo il Pool. L'Engine non ne ha bisogno.
         _pool.Reset(context, layout);
-        
-        // CORREZIONE: Questa riga è stata eliminata.
-        // _engine.Reset(context, layout); 
         
         _engine.Reset(in request);
     }
@@ -41,8 +38,7 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         _engine.Reset(in request);
         
-        // Questo valore andrà calibrato.
-        var bestMoveByte = _engine.FindBestMove(Constants.TimeLimitMs);
+        var bestMoveByte = _engine.FindBestMove();
         
         return ToApiMove(bestMoveByte);
     }
