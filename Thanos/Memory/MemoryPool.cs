@@ -16,7 +16,7 @@ public sealed class MemoryPool : IDisposable
     {
         _context = context;
         _layout = layout;
-        _memoryOwner = MemoryPool<byte>.Shared.Rent((int)layout.Sizes.Pool);
+        _memoryOwner = MemoryPool<byte>.Shared.Rent((int)layout.PoolSize);
         _poolMemory = _memoryOwner.Memory;
         _poolMemory.Span.Clear(); 
     }
@@ -26,7 +26,7 @@ public sealed class MemoryPool : IDisposable
     /// </summary>
     public bool TryGetNext(out Span<byte> slotSpan)
     {
-        var slotSize = _layout.Sizes.Slot;
+        var slotSize = _layout.SlotSize;
         var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
 
         if (newOffset > _poolMemory.Length)
@@ -45,7 +45,7 @@ public sealed class MemoryPool : IDisposable
     /// </summary>
     public unsafe MemorySlot GetSlotFromPointer(Node* nodePtr)
     {
-        var slotSpan = new Span<byte>(nodePtr, _layout.Sizes.Slot);
+        var slotSpan = new Span<byte>(nodePtr, _layout.SlotSize);
         return new MemorySlot(slotSpan, _context, _layout);
     }
 

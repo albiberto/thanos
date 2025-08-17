@@ -37,20 +37,20 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
     
     private void InitializeNode()
     {
-        var nodeSpan = _slot.Slice(_layout.Offsets.Node, _layout.Sizes.Node);
+        var nodeSpan = _slot.Slice(_layout.NodeOffset, _layout.NodeSize);
         ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(nodeSpan));
         node = new Node(); // Inizializza a zero/default
     }
 
     private WarField InitializeWarField(in Board board)
     {
-        var bitboardsSpan = _slot.Slice(_layout.Offsets.Bitboards, _layout.Sizes.Bitboards);
+        var bitboardsSpan = _slot.Slice(_layout.BitboardsOffset, _layout.BitboardsSize);
         bitboardsSpan.Clear();
         
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
-        var stride = _layout.Sizes.BitboardStrideInUlongs;
+        var stride = _layout.BitboardStrideInUlongs;
         
-        var food = bitboardsUlongSpan.Slice(0, stride);
+        var food = bitboardsUlongSpan[..stride];
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
     
@@ -59,10 +59,10 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
     
     private void InitializeWarSnakes(ref WarField field, in Board board)
     {
-        var snakesSpan = _slot.Slice(_layout.Offsets.Snakes, _layout.Sizes.Snakes);
+        var snakesSpan = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
         for (var i = 0; i < _context.SnakeCount; i++)
         {
-            var singleSnakeBlock = snakesSpan.Slice(i * _layout.Sizes.SnakeStride, _layout.Sizes.SnakeStride);
+            var singleSnakeBlock = snakesSpan.Slice(i * _layout.SnakeStride, _layout.SnakeStride);
             var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
             var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<WarSnakeHeader>()..]);
             ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
@@ -76,9 +76,9 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
     /// </summary>
     private WarField GetField()
     {
-        var bitboardsSpan = _slot.Slice(_layout.Offsets.Bitboards, _layout.Sizes.Bitboards);
+        var bitboardsSpan = _slot.Slice(_layout.BitboardsOffset, _layout.BitboardsSize);
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
-        var stride = _layout.Sizes.BitboardStrideInUlongs;
+        var stride = _layout.BitboardStrideInUlongs;
         
         var food = bitboardsUlongSpan[..stride];
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
@@ -94,8 +94,8 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
     public WarArena GetArena()
     {
         var field = GetField();
-        var snakesMemory = _slot.Slice(_layout.Offsets.Snakes, _layout.Sizes.Snakes);
+        var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
 
-        return new WarArena(field, snakesMemory, _context.SnakeCount, _layout.Sizes.SnakeStride);
+        return new WarArena(field, snakesMemory, _context.SnakeCount, _layout.SnakeStride);
     }
 }
