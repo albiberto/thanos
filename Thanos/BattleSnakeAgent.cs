@@ -11,6 +11,8 @@ public sealed class BattleSnakeAgent : IDisposable
 {
     private readonly MemoryPool _pool;
     private readonly MonteCarloEngine _engine;
+    
+    private WarContext _context;
 
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
@@ -25,11 +27,11 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void Start(in Request request)
     {
-        var context = new WarContext(in request);
-        var layout = new MemoryLayout(context, Constants.MaxNodes);
+        _context = new WarContext(in request);
+        var layout = new MemoryLayout(_context, Constants.MaxNodes);
         
         // Riconfigura solo il Pool. L'Engine non ne ha bisogno.
-        _pool.Reset(context, layout);
+        _pool.Reset(_context, layout);
         
         _engine.Reset(in request);
     }
@@ -38,7 +40,7 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         _engine.Reset(in request);
         
-        var bestMoveByte = _engine.FindBestMove();
+        var bestMoveByte = _engine.FindBestMove(_context.Timeout);
         
         return ToApiMove(bestMoveByte);
     }
