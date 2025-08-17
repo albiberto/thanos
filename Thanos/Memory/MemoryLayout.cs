@@ -54,7 +54,7 @@ public readonly struct MemoryLayout
             Bitboards = (int)sizeOfBitboards;
             // Lo slot ora contiene solo i dati reali
             Slot = Node + Bitboards + Snakes;
-            Pool = (nuint)((long)Slot * maxNodes);
+            Pool = (nuint)(Slot * maxNodes);
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using Thanos.MCST;
 using Thanos.War;
 
 namespace Thanos.Memory;
@@ -27,17 +28,21 @@ public sealed class MemoryPool : IDisposable
         var slotSize = _layout.Sizes.Slot;
         var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
 
-        if (newOffset > _poolMemory.Length)
-        {
-            slot = default;
-            return false;
-        }
-
         var startOffset = (int)(newOffset - slotSize);
         // Il pool ora distribuisce Span<byte> sicuri
         var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
         slot = new MemorySlot(slotSpan, _context, _layout);
         return true;
+    }
+    
+    /// <summary>
+    /// NUOVO METODO: Dato un puntatore a un nodo, restituisce la "vista" MemorySlot
+    /// per interagire con l'intero blocco di memoria di quel nodo.
+    /// </summary>
+    public unsafe MemorySlot GetSlotFromPointer(Node* nodePtr)
+    {
+        var slotSpan = new Span<byte>(nodePtr, _layout.Sizes.Slot);
+        return new MemorySlot(slotSpan, _context, _layout);
     }
 
     public void Reset() => _currentOffset = 0;

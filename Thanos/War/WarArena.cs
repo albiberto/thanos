@@ -40,21 +40,17 @@ public ref struct WarArena
         for (var i = 0; i < 4; i++)
         {
             var direction = (MoveDirection)i;
-            // CAMBIAMENTO CHIAVE: Accesso diretto a _field, non più un puntatore '_arena._field->'
             var newHeadPos = _field.GetNeighbor(me.Head, direction);
 
-            if (!_field.IsOccupied(newHeadPos))
-            {
-                legalMoves[moveCount++] = direction;
-            }
+            if (!_field.IsOccupied(newHeadPos)) legalMoves[moveCount++] = direction;
         }
         return moveCount;
     }
     
     public void SimulateTurn(MoveDirection myMove)
     {
-        var snakes = this.Snakes;
-        var snakeCount = (int)snakes.Length;
+        var snakes = Snakes;
+        var snakeCount = snakes.Length;
 
         Span<MoveDirection> moves = stackalloc MoveDirection[snakeCount];
         Span<ushort> newHeadPositions = stackalloc ushort[snakeCount];

@@ -18,6 +18,17 @@ public readonly ref struct WarField
     public readonly Bitboard Hazards;
     public readonly Bitboard Snakes;
 
+    public WarField(in WarContext context, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
+    {
+        _width = context.Width;
+        _height = context.Height;
+        _area = context.Area;
+        
+        Food = new Bitboard(foodBitboard);
+        Hazards = new Bitboard(hazardsBitboard);
+        Snakes = new Bitboard(snakesBitboard);
+    }
+    
     public WarField(in WarContext context, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
     {
         _width = context.Width;
