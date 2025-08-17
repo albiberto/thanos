@@ -102,21 +102,21 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
     /// </summary>
     private float Simulation(Node* node)
     {
-        // Ottieni la vista MemorySlot e l'API WarArena per il nodo corrente
         var slot = pool.GetSlotFromPointer(node);
-        var arena = slot.GetArena(); // Assumendo un nuovo helper in MemorySlot
+        var arena = slot.GetArena();
 
-        // Continua a fare mosse casuali finché la partita non finisce
+        // Alloca la memoria una sola volta all'inizio del metodo
+        scoped Span<MoveDirection> legalMoves = stackalloc MoveDirection[3];
+
         while (arena.Evaluate() == 0.0f)
         {
-            Span<MoveDirection> legalMoves = stackalloc MoveDirection[3];
+            // Riutilizza lo stesso span ad ogni iterazione
             var moveCount = arena.GetLegalMoves(legalMoves);
-            if (moveCount == 0) break; // Partita finita
+            if (moveCount == 0) break;
 
             var randomMove = legalMoves[Random.Shared.Next(moveCount)];
             arena.SimulateTurn(randomMove);
         }
-
         return arena.Evaluate();
     }
 
@@ -131,5 +131,31 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
             node->Wins += result;
             node = node->Parent; // Risali al genitore
         }
+    }
+    
+    private MoveDirection GetBestMoveFromRoot()
+    {
+        long maxVisits = -1;
+        // Inizializza con una mossa di default nel caso non ci siano figli (improbabile ma sicuro)
+        MoveDirection bestMove = MoveDirection.Up; 
+
+        // Mettiamo i figli della radice in un array per iterare facilmente
+        // NOTA: Assicurati che il numero di figli qui corrisponda alla tua struct Node
+        Node*[] children = [_root->Child1, _root->Child2, _root->Child3]; // Assumendo 4 figli
+
+        foreach (var child in children)
+        {
+            if (child == null) continue;
+
+            // Controlla se questo figlio è stato visitato più di quello che avevamo trovato finora
+            if (child->Visits > maxVisits)
+            {
+                maxVisits = child->Visits;
+                // La mossa che cerchiamo è quella che ha generato questo figlio super-visitato
+                bestMove = child->MoveThatLedToThisNode;
+            }
+        }
+
+        return bestMove;
     }
 }

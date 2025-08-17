@@ -2,9 +2,9 @@
 
 public enum MoveDirection : byte
 {
+    None, // Per il nodo radice o situazioni speciali
     Up,
     Down,
     Left,
-    Right,
-    None // Per il nodo radice o situazioni speciali
+    Right
 }
