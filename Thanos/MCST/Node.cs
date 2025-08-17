@@ -16,9 +16,7 @@ public unsafe struct Node
     
     public byte MoveThatLedToThisNode;
     public bool IsTerminal;
-
-    public readonly bool IsLeaf => ChildrenCount == 0;
-
+    
     /// <summary>
     /// INDEXER: Fornisce un accesso simile a un array ai campi Child1-4.
     /// Questa è la chiave per avere codice pulito nei metodi sottostanti.
@@ -48,6 +46,13 @@ public unsafe struct Node
             }
         }
     }
+
+    public readonly bool IsLeaf => ChildrenCount == 0;
+    
+    /// <summary>
+    /// Imposta questo nodo come "terminale", indicando che la partita da questo stato è finita.
+    /// </summary>
+    public void SetTerminal() => IsTerminal = true;
 
     public Node* GetBestChild()
     {
