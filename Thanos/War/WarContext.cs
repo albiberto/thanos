@@ -4,6 +4,9 @@ using Thanos.SourceGen;
 
 namespace Thanos.War;
 
+/// <summary>
+/// Anti-Corruption Layer
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct WarContext
 {
