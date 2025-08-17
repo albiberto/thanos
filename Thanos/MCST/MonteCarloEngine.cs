@@ -1,4 +1,5 @@
-﻿using Thanos.Memory;
+﻿using System.Diagnostics;
+using Thanos.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos.MCST;
@@ -30,18 +31,26 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
     /// <summary>
     /// Esegue la ricerca MCTS e restituisce la mossa migliore (come bitmask).
     /// </summary>
-    public byte FindBestMove(int iterations)
+    public byte FindBestMove(int timeLimitMs)
     {
-        for (var i = 0; i < iterations; i++)
+        var stopwatch = Stopwatch.StartNew();
+    
+        // Esegui il ciclo MCTS finché non siamo vicini al limite di tempo.
+        while (stopwatch.ElapsedMilliseconds < timeLimitMs)
         {
+            // Le 4 fasi rimangono identiche
             var leaf = Selection(_root);
             var expandedNode = Expansion(leaf);
             if (expandedNode == null) continue; 
-            
+        
             var result = Simulation(expandedNode);
             Backpropagation(expandedNode, result);
         }
-        
+    
+        stopwatch.Stop();
+        // Utile per il debug: stampa quante iterazioni sei riuscito a fare nel tempo concesso
+        // Console.WriteLine($"Iterazioni eseguite: {_root->Visits}");
+
         return GetBestMoveFromRoot();
     }
     
@@ -66,7 +75,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         var parentArena = parentSlot.GetArena();
         var snakes = parentArena.Snakes;
 
-        byte legalMoveSet = parentArena.GetLegalMoves(snakes[0]);
+        var legalMoveSet = parentArena.GetLegalMoves(snakes[0]);
 
         if (legalMoveSet == Moves.None)
         {
@@ -77,7 +86,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         // CORREZIONE: Usa il conteggio dei serpenti preso direttamente dall'arena corrente.
         scoped Span<byte> chosenMoves = stackalloc byte[snakes.Length];
 
-        foreach (byte move in Moves.AllDirections)
+        foreach (var move in Moves.AllDirections)
         {
             if ((legalMoveSet & move) != 0)
             {
@@ -109,7 +118,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         while (arena.Evaluate() == 0.0f)
         {
             var snakes = arena.Snakes;
-            for (int i = 0; i < snakes.Length; i++)
+            for (var i = 0; i < snakes.Length; i++)
             {
                 var snake = snakes[i];
                 if (snake.Dead)
@@ -118,7 +127,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
                     continue;
                 }
 
-                byte legalMoveSet = arena.GetLegalMoves(snake);
+                var legalMoveSet = arena.GetLegalMoves(snake);
                 var finder = new HeuristicMoveFinder(ref snake, arena, legalMoveSet);
                 chosenMoves[i] = finder.FindBestMove();
             }

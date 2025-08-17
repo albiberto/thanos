@@ -42,7 +42,7 @@ public sealed class BattleSnakeAgent : IDisposable
         _engine.Reset(in request);
         
         // Questo valore andrà calibrato.
-        byte bestMoveByte = _engine.FindBestMove(iterations: 50000);
+        var bestMoveByte = _engine.FindBestMove(Constants.TimeLimitMs);
         
         return ToApiMove(bestMoveByte);
     }
