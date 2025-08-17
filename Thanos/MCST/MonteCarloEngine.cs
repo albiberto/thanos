@@ -1,10 +1,9 @@
 ﻿using Thanos.Memory;
 using Thanos.SourceGen;
-using Thanos.War;
 
 namespace Thanos.MCST;
 
-public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext context, in MemoryLayout layout)
+public sealed unsafe class MonteCarloEngine(MemoryPool pool)
 {
     private Node* _root;
 
