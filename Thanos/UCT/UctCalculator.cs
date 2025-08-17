@@ -3,7 +3,7 @@ using Thanos.MCST;
 
 // Assicurati che il namespace per Node sia corretto
 
-namespace Thanos.Math; // Creiamo un nuovo namespace per le utilità matematiche
+namespace Thanos.UCT; // Creiamo un nuovo namespace per le utilità matematiche
 
 public static unsafe class UctCalculator
 {

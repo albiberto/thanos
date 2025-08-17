@@ -3,59 +3,67 @@ using System.Runtime.InteropServices;
 
 namespace Thanos.MCST;
 
-/// <summary>
-/// Rappresenta un nodo nell'albero di ricerca Monte Carlo.
-/// Contiene le statistiche di vittoria/visite e i puntatori ai nodi figli e genitore.
-/// </summary>
+[StructLayout(LayoutKind.Sequential)]
 public unsafe struct Node
 {
-    // Puntatori per la navigazione dell'albero
-    public Node* Parent, Child1, Child2, Child3;
-
+    public Node* Parent;
+    
+    public Node* Child1, Child2, Child3, Child4;
     public uint ChildrenCount;
     
-    // Statistiche per la formula UCT (Upper Confidence bound for Trees)
     public long Visits;
     public double Wins;
+    
+    public byte MoveThatLedToThisNode;
+    public bool IsTerminal;
 
-    public byte MoveThatLedToThisNode; // La mossa che ha generato questo stato
-    public bool IsTerminal; // True se lo stato del gioco è finale (vittoria/sconfitta)
-    
     public readonly bool IsLeaf => ChildrenCount == 0;
-    
+
+    /// <summary>
+    /// INDEXER: Fornisce un accesso simile a un array ai campi Child1-4.
+    /// Questa è la chiave per avere codice pulito nei metodi sottostanti.
+    /// </summary>
+    private Node* this[int index]
+    {
+        get
+        {
+            return index switch
+            {
+                0 => Child1,
+                1 => Child2,
+                2 => Child3,
+                3 => Child4,
+                _ => throw new IndexOutOfRangeException()
+            };
+        }
+        set
+        {
+            switch (index)
+            {
+                case 0: Child1 = value; break;
+                case 1: Child2 = value; break;
+                case 2: Child3 = value; break;
+                case 3: Child4 = value; break;
+                default: throw new IndexOutOfRangeException();
+            }
+        }
+    }
+
     public Node* GetBestChild()
     {
         Node* bestChild = null;
         var bestScore = double.NegativeInfinity;
-    
-        // Costante di esplorazione. Un valore più alto favorisce l'esplorazione.
-        const double explorationConstant = 1.414; // Math.Sqrt(2)
+        const double explorationConstant = 1.414;
 
-        // Itera sui figli del nodo corrente (in questo caso, supponiamo 3 figli)
-        // In un'implementazione reale, useresti un array o una lista di puntatori ai figli.
-        Node*[] children = [Child1, Child2, Child3];
-    
-        foreach (var child in children)
+        // Grazie all'indexer, il ciclo rimane identico, pulito e senza allocazioni!
+        for (var i = 0; i < ChildrenCount; i++)
         {
-            if (child == null) continue; // Salta se il figlio non esiste
+            var child = this[i]; // Usa l'indexer
 
-            // --- Caso Speciale: Esplorazione garantita ---
-            // Se un figlio non è mai stato visitato, ha la priorità assoluta.
-            // Il suo punteggio di esplorazione è infinito. Lo scegliamo subito.
-            if (child->Visits == 0)
-            {
-                return child;
-            }
-
-            // --- Calcolo della Formula UCT ---
-
-            // 1. Parte di Sfruttamento (Win Rate)
+            if (child->Visits == 0) return child;
+            
             var exploitationScore = child->Wins / child->Visits;
-
-            // 2. Parte di Esplorazione
-            var explorationScore = explorationConstant * System.Math.Sqrt(System.Math.Log(Visits) / child->Visits);
-
-            // 3. Punteggio Totale
+            var explorationScore = explorationConstant * Math.Sqrt(Math.Log(Visits) / child->Visits);
             var uctScore = exploitationScore + explorationScore;
 
             if (uctScore > bestScore)
@@ -64,39 +72,19 @@ public unsafe struct Node
                 bestChild = child;
             }
         }
-
         return bestChild;
     }
     
-    public unsafe void AddChild(Node* child, MoveDirection move)
+    public void AddChild(Node* child, byte move)
     {
-        // Trova il prossimo slot libero in base al numero di figli attuali.
-        switch (ChildrenCount)
-        {
-            case 0:
-                Child1 = child;
-                break;
-            case 1:
-                Child2 = child;
-                break;
-            case 2:
-                Child3 = child;
-                break;
-            default:
-                // Se arriviamo qui, stiamo cercando di aggiungere più figli di quanti ne possiamo contenere.
-                // Questo indica un errore nella logica dell'algoritmo.
-                // In un'applicazione reale, qui si potrebbe lanciare un'eccezione.
-                return;
-        }
+        if (ChildrenCount >= 4) return;
 
-        // Imposta il puntatore del figlio verso questo nodo (il genitore).
-        // 'Unsafe.AsPointer(ref this)' ottiene l'indirizzo di memoria della struct corrente.
+        // Grazie all'indexer, la logica per aggiungere un figlio rimane semplice.
+        this[(int)ChildrenCount] = child; // Usa l'indexer
+
         child->Parent = (Node*)Unsafe.AsPointer(ref this);
-
-        // Memorizza la mossa che ha portato alla creazione di questo figlio.
         child->MoveThatLedToThisNode = move;
     
-        // Incrementa il contatore dei figli.
         ChildrenCount++;
     }
 }
