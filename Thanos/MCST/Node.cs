@@ -18,7 +18,7 @@ public unsafe struct Node
     public long Visits;
     public double Wins;
 
-    public MoveDirection MoveThatLedToThisNode; // La mossa che ha generato questo stato
+    public byte MoveThatLedToThisNode; // La mossa che ha generato questo stato
     public bool IsTerminal; // True se lo stato del gioco è finale (vittoria/sconfitta)
     
     public readonly bool IsLeaf => ChildrenCount == 0;

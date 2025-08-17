@@ -32,21 +32,73 @@ public ref struct WarArena
 
     public WarSnakeArray Snakes => new(_snakesMemory, _context.SnakeCount, _snakeStride);
 
-    public int GetLegalMoves(Span<MoveDirection> legalMoves)
+    /// <summary>
+    /// Calcola le mosse legali per tutti i serpenti e scrive i risultati
+    /// (un byte per serpente) nello span fornito.
+    /// </summary>
+    /// <summary>
+    /// Calcola le mosse legali per tutti i serpenti e scrive i risultati
+    /// (un byte per serpente) nello span fornito.
+    /// </summary>
+    public void GetLegalMovesForAll(Span<byte> legalMoveSets)
     {
-        var moveCount = 0;
-        var me = Snakes[0];
-        if (me.Dead) return 0;
-
-        for (var i = 0; i < 4; i++)
+        // Assicura che lo span fornito sia della dimensione corretta
+        if (legalMoveSets.Length < _context.SnakeCount)
         {
-            var direction = (MoveDirection)i;
-            var newHeadPos = _field.GetNeighbor(me.Head, direction);
-
-            if (!_field.IsOccupied(newHeadPos)) legalMoves[moveCount++] = direction;
+            throw new ArgumentException("Provided span is too small.", nameof(legalMoveSets));
         }
 
-        return moveCount;
+        var snakes = this.Snakes;
+        for (int i = 0; i < snakes.Length; i++)
+        {
+             var snake =  snakes[i];
+            if (snake.Dead)
+            {
+                legalMoveSets[i] = Moves.None;
+            }
+            else
+            {
+                // Riutilizza il nostro metodo per il singolo serpente
+                legalMoveSets[i] = GetLegalMoves(ref snake);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Calcola il set di mosse legali per un dato serpente e lo restituisce come maschera di bit (byte).
+    /// Una mossa è legale se non porta a una casella già occupata (muri, ostacoli, o altri serpenti).
+    /// La logica per non tornare indietro è gestita implicitamente da IsOccupied.
+    /// </summary>
+    public byte GetLegalMoves(ref WarSnake snake)
+    {
+        // Inizia con un set di mosse vuoto (tutti i bit a 0).
+        byte legalMoveSet = Moves.None;
+    
+        // Controlla le 4 direzioni una per una.
+        // GetNeighbor usa ancora l'enum MoveDirection, il che è corretto e leggibile.
+    
+        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, MoveDirection.Up)))
+        {
+            // Se la casella è libera, "accendi" il bit corrispondente alla mossa 'Up'.
+            legalMoveSet |= Moves.Up;
+        }
+    
+        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, MoveDirection.Down)))
+        {
+            legalMoveSet |= Moves.Down;
+        }
+    
+        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, MoveDirection.Left)))
+        {
+            legalMoveSet |= Moves.Left;
+        }
+    
+        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, MoveDirection.Right)))
+        {
+            legalMoveSet |= Moves.Right;
+        }
+    
+        return legalMoveSet;
     }
 
     public void SimulateTurn(ReadOnlySpan<MoveDirection> allMoves)

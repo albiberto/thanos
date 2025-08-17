@@ -34,7 +34,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
     /// <summary>
     /// Esegue la ricerca MCTS per un numero fisso di iterazioni e restituisce la mossa migliore.
     /// </summary>
-    public MoveDirection FindBestMove(int iterations)
+    public byte FindBestMove(int iterations)
     {
         for (var i = 0; i < iterations; i++)
         {
@@ -71,7 +71,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         var arena = slot.GetArena(); // Assumendo un nuovo helper in MemorySlot
         
         // Calcola le mosse legali da questo stato
-        Span<MoveDirection> legalMoves = stackalloc MoveDirection[3];
+        Span<byte> legalMoves = stackalloc byte[_context.SnakeCount]; // 3 mosse per serpente
         var moveCount = arena.GetLegalMoves(legalMoves);
 
         if (moveCount == 0) return node; // Nodo terminale, non si può espandere
@@ -148,11 +148,11 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         }
     }
     
-    private MoveDirection GetBestMoveFromRoot()
+    private byte GetBestMoveFromRoot()
     {
         long maxVisits = -1;
         // Inizializza con una mossa di default nel caso non ci siano figli (improbabile ma sicuro)
-        MoveDirection bestMove = MoveDirection.Up; 
+        byte bestMove = Moves.Left; 
 
         // Mettiamo i figli della radice in un array per iterare facilmente
         // NOTA: Assicurati che il numero di figli qui corrisponda alla tua struct Node
