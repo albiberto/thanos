@@ -114,12 +114,15 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
         var slot = pool.GetSlotFromPointer(node);
         var arena = slot.GetArena();
 
+        // Alloca lo spazio per i set di mosse legali e per le mosse scelte
+        scoped Span<byte> allLegalMoveSets = stackalloc byte[_context.SnakeCount];
         scoped Span<byte> chosenMoves = stackalloc byte[_context.SnakeCount];
 
         while (arena.Evaluate() == 0.0f)
         {
             var snakes = arena.Snakes;
-            for (var i = 0; i < snakes.Length; i++)
+    
+            for (int i = 0; i < snakes.Length; i++)
             {
                 var snake = snakes[i];
                 if (snake.Dead)
@@ -128,12 +131,20 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
                     continue;
                 }
 
-                var legalMoveSet = arena.GetLegalMoves(snake);
-                chosenMoves[i] = PickRandomMove(legalMoveSet);
+                byte legalMoveSet = arena.GetLegalMoves(snake);
+        
+                // --- INTEGRAZIONE QUI ---
+                // PRIMA:
+                // chosenMoves[i] = PickRandomMove(legalMoveSet);
+        
+                // DOPO:
+                var finder = new HeuristicMoveFinder(ref snake, arena, legalMoveSet);
+                chosenMoves[i] = finder.FindBestMove();
             }
 
             arena.SimulateTurn(chosenMoves);
         }
+
         return arena.Evaluate();
     }
 
@@ -163,26 +174,5 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool, in WarContext conte
             }
         }
         return bestMove;
-    }
-    
-    private static byte PickRandomMove(byte legalMoveSet)
-    {
-        if (legalMoveSet == Moves.None) return Moves.Up;
-        
-        var moveCount = System.Numerics.BitOperations.PopCount(legalMoveSet);
-        if (moveCount == 0) return Moves.Up; // Sicurezza extra
-        
-        var choice = Random.Shared.Next(moveCount);
-        var current = 0;
-
-        foreach (byte move in Moves.AllDirections)
-        {
-            if ((legalMoveSet & move) != 0)
-            {
-                if (current == choice) return move;
-                current++;
-            }
-        }
-        return Moves.Up; // Fallback
     }
 }
