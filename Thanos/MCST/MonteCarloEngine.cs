@@ -105,18 +105,33 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         var slot = pool.GetSlotFromPointer(node);
         var arena = slot.GetArena();
 
-        // Alloca la memoria una sola volta all'inizio del metodo
-        scoped Span<MoveDirection> legalMoves = stackalloc MoveDirection[3];
+        // Alloca la memoria per le mosse una sola volta
+        scoped Span<MoveDirection> legalMoves = stackalloc MoveDirection[4];
+        scoped Span<MoveDirection> chosenMoves = stackalloc MoveDirection[context.SnakeCount];
 
         while (arena.Evaluate() == 0.0f)
         {
-            // Riutilizza lo stesso span ad ogni iterazione
-            var moveCount = arena.GetLegalMoves(legalMoves);
-            if (moveCount == 0) break;
+            var snakes = arena.Snakes;
 
-            var randomMove = legalMoves[Random.Shared.Next(moveCount)];
-            arena.SimulateTurn(randomMove);
+            // CAMBIAMENTO: L'Engine ora decide la mossa per ogni serpente
+            for (int i = 0; i < snakes.Length; i++)
+            {
+                var snake = snakes[i];
+                if (snake.Dead) continue;
+
+                var moveCount = arena.GetLegalMovesForSnake(ref snake, legalMoves);
+                if (moveCount > 0)
+                {
+                    // Crea, usa e distruggi la struct per la ricerca euristica. Pulito e performante.
+                    var finder = new HeuristicMoveFinder(ref snake, arena, legalMoves.Slice(0, moveCount));
+                    chosenMoves[i] = finder.FindBestMove();
+                }
+            }
+
+            // Passa il set completo di mosse al "motore fisico"
+            arena.SimulateTurn(chosenMoves);
         }
+
         return arena.Evaluate();
     }
 

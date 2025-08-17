@@ -1,7 +1,8 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.MCST; // Your using statements
+using Thanos.MCST;
+
+// Your using statements
 
 namespace Thanos.War;
 
@@ -17,8 +18,8 @@ public ref struct WarArena
     private int _liveSnakesCount;
 
     /// <summary>
-    /// COSTRUTTORE MODERNO: Inizializza la vista sull'arena di gioco.
-    /// Sostituisce completamente il vecchio pattern 'PlacementNew'.
+    ///     COSTRUTTORE MODERNO: Inizializza la vista sull'arena di gioco.
+    ///     Sostituisce completamente il vecchio pattern 'PlacementNew'.
     /// </summary>
     public WarArena(ref WarField field, Span<byte> snakesMemory, in WarContext context, int snakeStride)
     {
@@ -28,7 +29,7 @@ public ref struct WarArena
         _snakeStride = snakeStride;
         _liveSnakesCount = context.SnakeCount;
     }
-    
+
     public WarSnakeArray Snakes => new(_snakesMemory, _context.SnakeCount, _snakeStride);
 
     public int GetLegalMoves(Span<MoveDirection> legalMoves)
@@ -44,34 +45,41 @@ public ref struct WarArena
 
             if (!_field.IsOccupied(newHeadPos)) legalMoves[moveCount++] = direction;
         }
+
         return moveCount;
     }
-    
-    public void SimulateTurn(MoveDirection myMove)
+
+    public void SimulateTurn(ReadOnlySpan<MoveDirection> allMoves)
     {
         var snakes = Snakes;
         var snakeCount = snakes.Length;
 
-        Span<MoveDirection> moves = stackalloc MoveDirection[snakeCount];
-        Span<ushort> newHeadPositions = stackalloc ushort[snakeCount];
-        Span<bool> hasEaten = stackalloc bool[snakeCount];
-        Span<bool> isDead = stackalloc bool[snakeCount];
+        // Pre-alloca tutto lo spazio necessario sullo stack
+        scoped Span<ushort> newHeadPositions = stackalloc ushort[snakeCount];
+        scoped Span<bool> hasEaten = stackalloc bool[snakeCount];
+        scoped Span<bool> isDead = stackalloc bool[snakeCount];
 
-        // FASE 1: Preparazione
+        // --- FASE 1: Preparazione (ora molto più semplice) ---
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
-            if (snake.Dead) { isDead[i] = true; continue; }
+            if (snake.Dead)
+            {
+                isDead[i] = true;
+                continue;
+            }
 
-            moves[i] = (i == 0) ? myMove : GetSimpleMove(ref snake);
-            newHeadPositions[i] = _field.GetNeighbor(snake.Head, moves[i]);
+            // Non decidiamo più la mossa, la leggiamo dal parametro in input
+            newHeadPositions[i] = _field.GetNeighbor(snake.Head, allMoves[i]);
         }
 
-        // FASE 2: Risoluzione Cibo e Collisioni
+        // --- FASE 2: RISOLUZIONE DEI CONFLITTI (Chi si scontra? Chi mangia?) ---
         for (var i = 0; i < snakeCount; i++)
         {
             if (isDead[i]) continue;
+
             hasEaten[i] = _field.IsFood(newHeadPositions[i]);
+
             for (var j = i + 1; j < snakeCount; j++)
             {
                 if (isDead[j]) continue;
@@ -85,70 +93,73 @@ public ref struct WarArena
             }
         }
 
-        // FASE 3: Movimento
+        // --- FASE 3: ESECUZIONE DEL MOVIMENTO (Aggiorna lo stato interno di ogni serpente) ---
         for (var i = 0; i < snakeCount; i++)
         {
             if (isDead[i]) continue;
+
             var snake = snakes[i];
             var hazardDamage = _field.IsHazard(newHeadPositions[i]) ? 15 : 0;
+
+            // Il metodo 'Move' aggiorna la logica interna del serpente (posizione di testa/coda, vita, etc.)
             snake.Move(newHeadPositions[i], hasEaten[i], hazardDamage);
         }
 
-        // FASE 4: Aggiornamento Finale
-        _field.Snakes.ClearAll();
+        // --- FASE 4: AGGIORNAMENTO DEL MONDO (Aggiorna le bitboard in modo efficiente) ---
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
-            if (isDead[i] || snake.Dead)
+
+            // Controlla se il serpente è morto durante il movimento (es. per fame)
+            if (!isDead[i] && snake.Dead) isDead[i] = true;
+
+            if (isDead[i])
             {
-                if (!isDead[i]) { isDead[i] = true; _liveSnakesCount--; }
-                continue;
+                // Se il serpente è morto in questo turno, dobbiamo cancellare il suo vecchio corpo dalla mappa
+                _liveSnakesCount--;
+                snake.GetSpans(out var span1, out var span2);
+                foreach (var segment in span1) _field.Snakes.Clear(segment);
+                foreach (var segment in span2) _field.Snakes.Clear(segment);
             }
-            // Ridisegna il serpente sulla bitboard
-            snake.GetSpans(out var span1, out var span2);
-            foreach (var segment in span1) _field.Snakes.Set(segment);
-            foreach (var segment in span2) _field.Snakes.Set(segment);
-            _field.Snakes.Set(snake.Head);
+            else
+            {
+                // OTTIMIZZAZIONE: Aggiornamento chirurgico invece di cancellare e ridisegnare tutto
+                if (!hasEaten[i]) _field.Snakes.Clear(oldTailPositions[i]); // Cancella solo la vecchia coda
+                _field.Snakes.Set(snake.Head); // Aggiungi solo la nuova testa
+            }
+
+            // Aggiorna la mappa del cibo
+            if (hasEaten[i]) _field.Food.Clear(newHeadPositions[i]);
         }
-        for (var i = 0; i < snakeCount; i++)
-            if (hasEaten[i])
-                _field.Food.Clear(newHeadPositions[i]);
     }
 
     public float Evaluate()
     {
         if (Snakes[0].Dead) return -1.0f;
-        return _liveSnakesCount <= 1 
-            ? 1.0f 
+        return _liveSnakesCount <= 1
+            ? 1.0f
             : 0.0f;
     }
-
-    private MoveDirection GetSimpleMove(ref WarSnake snake)
+    
+    public int GetLegalMovesForSnake(ref WarSnake snake, Span<MoveDirection> legalMoves)
     {
-        if (snake.Dead) return MoveDirection.Up;
-        for (var i = 0; i < 4; i++)
-        {
-            var direction = (MoveDirection)i;
-            var newHeadPos = _field.GetNeighbor(snake.Head, direction);
-            if (!_field.IsOccupied(newHeadPos)) return direction;
-        }
-        return MoveDirection.Up;
+        // Questo è il codice che prima era in GetLegalMoves, ma ora specifico per un serpente
+        // ...
     }
 
     /// <summary>
-    /// TIPO ANNIDATO: Wrapper per l'array di serpenti, ora drasticamente più semplice.
+    ///     TIPO ANNIDATO: Wrapper per l'array di serpenti, ora drasticamente più semplice.
     /// </summary>
     public readonly ref struct WarSnakeArray
     {
         private readonly Span<byte> _snakesMemory;
-        private readonly int _count;
         private readonly int _stride;
 
         // Usa i tipi del costruttore primario direttamente
         public WarSnakeArray(Span<byte> snakesMemory, int count, int stride)
         {
             _snakesMemory = snakesMemory;
-            _count = count;
+            Length = count;
             _stride = stride;
         }
 
@@ -162,11 +173,12 @@ public ref struct WarArena
                 var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
                 var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<WarSnakeHeader>()..]);
                 ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
-            
+
                 // CAMBIAMENTO 2: Chiama il nuovo costruttore semplice. Niente più codice 'Unsafe'.
                 return new WarSnake(ref header, bodySpan);
             }
         }
-        public int Length => _count;
+
+        public int Length { get; }
     }
 }
