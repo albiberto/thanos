@@ -1,6 +1,6 @@
-using System.Buffers;
 using System.Text.Json;
 using Thanos;
+using Thanos.MCST;
 using Thanos.SourceGen;
 
 // --- Setup iniziale del server web ---
@@ -22,31 +22,36 @@ app.MapGet("/", () => new
 
 app.MapPost("/start", async context =>
 {
-    var request = await Read(context);
+    var request = await ReadAsync(context);
     agent.Start(request);
 });
 
 app.MapPost("/move", async context =>
 {
-    var request = await Read(context);
+    var request = await ReadAsync(context);
     var result = agent.Move(request);
+    
+    context.Response.ContentType = "application/json";
+    await context.Response.WriteAsJsonAsync(new { move = ToApiMove(result) });
 });
 
 app.MapPost("/end", async context =>
 {
-    var request = await Read(context);
+    var request = await ReadAsync(context);
     agent.End(request);
 });
 
 app.Run();
 return;
 
-async Task<Request> Read(HttpContext httpContext)
-{
-    var readResult = await httpContext.Request.BodyReader.ReadAsync();
-    var sequence = readResult.Buffer;
-    
-    return sequence.IsSingleSegment
-        ? JsonSerializer.Deserialize(sequence.FirstSpan, ThanosSerializerContext.Default.Request)
-        : JsonSerializer.Deserialize(sequence.ToArray(), ThanosSerializerContext.Default.Request);
-}
+async Task<Request> ReadAsync(HttpContext httpContext) => await JsonSerializer.DeserializeAsync(httpContext.Request.Body, ThanosSerializerContext.Default.Request);
+
+static string ToApiMove(byte move) =>
+    move switch
+    {
+        Moves.Up => "up",
+        Moves.Down => "down",
+        Moves.Left => "left",
+        Moves.Right => "right",
+        _ => "up" // Fallback
+    };
