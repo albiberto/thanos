@@ -132,18 +132,28 @@ private void InitializeWarSnakes(ref WarField field, in Board board)
     }
 
     /// <summary>
-    /// Restituisce la "vista" WarArena per i dati di questo slot.
+    /// Restituisce la "vista" WarArena per i dati di questo slot,
+    /// agendo come una factory che nasconde i dettagli della memoria.
     /// </summary>
     public WarArena GetArena(in Board board)
     {
+        // 1. Estrae il riferimento all'header dalla memoria
+        var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
+        ref var header = ref MemoryMarshal.GetReference(
+            MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
+
+        // 2. Crea la vista del campo di gioco (WarField)
+        // (Assumendo che GetField() sia stato refattorizzato per essere auto-contenuto)
         var field = GetField(board);
+
+        // 3. Estrae la "fetta" di memoria per i serpenti
         var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
         
-        // Estrae il riferimento all'header dalla memoria
-        var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
-        ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
+        // 4. Estrae la "fetta" di memoria per il workspace
+        var workspaceMemory = _slot.Slice(_layout.WorkspaceOffset, _layout.WorkspaceSize);
 
-        return new WarArena(ref header, field, snakesMemory, _layout.SnakeStride);
+        // 5. Passa tutti i pezzi al costruttore di WarArena
+        return new WarArena(ref header, field, snakesMemory, workspaceMemory, _layout.SnakeStride);
     }
     
     private void InitializeArenaHeader(int snakeCount)

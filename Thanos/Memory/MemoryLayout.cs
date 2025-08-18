@@ -19,12 +19,14 @@ public readonly unsafe record struct MemoryLayout
     public readonly int BitboardStrideInBytes;
     public readonly int BitboardStrideInUlongs;
     public readonly int WarArenaHeaderSize;
+    public readonly int WorkspaceSize;
 
     // --- Offset ---
     public readonly int NodeOffset;
     public readonly int BitboardsOffset;
     public readonly int SnakesOffset;
     public readonly int WarArenaHeaderOffset;
+    public readonly int WorkspaceOffset;
 
     // --- Totali ---
     public readonly int SlotSize;
@@ -47,15 +49,21 @@ public readonly unsafe record struct MemoryLayout
         SnakesSize = SnakeStride * snakeCount;
         
         WarArenaHeaderSize = sizeof(WarArenaHeader).AlignUp();
+        
+        // --- Dimensione Workspace per la WarArena ---
+        // newHeadPositions + hasEaten + isDead + oldTailPositions
+        const int sizePerSnake = sizeof(ushort) + sizeof(bool) + sizeof(bool) + sizeof(ushort);
+        WorkspaceSize = (sizePerSnake * snakeCount).AlignUp();
 
         // --- 2. Calcolo Totali ---
-        SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize;
+        SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize + WorkspaceSize;
 
         // --- 3. Calcolo Offset ---
         NodeOffset = 0;
         BitboardsOffset = NodeOffset + NodeSize;
         SnakesOffset = BitboardsOffset + BitboardsSize;
         WarArenaHeaderOffset = SnakesOffset + SnakesSize;
+        WorkspaceOffset = WarArenaHeaderOffset + WarArenaHeaderSize; 
     }
 }
 
