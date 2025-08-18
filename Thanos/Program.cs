@@ -38,7 +38,7 @@ app.MapPost("/move", async context =>
 app.MapPost("/end", async context =>
 {
     var request = await ReadAsync(context);
-    agent.End(request);
+    BattleSnakeAgent.End(request);
 });
 
 app.Run();

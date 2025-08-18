@@ -4,7 +4,7 @@ public static class Constants
 {
     public const int SizeOfCacheLine = 64;
 
-    public const int MaxNodes = 500_000;
+    public const int MaxNodes = 1_000_000;
     public const int TimeoutRatio = 90; // Lasciamo 10ms di margine sui 500ms totali
     public const int MinTimeout = 465;
     
@@ -12,7 +12,7 @@ public static class Constants
     public const int MaxHeight = 19;
     public const int MaxArea = MaxWidth * MaxHeight;
     
-    public const int MaxSnakes = 8; 
+    public const int MaxSnakeCount = 8; 
     public const uint MaxSnakeBodyCapacity = 256;
     
     public const byte Empty = 0; 

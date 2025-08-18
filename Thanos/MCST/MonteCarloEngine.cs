@@ -8,41 +8,22 @@ namespace Thanos.MCST;
 
 public sealed unsafe class MonteCarloEngine(MemoryPool pool)
 {
-    private Node* _root;
-
-    /// <summary>
-    /// Resetta l'albero di ricerca per una nuova posizione di partenza.
-    /// </summary>
-    public void Reset(in Request request)
-    {
-        // Chiede al pool il primo slot, già pronto all'uso
-        if (pool.TryGetNext(out var rootSlot))
-        {
-            rootSlot.CloneFrom(in request);
-            _root = rootSlot.GetNodePtr();
-        }
-        else
-        {
-            throw new OutOfMemoryException("Memory Pool is too small for the root node.");
-        }
-    }
-
     /// <summary>
     /// Esegue la ricerca MCTS e restituisce la mossa migliore (come bitmask).
     /// </summary>
-    public byte FindBestMove(int timeoutMs)
+    public byte FindBestMove(Node* root, in Request request)
     {
         var stopwatch = Stopwatch.StartNew();
     
         // Esegui il ciclo MCTS finché non siamo vicini al limite di tempo.
-        while (stopwatch.ElapsedMilliseconds < timeoutMs)
+        while (stopwatch.ElapsedMilliseconds < request.Game.TimeLimit)
         {
             // Le 4 fasi rimangono identiche
-            var leaf = Selection(_root);
-            var expandedNode = Expansion(leaf);
+            var leaf = Selection(root);
+            var expandedNode = Expansion(in request.Board, leaf);
             if (expandedNode == null) continue; 
         
-            var result = Simulation(expandedNode);
+            var result = Simulation(in request.Board, expandedNode);
             Backpropagation(expandedNode, result);
         }
     
@@ -50,7 +31,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         // Utile per il debug: stampa quante iterazioni sei riuscito a fare nel tempo concesso
         // Console.WriteLine($"Iterazioni eseguite: {_root->Visits}");
 
-        return GetBestMoveFromRoot();
+        return GetBestMoveFromRoot(root);
     }
     
     // --- LE 4 FASI DI MCTS ---
@@ -66,12 +47,12 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         return node;
     }
 
-    private Node* Expansion(Node* parentNode)
+    private Node* Expansion(in Board board, Node* parentNode)
     {
         if (parentNode->IsTerminal) return parentNode;
 
         var parentSlot = pool.GetSlotFromPointer(parentNode);
-        var parentArena = parentSlot.GetArena();
+        var parentArena = parentSlot.GetArena(in board);
         var snakes = parentArena.Snakes;
 
         var legalMoveSet = parentArena.GetLegalMoves(snakes[0]);
@@ -92,7 +73,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
                 if (pool.TryGetNext(out var childSlot))
                 {
                     childSlot.CloneFrom(in parentSlot);
-                    var childArena = childSlot.GetArena();
+                    var childArena = childSlot.GetArena(in board);
                 
                     chosenMoves.Fill(Moves.Up);
                     chosenMoves[0] = move;
@@ -106,10 +87,10 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         return parentNode->ChildrenCount > 0 ? (*parentNode)[0] : parentNode;
     }
 
-    private float Simulation(Node* node)
+    private float Simulation(in Board board, Node* node)
     {
         var slot = pool.GetSlotFromPointer(node);
-        var arena = slot.GetArena();
+        var arena = slot.GetArena(board);
     
         // CORREZIONE: Usa il conteggio dei serpenti preso direttamente dall'arena.
         scoped Span<byte> chosenMoves = stackalloc byte[arena.Snakes.Length];
@@ -147,15 +128,15 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         }
     }
     
-    private byte GetBestMoveFromRoot()
+    private byte GetBestMoveFromRoot(Node* root)
     {
         long maxVisits = -1;
         var bestMove = Moves.Up;
 
         // CORREZIONE: Itera usando l'indexer del Node per evitare allocazioni.
-        for (var i = 0; i < _root->ChildrenCount; i++)
+        for (var i = 0; i < root->ChildrenCount; i++)
         {
-            var child = (*_root)[i]; // Usa l'indexer
+            var child = (*root)[i]; // Usa l'indexer
             if (child->Visits > maxVisits)
             {
                 maxVisits = child->Visits;

@@ -39,6 +39,8 @@ public readonly struct Request(Game game, int turn, Board board, Snake you)
     [JsonPropertyName("turn")] public readonly int Turn = turn;
     [JsonPropertyName("board")] public readonly Board Board = board;
     [JsonPropertyName("you")] public readonly Snake You = you;
+    
+    [JsonIgnore] public readonly int SnakeCount = board.SnakeCount;
 }
 
 public enum Map : byte
@@ -68,6 +70,8 @@ public readonly struct Game(Guid id, Ruleset ruleset, Map map, Source source, in
     [JsonPropertyName("map")] public readonly Map Map = map;
     [JsonPropertyName("source")] public readonly Source Source = source;
     [JsonPropertyName("timeout")] public readonly int Timeout = timeout;
+    
+    [JsonIgnore] public readonly int TimeLimit = timeout * Constants.TimeoutRatio / 100;
 }
 
 [method: JsonConstructor]
@@ -110,7 +114,8 @@ public readonly struct Board(int height, int width, Coordinate[] food, Coordinat
     [JsonPropertyName("hazards")] public readonly Coordinate[] Hazards = hazards;
     [JsonPropertyName("snakes")] public readonly Snake[] Snakes = snakes;
     
-    [JsonIgnore] public readonly uint SnakeCount = (uint)snakes.Length;
+    [JsonIgnore] public readonly int Area = width * height;
+    [JsonIgnore] public readonly int SnakeCount = snakes.Length;
 }
 
 [method: JsonConstructor]

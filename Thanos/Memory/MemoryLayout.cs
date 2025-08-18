@@ -3,12 +3,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 using Thanos.MCST;
+using Thanos.SourceGen;
 using Thanos.War;
 
 namespace Thanos.Memory;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly unsafe struct MemoryLayout
+public readonly unsafe record struct MemoryLayout
 {
     // --- Dimensioni ---
     public readonly int NodeSize;
@@ -27,28 +28,28 @@ public readonly unsafe struct MemoryLayout
 
     // --- Totali ---
     public readonly int SlotSize;
-    public readonly long PoolSize;
 
-    public MemoryLayout(in WarContext context, int maxNodes)
+    public static MemoryLayout Worst { get; } = new(Constants.MaxArea, Constants.MaxSnakeCount);
+    
+    public MemoryLayout(int area, int snakeCount)
     {
         // --- 1. Calcolo Dimensioni ---
         NodeSize = sizeof(Node).AlignUp();
 
-        var bitboardSegments = (context.Area + 63) >> 6;
+        var bitboardSegments = (area + 63) >> 6;
         BitboardStrideInBytes = (bitboardSegments * sizeof(ulong)).AlignUp();
         BitboardStrideInUlongs = BitboardStrideInBytes / sizeof(ulong);
         BitboardsSize = BitboardStrideInBytes * WarField.TotalBitboards;
 
-        var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)context.Area), Constants.MaxSnakeBodyCapacity);
+        var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)area), Constants.MaxSnakeBodyCapacity);
         var snakeHeaderSize = sizeof(WarSnakeHeader).AlignUp();
         SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
-        SnakesSize = SnakeStride * context.InitialSnakeCount;
+        SnakesSize = SnakeStride * snakeCount;
         
         WarArenaHeaderSize = sizeof(WarArenaHeader).AlignUp();
 
         // --- 2. Calcolo Totali ---
         SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize;
-        PoolSize = (long)SlotSize * maxNodes;
 
         // --- 3. Calcolo Offset ---
         NodeOffset = 0;

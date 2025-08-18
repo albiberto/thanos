@@ -6,10 +6,9 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context, in MemoryLayout layout)
+public readonly ref struct MemorySlot(Span<byte> slot, in MemoryLayout layout)
 {
-    private readonly Span<byte> _slot = slotSpan;
-    private readonly WarContext _context = context;
+    private readonly Span<byte> _slot = slot;
     private readonly MemoryLayout _layout = layout;
 
     /// <summary>
@@ -20,7 +19,7 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
         InitializeNode();
         var warField = InitializeWarField(in request.Board);
         InitializeWarSnakes(ref warField, in request.Board);
-        InitializeArenaHeader(); // NUOVO
+        InitializeArenaHeader(request.Board.SnakeCount); // NUOVO
     }
 
     /// <summary>
@@ -55,13 +54,13 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
     
-        return new WarField(_context.Width, _context.Height, _context.Area, food, hazards, snakes, board.Food, board.Hazards);
+        return new WarField(board.Width, board.Height, board.Area, food, hazards, snakes, board.Food, board.Hazards);
     }
     
     private void InitializeWarSnakes(ref WarField field, in Board board)
     {
         var snakesSpan = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
-        for (var i = 0; i < _context.SnakeCount; i++)
+        for (var i = 0; i < board.SnakeCount; i++)
         {
             var singleSnakeBlock = snakesSpan.Slice(i * _layout.SnakeStride, _layout.SnakeStride);
             var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
@@ -75,7 +74,7 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
     /// <summary>
     /// Restituisce la "vista" WarField per i dati di questo slot.
     /// </summary>
-    private WarField GetField()
+    private WarField GetField(in Board board)
     {
         var bitboardsSpan = _slot.Slice(_layout.BitboardsOffset, _layout.BitboardsSize);
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
@@ -86,28 +85,28 @@ public readonly ref struct MemorySlot(Span<byte> slotSpan, in WarContext context
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
 
         // ORA È SICURO: Passiamo i valori primitivi estratti da _context.
-        return new WarField(_context.Width, _context.Height, _context.Area, food, hazards, snakes); 
+        return new WarField(board.Width, board.Height, board.Area, food, hazards, snakes); 
     }
 
     /// <summary>
     /// Restituisce la "vista" WarArena per i dati di questo slot.
     /// </summary>
-    public WarArena GetArena()
+    public WarArena GetArena(in Board board)
     {
-        var field = GetField();
+        var field = GetField(board);
         var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
         
         // Estrae il riferimento all'header dalla memoria
         var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
         ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
 
-        return new WarArena(ref header, field, snakesMemory, _context.SnakeCount, _layout.SnakeStride);
+        return new WarArena(ref header, field, snakesMemory, board.SnakeCount, _layout.SnakeStride);
     }
     
-    private void InitializeArenaHeader()
+    private void InitializeArenaHeader(int snakeCount)
     {
         var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
         ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
-        header.LiveSnakesCount = _context.SnakeCount;
+        header.LiveSnakesCount = snakeCount;
     }
 }

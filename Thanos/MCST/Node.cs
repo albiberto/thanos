@@ -53,6 +53,16 @@ public unsafe struct Node
     /// Imposta questo nodo come "terminale", indicando che la partita da questo stato è finita.
     /// </summary>
     public void SetTerminal() => IsTerminal = true;
+    
+    public Node* FindChildByMove(byte move)
+    {
+        for (var i = 0; i < ChildrenCount; i++)
+        {
+            if (this[i]->MoveThatLedToThisNode == move) return this[i];
+        }
+        
+        return null; // Figlio non trovato
+    }
 
     public Node* GetBestChild()
     {

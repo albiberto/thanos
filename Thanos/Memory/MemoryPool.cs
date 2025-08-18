@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using Thanos.Enums;
 using Thanos.MCST;
 using Thanos.War;
 // Necessario per IMemoryOwner
@@ -11,14 +12,12 @@ public sealed class MemoryPool : IDisposable
     private readonly Memory<byte> _poolMemory;
     private long _currentOffset;
     
-    private WarContext _context;
     private MemoryLayout _layout;
 
-    public MemoryPool(in WarContext context, in MemoryLayout layout)
+    public MemoryPool(in MemoryLayout layout, int poolSize)
     {
-        _context = context;
         _layout = layout;
-        _memoryOwner = MemoryPool<byte>.Shared.Rent((int)layout.PoolSize);
+        _memoryOwner = MemoryPool<byte>.Shared.Rent(poolSize);
         _poolMemory = _memoryOwner.Memory;
     }
 
@@ -32,7 +31,6 @@ public sealed class MemoryPool : IDisposable
 
         if (newOffset > _poolMemory.Length)
         {
-            // Se non c'è spazio, il parametro 'out' deve essere inizializzato.
             slot = default;
             return false;
         }
@@ -40,8 +38,7 @@ public sealed class MemoryPool : IDisposable
         var startOffset = (int)(newOffset - slotSize);
         var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
     
-        // CORREZIONE: Crea l'istanza di MemorySlot e la assegna al parametro 'out'.
-        slot = new MemorySlot(slotSpan, _context, _layout);
+        slot = new MemorySlot(slotSpan, _layout);
         return true;
     }
 
@@ -51,20 +48,19 @@ public sealed class MemoryPool : IDisposable
     public unsafe MemorySlot GetSlotFromPointer(Node* nodePtr)
     {
         var slotSpan = new Span<byte>(nodePtr, _layout.SlotSize);
-        return new MemorySlot(slotSpan, _context, _layout);
+        return new MemorySlot(slotSpan, _layout);
     }
-
-    public void Reset() => _currentOffset = 0;
     
     /// <summary>
     /// Riconfigura il pool con i parametri di una nuova partita.
     /// </summary>
-    public void Reset(in WarContext context, in MemoryLayout layout)
+    public void Reset(in MemoryLayout layout)
     {
-        _context = context;
         _layout = layout;
-        Reset(); // Chiama il reset dell'offset
+        _currentOffset = 0;
     }
+    
+    public void Reset(MemoryLayout layout) => _layout = layout;
     
     // Restituisce la memoria al pool condiviso quando il nostro pool viene eliminato.
     public void Dispose() => _memoryOwner.Dispose();

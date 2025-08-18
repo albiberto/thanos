@@ -12,33 +12,56 @@ public sealed class BattleSnakeAgent : IDisposable
     private readonly MemoryPool _pool;
     private readonly MonteCarloEngine _engine;
     
-    private WarContext _context;
+    private unsafe Node* _root;
+    private byte _lastChosenMove; // Memorizza l'ultima mossa fatta
 
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
-        var worstContext = WarContext.Worst;
-        var worstLayout = new MemoryLayout(worstContext, maxNodes);
+        var worstLayout = MemoryLayout.Worst;
         
-        _pool = new MemoryPool(worstContext, worstLayout);
+        _pool = new MemoryPool(worstLayout, worstLayout.SlotSize * maxNodes);
         _engine = new MonteCarloEngine(_pool);
     }
 
-    public void Start(in Request request)
+    public unsafe void Start(in Request request)
     {
-        _context = new WarContext(in request);
-        var layout = new MemoryLayout(_context, Constants.MaxNodes);
+        var layout = new MemoryLayout(request.Board.Area, request.Board.SnakeCount);
+        _pool.Reset(layout);
         
-        _pool.Reset(_context, layout);
-        _engine.Reset(in request);
-    }
-    
-    public byte Move(in Request request)
-    {
-        _engine.Reset(in request);
-        return _engine.FindBestMove(_context.Timeout);
+        if (_pool.TryGetNext(out var rootSlot))
+        {
+            rootSlot.CloneFrom(in request);
+            _root = rootSlot.GetNodePtr();
+        }
     }
 
-    public void End(in Request request) => Console.WriteLine($"End: {request.Game.Id} - {request.Turn}");
+    public unsafe byte Move(in Request request)
+    {
+        // --- LOGICA DI RIUTILIZZO DELL'ALBERO ---
+        // Cerca nell'albero precedente il figlio che corrisponde alla nostra ultima mossa
+        var newRoot = _root->FindChildByMove(_lastChosenMove);
+
+        // Se non lo troviamo (o è il primo turno), resettiamo partendo dallo stato attuale
+        if (newRoot == null)
+        {
+            if (_pool.TryGetNext(out var rootSlot))
+            {
+                rootSlot.CloneFrom(in request);
+                newRoot = rootSlot.GetNodePtr();
+            }
+        }
+        _root = newRoot;
+        _root->Parent = null; // Il nuovo_root non ha più un genitore
+
+        var bestMoveByte = _engine.FindBestMove(_root, in request);
+        
+        // Memorizza la mossa che stiamo per fare per il prossimo turno
+        _lastChosenMove = bestMoveByte;
+        
+        return bestMoveByte;
+    }
+
+    public static void End(in Request request) => Console.WriteLine($"End: {request.Game.Id} - {request.Turn}");
     
     public void Dispose() => _pool.Dispose();
 
