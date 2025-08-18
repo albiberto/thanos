@@ -36,10 +36,6 @@ public ref struct WarSnake
     /// 1. Si collega alla memoria grezza (header e body).
     /// 2. Inizializza quella memoria usando i dati forniti (initialSnakeData).
     /// </summary>
-    /// <summary>
-    /// COSTRUTTORE "TUTTOFARE" (Versione Corretta):
-    /// Inizializza la memoria usando i dati pre-elaborati.
-    /// </summary>
     public WarSnake(ref WarSnakeHeader header, Span<ushort> body, in Snake snake, ReadOnlySpan<ushort> body1D)
     {
         // Fase 1: Collegamento alla memoria
@@ -74,7 +70,7 @@ public ref struct WarSnake
     public void Kill() => Health = 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Move(ushort newHeadPosition, bool hasEaten, int damage = 1)
+    public void Move(ushort newHeadPosition, bool hasEaten, int damage)
     {
         Health = hasEaten ? 100 : Health - damage;
         if (Dead) return;

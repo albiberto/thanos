@@ -34,9 +34,9 @@ public readonly ref struct WarField
 {
     public const int TotalBitboards = 3;
 
-    private int _width { get; }
-    private int _height { get; }
-    private int _area { get; }
+    public int Width { get; }
+    public int Height { get; }
+    public int Area { get; }
 
     public readonly Bitboard Food;
     public readonly Bitboard Hazards;
@@ -44,9 +44,9 @@ public readonly ref struct WarField
 
     public WarField(int width, int height, int area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
     {
-        _width = width;
-        _height = height;
-        _area = area;
+        Width = width;
+        Height = height;
+        Area = area;
         
         Food = new Bitboard(foodBitboard);
         Hazards = new Bitboard(hazardsBitboard);
@@ -55,9 +55,9 @@ public readonly ref struct WarField
     
     public WarField(int width, int height, int area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
     {
-        _width = width;
-        _height = height;
-        _area = area;
+        Width = width;
+        Height = height;
+        Area = area;
         
         Food = new Bitboard(foodBitboard);
         Hazards = new Bitboard(hazardsBitboard);
@@ -93,16 +93,16 @@ public readonly ref struct WarField
     // --- HELPER METHODS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * _width + coord.X);
+    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort GetNeighbor(ushort position1D, byte move) =>
         move switch
         {
-            Moves.Up => position1D < _width ? ushort.MaxValue : (ushort)(position1D - _width),
-            Moves.Down => position1D >= _area - _width ? ushort.MaxValue : (ushort)(position1D + _width),
-            Moves.Left => position1D % _width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
-            Moves.Right => (position1D + 1) % _width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
+            Moves.Up => position1D < Width ? ushort.MaxValue : (ushort)(position1D - Width),
+            Moves.Down => position1D >= Area - Width ? ushort.MaxValue : (ushort)(position1D + Width),
+            Moves.Left => position1D % Width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
+            Moves.Right => (position1D + 1) % Width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
             _ => ushort.MaxValue
         };
 }
