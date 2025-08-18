@@ -13,10 +13,12 @@ public sealed class MemoryPool : IDisposable
     private long _currentOffset;
     
     private GameContext _context;
+    private readonly Dictionary<string, int> _snakeIdMap;
 
-    public MemoryPool(in GameContext context, int poolSize)
+    public MemoryPool(in GameContext context, Dictionary<string, int> snakeIdMap, int poolSize)
     {
         _context = context;
+        _snakeIdMap = snakeIdMap;
         _memoryOwner = MemoryPool<byte>.Shared.Rent(poolSize);
         _poolMemory = _memoryOwner.Memory;
     }
@@ -38,7 +40,7 @@ public sealed class MemoryPool : IDisposable
         var startOffset = (int)(newOffset - slotSize);
         var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
     
-        slot = new MemorySlot(slotSpan, _context);
+        slot = new MemorySlot(slotSpan, in _context, _snakeIdMap);
         return true;
     }
 
@@ -48,7 +50,7 @@ public sealed class MemoryPool : IDisposable
     public unsafe MemorySlot GetSlotFromPointer(Node* nodePtr)
     {
         var slotSpan = new Span<byte>(nodePtr, _context.Layout.SlotSize);
-        return new MemorySlot(slotSpan, _context);
+        return new MemorySlot(slotSpan, in _context, _snakeIdMap);
     }
     
     /// <summary>

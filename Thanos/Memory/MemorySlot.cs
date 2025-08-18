@@ -7,7 +7,7 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context)
+public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, Dictionary<string, int> snakeIdMap)
 {
     private readonly Span<byte> _slot = slot;
     private readonly GameContext _context = context;
@@ -21,7 +21,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context)
     {
         InitializeNode();
         var warField = InitializeWarFieldFromBoard(in request.Board);
-        InitializeWarSnakesFromBoard(ref warField, in request.Board);
+        InitializeWarSnakesFromBoard(ref warField, in request.Board, snakeIdMap);
         InitializeArenaHeader(request.Board.SnakeCount); // NUOVO
 
         var arena = GetArena();
@@ -113,7 +113,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context)
     ///     Inizializza tutti i serpenti per un nuovo stato di gioco.
     ///     Questa è la funzione "orchestratore" che coordina WarField e WarSnake.
     /// </summary>
-    private void InitializeWarSnakesFromBoard(ref WarField field, in Board board)
+    private void InitializeWarSnakesFromBoard(ref WarField field, in Board board, Dictionary<string, int> snakeIdMap)
     {
         var snakesSpan = _slot.Slice(_context.Layout.SnakesOffset, _context.Layout.SnakesSize);
 
@@ -143,10 +143,12 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context)
                 var singleSnakeBlock = snakesSpan.Slice(i * _context.Layout.SnakeStride, _context.Layout.SnakeStride);
                 var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
                 var bodyBytesSpan = singleSnakeBlock[Unsafe.SizeOf<WarSnakeHeader>()..];
-                ref var header = ref MemoryMarshal.GetReference(
-                    MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
+                ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
                 var bodySpan = MemoryMarshal.Cast<byte, ushort>(bodyBytesSpan);
 
+                // Assegna l'ID intero all'header del serpente
+                header.Id = snakeIdMap[initialSnake.Id];
+                
                 new WarSnake(ref header, bodySpan, in initialSnake, snakeBody1D);
 
                 foreach (var coord1D in snakeBody1D) field.Snakes.Set(coord1D);

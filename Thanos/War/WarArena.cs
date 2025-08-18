@@ -33,13 +33,13 @@ public ref struct WarArena
     /// <summary>
     ///     Crea una nuova vista WarArena per uno stato di gioco esistente.
     /// </summary>
-    public WarArena(ref WarArenaHeader header, 
-        WarField field, 
-        Span<byte> snakesMemory, 
+    public WarArena(ref WarArenaHeader header,
+        WarField field,
+        Span<byte> snakesMemory,
         Span<ushort> newHeadPositions,
         Span<bool> hasEaten,
         Span<bool> isDead,
-        Span<ushort> oldTailPositions, 
+        Span<ushort> oldTailPositions,
         int snakeStride)
     {
         _header = ref header;
@@ -141,7 +141,11 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
-            if (snake.Dead) { _isDead[i] = true; continue; }
+            if (snake.Dead)
+            {
+                _isDead[i] = true;
+                continue;
+            }
 
             _oldTailPositions[i] = snake.Tail;
             var head = snake.Head;
@@ -239,6 +243,96 @@ public ref struct WarArena
     {
         if (Snakes[0].Dead) return -1.0f;
         return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
+    }
+
+    /// <summary>
+    ///     Gestisce la logica completa per l'eliminazione di un serpente dallo stato del gioco.
+    /// </summary>
+    private void KillSnake(int snakeIndex)
+    {
+        var snake = Snakes[snakeIndex];
+        // Se era già stato segnato come morto in una fase precedente, non fare nulla
+        if (snake.Dead) return;
+
+        snake.Kill(); // Imposta la vita a 0
+        _header.LiveSnakesCount--;
+
+        // Rimuovi il serpente dalla bitboard e aggiorna l'hash
+        ref var hash = ref _header.Hash;
+        snake.GetSpans(out var span1, out var span2);
+        foreach (var segment in span1)
+        {
+            hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
+            _field.Snakes.Clear(segment);
+        }
+
+        foreach (var segment in span2)
+        {
+            hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
+            _field.Snakes.Clear(segment);
+        }
+    }
+
+    /// <summary>
+    ///     Applica la mossa di un singolo serpente, aggiornando lo stato.
+    ///     Usato per l'espansione dell'albero MCTS, è una versione semplificata di SimulateTurn.
+    /// </summary>
+    public void ApplySingleMove(int snakeIndex, byte move)
+    {
+        var snake = Snakes[snakeIndex];
+        if (snake.Dead) return;
+
+        // 1. Calcola la nuova posizione della testa e la vecchia coda
+        var oldTail = snake.Tail;
+        var head = snake.Head;
+        var newHead = move switch
+        {
+            Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
+            Moves.Down => head >= _field.Area - _field.Width ? ushort.MaxValue : (ushort)(head + _field.Width),
+            Moves.Left => head % _field.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
+            Moves.Right => (head + 1) % _field.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
+            _ => ushort.MaxValue
+        };
+
+        // 2. Controlla se la mossa porta a morte istantanea (muro o corpo di un altro serpente)
+        if (_field.IsOccupied(newHead))
+        {
+            KillSnake(snakeIndex);
+            return; // L'espansione finisce qui in un nodo terminale
+        }
+
+        // 3. Controlla cibo e calcola il danno
+        var hasEaten = _field.IsFood(newHead);
+        var hazardDamage = _field.IsHazard(newHead) ? 15 : 0;
+        var totalDamage = 1 + hazardDamage;
+
+        // 4. Aggiorna lo stato interno del serpente
+        snake.Move(newHead, hasEaten, totalDamage);
+
+        // Controlla se il serpente è morto per fame/danni
+        if (snake.Dead)
+        {
+            KillSnake(snakeIndex);
+            return;
+        }
+
+        // 5. Aggiorna lo stato del mondo (bitboard e hash)
+        ref var hash = ref _header.Hash;
+
+        // Aggiungi la nuova testa
+        _field.Snakes.Set(newHead);
+        hash ^= ZobristTable.GetSnakeValue(snakeIndex, newHead);
+
+        // Rimuovi la vecchia coda (se non ha mangiato)
+        if (!hasEaten)
+        {
+            _field.Snakes.Clear(oldTail);
+            hash ^= ZobristTable.GetSnakeValue(snakeIndex, oldTail);
+        }
+        else // Se ha mangiato, rimuovi il cibo dalla bitboard
+        {
+            _field.Food.Clear(newHead);
+        }
     }
 
     /// <summary>

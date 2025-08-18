@@ -11,6 +11,7 @@ public sealed class BattleSnakeAgent : IDisposable
 {
     private readonly MemoryPool _pool;
     private readonly MonteCarloEngine _engine;
+    private readonly Dictionary<string, int> _snakeIdMap = new();
     
     private unsafe Node* _root;
     private byte _lastChosenMove; // Memorizza l'ultima mossa fatta
@@ -25,6 +26,14 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public unsafe void Start(in Request request)
     {
+        foreach (var snake in request.Board.Snakes)
+        {
+            if (!_snakeIdMap.ContainsKey(snake.Id))
+            {
+                _snakeIdMap[snake.Id] = _nextSnakeIntId++;
+            }
+        }
+        
         var layout = new MemoryLayout(request.Board.Area, request.Board.SnakeCount);
         _pool.Reset(layout);
         

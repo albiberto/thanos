@@ -1,39 +1,50 @@
 ﻿using System.Diagnostics;
-using System.Reflection.Metadata;
-using Thanos.Enums;
 using Thanos.Memory;
-using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
 public sealed unsafe class MonteCarloEngine(MemoryPool pool)
 {
     /// <summary>
-    /// Esegue la ricerca MCTS e restituisce la mossa migliore (come bitmask).
+    ///     Esegue la ricerca MCTS e restituisce la mossa migliore (come bitmask).
     /// </summary>
-    public byte FindBestMove(Node* root, in Request request)
+    public byte FindBestMove(Node* root, in GameContext context, int timeLimit)
     {
         var stopwatch = Stopwatch.StartNew();
-    
+
         // Esegui il ciclo MCTS finché non siamo vicini al limite di tempo.
-        while (stopwatch.ElapsedMilliseconds < request.Game.TimeLimit)
+        while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
             // Le 4 fasi rimangono identiche
             var leaf = Selection(root);
-            var expandedNode = Expansion(in request.Board, leaf);
-            if (expandedNode == null) continue; 
         
-            var result = Simulation(in request.Board, expandedNode);
+            // Se la selezione ci porta a un nodo terminale, non possiamo espandere.
+            // Eseguiamo il backpropagation da qui.
+            if (leaf->IsTerminal)
+            {
+                // Valuta lo stato terminale e propaga il risultato
+                var terminalSlot = pool.GetSlotFromPointer(leaf);
+                var terminalArena = terminalSlot.GetArena();
+                Backpropagation(leaf, terminalArena.Evaluate());
+                continue;
+            }
+
+            var expandedNode = Expansion(leaf, in context);
+        
+            // Se l'espansione fallisce o crea un nodo già terminale, passiamo al prossimo ciclo.
+            if (expandedNode == null || expandedNode->IsTerminal) continue; 
+    
+            // CORREZIONE: Esegui la simulazione dal nuovo nodo espanso.
+            var result = Simulation(expandedNode);
+        
+            // Esegui il backpropagation dal nuovo nodo.
             Backpropagation(expandedNode, result);
         }
-    
-        stopwatch.Stop();
-        // Utile per il debug: stampa quante iterazioni sei riuscito a fare nel tempo concesso
-        // Console.WriteLine($"Iterazioni eseguite: {_root->Visits}");
 
+        stopwatch.Stop();
         return GetBestMoveFromRoot(root);
     }
-    
+
     // --- LE 4 FASI DI MCTS ---
 
     private Node* Selection(Node* node)
@@ -44,19 +55,36 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
             if (bestChild == null) return node; // Se non ci sono figli validi da selezionare, ci fermiamo qui.
             node = bestChild;
         }
+
         return node;
     }
 
-    private Node* Expansion(in Board board, Node* parentNode)
+    private Node* Expansion(Node* parentNode, in GameContext context)
     {
         if (parentNode->IsTerminal) return parentNode;
 
         var parentSlot = pool.GetSlotFromPointer(parentNode);
-        var parentArena = parentSlot.GetArena(in board);
-    
-        // NOTA: 'ourSnakeIndex' dovrebbe essere determinato in modo robusto, non hardcodato a 0
-        var ourSnakeIndex = 0; 
-        var ourSnake = parentArena.Snakes[ourSnakeIndex];
+        var parentArena = parentSlot.GetArena();
+
+        // --- Trova il nostro indice usando il context ---
+        var snakes = parentArena.Snakes;
+        var ourSnakeIndex = -1;
+        for (var i = 0; i < snakes.Length; i++)
+            // NOTA: Richiede di aggiungere il campo 'Id' a WarSnake
+            if (snakes[i].Id == context.MyId)
+            {
+                ourSnakeIndex = i;
+                break;
+            }
+
+        // Se non ci troviamo o siamo morti, questo è un nodo terminale
+        if (ourSnakeIndex == -1 || snakes[ourSnakeIndex].Dead)
+        {
+            parentNode->SetTerminal();
+            return parentNode;
+        }
+
+        var ourSnake = snakes[ourSnakeIndex];
         var legalMoveSet = parentArena.GetLegalMoves(ourSnake);
 
         if (legalMoveSet == Moves.None)
@@ -65,42 +93,52 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
             return parentNode;
         }
 
-        // Per ogni nostra mossa legale...
+        // Espandi creando un figlio per ogni mossa legale
         foreach (var move in Moves.AllDirections)
-        {
             if ((legalMoveSet & move) != 0)
-            {
                 if (pool.TryGetNext(out var childSlot))
                 {
-                    // 1. Clona lo stato del genitore
                     childSlot.CloneFrom(in parentSlot);
-                    var childArena = childSlot.GetArena(in board);
-                
-                    // 2. Applica SOLO la nostra mossa per creare il nuovo stato
-                    // Questo è un metodo che dovrai creare in WarArena!
+                    var childArena = childSlot.GetArena();
+
+                    // USA IL METODO CORRETTO: applica solo la nostra mossa
                     childArena.ApplySingleMove(ourSnakeIndex, move);
-            
-                    // 3. Aggiungi il figlio all'albero
+
                     parentNode->AddChild(childSlot.GetNodePtr(), move);
                 }
-            }
-        }
 
-        // Restituisce il primo nuovo figlio per la simulazione
         return parentNode->ChildrenCount > 0 ? (*parentNode)[0] : parentNode;
     }
 
-    private float Simulation(in Board board, Node* node)
+    /// <summary>
+    ///     Esegue una simulazione ("playout" o "rollout") da un dato nodo fino alla fine del gioco.
+    ///     Lavora su una copia dello stato per non modificare l'albero MCTS originale.
+    /// </summary>
+    /// <param name="node">Il nodo di partenza per la simulazione.</param>
+    /// <returns>Il risultato della partita (1.0 vittoria, -1.0 sconfitta).</returns>
+    private float Simulation(Node* node)
     {
-        var slot = pool.GetSlotFromPointer(node);
-        var arena = slot.GetArena(board);
-    
-        // CORREZIONE: Usa il conteggio dei serpenti preso direttamente dall'arena.
-        scoped Span<byte> chosenMoves = stackalloc byte[arena.Snakes.Length];
+        // 1. CLONAZIONE DELLO STATO
+        // Per non modificare lo stato originale del nodo nell'albero, cloniamolo
+        // in un nuovo slot di memoria temporaneo che useremo solo per questa simulazione.
+        if (!pool.TryGetNext(out var simulationSlot)) return 0.0f; // Se non c'è memoria, considera la simulazione un pareggio.
+        var sourceSlot = pool.GetSlotFromPointer(node);
+        simulationSlot.CloneFrom(in sourceSlot);
 
+        // Otteniamo la vista WarArena per il nostro stato temporaneo clonato.
+        var arena = simulationSlot.GetArena();
+
+        // 2. IL CICLO DI PLAYOUT
+        // Continua a simulare turni finché la partita non è finita (vittoria o sconfitta).
         while (arena.Evaluate() == 0.0f)
         {
             var snakes = arena.Snakes;
+
+            // Questo buffer è piccolo (max 8-12 elementi), quindi stackalloc è sicuro e veloce.
+            scoped Span<byte> chosenMoves = stackalloc byte[snakes.Length];
+
+            // 3. SCELTA DELLE MOSSE (EURISTICHE)
+            // Per ogni serpente vivo, scegliamo una mossa "intelligente" usando l'euristica.
             for (var i = 0; i < snakes.Length; i++)
             {
                 var snake = snakes[i];
@@ -115,9 +153,14 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
                 chosenMoves[i] = finder.FindBestMove();
             }
 
+            // 4. AVANZAMENTO DEL TURNO
+            // Esegui un singolo turno di gioco. Questo metodo usa il workspace
+            // interno allo 'simulationSlot', garantendo thread-safety e zero-allocazioni.
             arena.SimulateTurn(chosenMoves);
         }
 
+        // 5. RESTITUZIONE DEL RISULTATO
+        // Quando il ciclo finisce, la partita è terminata. Restituiamo il risultato finale.
         return arena.Evaluate();
     }
 
@@ -130,7 +173,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
             node = node->Parent;
         }
     }
-    
+
     private byte GetBestMoveFromRoot(Node* root)
     {
         long maxVisits = -1;
@@ -146,6 +189,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
                 bestMove = child->MoveThatLedToThisNode;
             }
         }
+
         return bestMove;
     }
 }

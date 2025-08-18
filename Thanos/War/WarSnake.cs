@@ -7,6 +7,7 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public struct WarSnakeHeader
 {
+    public int Id;
     public int Health;
     public uint Capacity;
     public uint Length;
@@ -60,6 +61,7 @@ public ref struct WarSnake
 
     // --- PROPRIETÀ ---
     // Health ora ha un setter pubblico, che è corretto. Rimosso 'readonly'.
+    public int Id => _header.Id;
     public int Health { readonly get => _header.Health; private set => _header.Health = value; }
     public readonly ushort Head => _header.Head;
     public readonly ushort Tail => _body[(int)_header.TailIndex];
