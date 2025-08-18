@@ -6,10 +6,10 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slot, in MemoryLayout layout)
+public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context)
 {
     private readonly Span<byte> _slot = slot;
-    private readonly MemoryLayout _layout = layout;
+    private readonly GameContext _context = context;
 
     /// <summary>
     /// Inizializza questo slot di memoria con uno stato di gioco iniziale da una Request.
@@ -36,36 +36,36 @@ public readonly ref struct MemorySlot(Span<byte> slot, in MemoryLayout layout)
 
     private void InitializeNode()
     {
-        var nodeSpan = _slot.Slice(_layout.NodeOffset, _layout.NodeSize);
+        var nodeSpan = _slot.Slice(_context.Layout.NodeOffset, _context.Layout.NodeSize);
         ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(nodeSpan));
         node = new Node(); // Inizializza a zero/default
     }
 
     private WarField InitializeWarField(in Board board)
     {
-        var bitboardsSpan = _slot.Slice(_layout.BitboardsOffset, _layout.BitboardsSize);
+        var bitboardsSpan = _slot.Slice(_context.Layout.BitboardsOffset, _context.Layout.BitboardsSize);
         bitboardsSpan.Clear();
         
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
-        var stride = _layout.BitboardStrideInUlongs;
+        var stride = _context.Layout.BitboardStrideInUlongs;
         
         var food = bitboardsUlongSpan[..stride];
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
     
-        return new WarField(board.Width, board.Height, board.Area, food, hazards, snakes, board.Food, board.Hazards);
+        return new WarField(_context.Width, _context.Height, _context.Area, food, hazards, snakes, board.Food, board.Hazards);
     }
     
     /// <summary>
 /// Inizializza tutti i serpenti per un nuovo stato di gioco.
 /// Questa è la funzione "orchestratore" che coordina WarField e WarSnake.
 /// </summary>
-private void InitializeWarSnakes(ref WarField field, in Board board)
+private void InitializeWarSnakes(ref WarField field, in Board _)
 {
-    var snakesSpan = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
+    var snakesSpan = _slot.Slice(_context.Layout.SnakesOffset, _context.Layout.SnakesSize);
     
     // Buffer temporaneo riutilizzato per le coordinate 1D di ogni serpente
-    scoped Span<ushort> body1D = stackalloc ushort[board.Width * board.Height];
+    scoped Span<ushort> body1D = stackalloc ushort[_context.Area];
 
     for (var i = 0; i < board.SnakeCount; i++)
     {
@@ -86,7 +86,7 @@ private void InitializeWarSnakes(ref WarField field, in Board board)
 
         // --- FASE 2: Recupero Memoria ---
         // Prende il blocco di memoria per il serpente corrente.
-        var singleSnakeBlock = snakesSpan.Slice(i * _layout.SnakeStride, _layout.SnakeStride);
+        var singleSnakeBlock = snakesSpan.Slice(i * _context.Layout.SnakeStride, _context.Layout.SnakeStride);
         
         // **INIZIO PARTE COMPLETATA**
         // Separa il blocco in due parti: l'header...
@@ -117,66 +117,57 @@ private void InitializeWarSnakes(ref WarField field, in Board board)
     /// <summary>
     /// Restituisce la "vista" WarField per i dati di questo slot.
     /// </summary>
-    private WarField GetField(in Board board)
+    private WarField GetField()
     {
-        var bitboardsSpan = _slot.Slice(_layout.BitboardsOffset, _layout.BitboardsSize);
+        var bitboardsSpan = _slot.Slice(_context.Layout.BitboardsOffset, _context.Layout.BitboardsSize);
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
-        var stride = _layout.BitboardStrideInUlongs;
+        var stride = _context.Layout.BitboardStrideInUlongs;
         
         var food = bitboardsUlongSpan[..stride];
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
 
         // ORA È SICURO: Passiamo i valori primitivi estratti da _context.
-        return new WarField(board.Width, board.Height, board.Area, food, hazards, snakes); 
+        return new WarField(_context.Width, _context.Height, _context.Area, food, hazards, snakes); 
     }
 
     /// <summary>
     /// Restituisce la "vista" WarArena per i dati di questo slot,
     /// agendo come una factory che nasconde i dettagli della memoria.
     /// </summary>
-    public WarArena GetArena(in Board board)
+    public WarArena GetArena()
     {
         // 1. Estrae i componenti principali (invariato)
         ref var header = ref MemoryMarshal.GetReference(
-            MemoryMarshal.Cast<byte, WarArenaHeader>(_slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize)));
+            MemoryMarshal.Cast<byte, WarArenaHeader>(_slot.Slice(_context.Layout.WarArenaHeaderOffset, _context.Layout.WarArenaHeaderSize)));
         
-        var field = GetField(in board);
-        var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
+        var field = GetField();
+        var snakesMemory = _slot.Slice(_context.Layout.SnakesOffset, _context.Layout.SnakesSize);
 
         // 2. Prepara i buffer del workspace LEGGENDO DAL LAYOUT
         // Ottieni il blocco di memoria principale del workspace
-        var workspaceMemory = _slot.Slice(_layout.WorkspaceOffset, _layout.WorkspaceSize);
+        var workspaceMemory = _slot.Slice(_context.Layout.WorkspaceOffset, _context.Layout.WorkspaceSize);
         
         // Affetta il workspace usando le dimensioni e gli offset pre-calcolati dal layout
         var newHeadPositions = MemoryMarshal.Cast<byte, ushort>(
-            workspaceMemory.Slice(_layout.NewHeadPositionsWorkspaceOffset, _layout.NewHeadPositionsSize));
+            workspaceMemory.Slice(_context.Layout.NewHeadPositionsWorkspaceOffset, _context.Layout.NewHeadPositionsSize));
         
         var hasEaten = MemoryMarshal.Cast<byte, bool>(
-            workspaceMemory.Slice(_layout.HasEatenWorkspaceOffset, _layout.HasEatenSize));
+            workspaceMemory.Slice(_context.Layout.HasEatenWorkspaceOffset, _context.Layout.HasEatenSize));
 
         var isDead = MemoryMarshal.Cast<byte, bool>(
-            workspaceMemory.Slice(_layout.IsDeadWorkspaceOffset, _layout.IsDeadSize));
+            workspaceMemory.Slice(_context.Layout.IsDeadWorkspaceOffset, _context.Layout.IsDeadSize));
 
         var oldTailPositions = MemoryMarshal.Cast<byte, ushort>(
-            workspaceMemory.Slice(_layout.OldTailPositionsWorkspaceOffset, _layout.OldTailPositionsSize));
+            workspaceMemory.Slice(_context.Layout.OldTailPositionsWorkspaceOffset, _context.Layout.OldTailPositionsSize));
 
         // 3. Passa tutti i pezzi al costruttore di WarArena (invariato)
-        return new WarArena(
-            ref header,
-            field,
-            snakesMemory,
-            newHeadPositions,
-            hasEaten,
-            isDead,
-            oldTailPositions,
-            _layout.SnakeStride
-        );
+        return new WarArena(ref header, field, snakesMemory, newHeadPositions, hasEaten, isDead, oldTailPositions, _context.Layout.SnakeStride);
     }
     
     private void InitializeArenaHeader(int snakeCount)
     {
-        var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
+        var headerSpan = _slot.Slice(_context.Layout.WarArenaHeaderOffset, _context.Layout.WarArenaHeaderSize);
         ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
         header.LiveSnakesCount = snakeCount;
     }

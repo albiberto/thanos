@@ -12,11 +12,11 @@ public sealed class MemoryPool : IDisposable
     private readonly Memory<byte> _poolMemory;
     private long _currentOffset;
     
-    private MemoryLayout _layout;
+    private GameContext _context;
 
-    public MemoryPool(in MemoryLayout layout, int poolSize)
+    public MemoryPool(in GameContext context, int poolSize)
     {
-        _layout = layout;
+        _context = context;
         _memoryOwner = MemoryPool<byte>.Shared.Rent(poolSize);
         _poolMemory = _memoryOwner.Memory;
     }
@@ -26,7 +26,7 @@ public sealed class MemoryPool : IDisposable
     /// </summary>
     public bool TryGetNext(out MemorySlot slot)
     {
-        var slotSize = _layout.SlotSize;
+        var slotSize = _context.Layout.SlotSize;
         var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
 
         if (newOffset > _poolMemory.Length)
@@ -38,7 +38,7 @@ public sealed class MemoryPool : IDisposable
         var startOffset = (int)(newOffset - slotSize);
         var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
     
-        slot = new MemorySlot(slotSpan, _layout);
+        slot = new MemorySlot(slotSpan, _context);
         return true;
     }
 
@@ -47,20 +47,20 @@ public sealed class MemoryPool : IDisposable
     /// </summary>
     public unsafe MemorySlot GetSlotFromPointer(Node* nodePtr)
     {
-        var slotSpan = new Span<byte>(nodePtr, _layout.SlotSize);
-        return new MemorySlot(slotSpan, _layout);
+        var slotSpan = new Span<byte>(nodePtr, _context.Layout.SlotSize);
+        return new MemorySlot(slotSpan, _context);
     }
     
     /// <summary>
     /// Riconfigura il pool con i parametri di una nuova partita.
     /// </summary>
-    public void Reset(in MemoryLayout layout)
+    public void Reset(in GameContext context)
     {
-        _layout = layout;
+        _context = context;
         _currentOffset = 0;
     }
     
-    public void Reset(MemoryLayout layout) => _layout = layout;
+    public void Reset(GameContext context) => _context = context;
     
     // Restituisce la memoria al pool condiviso quando il nostro pool viene eliminato.
     public void Dispose() => _memoryOwner.Dispose();

@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 using Thanos.MCST;
-using Thanos.SourceGen;
 using Thanos.War;
 
 namespace Thanos.Memory;
@@ -27,7 +26,7 @@ public readonly unsafe record struct MemoryLayout
     public readonly int SnakesOffset;
     public readonly int WarArenaHeaderOffset;
     public readonly int WorkspaceOffset;
-    
+
     // --- NUOVO: Dettagli Interni del Workspace ---
     // Dimensioni dei singoli buffer nel workspace
     public readonly int NewHeadPositionsSize;
@@ -45,7 +44,7 @@ public readonly unsafe record struct MemoryLayout
     public readonly int SlotSize;
 
     public static MemoryLayout Worst { get; } = new(Constants.MaxArea, Constants.MaxSnakeCount);
-    
+
     public MemoryLayout(int area, int snakeCount)
     {
         // --- 1. Calcolo Dimensioni ---
@@ -60,9 +59,9 @@ public readonly unsafe record struct MemoryLayout
         var snakeHeaderSize = sizeof(WarSnakeHeader).AlignUp();
         SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
         SnakesSize = SnakeStride * snakeCount;
-        
+
         WarArenaHeaderSize = sizeof(WarArenaHeader).AlignUp();
-        
+
         // --- Dimensione Workspace per la WarArena ---
         // newHeadPositions + hasEaten + isDead + oldTailPositions
         // --- NUOVO: Calcolo Dettagliato Workspace ---
@@ -90,7 +89,7 @@ public readonly unsafe record struct MemoryLayout
         BitboardsOffset = NodeOffset + NodeSize;
         SnakesOffset = BitboardsOffset + BitboardsSize;
         WarArenaHeaderOffset = SnakesOffset + SnakesSize;
-        WorkspaceOffset = WarArenaHeaderOffset + WarArenaHeaderSize; 
+        WorkspaceOffset = WarArenaHeaderOffset + WarArenaHeaderSize;
     }
 }
 
