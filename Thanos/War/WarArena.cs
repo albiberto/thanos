@@ -18,28 +18,26 @@ public struct WarArenaHeader
 public ref struct WarArena
 {
     // --- CAMPI PRIVATI ---
-    private ref readonly WarArenaHeader _header;
+    private ref WarArenaHeader _header;
     private WarField _field;
     private readonly Span<byte> _snakesMemory;
     private readonly int _snakeStride;
-    private int _liveSnakesCount;
 
     /// <summary>
     /// Crea una nuova vista WarArena per uno stato di gioco esistente.
     /// </summary>
-    public WarArena(ref WarArenaHeader header, WarField field, Span<byte> snakesMemory, int liveSnakesCount, int snakeStride)
+    public WarArena(ref WarArenaHeader header, WarField field, Span<byte> snakesMemory, int snakeStride)
     {
         _header = ref header;
         _field = field;
         _snakesMemory = snakesMemory;
         _snakeStride = snakeStride;
-        _liveSnakesCount = liveSnakesCount;
     }
 
     /// <summary>
     /// Fornisce accesso all'array di serpenti tramite un wrapper sicuro.
     /// </summary>
-    public WarSnakeArray Snakes => new(_snakesMemory, _liveSnakesCount, _snakeStride);
+    public WarSnakeArray Snakes => new(_snakesMemory, _header.LiveSnakesCount, _snakeStride);
 
     /// <summary>
     /// Calcola le mosse legali per tutti i serpenti e scrive i risultati (un byte per serpente) nello span fornito.
@@ -95,6 +93,14 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             if (isDead[i]) continue;
+
+            // IsOccupied controlla già i corpi degli altri serpenti e i muri (tramite ushort.MaxValue)
+            if (_field.IsOccupied(newHeadPositions[i]))
+            {
+                isDead[i] = true;
+                continue; // Questo serpente morirà, non serve controllare altro
+            }
+            
             hasEaten[i] = _field.IsFood(newHeadPositions[i]);
             for (var j = i + 1; j < snakeCount; j++)
             {
@@ -115,7 +121,8 @@ public ref struct WarArena
             if (isDead[i]) continue;
             var snake = snakes[i];
             var hazardDamage = _field.IsHazard(newHeadPositions[i]) ? 15 : 0;
-            snake.Move(newHeadPositions[i], hasEaten[i], hazardDamage);
+            var totalDamage = 1 + hazardDamage; // <- CORREZIONE: Aggiunge il danno base;
+            snake.Move(newHeadPositions[i], hasEaten[i], totalDamage);
         }
 
         // --- FASE 4: Aggiornamento Mondo ---
@@ -126,7 +133,10 @@ public ref struct WarArena
 
             if (isDead[i])
             {
-                if (_liveSnakesCount > 0) _liveSnakesCount--;
+                // Questa riga modifica il dato REALE nell'header di memoria
+                _header.LiveSnakesCount--; 
+                
+                // Rimuovi il corpo del serpente dalla bitboard
                 snake.GetSpans(out var span1, out var span2);
                 foreach (var segment in span1) _field.Snakes.Clear(segment);
                 foreach (var segment in span2) _field.Snakes.Clear(segment);
@@ -147,7 +157,7 @@ public ref struct WarArena
     public float Evaluate()
     {
         if (Snakes[0].Dead) return -1.0f;
-        return _liveSnakesCount <= 1 ? 1.0f : 0.0f;
+        return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
     }
 
     /// <summary>

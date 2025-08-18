@@ -21,7 +21,7 @@ public static unsafe class UctCalculator
     /// </summary>
     static UctCalculator()
     {
-        for (var i = 1; i < _logLutFixed.Length; i++) _logLutFixed[i] = (long)(System.Math.Log(i) * FIXED_POINT_SCALE);
+        for (var i = 1; i < _logLutFixed.Length; i++) _logLutFixed[i] = (long)(Math.Log(i) * FIXED_POINT_SCALE);
     }
     
     /// <summary>

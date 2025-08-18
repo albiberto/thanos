@@ -5,6 +5,30 @@ using Thanos.SourceGen;
 
 namespace Thanos.War;
 
+public readonly ref struct Bitboard(Span<ulong> bitboard)
+{
+    private readonly Span<ulong> _bitboard = bitboard;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<ulong> GetRawData() => _bitboard;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Set(ushort position1D) => _bitboard[position1D >> 6] |= 1UL << (position1D & 63);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Clear(ushort position1D) => _bitboard[position1D >> 6] &= ~(1UL << (position1D & 63));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool IsSet(ushort position1D)
+    {
+        var index = position1D >> 6;
+        var mask = 1UL << (position1D & 63);
+        return (_bitboard[index] & mask) != 0;
+    }
+    
+    public void ClearAll() => _bitboard.Clear();
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public readonly ref struct WarField
 {
@@ -42,25 +66,6 @@ public readonly ref struct WarField
         // Initialize board state
         foreach (ref readonly var coordinate in food) { Food.Set(To1D(in coordinate)); }
         foreach (ref readonly var coordinate in hazards) { Hazards.Set(To1D(in coordinate)); }
-    }
-
-    // --- WRITE METHODS ---
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetSnakeBit(ushort position1D) => Snakes.Set(position1D);
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
-    {
-        var snakes = Snakes;
-        snakes.Set(newHead);
-        snakes.Clear(!hasEaten ? oldTail : newHead);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RemoveSnake(ReadOnlySpan<ushort> body)
-    {
-        foreach (var position in body) Snakes.Clear(position);
     }
 
     // --- "HOT PATH" READ METHODS (Safe and highly optimized) ---
