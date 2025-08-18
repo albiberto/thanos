@@ -132,7 +132,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
             foreach (var bodyPart in snake.Body)
             {
-                var coord1D = (ushort)(bodyPart.Y * _context.Width + bodyPart.X);
+                var coord1D = WarField.To1D(in bodyPart, request.Board.Width);
                 hash ^= ZobristTable.GetSnakeValue(snakeIntId, coord1D);
             }
         }

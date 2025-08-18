@@ -90,5 +90,8 @@ public readonly ref struct WarField
     // --- HELPER METHODS ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
+    public ushort To1D(in Coordinate coord) => To1D(coord, Width);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ushort To1D(in Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
 }
