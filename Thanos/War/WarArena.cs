@@ -73,31 +73,22 @@ public ref struct WarArena
     /// NUOVO: Restituisce l'hash Zobrist corrente dello stato di gioco.
     /// </summary>
     public readonly long GetStateHash() => _header.ZobristHash;
-    
-    /// <summary>
-    /// Calcola le mosse legali per tutti i serpenti e scrive i risultati (un byte per serpente) nello span fornito.
-    /// </summary>
-    public void GetLegalMovesForAll(Span<byte> legalMoveSets)
-    {
-        var snakes = Snakes;
-        
-        for (var i = 0; i < snakes.Length; i++)
-        {
-            var snake = snakes[i];
-            legalMoveSets[i] = snake.Dead ? Moves.None : GetLegalMoves(snake);
-        }
-    }
-    
+
     /// <summary>
     /// Calcola il set di mosse legali per un singolo serpente come maschera di bit.
     /// </summary>
+    // In WarArena.cs (versione aggiornata)
     public byte GetLegalMoves(WarSnake snake)
     {
+        scoped Span<ushort> neighbors = stackalloc ushort[4];
+        _field.GetAllNeighbors(snake.Head, neighbors);
+
         var legalMoveSet = Moves.None;
-        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, Moves.Up))) legalMoveSet |= Moves.Up;
-        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, Moves.Down))) legalMoveSet |= Moves.Down;
-        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, Moves.Left))) legalMoveSet |= Moves.Left;
-        if (!_field.IsOccupied(_field.GetNeighbor(snake.Head, Moves.Right))) legalMoveSet |= Moves.Right;
+        if (!_field.IsOccupied(neighbors[0])) legalMoveSet |= Moves.Up;
+        if (!_field.IsOccupied(neighbors[1])) legalMoveSet |= Moves.Down;
+        if (!_field.IsOccupied(neighbors[2])) legalMoveSet |= Moves.Left;
+        if (!_field.IsOccupied(neighbors[3])) legalMoveSet |= Moves.Right;
+
         return legalMoveSet;
     }
 

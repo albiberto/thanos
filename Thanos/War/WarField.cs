@@ -95,14 +95,20 @@ public readonly ref struct WarField
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
     
+    /// <summary>
+    /// Calcola tutte e 4 le posizioni vicine e le scrive nello span fornito (ordine: Su, Giù, Sinistra, Destra).
+    /// Lo span deve avere una lunghezza di almeno 4.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort GetNeighbor(ushort position1D, byte move) =>
-        move switch
-        {
-            Moves.Up => position1D < Width ? ushort.MaxValue : (ushort)(position1D - Width),
-            Moves.Down => position1D >= Area - Width ? ushort.MaxValue : (ushort)(position1D + Width),
-            Moves.Left => position1D % Width == 0 ? ushort.MaxValue : (ushort)(position1D - 1),
-            Moves.Right => (position1D + 1) % Width == 0 ? ushort.MaxValue : (ushort)(position1D + 1),
-            _ => ushort.MaxValue
-        };
+    public void GetAllNeighbors(ushort position1D, Span<ushort> neighbors)
+    {
+        // Su
+        neighbors[0] = position1D < Width ? ushort.MaxValue : (ushort)(position1D - Width);
+        // Giù
+        neighbors[1] = position1D >= Area - Width ? ushort.MaxValue : (ushort)(position1D + Width);
+        // Sinistra
+        neighbors[2] = position1D % Width == 0 ? ushort.MaxValue : (ushort)(position1D - 1);
+        // Destra
+        neighbors[3] = (position1D + 1) % Width == 0 ? ushort.MaxValue : (ushort)(position1D + 1);
+    }
 }

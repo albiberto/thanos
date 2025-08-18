@@ -53,37 +53,40 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
 
         var parentSlot = pool.GetSlotFromPointer(parentNode);
         var parentArena = parentSlot.GetArena(in board);
-        var snakes = parentArena.Snakes;
-
-        var legalMoveSet = parentArena.GetLegalMoves(snakes[0]);
+    
+        // NOTA: 'ourSnakeIndex' dovrebbe essere determinato in modo robusto, non hardcodato a 0
+        var ourSnakeIndex = 0; 
+        var ourSnake = parentArena.Snakes[ourSnakeIndex];
+        var legalMoveSet = parentArena.GetLegalMoves(ourSnake);
 
         if (legalMoveSet == Moves.None)
         {
             parentNode->SetTerminal();
             return parentNode;
         }
-    
-        // CORREZIONE: Usa il conteggio dei serpenti preso direttamente dall'arena corrente.
-        scoped Span<byte> chosenMoves = stackalloc byte[snakes.Length];
 
+        // Per ogni nostra mossa legale...
         foreach (var move in Moves.AllDirections)
         {
             if ((legalMoveSet & move) != 0)
             {
                 if (pool.TryGetNext(out var childSlot))
                 {
+                    // 1. Clona lo stato del genitore
                     childSlot.CloneFrom(in parentSlot);
                     var childArena = childSlot.GetArena(in board);
                 
-                    chosenMoves.Fill(Moves.Up);
-                    chosenMoves[0] = move;
-                    childArena.SimulateTurn(chosenMoves);
-                
+                    // 2. Applica SOLO la nostra mossa per creare il nuovo stato
+                    // Questo è un metodo che dovrai creare in WarArena!
+                    childArena.ApplySingleMove(ourSnakeIndex, move);
+            
+                    // 3. Aggiungi il figlio all'albero
                     parentNode->AddChild(childSlot.GetNodePtr(), move);
                 }
             }
         }
-    
+
+        // Restituisce il primo nuovo figlio per la simulazione
         return parentNode->ChildrenCount > 0 ? (*parentNode)[0] : parentNode;
     }
 
