@@ -30,7 +30,7 @@ public sealed class BattleSnakeAgent : IDisposable
         
         if (_pool.TryGetNext(out var rootSlot))
         {
-            rootSlot.CloneFrom(in request);
+            rootSlot.InitializeFromRequest(in request);
             _root = rootSlot.GetNodePtr();
         }
     }
@@ -46,7 +46,7 @@ public sealed class BattleSnakeAgent : IDisposable
         {
             if (_pool.TryGetNext(out var rootSlot))
             {
-                rootSlot.CloneFrom(in request);
+                rootSlot.InitializeFromRequest(in request);
                 newRoot = rootSlot.GetNodePtr();
             }
         }
