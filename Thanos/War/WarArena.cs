@@ -73,21 +73,49 @@ public ref struct WarArena
     /// NUOVO: Restituisce l'hash Zobrist corrente dello stato di gioco.
     /// </summary>
     public readonly long GetStateHash() => _header.ZobristHash;
-
+    
     /// <summary>
-    /// Calcola il set di mosse legali per un singolo serpente come maschera di bit.
+    /// Restituisce il set di mosse legali per un singolo serpente, rappresentato come maschera di bit.
+    /// 
+    /// Ottimizzazione: la logica è stata manualmente inlined per evitare chiamate a metodi aggiuntivi, migliorando le prestazioni in un percorso critico ("hot path").
+    /// 
+    /// Nota: Sebbene la responsabilità di questa logica dovrebbe appartenere al WarField, è stata spostata direttamente nella classe WarArena per motivi di performance.
     /// </summary>
-    // In WarArena.cs (versione aggiornata)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte GetLegalMoves(WarSnake snake)
     {
-        scoped Span<ushort> neighbors = stackalloc ushort[4];
-        _field.GetAllNeighbors(snake.Head, neighbors);
-
+        var head = snake.Head;
+        var width = _field.Width;
+        var area = _field.Area;
         var legalMoveSet = Moves.None;
-        if (!_field.IsOccupied(neighbors[0])) legalMoveSet |= Moves.Up;
-        if (!_field.IsOccupied(neighbors[1])) legalMoveSet |= Moves.Down;
-        if (!_field.IsOccupied(neighbors[2])) legalMoveSet |= Moves.Left;
-        if (!_field.IsOccupied(neighbors[3])) legalMoveSet |= Moves.Right;
+
+        // --- Calcola e Controlla SU ---
+        var upPos = head < width ? ushort.MaxValue : (ushort)(head - width);
+        if (!_field.IsOccupied(upPos)) 
+        {
+            legalMoveSet |= Moves.Up;
+        }
+
+        // --- Calcola e Controlla GIÙ ---
+        var downPos = head >= area - width ? ushort.MaxValue : (ushort)(head + width);
+        if (!_field.IsOccupied(downPos))
+        {
+            legalMoveSet |= Moves.Down;
+        }
+
+        // --- Calcola e Controlla SINISTRA ---
+        var leftPos = head % width == 0 ? ushort.MaxValue : (ushort)(head - 1);
+        if (!_field.IsOccupied(leftPos))
+        {
+            legalMoveSet |= Moves.Left;
+        }
+
+        // --- Calcola e Controlla DESTRA ---
+        var rightPos = (head + 1) % width == 0 ? ushort.MaxValue : (ushort)(head + 1);
+        if (!_field.IsOccupied(rightPos))
+        {
+            legalMoveSet |= Moves.Right;
+        }
 
         return legalMoveSet;
     }
@@ -113,7 +141,18 @@ public ref struct WarArena
             if (snake.Dead) { isDead[i] = true; continue; }
 
             oldTailPositions[i] = snake.Tail;
-            newHeadPositions[i] = _field.GetNeighbor(snake.Head, chosenMoves[i]);
+            var head = snake.Head;
+            var move = chosenMoves[i];
+
+            // Logica di GetNeighbor copiata qui per massime prestazioni
+            newHeadPositions[i] = move switch
+            {
+                Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
+                Moves.Down => head >= _field.Area - _field.Width ? ushort.MaxValue : (ushort)(head + _field.Width),
+                Moves.Left => head % _field.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
+                Moves.Right => (head + 1) % _field.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
+                _ => ushort.MaxValue
+            };
         }
 
         // --- FASE 2: Risoluzione Conflitti ---

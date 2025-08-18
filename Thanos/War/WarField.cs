@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.MCST; // Assuming these are your project's using statements
 using Thanos.SourceGen;
 
 namespace Thanos.War;
@@ -25,8 +24,6 @@ public readonly ref struct Bitboard(Span<ulong> bitboard)
         var mask = 1UL << (position1D & 63);
         return (_bitboard[index] & mask) != 0;
     }
-    
-    public void ClearAll() => _bitboard.Clear();
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -94,21 +91,4 @@ public readonly ref struct WarField
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort To1D(in Coordinate coord) => (ushort)(coord.Y * Width + coord.X);
-    
-    /// <summary>
-    /// Calcola tutte e 4 le posizioni vicine e le scrive nello span fornito (ordine: Su, Giù, Sinistra, Destra).
-    /// Lo span deve avere una lunghezza di almeno 4.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void GetAllNeighbors(ushort position1D, Span<ushort> neighbors)
-    {
-        // Su
-        neighbors[0] = position1D < Width ? ushort.MaxValue : (ushort)(position1D - Width);
-        // Giù
-        neighbors[1] = position1D >= Area - Width ? ushort.MaxValue : (ushort)(position1D + Width);
-        // Sinistra
-        neighbors[2] = position1D % Width == 0 ? ushort.MaxValue : (ushort)(position1D - 1);
-        // Destra
-        neighbors[3] = (position1D + 1) % Width == 0 ? ushort.MaxValue : (ushort)(position1D + 1);
-    }
 }
