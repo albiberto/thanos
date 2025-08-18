@@ -12,15 +12,24 @@ public sealed class MemoryPool : IDisposable
     private readonly Memory<byte> _poolMemory;
     private long _currentOffset;
     
-    private GameContext _context;
-    private readonly Dictionary<string, int> _snakeIdMap;
+    // Il context e la mappa non sono più readonly, vengono impostati da Reset
+    private GameContext _context; 
+    private Dictionary<string, int> _snakeIdMap = [];
 
-    public MemoryPool(in GameContext context, Dictionary<string, int> snakeIdMap, int poolSize)
+    // COSTRUTTORE SEMPLIFICATO: alloca solo la memoria
+    public MemoryPool(in GameContext worstContext, int maxNodes)
+    {
+        _context = worstContext;
+        _memoryOwner = MemoryPool<byte>.Shared.Rent(worstContext.Layout.SlotSize * maxNodes);
+        _poolMemory = _memoryOwner.Memory;
+    }
+
+    // RESET: configura il pool per una partita specifica
+    public void Reset(in GameContext context, Dictionary<string, int> snakeIdMap)
     {
         _context = context;
         _snakeIdMap = snakeIdMap;
-        _memoryOwner = MemoryPool<byte>.Shared.Rent(poolSize);
-        _poolMemory = _memoryOwner.Memory;
+        _currentOffset = 0;
     }
 
     /// <summary>
