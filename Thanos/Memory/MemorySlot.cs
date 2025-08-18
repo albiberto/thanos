@@ -30,11 +30,8 @@ public readonly ref struct MemorySlot(Span<byte> slot, in MemoryLayout layout)
     /// <summary>
     /// Restituisce un puntatore unsafe al Node all'inizio di questo slot.
     /// </summary>
-    public unsafe Node* GetNodePtr()
-    {
-        return (Node*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_slot));
-    }
-    
+    public unsafe Node* GetNodePtr() => (Node*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(_slot));
+
     private void InitializeNode()
     {
         var nodeSpan = _slot.Slice(_layout.NodeOffset, _layout.NodeSize);
