@@ -27,6 +27,19 @@ public readonly unsafe record struct MemoryLayout
     public readonly int SnakesOffset;
     public readonly int WarArenaHeaderOffset;
     public readonly int WorkspaceOffset;
+    
+    // --- NUOVO: Dettagli Interni del Workspace ---
+    // Dimensioni dei singoli buffer nel workspace
+    public readonly int NewHeadPositionsSize;
+    public readonly int HasEatenSize;
+    public readonly int IsDeadSize;
+    public readonly int OldTailPositionsSize;
+
+    // Offset dei buffer RELATIVI all'inizio del workspace
+    public readonly int NewHeadPositionsWorkspaceOffset;
+    public readonly int HasEatenWorkspaceOffset;
+    public readonly int IsDeadWorkspaceOffset;
+    public readonly int OldTailPositionsWorkspaceOffset;
 
     // --- Totali ---
     public readonly int SlotSize;
@@ -52,8 +65,22 @@ public readonly unsafe record struct MemoryLayout
         
         // --- Dimensione Workspace per la WarArena ---
         // newHeadPositions + hasEaten + isDead + oldTailPositions
-        const int sizePerSnake = sizeof(ushort) + sizeof(bool) + sizeof(bool) + sizeof(ushort);
-        WorkspaceSize = (sizePerSnake * snakeCount).AlignUp();
+        // --- NUOVO: Calcolo Dettagliato Workspace ---
+// Calcola la dimensione di ogni buffer...
+        NewHeadPositionsSize = sizeof(ushort) * snakeCount;
+        HasEatenSize = sizeof(bool) * snakeCount;
+        IsDeadSize = sizeof(bool) * snakeCount;
+        OldTailPositionsSize = sizeof(ushort) * snakeCount;
+
+// ...calcola i loro offset relativi all'interno del blocco workspace...  <-- ECCOLO QUI
+        NewHeadPositionsWorkspaceOffset = 0;
+        HasEatenWorkspaceOffset = NewHeadPositionsWorkspaceOffset + NewHeadPositionsSize;
+        IsDeadWorkspaceOffset = HasEatenWorkspaceOffset + HasEatenSize;
+        OldTailPositionsWorkspaceOffset = IsDeadWorkspaceOffset + IsDeadSize;
+
+// ...e infine la dimensione totale del blocco workspace, allineata.
+        var totalWorkspaceUnaligned = OldTailPositionsWorkspaceOffset + OldTailPositionsSize;
+        WorkspaceSize = totalWorkspaceUnaligned.AlignUp();
 
         // --- 2. Calcolo Totali ---
         SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize + WorkspaceSize;

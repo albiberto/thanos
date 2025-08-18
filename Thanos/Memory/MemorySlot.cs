@@ -137,23 +137,41 @@ private void InitializeWarSnakes(ref WarField field, in Board board)
     /// </summary>
     public WarArena GetArena(in Board board)
     {
-        // 1. Estrae il riferimento all'header dalla memoria
-        var headerSpan = _slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize);
+        // 1. Estrae i componenti principali (invariato)
         ref var header = ref MemoryMarshal.GetReference(
-            MemoryMarshal.Cast<byte, WarArenaHeader>(headerSpan));
-
-        // 2. Crea la vista del campo di gioco (WarField)
-        // (Assumendo che GetField() sia stato refattorizzato per essere auto-contenuto)
-        var field = GetField(board);
-
-        // 3. Estrae la "fetta" di memoria per i serpenti
-        var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
+            MemoryMarshal.Cast<byte, WarArenaHeader>(_slot.Slice(_layout.WarArenaHeaderOffset, _layout.WarArenaHeaderSize)));
         
-        // 4. Estrae la "fetta" di memoria per il workspace
-        var workspaceMemory = _slot.Slice(_layout.WorkspaceOffset, _layout.WorkspaceSize);
+        var field = GetField(in board);
+        var snakesMemory = _slot.Slice(_layout.SnakesOffset, _layout.SnakesSize);
 
-        // 5. Passa tutti i pezzi al costruttore di WarArena
-        return new WarArena(ref header, field, snakesMemory, workspaceMemory, _layout.SnakeStride);
+        // 2. Prepara i buffer del workspace LEGGENDO DAL LAYOUT
+        // Ottieni il blocco di memoria principale del workspace
+        var workspaceMemory = _slot.Slice(_layout.WorkspaceOffset, _layout.WorkspaceSize);
+        
+        // Affetta il workspace usando le dimensioni e gli offset pre-calcolati dal layout
+        var newHeadPositions = MemoryMarshal.Cast<byte, ushort>(
+            workspaceMemory.Slice(_layout.NewHeadPositionsWorkspaceOffset, _layout.NewHeadPositionsSize));
+        
+        var hasEaten = MemoryMarshal.Cast<byte, bool>(
+            workspaceMemory.Slice(_layout.HasEatenWorkspaceOffset, _layout.HasEatenSize));
+
+        var isDead = MemoryMarshal.Cast<byte, bool>(
+            workspaceMemory.Slice(_layout.IsDeadWorkspaceOffset, _layout.IsDeadSize));
+
+        var oldTailPositions = MemoryMarshal.Cast<byte, ushort>(
+            workspaceMemory.Slice(_layout.OldTailPositionsWorkspaceOffset, _layout.OldTailPositionsSize));
+
+        // 3. Passa tutti i pezzi al costruttore di WarArena (invariato)
+        return new WarArena(
+            ref header,
+            field,
+            snakesMemory,
+            newHeadPositions,
+            hasEaten,
+            isDead,
+            oldTailPositions,
+            _layout.SnakeStride
+        );
     }
     
     private void InitializeArenaHeader(int snakeCount)

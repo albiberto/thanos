@@ -24,18 +24,31 @@ public ref struct WarArena
     private ref WarArenaHeader _header;
     private WarField _field;
     private readonly Span<byte> _snakesMemory;
-    private readonly Span<byte> _workspaceMemory;
+    private readonly Span<ushort> _newHeadPositions;
+    private readonly Span<bool> _hasEaten;
+    private readonly Span<bool> _isDead;
+    private readonly Span<ushort> _oldTailPositions;
     private readonly int _snakeStride;
 
     /// <summary>
     ///     Crea una nuova vista WarArena per uno stato di gioco esistente.
     /// </summary>
-    public WarArena(ref WarArenaHeader header, WarField field, Span<byte> snakesMemory, Span<byte> workspaceMemory, int snakeStride)
+    public WarArena(ref WarArenaHeader header, 
+        WarField field, 
+        Span<byte> snakesMemory, 
+        Span<ushort> newHeadPositions,
+        Span<bool> hasEaten,
+        Span<bool> isDead,
+        Span<ushort> oldTailPositions, 
+        int snakeStride)
     {
         _header = ref header;
         _field = field;
         _snakesMemory = snakesMemory;
-        _workspaceMemory = workspaceMemory;
+        _newHeadPositions = newHeadPositions;
+        _hasEaten = hasEaten;
+        _isDead = isDead;
+        _oldTailPositions = oldTailPositions;
         _snakeStride = snakeStride;
     }
 
@@ -118,56 +131,23 @@ public ref struct WarArena
     {
         var snakes = Snakes;
         var snakeCount = snakes.Length;
-        ref var hash = ref _header.Hash; // Corretto da .Hash a .ZobristHash
+        ref var hash = ref _header.Hash;
 
-        // --- FASE 0: Preparazione Buffer (Zero Allocazioni) ---
-        // Invece di usare stackalloc, affettiamo e castiamo il _workspaceMemory pre-allocato.
-        // L'ordine e le dimensioni DEVONO corrispondere a come sono stati definiti in MemoryLayout.
-        var currentOffset = 0;
+        // Pulisce il buffer isDead per questo nuovo turno.
+        _isDead.Clear();
 
-        // 1. Buffer per newHeadPositions (ushort)
-        var newHeadPositions = MemoryMarshal.Cast<byte, ushort>(
-            _workspaceMemory.Slice(currentOffset, sizeof(ushort) * snakeCount));
-        currentOffset += sizeof(ushort) * snakeCount;
-
-        // 2. Buffer per hasEaten (bool)
-        var hasEaten = MemoryMarshal.Cast<byte, bool>(
-            _workspaceMemory.Slice(currentOffset, sizeof(bool) * snakeCount));
-        currentOffset += sizeof(bool) * snakeCount;
-
-        // 3. Buffer per isDead (bool)
-        var isDead = MemoryMarshal.Cast<byte, bool>(
-            _workspaceMemory.Slice(currentOffset, sizeof(bool) * snakeCount));
-        currentOffset += sizeof(bool) * snakeCount;
-
-        // 4. Buffer per oldTailPositions (ushort)
-        var oldTailPositions = MemoryMarshal.Cast<byte, ushort>(
-            _workspaceMemory.Slice(currentOffset, sizeof(ushort) * snakeCount));
-
-        // Pulisce il buffer isDead per assicurarsi che non ci siano valori sporchi dal turno precedente.
-        isDead.Clear();
-
-        //
-        // --- DA QUI IN POI, IL CODICE RIMANE IDENTICO ---
-        // Le 4 fasi della simulazione operano su questi span esattamente come prima.
-        //
-
+        // Le 4 fasi ora usano direttamente i campi privati.
         // --- FASE 1: Preparazione ---
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
-            if (snake.Dead)
-            {
-                isDead[i] = true;
-                continue;
-            }
+            if (snake.Dead) { _isDead[i] = true; continue; }
 
-            oldTailPositions[i] = snake.Tail;
+            _oldTailPositions[i] = snake.Tail;
             var head = snake.Head;
             var move = chosenMoves[i];
 
-            // Logica di GetNeighbor inlinata per massime prestazioni
-            newHeadPositions[i] = move switch
+            _newHeadPositions[i] = move switch
             {
                 Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
                 Moves.Down => head >= _field.Area - _field.Width ? ushort.MaxValue : (ushort)(head + _field.Width),
@@ -181,23 +161,23 @@ public ref struct WarArena
         // ... (questa fase è identica a prima)
         for (var i = 0; i < snakeCount; i++)
         {
-            if (isDead[i]) continue;
-            if (_field.IsOccupied(newHeadPositions[i]))
+            if (_isDead[i]) continue;
+            if (_field.IsOccupied(_newHeadPositions[i]))
             {
-                isDead[i] = true;
+                _isDead[i] = true;
                 continue;
             }
 
-            hasEaten[i] = _field.IsFood(newHeadPositions[i]);
+            _hasEaten[i] = _field.IsFood(_newHeadPositions[i]);
             for (var j = i + 1; j < snakeCount; j++)
             {
-                if (isDead[j]) continue;
-                if (newHeadPositions[i] == newHeadPositions[j])
+                if (_isDead[j]) continue;
+                if (_newHeadPositions[i] == _newHeadPositions[j])
                 {
                     var snakeA = snakes[i];
                     var snakeB = snakes[j];
-                    if (snakeA.Length >= snakeB.Length) isDead[j] = true;
-                    if (snakeB.Length >= snakeA.Length) isDead[i] = true;
+                    if (snakeA.Length >= snakeB.Length) _isDead[j] = true;
+                    if (snakeB.Length >= snakeA.Length) _isDead[i] = true;
                 }
             }
         }
@@ -206,20 +186,20 @@ public ref struct WarArena
         // ... (questa fase è identica a prima)
         for (var i = 0; i < snakeCount; i++)
         {
-            if (isDead[i]) continue;
+            if (_isDead[i]) continue;
             var snake = snakes[i];
-            var hazardDamage = _field.IsHazard(newHeadPositions[i]) ? 15 : 0;
+            var hazardDamage = _field.IsHazard(_newHeadPositions[i]) ? 15 : 0;
             var totalDamage = 1 + hazardDamage;
-            snake.Move(newHeadPositions[i], hasEaten[i], totalDamage);
+            snake.Move(_newHeadPositions[i], _hasEaten[i], totalDamage);
         }
 
         // --- FASE 4: Aggiornamento Mondo ---
         // ... (questa fase è identica a prima)
         for (var i = 0; i < snakeCount; i++)
         {
-            var wasAlive = !isDead[i];
-            if (wasAlive && snakes[i].Dead) isDead[i] = true;
-            if (isDead[i] && wasAlive)
+            var wasAlive = !_isDead[i];
+            if (wasAlive && snakes[i].Dead) _isDead[i] = true;
+            if (_isDead[i] && wasAlive)
             {
                 _header.LiveSnakesCount--;
                 var deadSnake = snakes[i];
@@ -238,16 +218,16 @@ public ref struct WarArena
             }
             else if (wasAlive)
             {
-                hash ^= ZobristTable.GetSnakeValue(i, newHeadPositions[i]);
-                _field.Snakes.Set(newHeadPositions[i]);
-                if (!hasEaten[i])
+                hash ^= ZobristTable.GetSnakeValue(i, _newHeadPositions[i]);
+                _field.Snakes.Set(_newHeadPositions[i]);
+                if (!_hasEaten[i])
                 {
-                    hash ^= ZobristTable.GetSnakeValue(i, oldTailPositions[i]);
-                    _field.Snakes.Clear(oldTailPositions[i]);
+                    hash ^= ZobristTable.GetSnakeValue(i, _oldTailPositions[i]);
+                    _field.Snakes.Clear(_oldTailPositions[i]);
                 }
             }
 
-            if (hasEaten[i]) _field.Food.Clear(newHeadPositions[i]);
+            if (_hasEaten[i]) _field.Food.Clear(_newHeadPositions[i]);
         }
     }
 
