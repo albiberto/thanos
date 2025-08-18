@@ -8,6 +8,7 @@ namespace Thanos.War;
 public struct WarArenaHeader
 {
     public int LiveSnakesCount;
+    public long ZobristHash;
 }
 
 /// <summary>
@@ -39,6 +40,40 @@ public ref struct WarArena
     /// </summary>
     public WarSnakeArray Snakes => new(_snakesMemory, _header.LiveSnakesCount, _snakeStride);
 
+    /// <summary>
+    /// NUOVO: Calcola l'hash Zobrist iniziale per lo stato di gioco corrente.
+    /// Questo metodo va chiamato una sola volta quando si crea un nuovo stato dal server.
+    /// </summary>
+    public void InitializeHash()
+    {
+        long hash = 0;
+        var snakes = Snakes;
+        for (var i = 0; i < snakes.Length; i++)
+        {
+            var snake = snakes[i];
+            if (snake.Dead) continue;
+            
+            // Ottieni i segmenti del corpo del serpente
+            snake.GetSpans(out var span1, out var span2);
+            
+            // Applica l'operazione XOR per ogni segmento del corpo
+            foreach (var segment in span1)
+            {
+                hash ^= ZobristTable.GetSnakeValue(i, segment);
+            }
+            foreach (var segment in span2)
+            {
+                hash ^= ZobristTable.GetSnakeValue(i, segment);
+            }
+        }
+        _header.ZobristHash = hash;
+    }
+    
+    /// <summary>
+    /// NUOVO: Restituisce l'hash Zobrist corrente dello stato di gioco.
+    /// </summary>
+    public readonly long GetStateHash() => _header.ZobristHash;
+    
     /// <summary>
     /// Calcola le mosse legali per tutti i serpenti e scrive i risultati (un byte per serpente) nello span fornito.
     /// </summary>
@@ -73,6 +108,7 @@ public ref struct WarArena
     {
         var snakes = Snakes;
         var snakeCount = snakes.Length;
+        ref var hash = ref _header.ZobristHash; // Ottieni un riferimento per modificare l'hash
 
         scoped Span<ushort> newHeadPositions = stackalloc ushort[snakeCount];
         scoped Span<bool> hasEaten = stackalloc bool[snakeCount];
@@ -128,25 +164,50 @@ public ref struct WarArena
         // --- FASE 4: Aggiornamento Mondo ---
         for (var i = 0; i < snakeCount; i++)
         {
-            var snake = snakes[i];
-            if (!isDead[i] && snake.Dead) isDead[i] = true;
-
-            if (isDead[i])
+            // Controlla se un serpente era vivo e ora è morto
+            var wasAlive = !isDead[i];
+            if (wasAlive && snakes[i].Dead)
             {
-                // Questa riga modifica il dato REALE nell'header di memoria
+                isDead[i] = true;
+            }
+
+            if (isDead[i] && wasAlive) // Serpente appena morto in questo turno
+            {
                 _header.LiveSnakesCount--; 
                 
-                // Rimuovi il corpo del serpente dalla bitboard
-                snake.GetSpans(out var span1, out var span2);
-                foreach (var segment in span1) _field.Snakes.Clear(segment);
-                foreach (var segment in span2) _field.Snakes.Clear(segment);
+                // Aggiornamento Hash: Rimuovi il corpo del serpente morto
+                var deadSnake = snakes[i];
+                deadSnake.GetSpans(out var span1, out var span2);
+                foreach (var segment in span1)
+                {
+                    hash ^= ZobristTable.GetSnakeValue(i, segment);
+                    _field.Snakes.Clear(segment);
+                }
+                foreach (var segment in span2)
+                {
+                    hash ^= ZobristTable.GetSnakeValue(i, segment);
+                    _field.Snakes.Clear(segment);
+                }
             }
-            else
+            else if (wasAlive) // Serpente ancora vivo
             {
-                if (!hasEaten[i]) _field.Snakes.Clear(oldTailPositions[i]);
-                _field.Snakes.Set(snake.Head);
+                // Aggiornamento Hash: Aggiungi la nuova testa
+                hash ^= ZobristTable.GetSnakeValue(i, newHeadPositions[i]);
+                _field.Snakes.Set(newHeadPositions[i]);
+                
+                if (!hasEaten[i])
+                {
+                    // Aggiornamento Hash: Rimuovi la vecchia coda
+                    hash ^= ZobristTable.GetSnakeValue(i, oldTailPositions[i]);
+                    _field.Snakes.Clear(oldTailPositions[i]);
+                }
             }
-            if (hasEaten[i]) _field.Food.Clear(newHeadPositions[i]);
+
+            // L'hash del cibo non viene tracciato, quindi qui non cambia nulla
+            if (hasEaten[i])
+            {
+                _field.Food.Clear(newHeadPositions[i]);
+            }
         }
     }
 

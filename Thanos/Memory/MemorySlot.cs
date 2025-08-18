@@ -20,6 +20,8 @@ public readonly ref struct MemorySlot(Span<byte> slot, in MemoryLayout layout)
         var warField = InitializeWarField(in request.Board);
         InitializeWarSnakes(ref warField, in request.Board);
         InitializeArenaHeader(request.Board.SnakeCount); // NUOVO
+        var arena = GetArena(in request.Board);
+        arena.InitializeHash(); // <- Chiamata al nuovo metodo
     }
 
     /// <summary>
