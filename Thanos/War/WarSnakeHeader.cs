@@ -5,11 +5,12 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public struct WarSnakeHeader(int index, ushort head, int health, int length, int capacity)
 {
-    public int Index { get; } = index;
+    private ushort _head = head;
     private int _health = health;
+    
+    public int Index { get; } = index;
     public int Capacity { get; } = capacity;
     public int Length { get; private set; } = length;
-    public ushort Head { get; private set; } = head;
     public int NextHeadIndex { get; private set; } = length & (capacity - 1);
     public int TailIndex { get; private set; } = 0;
     
@@ -31,7 +32,7 @@ public struct WarSnakeHeader(int index, ushort head, int health, int length, int
 
     public void PushHead(ushort newHead)
     {
-        Head = newHead;
+        _head = newHead;
         NextHeadIndex = (NextHeadIndex + 1) & (Capacity - 1);
     }
 
