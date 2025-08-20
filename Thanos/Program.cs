@@ -23,13 +23,13 @@ app.MapGet("/", () => new
 app.MapPost("/start", async context =>
 {
     var request = await ReadAsync(context);
-    agent.Start(request);
+    agent.Start(request!.Value);
 });
 
 app.MapPost("/move", async context =>
 {
     var request = await ReadAsync(context);
-    var result = agent.Move(request);
+    var result = agent.Move(request!.Value);
     
     context.Response.ContentType = "application/json";
     await context.Response.WriteAsJsonAsync(new { move = ToApiMove(result) });
@@ -38,13 +38,21 @@ app.MapPost("/move", async context =>
 app.MapPost("/end", async context =>
 {
     var request = await ReadAsync(context);
-    BattleSnakeAgent.End(request);
+    BattleSnakeAgent.End(request!.Value);
 });
 
 app.Run();
 return;
 
-async Task<Request> ReadAsync(HttpContext httpContext) => await JsonSerializer.DeserializeAsync(httpContext.Request.Body, ThanosSerializerContext.Default.Request);
+static async Task<Request?> ReadAsync(HttpContext httpContext)
+{
+    // Usa l'override che accetta lo Stream, il JsonTypeInfo dal source generator
+    // e un CancellationToken per gestire l'annullamento della richiesta.
+    return await JsonSerializer.DeserializeAsync(
+        httpContext.Request.Body,
+        ThanosSerializerContext.Default.Request,
+        httpContext.RequestAborted); 
+}
 
 static string ToApiMove(byte move) =>
     move switch

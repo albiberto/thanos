@@ -33,9 +33,6 @@ namespace Thanos.SourceGen;
 [JsonSerializable(typeof(Request))]
 public partial class ThanosSerializerContext : JsonSerializerContext;
 
-// Questo modello è stato completato con tutte le proprietà necessarie e aggiornato
-// con la sintassi moderna per le proprietà di sola lettura ({ get; }).
-
 [method: JsonConstructor]
 public readonly struct Request(Game game, int turn, Board board, Snake you)
 {
@@ -94,14 +91,13 @@ public readonly struct Game(Guid id, Ruleset ruleset, Map map, Source source, in
 }
 
 [method: JsonConstructor]
-public readonly struct Ruleset(string name, string version, RulesetSettings settings)
+public readonly struct Ruleset(RulesetSettings settings)
 {
-    // AGGIUNTE le proprietà mancanti 'name' e 'version'
-    [JsonPropertyName("name")]
-    public string Name { get; } = name;
-
-    [JsonPropertyName("version")]
-    public string Version { get; } = version;
+    // [JsonPropertyName("name")]
+    // public string Name { get; } = name;
+    //
+    // [JsonPropertyName("version")]
+    // public string Version { get; } = version;
 
     [JsonPropertyName("settings")]
     public RulesetSettings Settings { get; } = settings;
@@ -185,8 +181,7 @@ public readonly struct Coordinate(int x, int y)
 }
 
 [method: JsonConstructor]
-// AGGIUNTE tutte le proprietà mancanti per matchare il modello funzionante
-public readonly struct Snake(string id, string name, int health, Coordinate[] body, string latency, Coordinate head, int length, string shout, Customizations customizations)
+public readonly struct Snake(string id, string name, int health, Coordinate[] body, string latency, Coordinate head, int length, string shout)
 {
     [JsonPropertyName("id")]
     public string Id { get; } = id;
@@ -212,19 +207,19 @@ public readonly struct Snake(string id, string name, int health, Coordinate[] bo
     [JsonPropertyName("shout")]
     public string Shout { get; } = shout;
 
-    [JsonPropertyName("customizations")]
-    public Customizations Customizations { get; } = customizations;
+//     [JsonPropertyName("customizations")]
+//     public Customizations Customizations { get; } = customizations;
 }
 
-[method: JsonConstructor]
-public readonly struct Customizations(string color, string head, string tail)
-{
-    [JsonPropertyName("color")]
-    public string Color { get; } = color;
-
-    [JsonPropertyName("head")]
-    public string Head { get; } = head;
-
-    [JsonPropertyName("tail")]
-    public string Tail { get; } = tail;
-}
+// [method: JsonConstructor]
+// public readonly struct Customizations(string color, string head, string tail)
+// {
+//     [JsonPropertyName("color")]
+//     public string Color { get; } = color;
+//
+//     [JsonPropertyName("head")]
+//     public string Head { get; } = head;
+//
+//     [JsonPropertyName("tail")]
+//     public string Tail { get; } = tail;
+// }

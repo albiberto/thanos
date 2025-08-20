@@ -24,7 +24,6 @@ public class LowLevelParserIntegrationTests
         var expected = JsonSerializer.Deserialize<TestRequest>(rawJson, expectedOptions);
 
         // Source Generator (actual)
-        // var actual = JsonSerializer.Deserialize<Request>(rawJson, expectedOptions);
         var actual = JsonSerializer.Deserialize(rawJson, ThanosSerializerContext.Default.Request);
 
         if (expected is null) Assert.Fail("Failed to deserialize the 'expected' TestRequest object.");
@@ -136,15 +135,15 @@ public class LowLevelParserIntegrationTests
         });
     }
     
-    private static void AssertCustomizationsAreEqual(TestCustomizations expected, Customizations actual, string context)
-    {
-        Assert.Multiple(() =>
-        {
-            Assert.That(expected.Color, Is.EqualTo(actual.Color), $"{context}.Color should match.");
-            Assert.That(expected.Head, Is.EqualTo(actual.Head), $"{context}.Head should match.");
-            Assert.That(expected.Tail, Is.EqualTo(actual.Tail), $"{context}.Tail should match.");
-        });
-    }
+    // private static void AssertCustomizationsAreEqual(TestCustomizations expected, Customizations actual, string context)
+    // {
+    //     Assert.Multiple(() =>
+    //     {
+    //         Assert.That(expected.Color, Is.EqualTo(actual.Color), $"{context}.Color should match.");
+    //         Assert.That(expected.Head, Is.EqualTo(actual.Head), $"{context}.Head should match.");
+    //         Assert.That(expected.Tail, Is.EqualTo(actual.Tail), $"{context}.Tail should match.");
+    //     });
+    // }
     
     private static void AssertCollectionsAreEqual<TExpected, TActual>(ICollection<TExpected> expectedCollection, ICollection<TActual> actualCollection, string collectionName, Action<TExpected, TActual, string> elementComparer)
     {
