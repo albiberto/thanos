@@ -110,7 +110,7 @@ public sealed class BattleSnakeAgent : IDisposable
         _root->Parent = null; // Il nuovo root non ha genitore
 
         // --- FASE 3: RICERCA MCTS ---
-        var bestMoveByte = _engine.FindBestMove(_root, in _context, request.Game.Timeout);
+        var bestMoveByte = _engine.FindBestMove(_root, in _context, request.Game.TimeLimit);
         
         // --- FASE 4: PREPARAZIONE PER IL PROSSIMO TURNO ---
         // Memorizza il NODO corrispondente alla nostra mossa per il riutilizzo al prossimo turno

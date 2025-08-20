@@ -87,7 +87,7 @@ public readonly struct Game(Guid id, Ruleset ruleset, Map map, Source source, in
     public int Timeout { get; } = timeout;
 
     [JsonIgnore]
-    public int TimeLimit => Timeout / 2; // Esempio di logica aggiuntiva
+    public int TimeLimit => (int)(Timeout * Constants.TimeoutRatio);
 }
 
 [method: JsonConstructor]
