@@ -71,7 +71,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         var ourSnakeIndex = -1;
         for (var i = 0; i < snakes.Length; i++)
             // NOTA: Richiede di aggiungere il campo 'Id' a WarSnake
-            if (snakes[i].Id == context.MyId)
+            if (snakes[i].index == context.MyId)
             {
                 ourSnakeIndex = i;
                 break;

@@ -1,27 +1,31 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
 
-[StructLayout(LayoutKind.Sequential)]
-public struct WarSnakeHeader
-{
-    public int Id;
-    public int Health;
-    public uint Capacity;
-    public uint Length;
-    public ushort Head;
-    public uint NextHeadIndex;
-    public uint TailIndex;
-}
-
 public ref struct WarSnake
 {
-    // Riferimenti ai dati sottostanti
     private ref WarSnakeHeader _header;
     private readonly Span<ushort> _body;
 
+    /// <summary>
+    /// COSTRUTTORE 1 (inizializza la memoria grezza):
+    /// 1. Si collega alla memoria grezza (header e body).
+    /// 2. Inizializza quella memoria usando i dati forniti (snake, body).
+    /// </summary>
+    public WarSnake(ref WarSnakeHeader header, in Snake snake, Span<ushort> body, ReadOnlySpan<ushort> body1D, int capacity)
+    {
+        // Fase 1: Collegamento alla memoria
+        _header = ref header;
+        _body = body;
+        
+        // Fase 2: Inizializzazione della memoria
+        body1D.CopyTo(_body);
+        
+        var length = _body.Length;
+        _header = new WarSnakeHeader(0, snake.Health, capacity, length, _body[length - 1], length & (capacity - 1), 0);
+    }
+    
     /// <summary>
     /// COSTRUTTORE 2 (per la "vista"):
     /// Si collega semplicemente alla memoria già inizializzata.
@@ -31,65 +35,32 @@ public ref struct WarSnake
         _header = ref header;
         _body = body;
     }
+
+    public WarSnakeHeader Header => _header;
     
-    /// <summary>
-    /// COSTRUTTORE "TUTTOFARE":
-    /// 1. Si collega alla memoria grezza (header e body).
-    /// 2. Inizializza quella memoria usando i dati forniti (initialSnakeData).
-    /// </summary>
-    public WarSnake(ref WarSnakeHeader header, Span<ushort> body, in Snake snake, ReadOnlySpan<ushort> body1D)
-    {
-        // Fase 1: Collegamento alla memoria
-        _header = ref header;
-        _body = body;
-
-        // Fase 2: Inizializzazione (ora molto più semplice)
-        var capacity = (uint)_body.Length;
-        var length = (uint)body1D.Length;
-
-        _header.Capacity = capacity;
-        _header.Length = length;
-        _header.Health = snake.Health;
-        _header.TailIndex = 0;
-        _header.NextHeadIndex = length & (capacity - 1);
-
-        // Copia il corpo 1D già convertito
-        body1D.CopyTo(_body);
-
-        _header.Head = length > 0 ? _body[(int)length - 1] : ushort.MaxValue;
-    }
-
-    // --- PROPRIETÀ ---
-    // Health ora ha un setter pubblico, che è corretto. Rimosso 'readonly'.
-    public int Id => _header.Id;
-    public int Health { readonly get => _header.Health; private set => _header.Health = value; }
-    public readonly ushort Head => _header.Head;
-    public readonly ushort Tail => _body[(int)_header.TailIndex];
-    public readonly uint Length => _header.Length;
-    public readonly bool Dead => Health <= 0;
-    
-    // --- METODI ---
-    public void Kill() => Health = 0;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Move(ushort newHeadPosition, bool hasEaten, int damage)
+    public void Move(ushort newHead, bool hasEaten, int damage)
     {
-        Health = hasEaten ? 100 : Health - damage;
-        if (Dead) return;
+        var alive = hasEaten
+            ? _header.FullCure()
+            : _header.Damage(damage);
         
-        PushHead(newHeadPosition);
+        if (alive) return;
+        
+        _body[_header.NextHeadIndex] = newHead;
+        _header.PushHead(newHead);
         
         if (hasEaten) 
-            IncrementLength(); 
+            _header.IncrementLength(); 
         else 
-            PopTail();
+            _header.PopTail();
     }
     
     public readonly void GetSpans(out Span<ushort> first, out Span<ushort> second)
     {
-        var tailIndex = (int)_header.TailIndex;
-        var length = (int)_header.Length;
-        var capacity = (int)_header.Capacity;
+        var tailIndex = _header.TailIndex;
+        var length = _header.Length;
+        var capacity = _header.Capacity;
 
         if (length == 0)
         {
@@ -113,17 +84,44 @@ public ref struct WarSnake
         }
     }
     
-    private void PushHead(ushort newHeadPosition)
+    [StructLayout(LayoutKind.Sequential)]
+    public struct WarSnakeHeader(int index, int health, int capacity, int length, ushort head, int nextHeadIndex, int tailIndex)
     {
-        _body[(int)_header.NextHeadIndex] = newHeadPosition;
-        _header.Head = newHeadPosition;
-        _header.NextHeadIndex = (_header.NextHeadIndex + 1) & (_header.Capacity - 1);
-    }
+        public int Index { get; } = index;
+        public int Health { get; private set; } = health;
+        public int Capacity { get; } = capacity;
+        public int Length { get; private set; } = length;
+        public ushort Head { get; private set; } = head;
+        public int NextHeadIndex { get; private set; } = nextHeadIndex;
+        public int TailIndex { get; private set; } = tailIndex;
 
-    private void PopTail() => _header.TailIndex = (_header.TailIndex + 1) & (_header.Capacity - 1);
+        public void Kill() => Health = 0;
 
-    private void IncrementLength()
-    {
-        if (_header.Length < _header.Capacity) _header.Length++;
+        public bool Damage(int amount)
+        {
+            Health -= amount;
+            return Dead;
+        }
+
+        public bool FullCure()
+        {
+            Health = 100;
+            return true;
+        }
+
+        public readonly bool Dead => Health <= 0;
+
+        public void PushHead(ushort newHead)
+        {
+            Head = newHead;
+            NextHeadIndex = (NextHeadIndex + 1) & (Capacity - 1);
+        }
+
+        public void PopTail() => TailIndex = (TailIndex + 1) & (Capacity - 1);
+
+        public void IncrementLength()
+        {
+            if (Length < Capacity) Length++;
+        }
     }
 }

@@ -147,7 +147,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
                 var bodySpan = MemoryMarshal.Cast<byte, ushort>(bodyBytesSpan);
 
                 // Assegna l'ID intero all'header del serpente
-                header.Id = snakeIdMap[initialSnake.Id];
+                header.Index = snakeIdMap[initialSnake.Id];
                 
                 new WarSnake(ref header, bodySpan, in initialSnake, snakeBody1D);
 
