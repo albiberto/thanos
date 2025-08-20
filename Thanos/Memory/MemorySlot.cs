@@ -20,8 +20,8 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
     public void InitializeFromRequest(in Request request)
     {
         InitializeNode();
-        var warField = InitializeWarFieldFromBoard(in request.Board);
-        InitializeWarSnakesFromBoard(ref warField, in request.Board, snakeIdMap);
+        var warField = InitializeWarFieldFromBoard( request.Board);
+        InitializeWarSnakesFromBoard(ref warField,  request.Board, snakeIdMap);
         InitializeArenaHeader(request.Board.SnakeCount); // NUOVO
 
         var arena = GetArena();

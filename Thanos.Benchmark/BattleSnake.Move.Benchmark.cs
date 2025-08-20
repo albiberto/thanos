@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using BenchmarkDotNet.Attributes;
+using Thanos.SourceGen;
 
 namespace Thanos.Benchmark;
 

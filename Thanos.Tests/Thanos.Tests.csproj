@@ -31,9 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="ThanosSerializerContext.cs">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Compile>
+      <ProjectReference Include="..\Thanos\Thanos.csproj" />
     </ItemGroup>
 
 </Project>
