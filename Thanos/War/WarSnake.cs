@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using Thanos.SourceGen;
 
 namespace Thanos.War;
 
@@ -13,7 +12,7 @@ public ref struct WarSnake
     /// 1. Si collega alla memoria grezza (header e body).
     /// 2. Inizializza quella memoria usando i dati forniti (snake, body).
     /// </summary>
-    public WarSnake(ref WarSnakeHeader header, in Snake snake, Span<ushort> body, ReadOnlySpan<ushort> body1D, int capacity)
+    public WarSnake(ref WarSnakeHeader header, int id, int health, Span<ushort> body, ReadOnlySpan<ushort> body1D, int capacity)
     {
         // Fase 1: Collegamento alla memoria
         _header = ref header;
@@ -23,7 +22,8 @@ public ref struct WarSnake
         body1D.CopyTo(_body);
         
         var length = _body.Length;
-        _header = new WarSnakeHeader(0, snake.Health, capacity, length, _body[length - 1], length & (capacity - 1), 0);
+        var head = _body[length - 1];
+        _header = new WarSnakeHeader(id, head, health, length, capacity);
     }
     
     /// <summary>
@@ -41,11 +41,11 @@ public ref struct WarSnake
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHead, bool hasEaten, int damage)
     {
-        var alive = hasEaten
+        var dead = hasEaten
             ? _header.FullCure()
             : _header.Damage(damage);
         
-        if (alive) return;
+        if (dead) return;
         
         _body[_header.NextHeadIndex] = newHead;
         _header.PushHead(newHead);
@@ -81,47 +81,6 @@ public ref struct WarSnake
             var firstLength = capacity - tailIndex;
             first = _body.Slice(tailIndex, firstLength);
             second = _body[..(length - firstLength)];
-        }
-    }
-    
-    [StructLayout(LayoutKind.Sequential)]
-    public struct WarSnakeHeader(int index, int health, int capacity, int length, ushort head, int nextHeadIndex, int tailIndex)
-    {
-        public int Index { get; } = index;
-        public int Health { get; private set; } = health;
-        public int Capacity { get; } = capacity;
-        public int Length { get; private set; } = length;
-        public ushort Head { get; private set; } = head;
-        public int NextHeadIndex { get; private set; } = nextHeadIndex;
-        public int TailIndex { get; private set; } = tailIndex;
-
-        public void Kill() => Health = 0;
-
-        public bool Damage(int amount)
-        {
-            Health -= amount;
-            return Dead;
-        }
-
-        public bool FullCure()
-        {
-            Health = 100;
-            return true;
-        }
-
-        public readonly bool Dead => Health <= 0;
-
-        public void PushHead(ushort newHead)
-        {
-            Head = newHead;
-            NextHeadIndex = (NextHeadIndex + 1) & (Capacity - 1);
-        }
-
-        public void PopTail() => TailIndex = (TailIndex + 1) & (Capacity - 1);
-
-        public void IncrementLength()
-        {
-            if (Length < Capacity) Length++;
         }
     }
 }
