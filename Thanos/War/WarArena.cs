@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.MCST;
+using Thanos.War.Snake;
 
 // Assicurati che i tuoi 'using' siano corretti
 
@@ -68,7 +69,7 @@ public ref struct WarArena
         for (var i = 0; i < snakes.Length; i++)
         {
             var snake = snakes[i];
-            if (snake.Dead) continue;
+            if (snake.Profile.Dead) continue;
 
             // Ottieni i segmenti del corpo del serpente
             snake.GetSpans(out var span1, out var span2);
@@ -96,7 +97,7 @@ public ref struct WarArena
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte GetLegalMoves(WarSnake snake)
     {
-        var head = snake.Head;
+        var head = snake.Anatomy.Head;
         var width = _field.Width;
         var area = _field.Area;
         var legalMoveSet = Moves.None;
@@ -141,14 +142,14 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
-            if (snake.Dead)
+            if (snake.Profile.Dead)
             {
                 _isDead[i] = true;
                 continue;
             }
 
-            _oldTailPositions[i] = snake.Tail;
-            var head = snake.Head;
+            _oldTailPositions[i] = snake.Anatomy.Tail;
+            var head = snake.Anatomy.Head;
             var move = chosenMoves[i];
 
             _newHeadPositions[i] = move switch
@@ -180,8 +181,8 @@ public ref struct WarArena
                 {
                     var snakeA = snakes[i];
                     var snakeB = snakes[j];
-                    if (snakeA.Length >= snakeB.Length) _isDead[j] = true;
-                    if (snakeB.Length >= snakeA.Length) _isDead[i] = true;
+                    if (snakeA.Anatomy.Length >= snakeB.Anatomy.Length) _isDead[j] = true;
+                    if (snakeB.Anatomy.Length >= snakeA.Anatomy.Length) _isDead[i] = true;
                 }
             }
         }
@@ -202,7 +203,7 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             var wasAlive = !_isDead[i];
-            if (wasAlive && snakes[i].Dead) _isDead[i] = true;
+            if (wasAlive && snakes[i].Profile.Dead) _isDead[i] = true;
             if (_isDead[i] && wasAlive)
             {
                 _header.LiveSnakesCount--;
@@ -241,7 +242,7 @@ public ref struct WarArena
     /// <returns>1.0 per vittoria, -1.0 per sconfitta, 0.0 se il gioco continua.</returns>
     public float Evaluate()
     {
-        if (Snakes[0].Dead) return -1.0f;
+        if (Snakes[0].Profile.Dead) return -1.0f;
         return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
     }
 
@@ -252,9 +253,9 @@ public ref struct WarArena
     {
         var snake = Snakes[snakeIndex];
         // Se era già stato segnato come morto in una fase precedente, non fare nulla
-        if (snake.Dead) return;
+        if (snake.Profile.Dead) return;
 
-        snake.Kill(); // Imposta la vita a 0
+        snake.Profile.Kill(); // Imposta la vita a 0
         _header.LiveSnakesCount--;
 
         // Rimuovi il serpente dalla bitboard e aggiorna l'hash
@@ -280,11 +281,11 @@ public ref struct WarArena
     public void ApplySingleMove(int snakeIndex, byte move)
     {
         var snake = Snakes[snakeIndex];
-        if (snake.Dead) return;
+        if (snake.Profile.Dead) return;
 
         // 1. Calcola la nuova posizione della testa e la vecchia coda
-        var oldTail = snake.Tail;
-        var head = snake.Head;
+        var oldTail = snake.Anatomy.Tail;
+        var head = snake.Anatomy.Head;
         var newHead = move switch
         {
             Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
@@ -310,7 +311,7 @@ public ref struct WarArena
         snake.Move(newHead, hasEaten, totalDamage);
 
         // Controlla se il serpente è morto per fame/danni
-        if (snake.Dead)
+        if (snake.Profile.Dead)
         {
             KillSnake(snakeIndex);
             return;
@@ -351,12 +352,15 @@ public ref struct WarArena
             get
             {
                 var singleSnakeBlock = _snakesMemory.Slice(index * stride, stride);
-                var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<WarSnakeHeader>()];
-                var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<WarSnakeHeader>()..]);
-                ref var header = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarSnakeHeader>(headerSpan));
+                var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<Profile>()];
+                var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<Profile>()..]);
+                ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(headerSpan));
+                
+                // TODO: correggi offsets
+                ref var anatomy = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Anatomy>(headerSpan));
 
                 // Chiama il costruttore "vista"
-                return new WarSnake(ref header, bodySpan);
+                return new WarSnake(ref profile, ref anatomy, bodySpan);
             }
         }
     }

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Thanos.Enums;
 using Thanos.MCST;
 using Thanos.War;
+using Thanos.War.Snake;
 
 namespace Thanos.Memory;
 
@@ -56,7 +57,7 @@ public readonly unsafe record struct MemoryLayout
         BitboardsSize = BitboardStrideInBytes * WarField.TotalBitboards;
 
         var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)area), Constants.MaxSnakeBodyCapacity);
-        var snakeHeaderSize = sizeof(WarSnakeHeader).AlignUp();
+        var snakeHeaderSize = sizeof(Profile).AlignUp();
         SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
         SnakesSize = SnakeStride * snakeCount;
 

@@ -1,14 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Text.Json;
-using NUnit.Framework;
+﻿using System.Text.Json;
 using Thanos.SourceGen;
 using Thanos.Tests.Support;
 using Thanos.Tests.Support.Model;
 
-namespace Thanos.Tests;
+namespace Thanos.Tests.Tests.Json;
 
 [TestFixture]
-public class LowLevelParserIntegrationTests
+public class ThanosSerializerContextTests
 {
     private static readonly TestsProvider _testsProvider = new("battle-snake_tests");
 
@@ -50,7 +48,7 @@ public class LowLevelParserIntegrationTests
         Assert.Multiple(() =>
         {
             Assert.That(expected.Id, Is.EqualTo(actual.Id), "Game.Id should match.");
-            Assert.That(expected.Map, Is.EqualTo(actual.Map.ToString()).IgnoreCase, "Game.Map should match.");
+            Assert.That(expected.Map, Is.EqualTo(actual.gameMap.ToString()).IgnoreCase, "Game.Map should match.");
             Assert.That(expected.Source, Is.EqualTo(actual.Source.ToString()).IgnoreCase, "Game.Source should match.");
             Assert.That(expected.Timeout, Is.EqualTo(actual.Timeout), "Game.Timeout should match.");
     
@@ -109,7 +107,7 @@ public class LowLevelParserIntegrationTests
         });
     }
     
-    private static void AssertSnakesAreEqual(TestSnake expected, Snake actual, string context)
+    private static void AssertSnakesAreEqual(TestProfile expected, Profile actual, string context)
     {
         Assert.Multiple(() =>
         {
