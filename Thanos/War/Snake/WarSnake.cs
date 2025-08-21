@@ -46,8 +46,6 @@ public ref struct WarSnake
     [SkipLocalsInit]
     public void Move(ushort newHead, bool hasEaten, int damage)
     {
-        hasEaten = hasEaten && _anatomy.IsFull; 
-        
         if (hasEaten)
             _health.FullCure();
         else
@@ -57,7 +55,6 @@ public ref struct WarSnake
 
         _body[_anatomy.NextHeadIndex] = newHead;
 
-        // 2. WarSnake dice ad Anatomy di aggiornare il suo stato
         if (hasEaten)
             _anatomy.IncrementLength();
         else
