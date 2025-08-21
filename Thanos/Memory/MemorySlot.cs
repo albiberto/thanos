@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Thanos.MCST;
 using Thanos.SourceGen;
 using Thanos.War;
+using Thanos.War.Grid;
 using Thanos.War.Snake;
 
 namespace Thanos.Memory;
@@ -73,7 +74,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
     /// <summary>
     ///     Restituisce la "vista" WarField per i dati di questo slot.
     /// </summary>
-    private WarField GetField()
+    private WarGrid GetField()
     {
         var bitboardsSpan = _slot.Slice(_context.Layout.BitboardsOffset, _context.Layout.BitboardsSize);
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
@@ -84,7 +85,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
 
         // ORA È SICURO: Passiamo i valori primitivi estratti da _context.
-        return new WarField(_context.Width, _context.Height, _context.Area, food, hazards, snakes);
+        return new WarGrid(_context.Width, _context.Height, _context.Area, food, hazards, snakes);
     }
 
     // --- HELPERS PRIVATI PER L'INIZIALIZZAZIONE ---
@@ -95,7 +96,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
         node = new Node(); // Inizializza a zero/default
     }
 
-    private WarField InitializeWarFieldFromBoard(in Board board)
+    private WarGrid InitializeWarFieldFromBoard(in Board board)
     {
         var bitboardsSpan = _slot.Slice(_context.Layout.BitboardsOffset, _context.Layout.BitboardsSize);
         bitboardsSpan.Clear();
@@ -107,14 +108,14 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
         var snakes = bitboardsUlongSpan.Slice(stride * 2, stride);
 
-        return new WarField(_context.Width, _context.Height, _context.Area, food, hazards, snakes, board.Food, board.Hazards);
+        return new WarGrid(_context.Width, _context.Height, _context.Area, food, hazards, snakes, board.Food, board.Hazards);
     }
 
     /// <summary>
     ///     Inizializza tutti i serpenti per un nuovo stato di gioco.
     ///     Questa è la funzione "orchestratore" che coordina WarField e WarSnake.
     /// </summary>
-    private void InitializeWarSnakesFromBoard(ref WarField field, in Board board, Dictionary<string, int> snakeIdMap)
+    private void InitializeWarSnakesFromBoard(ref WarGrid grid, in Board board, Dictionary<string, int> snakeIdMap)
     {
         var snakesSpan = _slot.Slice(_context.Layout.SnakesOffset, _context.Layout.SnakesSize);
 
@@ -138,7 +139,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
                 for (var j = 0; j < actualLength; j++)
                 {
                     var index = actualLength - 1 - j;
-                    snakeBody1D[j] = field.To1D(in initialSnake.Body[index]);
+                    snakeBody1D[j] = grid.To1D(in initialSnake.Body[index]);
                 }
 
                 var singleSnakeBlock = snakesSpan.Slice(i * _context.Layout.SnakeStride, _context.Layout.SnakeStride);
@@ -156,7 +157,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
                 // TODO: verfica e passa il valore capacity corretto
                 new WarSnake(ref profile, ref anatomy, body, id, health, snakeBody1D, 1);
 
-                foreach (var coord1D in snakeBody1D) field.Snakes.Set(coord1D);
+                foreach (var coord1D in snakeBody1D) grid.Snakes.Set(coord1D);
             }
         }
         finally

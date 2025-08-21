@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.MCST;
+using Thanos.War.Grid;
 using Thanos.War.Snake;
 
 // Assicurati che i tuoi 'using' siano corretti
@@ -23,7 +24,7 @@ public ref struct WarArena
 {
     // --- CAMPI PRIVATI ---
     private ref WarArenaHeader _header;
-    private WarField _field;
+    private WarGrid _grid;
     private readonly Span<byte> _snakesMemory;
     private readonly Span<ushort> _newHeadPositions;
     private readonly Span<bool> _hasEaten;
@@ -35,7 +36,7 @@ public ref struct WarArena
     ///     Crea una nuova vista WarArena per uno stato di gioco esistente.
     /// </summary>
     public WarArena(ref WarArenaHeader header,
-        WarField field,
+        WarGrid grid,
         Span<byte> snakesMemory,
         Span<ushort> newHeadPositions,
         Span<bool> hasEaten,
@@ -44,7 +45,7 @@ public ref struct WarArena
         int snakeStride)
     {
         _header = ref header;
-        _field = field;
+        _grid = grid;
         _snakesMemory = snakesMemory;
         _newHeadPositions = newHeadPositions;
         _hasEaten = hasEaten;
@@ -98,25 +99,25 @@ public ref struct WarArena
     public byte GetLegalMoves(WarSnake snake)
     {
         var head = snake.Head;
-        var width = _field.Width;
-        var area = _field.Area;
+        var width = _grid.Width;
+        var area = _grid.Area;
         var legalMoveSet = Moves.None;
 
         // --- Calcola e Controlla SU ---
         var upPos = head < width ? ushort.MaxValue : (ushort)(head - width);
-        if (!_field.IsOccupied(upPos)) legalMoveSet |= Moves.Up;
+        if (!_grid.IsOccupied(upPos)) legalMoveSet |= Moves.Up;
 
         // --- Calcola e Controlla GIÙ ---
         var downPos = head >= area - width ? ushort.MaxValue : (ushort)(head + width);
-        if (!_field.IsOccupied(downPos)) legalMoveSet |= Moves.Down;
+        if (!_grid.IsOccupied(downPos)) legalMoveSet |= Moves.Down;
 
         // --- Calcola e Controlla SINISTRA ---
         var leftPos = head % width == 0 ? ushort.MaxValue : (ushort)(head - 1);
-        if (!_field.IsOccupied(leftPos)) legalMoveSet |= Moves.Left;
+        if (!_grid.IsOccupied(leftPos)) legalMoveSet |= Moves.Left;
 
         // --- Calcola e Controlla DESTRA ---
         var rightPos = (head + 1) % width == 0 ? ushort.MaxValue : (ushort)(head + 1);
-        if (!_field.IsOccupied(rightPos)) legalMoveSet |= Moves.Right;
+        if (!_grid.IsOccupied(rightPos)) legalMoveSet |= Moves.Right;
 
         return legalMoveSet;
     }
@@ -154,10 +155,10 @@ public ref struct WarArena
 
             _newHeadPositions[i] = move switch
             {
-                Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
-                Moves.Down => head >= _field.Area - _field.Width ? ushort.MaxValue : (ushort)(head + _field.Width),
-                Moves.Left => head % _field.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
-                Moves.Right => (head + 1) % _field.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
+                Moves.Up => head < _grid.Width ? ushort.MaxValue : (ushort)(head - _grid.Width),
+                Moves.Down => head >= _grid.Area - _grid.Width ? ushort.MaxValue : (ushort)(head + _grid.Width),
+                Moves.Left => head % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
+                Moves.Right => (head + 1) % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
                 _ => ushort.MaxValue
             };
         }
@@ -167,13 +168,13 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             if (_isDead[i]) continue;
-            if (_field.IsOccupied(_newHeadPositions[i]))
+            if (_grid.IsOccupied(_newHeadPositions[i]))
             {
                 _isDead[i] = true;
                 continue;
             }
 
-            _hasEaten[i] = _field.IsFood(_newHeadPositions[i]);
+            _hasEaten[i] = _grid.IsFood(_newHeadPositions[i]);
             for (var j = i + 1; j < snakeCount; j++)
             {
                 if (_isDead[j]) continue;
@@ -194,7 +195,7 @@ public ref struct WarArena
         {
             if (_isDead[i]) continue;
             var snake = snakes[i];
-            var hazardDamage = _field.IsHazard(_newHeadPositions[i]) ? 15 : 0;
+            var hazardDamage = _grid.IsHazard(_newHeadPositions[i]) ? 15 : 0;
             var totalDamage = 1 + hazardDamage;
             snake.Move(_newHeadPositions[i], _hasEaten[i], totalDamage);
         }
@@ -213,27 +214,27 @@ public ref struct WarArena
                 foreach (var segment in span1)
                 {
                     hash ^= ZobristTable.GetSnakeValue(i, segment);
-                    _field.Snakes.Clear(segment);
+                    _grid.Snakes.Clear(segment);
                 }
 
                 foreach (var segment in span2)
                 {
                     hash ^= ZobristTable.GetSnakeValue(i, segment);
-                    _field.Snakes.Clear(segment);
+                    _grid.Snakes.Clear(segment);
                 }
             }
             else if (wasAlive)
             {
                 hash ^= ZobristTable.GetSnakeValue(i, _newHeadPositions[i]);
-                _field.Snakes.Set(_newHeadPositions[i]);
+                _grid.Snakes.Set(_newHeadPositions[i]);
                 if (!_hasEaten[i])
                 {
                     hash ^= ZobristTable.GetSnakeValue(i, _oldTailPositions[i]);
-                    _field.Snakes.Clear(_oldTailPositions[i]);
+                    _grid.Snakes.Clear(_oldTailPositions[i]);
                 }
             }
 
-            if (_hasEaten[i]) _field.Food.Clear(_newHeadPositions[i]);
+            if (_hasEaten[i]) _grid.Food.Clear(_newHeadPositions[i]);
         }
     }
 
@@ -265,13 +266,13 @@ public ref struct WarArena
         foreach (var segment in span1)
         {
             hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
-            _field.Snakes.Clear(segment);
+            _grid.Snakes.Clear(segment);
         }
 
         foreach (var segment in span2)
         {
             hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
-            _field.Snakes.Clear(segment);
+            _grid.Snakes.Clear(segment);
         }
     }
 
@@ -289,23 +290,23 @@ public ref struct WarArena
         var head = snake.Head;
         var newHead = move switch
         {
-            Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
-            Moves.Down => head >= _field.Area - _field.Width ? ushort.MaxValue : (ushort)(head + _field.Width),
-            Moves.Left => head % _field.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
-            Moves.Right => (head + 1) % _field.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
+            Moves.Up => head < _grid.Width ? ushort.MaxValue : (ushort)(head - _grid.Width),
+            Moves.Down => head >= _grid.Area - _grid.Width ? ushort.MaxValue : (ushort)(head + _grid.Width),
+            Moves.Left => head % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
+            Moves.Right => (head + 1) % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
             _ => ushort.MaxValue
         };
 
         // 2. Controlla se la mossa porta a morte istantanea (muro o corpo di un altro serpente)
-        if (_field.IsOccupied(newHead))
+        if (_grid.IsOccupied(newHead))
         {
             KillSnake(snakeIndex);
             return; // L'espansione finisce qui in un nodo terminale
         }
 
         // 3. Controlla cibo e calcola il danno
-        var hasEaten = _field.IsFood(newHead);
-        var hazardDamage = _field.IsHazard(newHead) ? 15 : 0;
+        var hasEaten = _grid.IsFood(newHead);
+        var hazardDamage = _grid.IsHazard(newHead) ? 15 : 0;
         var totalDamage = 1 + hazardDamage;
 
         // 4. Aggiorna lo stato interno del serpente
@@ -322,18 +323,18 @@ public ref struct WarArena
         ref var hash = ref _header.Hash;
 
         // Aggiungi la nuova testa
-        _field.Snakes.Set(newHead);
+        _grid.Snakes.Set(newHead);
         hash ^= ZobristTable.GetSnakeValue(snakeIndex, newHead);
 
         // Rimuovi la vecchia coda (se non ha mangiato)
         if (!hasEaten)
         {
-            _field.Snakes.Clear(oldTail);
+            _grid.Snakes.Clear(oldTail);
             hash ^= ZobristTable.GetSnakeValue(snakeIndex, oldTail);
         }
         else // Se ha mangiato, rimuovi il cibo dalla bitboard
         {
-            _field.Food.Clear(newHead);
+            _grid.Food.Clear(newHead);
         }
     }
 

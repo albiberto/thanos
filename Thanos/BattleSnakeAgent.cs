@@ -5,6 +5,7 @@ using Thanos.MCST;
 using Thanos.Memory;
 using Thanos.SourceGen; // Assicurati di avere gli using corretti
 using Thanos.War;
+using Thanos.War.Grid;
 
 namespace Thanos;
 
@@ -132,7 +133,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
             foreach (var bodyPart in snake.Body)
             {
-                var coord1D = WarField.To1D(in bodyPart, request.Board.Width);
+                var coord1D = WarGrid.To1D(in bodyPart, request.Board.Width);
                 hash ^= ZobristTable.GetSnakeValue(snakeIntId, coord1D);
             }
         }
