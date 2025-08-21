@@ -1,91 +1,72 @@
-﻿using Thanos.War.Snake;
+﻿using NUnit.Framework;
+using Thanos.War.Snake;
 
-namespace Thanos.Tests.Tests.WarSnakeTests;
+namespace Thanos.Tests.War.Snake;
 
 /// <summary>
-/// Unit tests for the Profile struct.
+/// Unit tests for the fully encapsulated Health struct.
+/// Tests are based on the observable 'Dead' state, not the internal health value.
 /// </summary>
 [TestFixture]
 public class HealthTests
 {
-    private const int FullHealth = 100;
-    
-    [TestCase(1, 100, TestName = "Constructor: Should initialize with full health")]
-    [TestCase(2, 50, TestName = "Constructor: Should initialize with partial health")]
-    public void Constructor_WhenCalled_InitializesPropertiesCorrectly(int expectedId, int expectedHealth)
-    {
-        // Arrange & Act
-        var profile = new Health(expectedId, expectedHealth);
+    // Il test del costruttore è stato rimosso perché non ci sono più proprietà
+    // pubbliche da verificare. La sua correttezza viene testata indirettamente
+    // attraverso gli altri test che usano la proprietà 'Dead'.
 
-        // Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(profile.Id, Is.EqualTo(expectedId));
-            Assert.That(profile.Health, Is.EqualTo(expectedHealth));
-        });
-    }
-
-    [TestCase(100, false, TestName = "Dead: Should be false for positive health (100)")]
-    [TestCase(1, false, TestName = "Dead: Should be false for minimal positive health (1)")]
+    [TestCase(100, false, TestName = "Dead: Should be false for positive health")]
+    [TestCase(1, false, TestName = "Dead: Should be false for minimal positive health")]
     [TestCase(0, true, TestName = "Dead: Should be true for zero health")]
     [TestCase(-10, true, TestName = "Dead: Should be true for negative health")]
-    public void Dead_ReturnsCorrectStatus_BasedOnHealth(int initialHealth, bool expectedIsDead)
+    public void Dead_Property_ShouldReturnCorrectStatus(int initialHealth, bool expectedIsDead)
     {
-        // Arrange
-        var profile = new Health(1, initialHealth);
-
-        // Act
-        var isDead = profile.Dead;
+        // Arrange & Act
+        var health = new Health(initialHealth);
 
         // Assert
-        Assert.That(isDead, Is.EqualTo(expectedIsDead));
-    }
-    
-    [TestCase(75, TestName = "FullCure: Should restore health to 100 from a partial value")]
-    [TestCase(0, TestName = "FullCure: Should restore health to 100 from zero")]
-    [TestCase(-10, TestName = "FullCure: Should restore health to 100 from a negative value")]
-    public void FullCure_WhenCalled_SetsHealthTo100(int initialHealth)
-    {
-        // Arrange
-        var profile = new Health(1, initialHealth);
-
-        // Act
-        profile.FullCure();
-
-        // Assert
-        Assert.That(profile.Health, Is.EqualTo(FullHealth));
-    }
-    
-    [TestCase(100, 30, 70, TestName = "Damage: Should reduce health normally")]
-    [TestCase(25, 25, 0, TestName = "Damage: Should reduce health to exactly zero")]
-    [TestCase(10, 20, -10, TestName = "Damage: Should be able to reduce health below zero")]
-    [TestCase(100, 0, 100, TestName = "Damage: Applying zero damage should have no effect")]
-    public void Damage_WhenCalled_SubtractsAmountFromHealth(int initialHealth, int damageAmount, int expectedHealth)
-    {
-        // Arrange
-        var profile = new Health(1, initialHealth);
-
-        // Act
-        profile.Damage(damageAmount);
-
-        // Assert
-        Assert.That(profile.Health, Is.EqualTo(expectedHealth));
+        Assert.That(health.Dead, Is.EqualTo(expectedIsDead));
     }
     
     [Test]
-    public void Kill_WhenCalled_SetsHealthToZeroAndMarksAsDead()
+    public void FullCure_WhenCalledOnDeadProfile_ShouldReviveIt()
     {
-        // Arrange
-        var profile = new Health(1, FullHealth);
+        // Arrange: Partiamo da uno stato "morto"
+        var health = new Health(0);
+        Assert.That(health.Dead, Is.True, "Precondition: Health should be Dead initially.");
 
         // Act
-        profile.Kill();
+        health.FullCure();
 
-        // Assert
-        Assert.Multiple(() =>
-        {
-            Assert.That(profile.Health, Is.EqualTo(0));
-            Assert.That(profile.Dead, Is.True);
-        });
+        // Assert: Verifichiamo che non sia più morto
+        Assert.That(health.Dead, Is.False);
+    }
+    
+    [TestCase(100, 30, false, TestName = "Damage: Non-fatal damage should not kill")]
+    [TestCase(30, 30, true, TestName = "Damage: Fatal damage (exact) should kill")]
+    [TestCase(20, 30, true, TestName = "Damage: Fatal damage (overkill) should kill")]
+    public void Damage_WhenCalled_ShouldUpdateDeadStatusCorrectly(int initialHealth, int damageAmount, bool expectedIsDead)
+    {
+        // Arrange
+        var health = new Health(initialHealth);
+
+        // Act
+        health.Damage(damageAmount);
+
+        // Assert: Controlliamo solo se il danno è stato fatale o meno
+        Assert.That(health.Dead, Is.EqualTo(expectedIsDead));
+    }
+    
+    [Test]
+    public void Kill_WhenCalled_ShouldResultInDeadStatus()
+    {
+        // Arrange
+        var health = new Health(100);
+        Assert.That(health.Dead, Is.False, "Precondition: Health should be alive initially.");
+
+        // Act
+        health.Kill();
+
+        // Assert: L'unica cosa che possiamo e dobbiamo verificare è che ora sia morto.
+        Assert.That(health.Dead, Is.True);
     }
 }

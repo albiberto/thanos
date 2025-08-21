@@ -7,15 +7,8 @@ public ref struct WarSnake
     // Private fields
     private ref Health _health;
     private ref Anatomy _anatomy;
+    
     private readonly Span<ushort> _body;
-
-    // Public API
-    public int Id { get; }
-
-    public readonly ushort Head => _body[_anatomy.HeadIndex];
-    public readonly ushort Tail => _body[_anatomy.TailIndex];
-    public readonly int Length => _anatomy.Length;
-    public readonly bool Dead => _health.Dead;
 
     // Costruttore principale: Inizializza la memoria grezza
     public WarSnake(ref Health health, ref Anatomy anatomy, Span<ushort> body, int id, int hp, ReadOnlySpan<ushort> body1D, int capacity)
@@ -31,7 +24,7 @@ public ref struct WarSnake
         _body = body;
         body1D.CopyTo(_body);
     }
-
+    
     // Costruttore alternativo: Inizializza la vista (ref struct)
     public WarSnake(ref Health health, ref Anatomy anatomy, Span<ushort> body)
     {
@@ -40,6 +33,14 @@ public ref struct WarSnake
 
         _body = body;
     }
+    
+    // Public API
+    public int Id { get; }
+
+    public readonly ushort Head => _body[_anatomy.HeadIndex];
+    public readonly ushort Tail => _body[_anatomy.TailIndex];
+    public readonly int Length => _anatomy.Length;
+    public readonly bool Dead => _health.Dead;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHead, bool hasEaten, int damage)
