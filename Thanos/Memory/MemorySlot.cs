@@ -5,7 +5,6 @@ using Thanos.MCST;
 using Thanos.SourceGen;
 using Thanos.War;
 using Thanos.War.Snake;
-using Profile = Thanos.War.Snake.Profile;
 
 namespace Thanos.Memory;
 
@@ -143,10 +142,10 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
                 }
 
                 var singleSnakeBlock = snakesSpan.Slice(i * _context.Layout.SnakeStride, _context.Layout.SnakeStride);
-                var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<Profile>()];
-                var bodyBytesSpan = singleSnakeBlock[Unsafe.SizeOf<Profile>()..];
+                var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<Health>()];
+                var bodyBytesSpan = singleSnakeBlock[Unsafe.SizeOf<Health>()..];
                 
-                ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(headerSpan));
+                ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Health>(headerSpan));
                 // TODO: correggi offsets
                 ref var anatomy = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Anatomy>(headerSpan));
                 var body = MemoryMarshal.Cast<byte, ushort>(bodyBytesSpan);
@@ -155,7 +154,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
                 var id = snakeIdMap[initialSnake.Id];
                 var health = initialSnake.Health;
                 // TODO: verfica e passa il valore capacity corretto
-                new WarSnake(ref profile, ref anatomy, id, health, body, snakeBody1D, 1);
+                new WarSnake(ref profile, ref anatomy, body, id, health, snakeBody1D, 1);
 
                 foreach (var coord1D in snakeBody1D) field.Snakes.Set(coord1D);
             }

@@ -6,7 +6,7 @@ namespace Thanos.Tests.Tests.WarSnakeTests;
 /// Unit tests for the Profile struct.
 /// </summary>
 [TestFixture]
-public class ProfileTests
+public class HealthTests
 {
     private const int FullHealth = 100;
     
@@ -15,7 +15,7 @@ public class ProfileTests
     public void Constructor_WhenCalled_InitializesPropertiesCorrectly(int expectedId, int expectedHealth)
     {
         // Arrange & Act
-        var profile = new Profile(expectedId, expectedHealth);
+        var profile = new Health(expectedId, expectedHealth);
 
         // Assert
         Assert.Multiple(() =>
@@ -32,7 +32,7 @@ public class ProfileTests
     public void Dead_ReturnsCorrectStatus_BasedOnHealth(int initialHealth, bool expectedIsDead)
     {
         // Arrange
-        var profile = new Profile(1, initialHealth);
+        var profile = new Health(1, initialHealth);
 
         // Act
         var isDead = profile.Dead;
@@ -47,7 +47,7 @@ public class ProfileTests
     public void FullCure_WhenCalled_SetsHealthTo100(int initialHealth)
     {
         // Arrange
-        var profile = new Profile(1, initialHealth);
+        var profile = new Health(1, initialHealth);
 
         // Act
         profile.FullCure();
@@ -63,7 +63,7 @@ public class ProfileTests
     public void Damage_WhenCalled_SubtractsAmountFromHealth(int initialHealth, int damageAmount, int expectedHealth)
     {
         // Arrange
-        var profile = new Profile(1, initialHealth);
+        var profile = new Health(1, initialHealth);
 
         // Act
         profile.Damage(damageAmount);
@@ -76,7 +76,7 @@ public class ProfileTests
     public void Kill_WhenCalled_SetsHealthToZeroAndMarksAsDead()
     {
         // Arrange
-        var profile = new Profile(1, FullHealth);
+        var profile = new Health(1, FullHealth);
 
         // Act
         profile.Kill();

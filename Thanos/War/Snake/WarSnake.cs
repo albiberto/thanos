@@ -4,47 +4,53 @@ namespace Thanos.War.Snake;
 
 public ref struct WarSnake
 {
-    private ref Profile _profile;
+    // Private fields
+    private ref Health _health;
     private ref Anatomy _anatomy;
     private readonly Span<ushort> _body;
 
-    // Costruttore principale
-    public WarSnake(ref Profile profile, ref Anatomy anatomy, int id, int health, Span<ushort> body, ReadOnlySpan<ushort> body1D, int capacity)
+    // Public API
+    public int Id { get; }
+
+    public readonly ushort Head => _body[_anatomy.HeadIndex];
+    public readonly ushort Tail => _body[_anatomy.TailIndex];
+    public readonly int Length => _anatomy.Length;
+    public readonly bool Dead => _health.Dead;
+
+    // Costruttore principale: Inizializza la memoria grezza
+    public WarSnake(ref Health health, ref Anatomy anatomy, Span<ushort> body, int id, int hp, ReadOnlySpan<ushort> body1D, int capacity)
     {
-        _profile = ref profile;
-        _profile = new Profile(id, health);
-        
+        Id = id;
+
+        _health = ref health;
+        _health = new Health(hp);
+
         _anatomy = ref anatomy;
-        _anatomy = new Anatomy(capacity, body1D.Length, 0);
-        
+        _anatomy = new Anatomy(capacity, body1D.Length);
+
         _body = body;
         body1D.CopyTo(_body);
     }
-    
-    public WarSnake(ref Profile profile, ref Anatomy anatomy, Span<ushort> body)
+
+    // Costruttore alternativo: Inizializza la vista (ref struct)
+    public WarSnake(ref Health health, ref Anatomy anatomy, Span<ushort> body)
     {
-        _profile = ref profile;
+        _health = ref health;
         _anatomy = ref anatomy;
-        
+
         _body = body;
     }
 
-    // --- Proprietà ---
-    // Ora è WarSnake che legge da _body usando gli indici di Anatomy
-    public Profile Profile => _profile;
-    public readonly ushort Head => _body[_anatomy.HeadIndex];
-    public readonly ushort Tail => _body[_anatomy.TailIndex];
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHead, bool hasEaten, int damage)
     {
         if (hasEaten)
-            _profile.FullCure();
+            _health.FullCure();
         else
-            _profile.Damage(damage);
+            _health.Damage(damage);
 
-        if (_profile.Dead) return;
-        
+        if (_health.Dead) return;
+
         // 1. WarSnake scrive il nuovo valore nel corpo
         _body[_anatomy.NextHeadIndex] = newHead;
 
@@ -54,7 +60,11 @@ public ref struct WarSnake
         else
             _anatomy.PopTail();
     }
-    
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Kill() => _health.Kill();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly void GetSpans(out Span<ushort> first, out Span<ushort> second)
     {
         var tailIndex = _anatomy.TailIndex;

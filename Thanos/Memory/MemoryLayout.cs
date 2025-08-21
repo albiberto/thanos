@@ -57,7 +57,7 @@ public readonly unsafe record struct MemoryLayout
         BitboardsSize = BitboardStrideInBytes * WarField.TotalBitboards;
 
         var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)area), Constants.MaxSnakeBodyCapacity);
-        var snakeHeaderSize = sizeof(Profile).AlignUp();
+        var snakeHeaderSize = sizeof(Health).AlignUp();
         SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
         SnakesSize = SnakeStride * snakeCount;
 

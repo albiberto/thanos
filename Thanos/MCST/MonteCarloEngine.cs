@@ -71,14 +71,14 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
         var ourSnakeIndex = -1;
         for (var i = 0; i < snakes.Length; i++)
             // NOTA: Richiede di aggiungere il campo 'Id' a WarSnake
-            if (snakes[i].Profile.Id == context.MyId)
+            if (snakes[i].Id == context.MyId)
             {
                 ourSnakeIndex = i;
                 break;
             }
 
         // Se non ci troviamo o siamo morti, questo è un nodo terminale
-        if (ourSnakeIndex == -1 || snakes[ourSnakeIndex].Profile.Dead)
+        if (ourSnakeIndex == -1 || snakes[ourSnakeIndex].Dead)
         {
             parentNode->SetTerminal();
             return parentNode;
@@ -142,7 +142,7 @@ public sealed unsafe class MonteCarloEngine(MemoryPool pool)
             for (var i = 0; i < snakes.Length; i++)
             {
                 var snake = snakes[i];
-                if (snake.Profile.Dead)
+                if (snake.Dead)
                 {
                     chosenMoves[i] = Moves.None;
                     continue;

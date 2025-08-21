@@ -69,7 +69,7 @@ public ref struct WarArena
         for (var i = 0; i < snakes.Length; i++)
         {
             var snake = snakes[i];
-            if (snake.Profile.Dead) continue;
+            if (snake.Dead) continue;
 
             // Ottieni i segmenti del corpo del serpente
             snake.GetSpans(out var span1, out var span2);
@@ -97,7 +97,7 @@ public ref struct WarArena
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte GetLegalMoves(WarSnake snake)
     {
-        var head = snake.Anatomy.Head;
+        var head = snake.Head;
         var width = _field.Width;
         var area = _field.Area;
         var legalMoveSet = Moves.None;
@@ -142,14 +142,14 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
-            if (snake.Profile.Dead)
+            if (snake.Dead)
             {
                 _isDead[i] = true;
                 continue;
             }
 
-            _oldTailPositions[i] = snake.Anatomy.Tail;
-            var head = snake.Anatomy.Head;
+            _oldTailPositions[i] = snake.Tail;
+            var head = snake.Head;
             var move = chosenMoves[i];
 
             _newHeadPositions[i] = move switch
@@ -179,10 +179,11 @@ public ref struct WarArena
                 if (_isDead[j]) continue;
                 if (_newHeadPositions[i] == _newHeadPositions[j])
                 {
+                    // TODO: craere metodo compare interno a warsnake?
                     var snakeA = snakes[i];
                     var snakeB = snakes[j];
-                    if (snakeA.Anatomy.Length >= snakeB.Anatomy.Length) _isDead[j] = true;
-                    if (snakeB.Anatomy.Length >= snakeA.Anatomy.Length) _isDead[i] = true;
+                    if (snakeA.Length >= snakeB.Length) _isDead[j] = true;
+                    if (snakeB.Length >= snakeA.Length) _isDead[i] = true;
                 }
             }
         }
@@ -203,7 +204,7 @@ public ref struct WarArena
         for (var i = 0; i < snakeCount; i++)
         {
             var wasAlive = !_isDead[i];
-            if (wasAlive && snakes[i].Profile.Dead) _isDead[i] = true;
+            if (wasAlive && snakes[i].Dead) _isDead[i] = true;
             if (_isDead[i] && wasAlive)
             {
                 _header.LiveSnakesCount--;
@@ -242,7 +243,7 @@ public ref struct WarArena
     /// <returns>1.0 per vittoria, -1.0 per sconfitta, 0.0 se il gioco continua.</returns>
     public float Evaluate()
     {
-        if (Snakes[0].Profile.Dead) return -1.0f;
+        if (Snakes[0].Dead) return -1.0f;
         return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
     }
 
@@ -253,9 +254,9 @@ public ref struct WarArena
     {
         var snake = Snakes[snakeIndex];
         // Se era già stato segnato come morto in una fase precedente, non fare nulla
-        if (snake.Profile.Dead) return;
+        if (snake.Dead) return;
 
-        snake.Profile.Kill(); // Imposta la vita a 0
+        snake.Kill(); // Imposta la vita a 0
         _header.LiveSnakesCount--;
 
         // Rimuovi il serpente dalla bitboard e aggiorna l'hash
@@ -281,11 +282,11 @@ public ref struct WarArena
     public void ApplySingleMove(int snakeIndex, byte move)
     {
         var snake = Snakes[snakeIndex];
-        if (snake.Profile.Dead) return;
+        if (snake.Dead) return;
 
         // 1. Calcola la nuova posizione della testa e la vecchia coda
-        var oldTail = snake.Anatomy.Tail;
-        var head = snake.Anatomy.Head;
+        var oldTail = snake.Tail;
+        var head = snake.Head;
         var newHead = move switch
         {
             Moves.Up => head < _field.Width ? ushort.MaxValue : (ushort)(head - _field.Width),
@@ -311,7 +312,7 @@ public ref struct WarArena
         snake.Move(newHead, hasEaten, totalDamage);
 
         // Controlla se il serpente è morto per fame/danni
-        if (snake.Profile.Dead)
+        if (snake.Dead)
         {
             KillSnake(snakeIndex);
             return;
@@ -352,9 +353,9 @@ public ref struct WarArena
             get
             {
                 var singleSnakeBlock = _snakesMemory.Slice(index * stride, stride);
-                var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<Profile>()];
-                var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<Profile>()..]);
-                ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(headerSpan));
+                var headerSpan = singleSnakeBlock[..Unsafe.SizeOf<Health>()];
+                var bodySpan = MemoryMarshal.Cast<byte, ushort>(singleSnakeBlock[Unsafe.SizeOf<Health>()..]);
+                ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Health>(headerSpan));
                 
                 // TODO: correggi offsets
                 ref var anatomy = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Anatomy>(headerSpan));
