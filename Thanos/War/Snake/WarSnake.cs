@@ -15,11 +15,11 @@ public ref struct WarSnake
     {
         Id = id;
 
+        health = new Health(hp);
         _health = ref health;
-        _health = new Health(hp);
 
+        anatomy = new Anatomy(capacity, body1D.Length);
         _anatomy = ref anatomy;
-        _anatomy = new Anatomy(capacity, body1D.Length);
 
         _body = body;
         body1D.CopyTo(_body);
@@ -43,8 +43,11 @@ public ref struct WarSnake
     public readonly bool Dead => _health.Dead;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
     public void Move(ushort newHead, bool hasEaten, int damage)
     {
+        hasEaten = hasEaten && Length < _anatomy.Capacity; 
+        
         if (hasEaten)
             _health.FullCure();
         else
@@ -52,7 +55,6 @@ public ref struct WarSnake
 
         if (_health.Dead) return;
 
-        // 1. WarSnake scrive il nuovo valore nel corpo
         _body[_anatomy.NextHeadIndex] = newHead;
 
         // 2. WarSnake dice ad Anatomy di aggiornare il suo stato
@@ -63,6 +65,7 @@ public ref struct WarSnake
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
     public void Kill() => _health.Kill();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
