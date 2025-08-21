@@ -2,19 +2,22 @@
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
+/// <summary>
+/// Unit tests for the Profile struct.
+/// </summary>
 [TestFixture]
 public class ProfileTests
 {
-    private const int fullHealth = 100;
+    private const int FullHealth = 100;
     
-    [TestCase(1, 100)]
-    [TestCase(2, 75)]
-    [TestCase(3, 50)]
-    [TestCase(4, 25)]  
+    [TestCase(1, 100, TestName = "Constructor: Should initialize with full health")]
+    [TestCase(2, 50, TestName = "Constructor: Should initialize with partial health")]
     public void Constructor_WhenCalled_InitializesPropertiesCorrectly(int expectedId, int expectedHealth)
     {
+        // Arrange & Act
         var profile = new Profile(expectedId, expectedHealth);
 
+        // Assert
         Assert.Multiple(() =>
         {
             Assert.That(profile.Id, Is.EqualTo(expectedId));
@@ -22,62 +25,63 @@ public class ProfileTests
         });
     }
 
-    [TestCase(100, false)] // Salute piena, non è morto
-    [TestCase(75, false)] // Salute 3/4, non è morto
-    [TestCase(50, false)] // Salute 2/4, non è morto
-    [TestCase(25, false)] // Salute 1/4, non è morto
-    [TestCase(1, false)]   // Salute minima, non è morto
-    [TestCase(0, true)]    // Salute a zero, è morto
-    [TestCase(-1, true)]  // Salute negativa, è morto
+    [TestCase(100, false, TestName = "Dead: Should be false for positive health (100)")]
+    [TestCase(1, false, TestName = "Dead: Should be false for minimal positive health (1)")]
+    [TestCase(0, true, TestName = "Dead: Should be true for zero health")]
+    [TestCase(-10, true, TestName = "Dead: Should be true for negative health")]
     public void Dead_ReturnsCorrectStatus_BasedOnHealth(int initialHealth, bool expectedIsDead)
     {
+        // Arrange
         var profile = new Profile(1, initialHealth);
 
+        // Act
         var isDead = profile.Dead;
 
+        // Assert
         Assert.That(isDead, Is.EqualTo(expectedIsDead));
     }
     
-    [TestCase(100)]
-    [TestCase(75)]
-    [TestCase(50)] 
-    [TestCase(25)] 
-    [TestCase(1)] 
-    [TestCase(0)]
-    [TestCase(-1)]
-    public void FullCure_WhenCalled_SetsHealthTo100(int health)
+    [TestCase(75, TestName = "FullCure: Should restore health to 100 from a partial value")]
+    [TestCase(0, TestName = "FullCure: Should restore health to 100 from zero")]
+    [TestCase(-10, TestName = "FullCure: Should restore health to 100 from a negative value")]
+    public void FullCure_WhenCalled_SetsHealthTo100(int initialHealth)
     {
-        var profile = new Profile(1, health);
+        // Arrange
+        var profile = new Profile(1, initialHealth);
 
+        // Act
         profile.FullCure();
 
-        Assert.That(profile.Health, Is.EqualTo(fullHealth));
+        // Assert
+        Assert.That(profile.Health, Is.EqualTo(FullHealth));
     }
     
-    [TestCase(100, 75)]
-    [TestCase(75, 50)]
-    [TestCase(50, 25)] 
-    [TestCase(25, 1)] 
-    [TestCase(1, 1)] 
-    [TestCase(0, 1)] 
-    [TestCase(-1, 1)] 
-    public void Damage_WhenCalled_SubtractsAmountFromHealth(int health, int damage)
+    [TestCase(100, 30, 70, TestName = "Damage: Should reduce health normally")]
+    [TestCase(25, 25, 0, TestName = "Damage: Should reduce health to exactly zero")]
+    [TestCase(10, 20, -10, TestName = "Damage: Should be able to reduce health below zero")]
+    [TestCase(100, 0, 100, TestName = "Damage: Applying zero damage should have no effect")]
+    public void Damage_WhenCalled_SubtractsAmountFromHealth(int initialHealth, int damageAmount, int expectedHealth)
     {
-        var profile = new Profile(1, fullHealth);
-        var expectedHealth = fullHealth - damage;
+        // Arrange
+        var profile = new Profile(1, initialHealth);
 
-        profile.Damage(damage);
+        // Act
+        profile.Damage(damageAmount);
 
+        // Assert
         Assert.That(profile.Health, Is.EqualTo(expectedHealth));
     }
     
     [Test]
-    public void Kill_WhenCalled_SetsHealthToZero()
+    public void Kill_WhenCalled_SetsHealthToZeroAndMarksAsDead()
     {
-        var profile = new Profile(1, 100);
+        // Arrange
+        var profile = new Profile(1, FullHealth);
 
+        // Act
         profile.Kill();
 
+        // Assert
         Assert.Multiple(() =>
         {
             Assert.That(profile.Health, Is.EqualTo(0));
