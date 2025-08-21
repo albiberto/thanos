@@ -5,7 +5,7 @@ namespace Thanos.Tests.Tests.WarSnakeTests;
 [TestFixtureSource(nameof(Capacities))]
 public class AnatomyTests(int capacity)
 {
-    public static int[] Capacities { get; } = [4, 8, 16, 32, 64];
+    public static int[] Capacities { get; } = [4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
     [Test(Description = "Ensures the constructor correctly assigns the minimal state.")]
     public void Constructor_ShouldInitializeMinimalStateCorrectly()

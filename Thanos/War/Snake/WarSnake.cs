@@ -46,7 +46,7 @@ public ref struct WarSnake
     [SkipLocalsInit]
     public void Move(ushort newHead, bool hasEaten, int damage)
     {
-        hasEaten = hasEaten && Length < _anatomy.Capacity; 
+        hasEaten = hasEaten && _anatomy.IsFull; 
         
         if (hasEaten)
             _health.FullCure();
@@ -73,6 +73,7 @@ public ref struct WarSnake
     {
         var tailIndex = _anatomy.TailIndex;
         var capacity = _anatomy.Capacity;
+        var capacityMask = _anatomy.CapacityMask;
         var length = _anatomy.Length; // Legge la lunghezza da Anatomy
 
         if (length == 0)
@@ -82,7 +83,7 @@ public ref struct WarSnake
             return;
         }
 
-        var headIndex = (tailIndex + length - 1) & (capacity - 1);
+        var headIndex = (tailIndex + length - 1) & capacityMask;
 
         if (tailIndex <= headIndex)
         {
