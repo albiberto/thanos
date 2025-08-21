@@ -7,7 +7,9 @@ public struct Health(int health)
 {
     private int _health = health;
     
-    public bool Dead => _health <= 0;
+    public int HealthPoints => _health;
+    
+    public bool IsDead => _health <= 0;
     
     public void FullCure() => _health = 100;
     public void Damage(int amount) => _health -= amount;

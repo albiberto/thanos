@@ -40,7 +40,7 @@ public ref struct WarSnake
     public readonly ushort Head => _body[_anatomy.HeadIndex];
     public readonly ushort Tail => _body[_anatomy.TailIndex];
     public readonly int Length => _anatomy.Length;
-    public readonly bool Dead => _health.Dead;
+    public readonly bool Dead => _health.IsDead;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
@@ -53,7 +53,7 @@ public ref struct WarSnake
         else
             _health.Damage(damage);
 
-        if (_health.Dead) return;
+        if (_health.IsDead) return;
 
         _body[_anatomy.NextHeadIndex] = newHead;
 
