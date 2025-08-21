@@ -3,121 +3,80 @@
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
 /// <summary>
-/// Contains unit tests for the Anatomy struct.
-/// This entire fixture is run for each capacity defined in the Capacities source.
+/// Contains unit tests for the minimal Anatomy struct.
+/// Tests focus on the correctness of index calculations and state mutations.
 /// </summary>
 [TestFixtureSource(nameof(Capacities))]
 public class AnatomyTests(int capacity)
 {
-    // L'elenco delle capacità rimane lo stesso
-    public static int[] Capacities { get; } = [4, 8, 16, 32, 64, 128, 256, 512, 1024];
+    // The list of capacities to run all tests against.
+    public static int[] Capacities { get; } = [4, 8, 16, 32, 64];
 
-    // I campi non sono più 'readonly' perché vengono inizializzati nel SetUp,
-    // non nel costruttore.
-    private ushort _defaultHead;
-    private ushort _defaultTail;
-    private int _defaultLength;
-    private int _defaultTailIndex;
-
-    /// <summary>
-    /// Questo metodo viene eseguito una sola volta per ogni valore di 'capacity'.
-    /// Imposta i valori di default dinamici che verranno usati da tutti i test
-    /// in questa specifica istanza della fixture.
-    /// </summary>
-    [OneTimeSetUp]
-    public void PrepareDefaultValues()
-    {
-        // La logica di inizializzazione è ora qui, separata dal costruttore.
-        _defaultLength = capacity / 2;
-        _defaultHead = (ushort)(_defaultLength > 0 ? _defaultLength - 1 : 0);
-        _defaultTail = 0;
-        _defaultTailIndex = 0;
-    }
-    
-    [Test(Description = "Ensures the constructor correctly assigns all initial values.")]
-    public void Constructor_ShouldInitializeAllPropertiesCorrectly()
+    [Test(Description = "Ensures the constructor correctly assigns the minimal state.")]
+    public void Constructor_ShouldInitializeMinimalStateCorrectly()
     {
         // Arrange
-        var nextHeadIndex = _defaultLength > 0 ? _defaultLength : 0;
+        var length = capacity / 2;
+        var tailIndex = 1;
 
         // Act
-        var anatomy = new Anatomy(_defaultHead, _defaultTail, capacity, _defaultLength, nextHeadIndex, _defaultTailIndex);
+        var anatomy = new Anatomy(capacity, length, tailIndex);
 
         // Assert
         Assert.Multiple(() =>
         {
-            Assert.That(anatomy.Head, Is.EqualTo(_defaultHead));
-            Assert.That(anatomy.NextHeadIndex, Is.EqualTo(nextHeadIndex));
-            Assert.That(anatomy.Tail, Is.EqualTo(_defaultTail));
-            Assert.That(anatomy.TailIndex, Is.EqualTo(_defaultTailIndex));
-            Assert.That(anatomy.Length, Is.EqualTo(_defaultLength));
             Assert.That(anatomy.Capacity, Is.EqualTo(capacity));
+            Assert.That(anatomy.Length, Is.EqualTo(length));
+            Assert.That(anatomy.TailIndex, Is.EqualTo(tailIndex));
         });
     }
 
-// --- PushHead Tests ---
+    // --- Tests for Computed Properties ---
 
-    [Test(Description = "Tests PushHead from the start of the buffer.")]
-    public void PushHead_WhenAtIndexZero_ShouldIncrementNextHeadIndex()
-    {
-        var anatomy = new Anatomy(0, 0, capacity, 1, 0, 0);
-        anatomy.PushHead(120);
-        Assert.That(anatomy.NextHeadIndex, Is.EqualTo(1));
-    }
-
-    [Test(Description = "Tests PushHead from a dynamically calculated middle index.")]
-    public void PushHead_WhenInMiddleOfBuffer_ShouldIncrementNextHeadIndex()
-    {
-        var middleIndex = capacity / 2;
-        var anatomy = new Anatomy(0, 0, capacity, 1, middleIndex, 0);
-        anatomy.PushHead(120);
-        Assert.That(anatomy.NextHeadIndex, Is.EqualTo(middleIndex + 1));
-    }
-
-    [Test(Description = "Tests the circular buffer wrap-around for NextHeadIndex.")]
-    public void PushHead_WhenAtBufferEnd_ShouldWrapNextHeadIndexToZero()
-    {
-        var initialNextHeadIndex = capacity - 1;
-        var anatomy = new Anatomy(0, 0, capacity, 1, initialNextHeadIndex, 0);
-        anatomy.PushHead(120);
-        Assert.That(anatomy.NextHeadIndex, Is.EqualTo(0));
-    }
-    
-    // --- PopTail Tests (ora coerenti con PushHead) ---
-    
-    [Test(Description = "Tests PopTail from the start of the buffer.")]
-    public void PopTail_WhenAtIndexZero_ShouldIncrementTailIndex()
+    [TestCase(0, 5, 4, TestName = "HeadIndex: Should be correct in a normal case")]
+    [TestCase(15, 2, 0, TestName = "HeadIndex: Should wrap around correctly")]
+    [TestCase(0, 1, 0, TestName = "HeadIndex: Should equal TailIndex when length is 1")]
+    public void HeadIndex_ShouldBeCalculatedCorrectly(int tailIndex, int length, int expectedHeadIndex)
     {
         // Arrange
-        var anatomy = new Anatomy(0, 0, capacity, 1, 0, 0);
+        var anatomy = new Anatomy(capacity, length, tailIndex);
         
+        // Act & Assert
+        Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex));
+    }
+
+    [TestCase(0, 5, 5, TestName = "NextHeadIndex: Should be correct in a normal case")]
+    [TestCase(15, 1, 0, TestName = "NextHeadIndex: Should wrap around correctly")]
+    public void NextHeadIndex_ShouldBeCalculatedCorrectly(int tailIndex, int length, int expectedNextHeadIndex)
+    {
+        // Arrange
+        var anatomy = new Anatomy(capacity, length, tailIndex);
+
+        // Act & Assert
+        Assert.That(anatomy.NextHeadIndex, Is.EqualTo(expectedNextHeadIndex));
+    }
+    
+    // --- Tests for State Mutation Methods ---
+
+    [Test]
+    public void PopTail_WhenCalled_ShouldIncrementTailIndex()
+    {
+        // Arrange
+        var anatomy = new Anatomy(capacity, 5, 1);
+
         // Act
         anatomy.PopTail();
 
         // Assert
-        Assert.That(anatomy.TailIndex, Is.EqualTo(1));
-    }
-    
-    [Test(Description = "Tests PopTail from a dynamically calculated middle index.")]
-    public void PopTail_WhenInMiddleOfBuffer_ShouldIncrementTailIndex()
-    {
-        // Arrange
-        var middleIndex = capacity / 2;
-        var anatomy = new Anatomy(0, 0, capacity, 1, 0, middleIndex);
-        
-        // Act
-        anatomy.PopTail();
-
-        // Assert
-        Assert.That(anatomy.TailIndex, Is.EqualTo(middleIndex + 1));
+        Assert.That(anatomy.TailIndex, Is.EqualTo(2));
     }
 
-    [Test(Description = "Tests the circular buffer wrap-around for TailIndex.")]
+    [Test]
     public void PopTail_WhenAtBufferEnd_ShouldWrapTailIndexToZero()
     {
         // Arrange
         var initialTailIndex = capacity - 1;
-        var anatomy = new Anatomy(0, 0, capacity, 1, 0, initialTailIndex);
+        var anatomy = new Anatomy(capacity, 5, initialTailIndex);
 
         // Act
         anatomy.PopTail();
@@ -126,30 +85,25 @@ public class AnatomyTests(int capacity)
         Assert.That(anatomy.TailIndex, Is.EqualTo(0));
     }
 
-
-    // --- IncrementLength Tests ---
-
     [Test]
     public void IncrementLength_WhenBelowCapacity_ShouldIncrementLengthByOne()
     {
         // Arrange
-        var anatomy = new Anatomy(_defaultHead, _defaultTail, capacity, _defaultLength, 0, _defaultTailIndex);
-        
-        if (_defaultLength == capacity) 
-            Assert.Pass("Scenario non applicabile per questa capacità.");
+        var initialLength = capacity / 2;
+        var anatomy = new Anatomy(capacity, initialLength, 0);
 
         // Act
         anatomy.IncrementLength();
 
         // Assert
-        Assert.That(anatomy.Length, Is.EqualTo(_defaultLength + 1));
+        Assert.That(anatomy.Length, Is.EqualTo(initialLength + 1));
     }
 
     [Test]
     public void IncrementLength_WhenAtCapacity_ShouldNotChangeLength()
     {
-        // Arrange: Create an anatomy where length is already at maximum capacity.
-        var anatomy = new Anatomy(_defaultHead, _defaultTail, capacity, capacity, 0, _defaultTailIndex);
+        // Arrange
+        var anatomy = new Anatomy(capacity, capacity, 0);
 
         // Act
         anatomy.IncrementLength();

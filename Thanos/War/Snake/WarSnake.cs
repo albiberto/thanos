@@ -8,21 +8,17 @@ public ref struct WarSnake
     private ref Anatomy _anatomy;
     private readonly Span<ushort> _body;
 
+    // Costruttore principale
     public WarSnake(ref Profile profile, ref Anatomy anatomy, int id, int health, Span<ushort> body, ReadOnlySpan<ushort> body1D, int capacity)
     {
         _profile = ref profile;
-        _anatomy = ref anatomy;
-        _body = body;
-        
-        body1D.CopyTo(_body);
-        
-        var length = body1D.Length;
-        var head = body1D[^1];
-        var tail = body1D[0];
-        var nextHeadIndex = length & (capacity - 1);
-        
         _profile = new Profile(id, health);
-        _anatomy = new Anatomy(head, tail, capacity, length, nextHeadIndex, 0);
+        
+        _anatomy = ref anatomy;
+        _anatomy = new Anatomy(capacity, body1D.Length, 0);
+        
+        _body = body;
+        body1D.CopyTo(_body);
     }
     
     public WarSnake(ref Profile profile, ref Anatomy anatomy, Span<ushort> body)
@@ -33,8 +29,11 @@ public ref struct WarSnake
         _body = body;
     }
 
+    // --- Proprietà ---
+    // Ora è WarSnake che legge da _body usando gli indici di Anatomy
     public Profile Profile => _profile;
-    public Anatomy Anatomy => _anatomy;
+    public readonly ushort Head => _body[_anatomy.HeadIndex];
+    public readonly ushort Tail => _body[_anatomy.TailIndex];
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Move(ushort newHead, bool hasEaten, int damage)
@@ -46,9 +45,10 @@ public ref struct WarSnake
 
         if (_profile.Dead) return;
         
+        // 1. WarSnake scrive il nuovo valore nel corpo
         _body[_anatomy.NextHeadIndex] = newHead;
-        _anatomy.PushHead(newHead);
 
+        // 2. WarSnake dice ad Anatomy di aggiornare il suo stato
         if (hasEaten)
             _anatomy.IncrementLength();
         else
