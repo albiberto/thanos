@@ -2,8 +2,15 @@
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
+/// <summary>
+/// Provides helper methods for allocating raw memory structures needed for snake-related tests.
+/// Its single responsibility is memory allocation, not state initialization.
+/// </summary>
 public static class Harness
 {
+    /// <summary>
+    /// A container for the raw memory segments required to host a WarSnake instance.
+    /// </summary>
     public struct SnakeTestContext
     {
         public Health Health;
@@ -11,16 +18,15 @@ public static class Harness
         public ushort[] BodyBuffer;
     }
     
-    public static SnakeTestContext CreateTestContext(int capacity, ushort[] initialBody, int initialHp = 100)
-    {
-        // Il buffer del corpo deve avere la capacità richiesta.
-        var bodyBuffer = new ushort[capacity];
-
-        return new SnakeTestContext
+    /// <summary>
+    /// Allocates a raw, zeroed-out memory context for a single snake.
+    /// </summary>
+    /// <param name="capacity">The total capacity for the snake's body buffer.</param>
+    public static SnakeTestContext CreateTestContext(int capacity) =>
+        new()
         {
             Health = new Health(), 
             Anatomy = new Anatomy(),
-            BodyBuffer = bodyBuffer
+            BodyBuffer = new ushort[capacity]
         };
-    }
 }

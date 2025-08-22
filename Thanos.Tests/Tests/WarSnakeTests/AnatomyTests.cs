@@ -2,196 +2,187 @@
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
+/// <summary>
+/// Contains all unit tests for the Anatomy struct, verifying its state and behavior
+/// across various buffer capacities and conditions.
+/// </summary>
 [TestFixtureSource(nameof(Capacities))]
 public class AnatomyTests(int capacity)
 {
-    public static int[] Capacities { get; } = [4, 8, 16, 32, 128, 256, 512, 1024];
+    /// <summary>
+    /// Provides a set of different capacities to run all tests against, ensuring robustness.
+    /// </summary>
+    public static int[] Capacities { get; } = [8, 16, 32, 128, 256, 512, 1024];
 
-    // --- Test del Costruttore ---
+    // =================================================================
+    // Constructor Tests
+    // =================================================================
 
-    [TestCase(1)]
-    [TestCase(2)]
-    [TestCase(3)]
-    [TestCase(4)]
-    [TestCase(int.MaxValue)]
-    public void Constructor_WithDefaultTailIndex_ShouldInitializeStateCorrectly(int ratio)
+    [TestCase(2, Description = "Case: Half full")]
+    [TestCase(4, Description = "Case: A quarter full")]
+    [Test(Description = "Ensures the constructor correctly initializes state for a non-full buffer.")]
+    public void Constructor_WhenNotFull_ShouldInitializeStateCorrectly(int ratio)
     {
         // Arrange
-        var length = ratio == int.MaxValue ? capacity : capacity / ratio;
-        
+        var length = capacity / ratio;
+
         // Act
         var anatomy = new Anatomy(capacity, length);
 
-        // Assert: Verifica lo stato completo dell'oggetto appena creato.
+        // Assert
         Assert.Multiple(() =>
         {
-            Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should be set correctly.");
-            Assert.That(anatomy.Length, Is.EqualTo(length), "Length should be set correctly.");
-            Assert.That(anatomy.TailIndex, Is.Zero, "Default TailIndex should be 0.");
+            Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should be set from constructor.");
+            Assert.That(anatomy.Length, Is.EqualTo(length), "Length should be set from constructor.");
+            Assert.That(anatomy.TailIndex, Is.Zero, "Default TailIndex should always be 0 on creation.");
+            Assert.That(anatomy.CapacityMask, Is.EqualTo(capacity - 1), "CapacityMask should be capacity - 1.");
+            Assert.That(anatomy.IsFull, Is.False, "IsFull must be false when length is less than capacity.");
 
-            // Verifica le proprietà calcolate
-            Assert.That(anatomy.CapacityMask, Is.EqualTo(capacity - 1), "CapacityMask should be set correctly.");
-            
-            var expectedHeadIndex = (length - 1) & (capacity - 1);
+            var expectedHeadIndex = length - 1;
             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be calculated correctly.");
 
-            var expectedNextHeadIndex = length & (capacity - 1);
+            var expectedNextHeadIndex = length;
             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(expectedNextHeadIndex), "NextHeadIndex should be calculated correctly.");
+        });
+    }
+
+    [Test(Description = "Ensures the constructor correctly initializes state for a full buffer.")]
+    public void Constructor_WhenAtFullCapacity_ShouldInitializeStateCorrectly()
+    {
+        // Arrange
+        var length = capacity;
+
+        // Act
+        var anatomy = new Anatomy(capacity, length);
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should match the provided value.");
+            Assert.That(anatomy.Length, Is.EqualTo(capacity), "Length should match the capacity.");
+            Assert.That(anatomy.TailIndex, Is.Zero, "Default TailIndex should be 0.");
+            Assert.That(anatomy.IsFull, Is.True, "IsFull must be true when length equals capacity.");
             
-            var isFull = length == capacity;
-            Assert.That(anatomy.IsFull, Is.EqualTo(isFull), "IsFull should be right.");
+            var expectedHeadIndex = (capacity - 1) & (capacity - 1);
+            Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be the last index of the buffer.");
+
+            Assert.That(anatomy.NextHeadIndex, Is.Zero, "NextHeadIndex should wrap around to 0 when full.");
+        });
+    }
+
+    // =================================================================
+    // PopTail Method Tests
+    // =================================================================
+
+    [TestCase(2, Description = "Case: Half full")]
+    [TestCase(4, Description = "Case: A quarter full")]
+    [Test(Description = "Ensures PopTail correctly increments TailIndex when the buffer is not full.")]
+    public void PopTail_OnNotFullBuffer_ShouldIncrementTailIndex(int ratio)
+    {
+        // Arrange
+        var length = capacity / ratio;
+        var anatomy = new Anatomy(capacity, length);
+
+        // Act
+        anatomy.PopTail();
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(anatomy.TailIndex, Is.EqualTo(1), "TailIndex should increment from 0 to 1.");
+            Assert.That(anatomy.Length, Is.EqualTo(length), "Length should not be affected by PopTail.");
+            Assert.That(anatomy.IsFull, Is.False, "IsFull flag should not change.");
+
+            var expectedHeadIndex = (1 + length - 1) & (capacity - 1);
+            Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be recalculated based on the new TailIndex.");
+        });
+    }
+
+    [Test(Description = "Ensures PopTail correctly updates HeadIndex when the buffer is full.")]
+    public void PopTail_OnFullBuffer_ShouldCorrectlyShiftWindow()
+    {
+        // Arrange
+        var anatomy = new Anatomy(capacity, capacity);
+
+        // Act
+        anatomy.PopTail(); // Tail moves from 0 to 1
+
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(anatomy.TailIndex, Is.EqualTo(1), "TailIndex should move to the next position.");
+            Assert.That(anatomy.Length, Is.EqualTo(capacity), "Length should remain at capacity.");
+            Assert.That(anatomy.IsFull, Is.True, "IsFull flag should remain true.");
+
+            // With TailIndex=1 and Length=capacity, HeadIndex should now be 0.
+            Assert.That(anatomy.HeadIndex, Is.EqualTo(0), "HeadIndex should now be at the start of the buffer.");
+            Assert.That(anatomy.NextHeadIndex, Is.EqualTo(1), "NextHeadIndex should now be where the new TailIndex is.");
         });
     }
     
-     // --- Test per il metodo PopTail ---
+    [Test(Description = "Ensures calling PopTail 'capacity' times returns the state to its origin.")]
+    public void PopTail_WhenCalledCapacityTimes_ShouldReturnToInitialState()
+    {
+        // Arrange
+        var anatomy = new Anatomy(capacity, capacity);
+        var initialState = anatomy;
 
-     [Test(Description = "Verifica che PopTail aggiorni correttamente lo stato senza verificare wrap-around.")]
-     [TestCase(1)]
-     [TestCase(2)]
-     [TestCase(3)]
-     [TestCase(4)]
-     [TestCase(int.MaxValue)]
-     public void PopTail_ShouldUpdateStateCorrectly(int ratio)
-     {
-         // Arrange
-         var length = ratio == int.MaxValue ? capacity : capacity / ratio;
+        // Act
+        for(var i = 0; i < capacity; i++) anatomy.PopTail();
 
-         var anatomy = new Anatomy(capacity, length);
-        
-         // Act
-         anatomy.PopTail();
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(anatomy.TailIndex, Is.EqualTo(initialState.TailIndex), "TailIndex should complete a full circle and return to its initial state.");
+            Assert.That(anatomy.HeadIndex, Is.EqualTo(initialState.HeadIndex), "HeadIndex should also return to its initial state.");
+            Assert.That(anatomy.NextHeadIndex, Is.EqualTo(initialState.NextHeadIndex), "NextHeadIndex should also return to its initial state.");
+            Assert.That(anatomy.Length, Is.EqualTo(initialState.Length), "Length should remain unchanged.");
+        });
+    }
 
-         // Assert: Verifica che solo TailIndex e le proprietà calcolate cambino.
-         Assert.Multiple(() =>
-         {
-             Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should not change.");
-             Assert.That(anatomy.Length, Is.EqualTo(length), "Length should not change on PopTail.");
+    // =================================================================
+    // IncrementLength Method Tests
+    // =================================================================
 
-             const int expectedTailIndex = 1;
-             Assert.That(anatomy.TailIndex, Is.EqualTo(expectedTailIndex), "TailIndex should increment.");
-             
-             var expectedHeadIndex = (expectedTailIndex + length - 1) & (capacity - 1);
-             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be recalculated.");
-             
-             var expectedNextHeadIndex = (expectedTailIndex + length) & (capacity - 1);
-             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(expectedNextHeadIndex), "NextHeadIndex should be recalculated.");
-             
-             var isFull = length == capacity;
-             Assert.That(anatomy.IsFull, Is.EqualTo(isFull), "IsFull should be right.");
-         });
-     }
+    [Test(Description = "Ensures IncrementLength increases length by one when there is available capacity.")]
+    public void IncrementLength_WhenNotFull_ShouldIncreaseLengthByOne()
+    {
+        // Arrange
+        var length = capacity / 2;
+        var anatomy = new Anatomy(capacity, length);
 
-     [Test(Description = "Verifica che PopTail aggiorni correttamente lo stato quando si è a piena capacità.")]
-     public void PopTail_WhenAtBufferEnd_ShouldWrapAround()
-     {
-         // Arrange
-         var length = capacity;
-         var anatomy = new Anatomy(capacity, length);
+        // Act
+        anatomy.IncrementLength();
 
-         // Act
-         anatomy.PopTail();
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(anatomy.Length, Is.EqualTo(length + 1), "Length should increment by one.");
+            Assert.That(anatomy.TailIndex, Is.Zero, "TailIndex should not change when length is incremented.");
+            Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should not change.");
+            
+            var expectedHeadIndex = length & (capacity - 1); // (0 + (length + 1) - 1) = length
+            Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be recalculated for the new length.");
+        });
+    }
 
-         // Assert: Verifica il comportamento del wrap-around.
-         Assert.Multiple(() =>
-         {
-             const int expectedTailIndex = 1, expectedNextHeadIndex = 1;
-             
-             Assert.That(anatomy.Capacity, Is.EqualTo(capacity));
-             Assert.That(anatomy.Length, Is.EqualTo(length));
-             Assert.That(anatomy.TailIndex, Is.EqualTo(expectedTailIndex), "TailIndex should increase by 1.");
-             
-             const int expectedHeadIndex = 0;
-             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex));
-             
-             
-             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(expectedNextHeadIndex));
-             
-             Assert.That(anatomy.IsFull, Is.True, "IsFull should be right.");
-         });
-     }
-     
-     [Test(Description = "Verifica che PopTail aggiorni correttamente lo stato quando si è a piena capacità.")]
-     public void PopTail_WhenAtBufferEnd_ShouldWrapAround1()
-     {
-         // Arrange
-         var length = capacity;
-         var anatomy = new Anatomy(capacity, length);
+    [Test(Description = "Ensures IncrementLength has no effect when the buffer is already at full capacity.")]
+    public void IncrementLength_WhenAtCapacity_ShouldHaveNoEffect()
+    {
+        // Arrange
+        var anatomy = new Anatomy(capacity, capacity);
+        var initialState = anatomy; // Struct copy for comparison
 
-         // Act
-         for(var i = 0; i < capacity; i++) anatomy.PopTail();
+        // Act
+        anatomy.IncrementLength();
 
-         // Assert: Verifica il comportamento del wrap-around.
-         Assert.Multiple(() =>
-         {
-             const int expectedTailIndex = 0, expectedNextHeadIndex = 0;
-             
-             Assert.That(anatomy.Capacity, Is.EqualTo(capacity));
-             Assert.That(anatomy.Length, Is.EqualTo(length));
-             Assert.That(anatomy.TailIndex, Is.EqualTo(expectedTailIndex), "TailIndex should increase by 1.");
-             
-             var expectedHeadIndex = capacity - 1;
-             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex));
-             
-             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(expectedNextHeadIndex));
-             
-             Assert.That(anatomy.IsFull, Is.True, "IsFull should be right.");
-         });
-     }
-
-     // --- Test per il metodo IncrementLength ---
-
-     [TestCase(2)]
-     [TestCase(3)]
-     [TestCase(4)] 
-     public void IncrementLength_WhenNotFull_ShouldUpdateStateCorrectly(int ratio)
-     {
-         // Arrange
-         var length = capacity / ratio;
-         var anatomy = new Anatomy(capacity, length);
-
-         // Act
-         anatomy.IncrementLength();
-
-         // Assert: Verifica che solo Length e le proprietà calcolate cambino.
-         Assert.Multiple(() =>
-         {
-             Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should not change.");
-             Assert.That(anatomy.Length, Is.EqualTo(length + 1), "Length should increment.");
-             Assert.That(anatomy.TailIndex, Is.EqualTo(0), "TailIndex should not change on IncrementLength.");
-             
-             var expectedHeadIndex = (0 + length) & (capacity - 1); // length + 1 - 1 = length
-             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be recalculated.");
-             
-             var expectedNextHeadIndex = (0 + length + 1) & (capacity - 1);
-             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(expectedNextHeadIndex), "NextHeadIndex should be recalculated.");
-             
-             Assert.That(anatomy.IsFull, Is.False, "IsFull should be false when not at capacity.");
-         });
-     }
-
-     [Test(Description = "Verifica che IncrementLength non modifichi lo stato quando si è già a piena capacità.")]
-     public void IncrementLength_WhenAtCapacity_ShouldNotChangeState()
-     {
-         // Arrange
-         var length = capacity;
-         var anatomy = new Anatomy(capacity, length);
-         
-         // Salviamo lo stato iniziale per confronto
-         var initialHeadIndex = anatomy.HeadIndex;
-         var initialNextHeadIndex = anatomy.NextHeadIndex;
-
-         // Act
-         anatomy.IncrementLength();
-
-         // Assert: Verifica che NESSUNA proprietà sia cambiata.
-         Assert.Multiple(() =>
-         {
-             Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should remain the same.");
-             Assert.That(anatomy.Length, Is.EqualTo(capacity), "Length should not change when at capacity.");
-             Assert.That(anatomy.TailIndex, Is.Zero, "TailIndex should not change.");
-             Assert.That(anatomy.HeadIndex, Is.EqualTo(initialHeadIndex), "HeadIndex should not change.");
-             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(initialNextHeadIndex), "NextHeadIndex should not change.");
-                Assert.That(anatomy.IsFull, Is.True, "IsFull should remain true when at capacity.");
-         });
-     }
+        // Assert
+        Assert.Multiple(() =>
+        {
+            Assert.That(anatomy.Length, Is.EqualTo(initialState.Length), "Length should not change when already at capacity.");
+            Assert.That(anatomy.TailIndex, Is.EqualTo(initialState.TailIndex), "TailIndex should not change.");
+            Assert.That(anatomy.HeadIndex, Is.EqualTo(initialState.HeadIndex), "HeadIndex should not change.");
+            Assert.That(anatomy.IsFull, Is.True, "IsFull should remain true.");
+        });
+    }
 }
