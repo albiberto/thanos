@@ -1,6 +1,7 @@
-﻿using System.Runtime.InteropServices;
-using Thanos.SourceGen; // Assuming Coordinate is in this namespace
+﻿using Thanos.SourceGen; // Assuming Coordinate is in this namespace
 using Thanos.War.Grid;
+
+namespace Thanos.Tests.Tests.WarGridTests;
 
 /// <summary>
 /// Contains all unit tests for the WarGrid ref struct.
@@ -193,12 +194,4 @@ public class WarGridTests
         // Assert
         Assert.That(actualPosition, Is.EqualTo(expectedPosition), "The instance method should produce the correct 1D index based on grid.Width.");
     }
-}
-
-// NOTE: This Coordinate struct is included to make the test file self-contained and runnable.
-// In a real project, this would reference the official Coordinate struct from the Thanos.SourceGen namespace.
-namespace Thanos.SourceGen
-{
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly record struct Coordinate(ushort X, ushort Y);
 }
