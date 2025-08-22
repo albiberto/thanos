@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Enums;
 using Thanos.MCST;
-using Thanos.War;
 using Thanos.War.Arena;
 using Thanos.War.Grid;
 using Thanos.War.Snake;
@@ -13,31 +12,36 @@ namespace Thanos.Memory;
 [StructLayout(LayoutKind.Sequential)]
 public readonly unsafe record struct MemoryLayout
 {
-    // --- Dimensioni ---
+    // --- Dimensioni dei Componenti ---
     public readonly int NodeSize;
+
+    public readonly int BitboardStride;
     public readonly int BitboardsSize;
-    public readonly int SnakesSize;
+
+    public readonly int SnakeHealthSize;
+    public readonly int SnakeAnatomySize;
+    public readonly int SnakeHeaderSize;
     public readonly int SnakeStride;
-    public readonly int BitboardStrideInBytes;
-    public readonly int BitboardStrideInUlongs;
+    public readonly int SnakesSize;
+    
     public readonly int WarArenaHeaderSize;
     public readonly int WorkspaceSize;
 
-    // --- Offset ---
+    // --- Dettagli Granulari (utili per l'accesso ai dati) ---
+    
+    
+    // --- Offset dei Blocchi Principali ---
     public readonly int NodeOffset;
     public readonly int BitboardsOffset;
     public readonly int SnakesOffset;
     public readonly int WarArenaHeaderOffset;
     public readonly int WorkspaceOffset;
-
-    // --- NUOVO: Dettagli Interni del Workspace ---
-    // Dimensioni dei singoli buffer nel workspace
+    
+    // --- Dettagli Interni del Workspace ---
     public readonly int NewHeadPositionsSize;
     public readonly int HasEatenSize;
     public readonly int IsDeadSize;
     public readonly int OldTailPositionsSize;
-
-    // Offset dei buffer RELATIVI all'inizio del workspace
     public readonly int NewHeadPositionsWorkspaceOffset;
     public readonly int HasEatenWorkspaceOffset;
     public readonly int IsDeadWorkspaceOffset;
@@ -50,49 +54,60 @@ public readonly unsafe record struct MemoryLayout
 
     public MemoryLayout(int area, int snakeCount)
     {
-        // --- 1. Calcolo Dimensioni ---
+        // =================================================================
+        // FASE 1: Calcolo Dimensioni dei Singoli Componenti
+        // =================================================================
+        
         NodeSize = sizeof(Node).AlignUp();
-
-        var bitboardSegments = (area + 63) >> 6;
-        BitboardStrideInBytes = (bitboardSegments * sizeof(ulong)).AlignUp();
-        BitboardStrideInUlongs = BitboardStrideInBytes / sizeof(ulong);
-        BitboardsSize = BitboardStrideInBytes * WarGrid.TotalBitboards;
-
-        var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)area), Constants.MaxSnakeBodyCapacity);
-        var snakeHeaderSize = sizeof(Health).AlignUp();
-        SnakeStride = (snakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp();
-        SnakesSize = SnakeStride * snakeCount;
-
         WarArenaHeaderSize = sizeof(WarArenaHeader).AlignUp();
 
-        // --- Dimensione Workspace per la WarArena ---
-        // newHeadPositions + hasEaten + isDead + oldTailPositions
-        // --- NUOVO: Calcolo Dettagliato Workspace ---
-// Calcola la dimensione di ogni buffer...
-        NewHeadPositionsSize = sizeof(ushort) * snakeCount;
-        HasEatenSize = sizeof(bool) * snakeCount;
-        IsDeadSize = sizeof(bool) * snakeCount;
-        OldTailPositionsSize = sizeof(ushort) * snakeCount;
+        // Calcolo per i Bitboard
+        // La riga calcola il numero di segmenti necessari per rappresentare l'area come bitboard, dove ogni segmento contiene 64 bit.
+        // In pratica, divide `area` per 64 arrotondando per eccesso, così da coprire tutta l'area anche se non è un multiplo esatto di 64.
+        // Questo è utile per strutture dati che usano array di `ulong` per rappresentare insiemi di bit.
+        var bitboardSegments = (((area + 63) >> 6) * sizeof(ulong)).AlignUp();
+        BitboardStride = bitboardSegments / sizeof(ulong);
+        BitboardsSize = bitboardSegments * WarGrid.TotalBitboards;
 
-// ...calcola i loro offset relativi all'interno del blocco workspace...  <-- ECCOLO QUI
+        // Header di un serpente ora include sia Health che Anatomy.
+        SnakeHealthSize = sizeof(Health);
+        SnakeAnatomySize = sizeof(Anatomy);
+        SnakeHeaderSize = (SnakeHealthSize + SnakeAnatomySize).AlignUp();
+        
+        var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)area), Constants.MaxSnakeBodyCapacity);
+        SnakeStride = (SnakeHeaderSize + snakeBodyCapacity * sizeof(ushort)).AlignUp(); 
+        SnakesSize = SnakeStride * snakeCount;
+        // --- FINE MODIFICA ---
+
+        // Calcolo dettagliato per il Workspace
+        NewHeadPositionsSize = (sizeof(ushort) * snakeCount);
+        HasEatenSize = (sizeof(bool) * snakeCount);
+        IsDeadSize = (sizeof(bool) * snakeCount);
+        OldTailPositionsSize = (sizeof(ushort) * snakeCount);
+
         NewHeadPositionsWorkspaceOffset = 0;
         HasEatenWorkspaceOffset = NewHeadPositionsWorkspaceOffset + NewHeadPositionsSize;
         IsDeadWorkspaceOffset = HasEatenWorkspaceOffset + HasEatenSize;
         OldTailPositionsWorkspaceOffset = IsDeadWorkspaceOffset + IsDeadSize;
-
-// ...e infine la dimensione totale del blocco workspace, allineata.
+        
         var totalWorkspaceUnaligned = OldTailPositionsWorkspaceOffset + OldTailPositionsSize;
         WorkspaceSize = totalWorkspaceUnaligned.AlignUp();
 
-        // --- 2. Calcolo Totali ---
-        SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize + WorkspaceSize;
+        // =================================================================
+        // FASE 2: Calcolo Offset Sequenziali dei Blocchi di Memoria
+        // =================================================================
 
-        // --- 3. Calcolo Offset ---
         NodeOffset = 0;
         BitboardsOffset = NodeOffset + NodeSize;
         SnakesOffset = BitboardsOffset + BitboardsSize;
         WarArenaHeaderOffset = SnakesOffset + SnakesSize;
         WorkspaceOffset = WarArenaHeaderOffset + WarArenaHeaderSize;
+        
+        // =================================================================
+        // FASE 3: Calcolo Totale
+        // =================================================================
+        
+        SlotSize = NodeSize + BitboardsSize + SnakesSize + WarArenaHeaderSize + WorkspaceSize;
     }
 }
 

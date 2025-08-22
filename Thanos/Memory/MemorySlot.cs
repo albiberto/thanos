@@ -69,7 +69,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
         var oldTailPositions = MemoryMarshal.Cast<byte, ushort>(workspaceMemory.Slice(_context.Layout.OldTailPositionsWorkspaceOffset, _context.Layout.OldTailPositionsSize));
 
         // 3. Passa tutti i pezzi al costruttore di WarArena (invariato)
-        return new WarArena(ref header, field, snakesMemory, newHeadPositions, hasEaten, isDead, oldTailPositions, _context.Layout.SnakeStride);
+        return new WarArena(ref header, field, snakesMemory, _context.Layout.SnakeStride);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
     {
         var bitboardsSpan = _slot.Slice(_context.Layout.BitboardsOffset, _context.Layout.BitboardsSize);
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
-        var stride = _context.Layout.BitboardStrideInUlongs;
+        var stride = _context.Layout.BitboardStride;
 
         var food = bitboardsUlongSpan[..stride];
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
@@ -103,7 +103,7 @@ public readonly ref struct MemorySlot(Span<byte> slot, in GameContext context, D
         bitboardsSpan.Clear();
 
         var bitboardsUlongSpan = MemoryMarshal.Cast<byte, ulong>(bitboardsSpan);
-        var stride = _context.Layout.BitboardStrideInUlongs;
+        var stride = _context.Layout.BitboardStride;
 
         var food = bitboardsUlongSpan[..stride];
         var hazards = bitboardsUlongSpan.Slice(stride, stride);
