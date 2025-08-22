@@ -29,7 +29,7 @@ public class WarSnakeTests
 
         // --- ACT ---
         // 3. Initialize the memory by calling the main constructor.
-        var snake = new WarSnake(ref context.Health, ref context.Anatomy, context.BodyBuffer, snakeId, initialHp, initialBody, capacity);
+        var snake = new WarSnake(ref context.Health, ref context.Anatomy, context.BodyBuffer, snakeId, initialHp, initialBody);
 
         // --- ASSERT ---
         Assert.That(snake.Id, Is.EqualTo(snakeId), "ID should be set from constructor.");
@@ -79,7 +79,7 @@ public class WarSnakeTests
         // Arrange
         var initialBody = new ushort[] { 10, 20, 30 };
         var context = Harness.CreateTestContext(16);
-        var snake = new WarSnake(ref context.Health, ref context.Anatomy, context.BodyBuffer, 1, 100, initialBody, 16);
+        var snake = new WarSnake(ref context.Health, ref context.Anatomy, context.BodyBuffer, 1, 100, initialBody);
 
         // Act
         snake.Move(40, false, 1);
@@ -97,7 +97,7 @@ public class WarSnakeTests
         // Arrange
         var initialBody = new ushort[] { 10, 20, 30 };
         var context = Harness.CreateTestContext(16);
-        var snake = new WarSnake(ref context.Health, ref context.Anatomy, context.BodyBuffer, 1, 100, initialBody, 16);
+        var snake = new WarSnake(ref context.Health, ref context.Anatomy, context.BodyBuffer, 1, 100, initialBody);
 
         // Act
         snake.Move(40, true, 0);

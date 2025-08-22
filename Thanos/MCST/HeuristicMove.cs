@@ -4,7 +4,7 @@ using Thanos.War.Snake;
 
 namespace Thanos.MCST;
 
-public readonly ref struct HeuristicMoveFinder(ref WarSnake snake, WarArena arena, byte legalMoveSet)
+public readonly ref struct HeuristicMoveFinder(ref WarSnake warSnake, WarArena arena, byte legalMoveSet)
 {
     public byte FindBestMove()
     {

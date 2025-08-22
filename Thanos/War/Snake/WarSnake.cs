@@ -2,45 +2,31 @@
 
 namespace Thanos.War.Snake;
 
-public ref struct WarSnake
+public readonly ref struct WarSnake
 {
     // Private fields
-    private ref Health _health;
-    private ref Anatomy _anatomy;
+    private readonly ref Profile _profile;
+    private readonly ref Health _health;
+    private readonly ref Anatomy _anatomy;
     
     private readonly Span<ushort> _body;
 
-    // Costruttore principale: Inizializza la memoria grezza
-    public WarSnake(ref Health health, ref Anatomy anatomy, Span<ushort> body, int id, int hp, ReadOnlySpan<ushort> body1D, int capacity)
+    public WarSnake(ref Profile profile, ref Health health, ref Anatomy anatomy, Span<ushort> body)
     {
-        Id = id;
-
-        health = new Health(hp);
-        _health = ref health;
-
-        anatomy = new Anatomy(capacity, body1D.Length);
-        _anatomy = ref anatomy;
-
-        _body = body;
-        body1D.CopyTo(_body);
-    }
-    
-    // Costruttore alternativo: Inizializza la vista (ref struct)
-    public WarSnake(ref Health health, ref Anatomy anatomy, Span<ushort> body)
-    {
+        _profile = ref profile;
         _health = ref health;
         _anatomy = ref anatomy;
-
+        
         _body = body;
     }
     
     // Public API
-    public int Id { get; }
+    public int Id => _profile.Id;
 
-    public readonly ushort Head => _body[_anatomy.HeadIndex];
-    public readonly ushort Tail => _body[_anatomy.TailIndex];
-    public readonly int Length => _anatomy.Length;
-    public readonly bool Dead => _health.IsDead;
+    public ushort Head => _body[_anatomy.HeadIndex];
+    public ushort Tail => _body[_anatomy.TailIndex];
+    public int Length => _anatomy.Length;
+    public bool Dead => _health.IsDead;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
@@ -62,11 +48,11 @@ public ref struct WarSnake
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [SkipLocalsInit]
     public void Kill() => _health.Kill();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly void GetSpans(out Span<ushort> first, out Span<ushort> second)
+    [SkipLocalsInit]
+    public void GetSpans(out Span<ushort> first, out Span<ushort> second)
     {
         var tailIndex = _anatomy.TailIndex;
         var capacity = _anatomy.Capacity;

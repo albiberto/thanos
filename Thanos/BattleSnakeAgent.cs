@@ -11,6 +11,8 @@ namespace Thanos;
 
 public sealed class BattleSnakeAgent : IDisposable
 {
+        // var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)grid.Geography.Area), Constants.MaxSnakeBodyCapacity);
+    
     // Campi privati per la gestione dello stato e della logica
     private MemoryPool? _pool;
     private readonly MonteCarloEngine _engine;

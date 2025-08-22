@@ -34,7 +34,7 @@ namespace Thanos.SourceGen;
 public partial class ThanosSerializerContext : JsonSerializerContext;
 
 [method: JsonConstructor]
-public readonly struct Request(Game game, int turn, Board board, Profile you)
+public readonly struct Request(Game game, int turn, Board board, Snake you)
 {
     [JsonPropertyName("game")]
     public Game Game { get; } = game;
@@ -46,7 +46,7 @@ public readonly struct Request(Game game, int turn, Board board, Profile you)
     public Board Board { get; } = board;
 
     [JsonPropertyName("you")]
-    public Profile You { get; } = you;
+    public Snake You { get; } = you;
 }
 
 public enum GameMap : byte
@@ -146,7 +146,7 @@ public readonly struct Squad(bool allowBodyCollisions, bool sharedElimination, b
 }
 
 [method: JsonConstructor]
-public readonly struct Board(int height, int width, Coordinate[] food, Coordinate[] hazards, Profile[] snakes)
+public readonly struct Board(int height, int width, Coordinate[] food, Coordinate[] hazards, Snake[] snakes)
 {
     [JsonPropertyName("height")]
     public int Height { get; } = height;
@@ -161,7 +161,7 @@ public readonly struct Board(int height, int width, Coordinate[] food, Coordinat
     public Coordinate[] Hazards { get; } = hazards;
 
     [JsonPropertyName("snakes")]
-    public Profile[] Snakes { get; } = snakes;
+    public Snake[] Snakes { get; } = snakes;
 
     [JsonIgnore]
     public int Area => Width * Height;
@@ -181,7 +181,7 @@ public readonly struct Coordinate(int x, int y)
 }
 
 [method: JsonConstructor]
-public readonly struct Profile(string id, string name, int health, Coordinate[] body, string latency, Coordinate head, int length, string shout)
+public readonly struct Snake(string id, string name, int health, Coordinate[] body, string latency, Coordinate head, int length, string shout)
 {
     [JsonPropertyName("id")]
     public string Id { get; } = id;

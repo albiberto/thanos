@@ -10,59 +10,53 @@ namespace Thanos.War.Arena;
 [StructLayout(LayoutKind.Sequential)]
 public ref struct WarArena
 {
-    // --- CAMPI PRIVATI ---
     private ref WarArenaHeader _header;
-    private ref MemoryLayout _layout;
-    private WarGrid _grid;
-    private readonly Span<byte> _snakesMemory;
+    private readonly WarGrid _grid;
+    private readonly Snakes _snakes;
+    private readonly MoveLookupTable _movesLut; // Contiene la tabella pre-calcolata
 
-    /// <summary>
-    ///     Crea una nuova vista WarArena per uno stato di gioco esistente.
-    /// </summary>
     public WarArena(in MemoryLayout layout, ref WarArenaHeader header, WarGrid grid, Span<byte> snakesMemory)
     {
-        _layout = layout;
         _header = ref header;
         _grid = grid;
-        _snakesMemory = snakesMemory;
+        _snakes = new Snakes(in layout, snakesMemory);
+        // La LUT viene creata una sola volta qui.
+        _movesLut = new MoveLookupTable(grid.Width, grid.Height);
     }
     
-    public WarSnakes Snakes => new(in _layout, _snakesMemory);
-    
+    public Snakes Snakes => _snakes;
     public readonly long GetStateHash => _header.Hash;
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte GetLegalMoves(WarSnake snake)
-    {
-        var head = snake.Head;
-        var width = _grid.Width;
-        var area = _grid.Area;
-        
-        var legalMoveSet = Moves.None;
-
-        // --- Calcola e Controlla SU ---
-        var upPos = head < width ? ushort.MaxValue : (ushort)(head - width);
-        if (!_grid.IsOccupied(upPos)) legalMoveSet |= Moves.Up;
-
-        // --- Calcola e Controlla GIÙ ---
-        var downPos = head >= area - width ? ushort.MaxValue : (ushort)(head + width);
-        if (!_grid.IsOccupied(downPos)) legalMoveSet |= Moves.Down;
-
-        // --- Calcola e Controlla SINISTRA ---
-        var leftPos = head % width == 0 ? ushort.MaxValue : (ushort)(head - 1);
-        if (!_grid.IsOccupied(leftPos)) legalMoveSet |= Moves.Left;
-
-        // --- Calcola e Controlla DESTRA ---
-        var rightPos = (head + 1) % width == 0 ? ushort.MaxValue : (ushort)(head + 1);
-        if (!_grid.IsOccupied(rightPos)) legalMoveSet |= Moves.Right;
-
-        return legalMoveSet;
-    }
 
     /// <summary>
-    ///     Valuta lo stato finale del gioco dal punto di vista del nostro serpente (indice 0).
+    /// Returns the legal moves for a snake.
+    /// This version is almost branchless, relying on a pre-computed lookup table.
     /// </summary>
-    /// <returns>1.0 per vittoria, -1.0 per sconfitta, 0.0 se il gioco continua.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte GetLegalMoves(Snake.WarSnake warSnake)
+    {
+        var head = warSnake.Head;
+        
+        // Ottiene le 4 posizioni adiacenti dalla LUT. Nessun calcolo, solo lookup.
+        var upPos = _movesLut.GetNeighbor(head, Moves.Up);
+        var downPos = _movesLut.GetNeighbor(head, Moves.Down);
+        var leftPos = _movesLut.GetNeighbor(head, Moves.Left);
+        var rightPos = _movesLut.GetNeighbor(head, Moves.Right);
+
+        // Converte il bool 'isNotOccupied' (true/false) in 1/0 senza 'if'.
+        var upValid = Unsafe.As<bool, byte>(ref Unsafe.AsRef(!_grid.IsOccupied(upPos)));
+        var downValid = Unsafe.As<bool, byte>(ref Unsafe.AsRef(!_grid.IsOccupied(downPos)));
+        var leftValid = Unsafe.As<bool, byte>(ref Unsafe.AsRef(!_grid.IsOccupied(leftPos)));
+        var rightValid = Unsafe.As<bool, byte>(ref Unsafe.AsRef(!_grid.IsOccupied(rightPos)));
+
+        // Combina i risultati usando la matematica invece degli 'if'.
+        return (byte)(
+            (upValid * Moves.Up) |
+            (downValid * Moves.Down) |
+            (leftValid * Moves.Left) |
+            (rightValid * Moves.Right)
+        );
+    }
+    
     public float Evaluate()
     {
         if (Snakes[0].Dead) return -1.0f;

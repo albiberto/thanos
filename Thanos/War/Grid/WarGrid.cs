@@ -7,40 +7,19 @@ namespace Thanos.War.Grid;
 [StructLayout(LayoutKind.Sequential)]
 public readonly ref struct WarGrid
 {
-    public const int TotalBitboards = 3;
-
-    public int Width { get; }
-    public int Height { get; }
-    public int Area { get; }
+    public readonly ref Geography Geography;
 
     public readonly Bitboard Food;
     public readonly Bitboard Hazards;
     public readonly Bitboard Snakes;
 
-    public WarGrid(int width, int height, int area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
+    public WarGrid(ref Geography geography, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
     {
-        Width = width;
-        Height = height;
-        Area = area;
+        Geography = ref geography;
         
         Food = new Bitboard(foodBitboard);
         Hazards = new Bitboard(hazardsBitboard);
         Snakes = new Bitboard(snakesBitboard);
-    }
-    
-    public WarGrid(int width, int height, int area, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
-    {
-        Width = width;
-        Height = height;
-        Area = area;
-        
-        Food = new Bitboard(foodBitboard);
-        Hazards = new Bitboard(hazardsBitboard);
-        Snakes = new Bitboard(snakesBitboard);
-        
-        // Initialize board state
-        foreach (ref readonly var coordinate in food) { Food.Set(To1D(in coordinate)); }
-        foreach (ref readonly var coordinate in hazards) { Hazards.Set(To1D(in coordinate)); }
     }
 
     // --- "HOT PATH" READ METHODS (Safe and highly optimized) ---
@@ -58,10 +37,4 @@ public readonly ref struct WarGrid
     public bool IsFood(ushort position1D) => Food.IsSet(position1D);
 
     public bool IsHazard(ushort position1D) => Hazards.IsSet(position1D);
-
-    // --- HELPER METHODS ---
-
-    public ushort To1D(in Coordinate coord) => To1D(coord, Width);
-    
-    public static ushort To1D(in Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
 }

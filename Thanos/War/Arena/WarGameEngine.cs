@@ -1,232 +1,231 @@
 ﻿using Thanos.MCST;
+using Thanos.War.Grid;
+using Thanos.War.Snake;
 
 namespace Thanos.War.Arena;
 
+/// <summary>
+/// A static class containing the pure logic for advancing the game state.
+/// It is stateless and operates on a given WarArena state.
+/// This design separates the game rules (the "Engine") from the game data (the "State").
+/// </summary>
 public static class WarGameEngine
 {
+    // =================================================================
+    // Main Simulation Method
+    // =================================================================
+
     /// <summary>
-    ///     Simula un intero turno di gioco, date le mosse scelte (come bitmask) per ogni serpente.
+    /// Simulates a full game turn using pre-allocated workspace buffers to remain allocation-free.
     /// </summary>
-    public static void SimulateTurn(ReadOnlySpan<byte> chosenMoves)
+    public static void SimulateTurn(ref WarArena arena, ReadOnlySpan<byte> chosenMoves, ref TurnWorkspace workspace)
     {
-        var snakes = Snakes;
-        var snakeCount = snakes.Length;
-        ref var hash = ref _header.Hash;
+        var snakes = arena.Snakes;
+        var snakeCount = arena.TotalSnakeCount; // Use the total number of snake slots
+        ref var header = ref arena.Header;
+        ref var grid = ref arena.Grid;
 
-        // Pulisce il buffer isDead per questo nuovo turno.
-        _isDead.Clear();
+        workspace.IsDead.Clear();
 
-        // Le 4 fasi ora usano direttamente i campi privati.
-        // --- FASE 1: Preparazione ---
+        // --- PHASE 1: PREPARATION ---
+        // Calculate the outcome of each snake's move.
         for (var i = 0; i < snakeCount; i++)
         {
             var snake = snakes[i];
             if (snake.Dead)
             {
-                _isDead[i] = true;
+                workspace.IsDead[i] = true;
                 continue;
             }
 
-            _oldTailPositions[i] = snake.Tail;
+            workspace.OldTailPositions[i] = snake.Tail;
             var head = snake.Head;
             var move = chosenMoves[i];
 
-            _newHeadPositions[i] = move switch
-            {
-                Moves.Up => head < _grid.Width ? ushort.MaxValue : (ushort)(head - _grid.Width),
-                Moves.Down => head >= _grid.Area - _grid.Width ? ushort.MaxValue : (ushort)(head + _grid.Width),
-                Moves.Left => head % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
-                Moves.Right => (head + 1) % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
-                _ => ushort.MaxValue
-            };
+            // The conditional switch is replaced by a single, branchless lookup.
+            workspace.NewHeadPositions[i] = arena.MovesLut.GetNeighbor(head, move);
         }
 
-        // --- FASE 2: Risoluzione Conflitti ---
-        // ... (questa fase è identica a prima)
+        // --- PHASE 2: CONFLICT RESOLUTION ---
+        // Determine deaths from collisions (walls, bodies, head-to-head).
         for (var i = 0; i < snakeCount; i++)
         {
-            if (_isDead[i]) continue;
-            if (_grid.IsOccupied(_newHeadPositions[i]))
+            if (workspace.IsDead[i]) continue;
+
+            var newHead = workspace.NewHeadPositions[i];
+            
+            // Wall or body collision check
+            if (grid.IsOccupied(newHead))
             {
-                _isDead[i] = true;
+                workspace.IsDead[i] = true;
                 continue;
             }
 
-            _hasEaten[i] = _grid.IsFood(_newHeadPositions[i]);
+            workspace.HasEaten[i] = grid.IsFood(newHead);
+
+            // Head-to-head collision check
             for (var j = i + 1; j < snakeCount; j++)
             {
-                if (_isDead[j]) continue;
-                if (_newHeadPositions[i] == _newHeadPositions[j])
+                if (workspace.IsDead[j]) continue;
+                if (newHead == workspace.NewHeadPositions[j])
                 {
-                    // TODO: craere metodo compare interno a warsnake?
                     var snakeA = snakes[i];
                     var snakeB = snakes[j];
-                    if (snakeA.Length >= snakeB.Length) _isDead[j] = true;
-                    if (snakeB.Length >= snakeA.Length) _isDead[i] = true;
+                    if (snakeA.Length >= snakeB.Length) workspace.IsDead[j] = true;
+                    if (snakeB.Length >= snakeA.Length) workspace.IsDead[i] = true;
                 }
             }
         }
 
-        // --- FASE 3: Esecuzione Movimento ---
-        // ... (questa fase è identica a prima)
+        // --- PHASE 3: MOVEMENT EXECUTION ---
+        // Apply the moves to the snakes that survived Phase 2.
         for (var i = 0; i < snakeCount; i++)
         {
-            if (_isDead[i]) continue;
+            if (workspace.IsDead[i]) continue;
+            
             var snake = snakes[i];
-            var hazardDamage = _grid.IsHazard(_newHeadPositions[i]) ? 15 : 0;
+            var newHead = workspace.NewHeadPositions[i];
+            var hasEaten = workspace.HasEaten[i];
+            
+            var hazardDamage = grid.IsHazard(newHead) ? 15 : 0;
             var totalDamage = 1 + hazardDamage;
-            snake.Move(_newHeadPositions[i], _hasEaten[i], totalDamage);
+            
+            snake.Move(newHead, hasEaten, totalDamage);
         }
 
-        // --- FASE 4: Aggiornamento Mondo ---
-        // ... (questa fase è identica a prima)
+        // --- PHASE 4: WORLD UPDATE ---
+        // Update the grid and hash based on the final outcomes.
         for (var i = 0; i < snakeCount; i++)
         {
-            var wasAlive = !_isDead[i];
-            if (wasAlive && snakes[i].Dead) _isDead[i] = true;
-            if (_isDead[i] && wasAlive)
+            var snake = snakes[i];
+            bool wasAlive = !workspace.IsDead[i];
+            bool isNowDead = wasAlive && snake.Dead; // Died from starvation/hazards in Phase 3
+            
+            if (isNowDead)
             {
-                _header.LiveSnakesCount--;
-                var deadSnake = snakes[i];
-                deadSnake.GetSpans(out var span1, out var span2);
-                foreach (var segment in span1)
-                {
-                    hash ^= ZobristTable.GetSnakeValue(i, segment);
-                    _grid.Snakes.Clear(segment);
-                }
-
-                foreach (var segment in span2)
-                {
-                    hash ^= ZobristTable.GetSnakeValue(i, segment);
-                    _grid.Snakes.Clear(segment);
-                }
+                KillSnake(ref arena, i, ref header);
             }
-            else if (wasAlive)
+            else if (wasAlive) // Survived the turn
             {
-                hash ^= ZobristTable.GetSnakeValue(i, _newHeadPositions[i]);
-                _grid.Snakes.Set(_newHeadPositions[i]);
-                if (!_hasEaten[i])
+                var newHead = workspace.NewHeadPositions[i];
+                var oldTail = workspace.OldTailPositions[i];
+                
+                header.Hash ^= ZobristTable.GetSnakeValue(i, newHead);
+                grid.Snakes.Set(newHead);
+                
+                if (!workspace.HasEaten[i])
                 {
-                    hash ^= ZobristTable.GetSnakeValue(i, _oldTailPositions[i]);
-                    _grid.Snakes.Clear(_oldTailPositions[i]);
+                    header.Hash ^= ZobristTable.GetSnakeValue(i, oldTail);
+                    grid.Snakes.Clear(oldTail);
                 }
             }
 
-            if (_hasEaten[i]) _grid.Food.Clear(_newHeadPositions[i]);
+            // Update food bitboard if food was eaten
+            if (workspace.HasEaten[i] && !workspace.IsDead[i])
+            {
+                grid.Food.Clear(workspace.NewHeadPositions[i]);
+            }
         }
     }
+
+    // =================================================================
+    // MCTS Expansion & Helper Methods
+    // =================================================================
     
     /// <summary>
-    ///     Applica la mossa di un singolo serpente, aggiornando lo stato.
-    ///     Usato per l'espansione dell'albero MCTS, è una versione semplificata di SimulateTurn.
+    /// Applies a single move for a single snake, used for MCTS tree expansion.
     /// </summary>
-    public static void ApplySingleMove(int snakeIndex, byte move)
+    public static void ApplySingleMove(ref WarArena arena, int snakeIndex, byte move)
     {
-        var snake = Snakes[snakeIndex];
+        var snake = arena.Snakes[snakeIndex];
         if (snake.Dead) return;
 
-        // 1. Calcola la nuova posizione della testa e la vecchia coda
+        ref var header = ref arena.Header;
+        ref var grid = ref arena.Grid;
+        
         var oldTail = snake.Tail;
         var head = snake.Head;
-        var newHead = move switch
+        
+        // Branchless move calculation using the LUT.
+        var newHead = arena.MovesLut.GetNeighbor(head, move);
+
+        // Instant death check (wall or existing body)
+        if (grid.IsOccupied(newHead))
         {
-            Moves.Up => head < _grid.Width ? ushort.MaxValue : (ushort)(head - _grid.Width),
-            Moves.Down => head >= _grid.Area - _grid.Width ? ushort.MaxValue : (ushort)(head + _grid.Width),
-            Moves.Left => head % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head - 1),
-            Moves.Right => (head + 1) % _grid.Width == 0 ? ushort.MaxValue : (ushort)(head + 1),
-            _ => ushort.MaxValue
-        };
-
-        // 2. Controlla se la mossa porta a morte istantanea (muro o corpo di un altro serpente)
-        if (_grid.IsOccupied(newHead))
-        {
-            KillSnake(snakeIndex);
-            return; // L'espansione finisce qui in un nodo terminale
-        }
-
-        // 3. Controlla cibo e calcola il danno
-        var hasEaten = _grid.IsFood(newHead);
-        var hazardDamage = _grid.IsHazard(newHead) ? 15 : 0;
-        var totalDamage = 1 + hazardDamage;
-
-        // 4. Aggiorna lo stato interno del serpente
-        snake.Move(newHead, hasEaten, totalDamage);
-
-        // Controlla se il serpente è morto per fame/danni
-        if (snake.Dead)
-        {
-            KillSnake(snakeIndex);
+            KillSnake(ref arena, snakeIndex, ref header);
             return;
         }
 
-        // 5. Aggiorna lo stato del mondo (bitboard e hash)
-        ref var hash = ref _header.Hash;
+        var hasEaten = grid.IsFood(newHead);
+        var hazardDamage = grid.IsHazard(newHead) ? 15 : 0;
+        var totalDamage = 1 + hazardDamage;
 
-        // Aggiungi la nuova testa
-        _grid.Snakes.Set(newHead);
-        hash ^= ZobristTable.GetSnakeValue(snakeIndex, newHead);
+        snake.Move(newHead, hasEaten, totalDamage);
 
-        // Rimuovi la vecchia coda (se non ha mangiato)
+        // Starvation/hazard death check
+        if (snake.Dead)
+        {
+            KillSnake(ref arena, snakeIndex, ref header);
+            return;
+        }
+
+        // Update world state (bitboards and hash)
+        header.Hash ^= ZobristTable.GetSnakeValue(snakeIndex, newHead);
+        grid.Snakes.Set(newHead);
+
         if (!hasEaten)
         {
-            _grid.Snakes.Clear(oldTail);
-            hash ^= ZobristTable.GetSnakeValue(snakeIndex, oldTail);
+            header.Hash ^= ZobristTable.GetSnakeValue(snakeIndex, oldTail);
+            grid.Snakes.Clear(oldTail);
         }
-        else // Se ha mangiato, rimuovi il cibo dalla bitboard
+        else
         {
-            _grid.Food.Clear(newHead);
+            grid.Food.Clear(newHead);
         }
     }
-    
+
     /// <summary>
-    ///     Gestisce la logica completa per l'eliminazione di un serpente dallo stato del gioco.
+    /// Calculates the initial Zobrist hash for the entire game state.
     /// </summary>
-    private static void KillSnake(int snakeIndex)
+    public static void InitializeHash(ref WarArena arena)
     {
-        var snake = Snakes[snakeIndex];
-        // Se era già stato segnato come morto in una fase precedente, non fare nulla
-        if (snake.Dead) return;
-
-        snake.Kill(); // Imposta la vita a 0
-        _header.LiveSnakesCount--;
-
-        // Rimuovi il serpente dalla bitboard e aggiorna l'hash
-        ref var hash = ref _header.Hash;
-        snake.GetSpans(out var span1, out var span2);
-        foreach (var segment in span1)
-        {
-            hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
-            _grid.Snakes.Clear(segment);
-        }
-
-        foreach (var segment in span2)
-        {
-            hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
-            _grid.Snakes.Clear(segment);
-        }
-    }
-    
-    /// <summary>
-    ///     NUOVO: Calcola l'hash Zobrist iniziale per lo stato di gioco corrente.
-    ///     Questo metodo va chiamato una sola volta quando si crea un nuovo stato dal server.
-    /// </summary>
-    public static void InitializeHash()
-    {
-        long hash = 0;
-        var snakes = Snakes;
+        ref var header = ref arena.Header;
+        var snakes = arena.Snakes;
+        header.Hash = 0;
+        
         for (var i = 0; i < snakes.Length; i++)
         {
             var snake = snakes[i];
             if (snake.Dead) continue;
-
-            // Ottieni i segmenti del corpo del serpente
+            
             snake.GetSpans(out var span1, out var span2);
-
-            // Applica l'operazione XOR per ogni segmento del corpo
-            foreach (var segment in span1) hash ^= ZobristTable.GetSnakeValue(i, segment);
-            foreach (var segment in span2) hash ^= ZobristTable.GetSnakeValue(i, segment);
+            foreach (var segment in span1) header.Hash ^= ZobristTable.GetSnakeValue(i, segment);
+            foreach (var segment in span2) header.Hash ^= ZobristTable.GetSnakeValue(i, segment);
         }
+    }
 
-        _header.Hash = hash;
+    /// <summary>
+    /// Encapsulates the logic for removing a snake from the game state.
+    /// </summary>
+    private static void KillSnake(ref WarArena arena, int snakeIndex, ref WarArenaHeader header)
+    {
+        var snake = arena.Snakes[snakeIndex];
+        if (snake.Dead) return; // Already dead, do nothing.
+
+        snake.Kill();
+        header.LiveSnakesCount--;
+
+        // Remove snake from the board and update the hash
+        snake.GetSpans(out var span1, out var span2);
+        foreach (var segment in span1)
+        {
+            header.Hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
+            arena.Grid.Snakes.Clear(segment);
+        }
+        foreach (var segment in span2)
+        {
+            header.Hash ^= ZobristTable.GetSnakeValue(snakeIndex, segment);
+            arena.Grid.Snakes.Clear(segment);
+        }
     }
 }
