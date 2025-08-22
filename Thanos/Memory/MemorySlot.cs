@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Thanos.MCST;
 using Thanos.SourceGen;
 using Thanos.War;
+using Thanos.War.Arena;
 using Thanos.War.Grid;
 using Thanos.War.Snake;
 

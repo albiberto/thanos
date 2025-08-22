@@ -1,6 +1,7 @@
 ﻿using Thanos.Enums;
-using Thanos.Memory;
 using Thanos.SourceGen;
+
+namespace Thanos.Memory;
 
 public readonly struct GameContext
 {
