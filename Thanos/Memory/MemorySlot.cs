@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-using System.Runtime.InteropServices;
-using Thanos.Enums;
+﻿using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 using Thanos.MCST;
 using Thanos.War.Grid;
@@ -15,35 +13,38 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
     
     public void InitializeFromRequest(in Request request)
     {
-        InitializeNodeMemory();
-        var grid = InitializeWarGrid(request.Board.Width, request.Board.Height, request.Board.Food, request.Board.Hazards);
-        InitializeWarSnakes(grid, request.Board.Snakes);
+        var nodeMemory = _slotMemory.Slice(Offsets.Node, _layout.Node.Size);
+        InitializeNodeMemory(nodeMemory);
+        
+        var gridMemory = _slotMemory.Slice(_layout.Offsets.Grid, _layout.Grid.Size);
+        var grid = InitializeWarGrid(gridMemory, in _layout.Grid, request.Board.Width, request.Board.Height, request.Board.Food, request.Board.Hazards);
+        
+        var snakesMemory = _slotMemory.Slice(_layout.Offsets.Snakes, _layout.Snake.Stride * snakeIdMap.Capacity);
+        InitializeWarSnakes(snakesMemory, in _layout.Snake, in grid, request.Board.Snakes, capacity, snakeIdMap);
     }
     
     // =================================================================
     // Initialization
     // =================================================================
     
-    private void InitializeNodeMemory()
+    private static void InitializeNodeMemory(Span<byte> memory)
     {
-        var nodeMemory = _slotMemory.Slice(Offsets.Node, _layout.Node.Size);
-        ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(nodeMemory));
+        
+        ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(memory));
         node = new Node();
     }
     
-    private WarGrid InitializeWarGrid(int width, int height, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
+    private static WarGrid InitializeWarGrid(Span<byte> memory, in GridLayout layout, int width, int height, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
     {
-        var gridMemory = _slotMemory.Slice(_layout.Offsets.Grid, _layout.Grid.Size);
-    
-        var geographyMemory = gridMemory[.._layout.Grid.GeographySize];
+        var geographyMemory = memory[..layout.GeographySize];
         ref var geography = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Geography>(geographyMemory));
         geography = new Geography(width, height);
     
         // Ottiene il blocco di memoria per TUTTI i bitboard
-        var bitboardsMemory = gridMemory.Slice(_layout.Grid.GeographySize, _layout.Grid.BitboardsSize);
+        var bitboardsMemory = memory.Slice(layout.GeographySize, layout.BitboardsSize);
     
         // Dividiamo il blocco di byte in 3 segmenti e facciamo il cast di ognuno a ulong
-        var stride = _layout.Grid.BitboardStrideInBytes;
+        var stride = layout.BitboardStrideInBytes;
     
         var foodMemoryBytes = bitboardsMemory.Slice(0, stride);
         var hazardsMemoryBytes = bitboardsMemory.Slice(stride, stride);
@@ -63,37 +64,34 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
         return grid;
     }
 
-    private void InitializeWarSnakes(WarGrid grid, ReadOnlySpan<Snake> snakes)
+    private static void InitializeWarSnakes(Span<byte> memory, in SnakeLayout layout, in WarGrid grid, ReadOnlySpan<Snake> snakes, int capacity, Dictionary<string, int> snakeIdMap)
     {
-        var snakesMemory = _slotMemory.Slice(_layout.Offsets.Snakes, _layout.Snake.Stride * snakeIdMap.Capacity);
-    
-        for (var i = 0; i < snakes.Length; i++)
+        foreach (var snake in snakes)
         {
-            var singleSnakeMemory = snakesMemory.Slice(i * _layout.Snake.Stride, _layout.Snake.Stride);
+            var index = snakeIdMap[snake.Id];
+            var snakeMemory = memory.Slice(index * layout.Stride, layout.Stride);
+            var body = snake.Body.AsSpan();
             
-            var snake = snakes[i];
-            
-            var profileMemory = singleSnakeMemory.Slice(0, _layout.Snake.ProfileSize);
+            var profileMemory = snakeMemory.Slice(0, layout.ProfileSize);
             ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(profileMemory));
             profile = new Profile(snakeIdMap[snake.Id]);
             
-            var healthMemory = singleSnakeMemory.Slice(_layout.Snake.ProfileSize, _layout.Snake.HealthSize);
+            var healthMemory = snakeMemory.Slice(layout.ProfileSize, layout.HealthSize);
             ref var health = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Health>(healthMemory));
             health = new Health(snake.Health);
             
-            var anatomyMemory = singleSnakeMemory.Slice(_layout.Snake.ProfileSize + _layout.Snake.HealthSize, _layout.Snake.AnatomySize);
+            var anatomyMemory = snakeMemory.Slice(layout.ProfileSize + layout.HealthSize, layout.AnatomySize);
             ref var anatomy = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Anatomy>(anatomyMemory));
-            anatomy = new Anatomy(capacity, snake.Body.Length);
+            anatomy = new Anatomy(capacity, body.Length);
             
-            var bodyMemoryByte = singleSnakeMemory.Slice(_layout.Snake.HeaderSize, _layout.Snake.BodySize);
+            var bodyMemoryByte = snakeMemory.Slice(layout.HeaderSize, layout.BodySize);
             var bodyMemoryUshort = MemoryMarshal.Cast<byte, ushort>(bodyMemoryByte);
 
-            var body = snake.Body.AsSpan();
-            for (var j = 0; j < snake.Body.Length; j++)
+            for (var i = 0; i < body.Length; i++)
             {
-                var coord1D = To1D(body[j], grid.Geography.Width);
+                var coord1D = To1D(body[i], grid.Geography.Width);
                 
-                bodyMemoryUshort[j] = coord1D;
+                bodyMemoryUshort[i] = coord1D;
                 grid.Snakes.Set(coord1D);
             }
         }
