@@ -1,9 +1,8 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.MCST;
 
-namespace Thanos.War.Grid;
+namespace Thanos.War.Arena;
 
 /// <summary>
 /// A pre-computed lookup table for grid neighbors.

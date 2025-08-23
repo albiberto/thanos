@@ -12,20 +12,17 @@ public ref struct WarArena
 {
     private ref WarArenaHeader _header;
     private readonly WarGrid _grid;
-    private readonly Snakes _snakes;
-    private readonly MoveLookupTable _movesLut; // Contiene la tabella pre-calcolata
-
-    public WarArena(in MemoryLayout layout, ref WarArenaHeader header, WarGrid grid, Span<byte> snakesMemory)
+    private readonly WarSnakes _snakes;
+    
+    // NOTA: I parametri sono stati corretti per riflettere la gestione della memoria.
+    public WarArena(ref WarArenaHeader header, WarGrid grid, Span<byte> snakesMemory, in MemoryLayout layout)
     {
         _header = ref header;
         _grid = grid;
-        _snakes = new Snakes(in layout, snakesMemory);
-        // La LUT viene creata una sola volta qui.
-        _movesLut = new MoveLookupTable(grid.Width, grid.Height);
+        _snakes = new WarSnakes(in layout, snakesMemory);
     }
+}
     
-    public Snakes Snakes => _snakes;
-    public readonly long GetStateHash => _header.Hash;
 
     /// <summary>
     /// Returns the legal moves for a snake.

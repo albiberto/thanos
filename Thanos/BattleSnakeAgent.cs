@@ -14,13 +14,11 @@ public sealed class BattleSnakeAgent : IDisposable
         // var snakeBodyCapacity = (int)Math.Min(BitOperations.RoundUpToPowerOf2((uint)grid.Geography.Area), Constants.MaxSnakeBodyCapacity);
     
     // Campi privati per la gestione dello stato e della logica
-    private MemoryPool? _pool;
+    private readonly MemoryPool? _pool;
     private readonly MonteCarloEngine _engine;
-    private GameContext _context;
     
     // Mappa per convertire gli ID stringa dei serpenti in interi performanti
-    private readonly Dictionary<string, int> _snakeIdMap = new();
-    private int _nextSnakeIntId = 0;
+    private readonly Dictionary<string, int> _snakeIdMap = [];
     
     // Puntatori per la gestione dell'albero MCTS
     private unsafe Node* _root;

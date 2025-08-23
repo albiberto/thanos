@@ -71,29 +71,25 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
         foreach (var snake in snakes)
         {
             var index = snakeIdMap[snake.Id];
-            var snakeMemory = memory.Slice(index * layout.Stride, layout.Stride);
-            var body = snake.Body.AsSpan();
+            var view = new WarSnakeMemoryView(memory, in layout, index);
             
-            var profileMemory = snakeMemory.Slice(0, layout.ProfileSize);
-            ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(profileMemory));
+            ref var profile = ref view.GetProfile();
             profile = new Profile(index);
             
-            var healthMemory = snakeMemory.Slice(layout.ProfileSize, layout.HealthSize);
-            ref var health = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Health>(healthMemory));
+            ref var health = ref view.GetHealth();
             health = new Health(snake.Health);
             
-            var anatomyMemory = snakeMemory.Slice(layout.ProfileSize + layout.HealthSize, layout.AnatomySize);
-            ref var anatomy = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Anatomy>(anatomyMemory));
+            var body = snake.Body.AsSpan();
+            
+            ref var anatomy = ref view.GetAnatomy();
             anatomy = new Anatomy(capacity, body.Length);
             
-            var bodyMemoryByte = snakeMemory.Slice(layout.HeaderSize, layout.BodySize);
-            var bodyMemoryUshort = MemoryMarshal.Cast<byte, ushort>(bodyMemoryByte);
-
+            var bodyMemory = view.GetBody();
             for (var i = 0; i < body.Length; i++)
             {
                 var coord1D = To1D(body[i], grid.Geography.Width);
                 
-                bodyMemoryUshort[i] = coord1D;
+                bodyMemory[i] = coord1D;
                 grid.Snakes.Set(coord1D);
             }
         }

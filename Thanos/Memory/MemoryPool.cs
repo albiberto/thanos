@@ -9,7 +9,8 @@ namespace Thanos.Memory;
 public sealed class MemoryPool : IDisposable
 {
     private readonly IMemoryOwner<byte> _memoryOwner;
-    private readonly Memory<byte> _poolMemory;
+    private readonly Memory<byte> _memory;
+    private MemoryHandle _memoryHandle;
     private long _currentOffset;
     
     // Il context e la mappa non sono più readonly, vengono impostati da Reset
@@ -20,8 +21,10 @@ public sealed class MemoryPool : IDisposable
     public MemoryPool(in GameContext worstContext, int maxNodes)
     {
         _context = worstContext;
+        
         _memoryOwner = MemoryPool<byte>.Shared.Rent(worstContext.Layout.SlotSize * maxNodes);
-        _poolMemory = _memoryOwner.Memory;
+        _memory = _memoryOwner.Memory;
+        _memoryHandle = _memory.Pin();
     }
 
     // RESET: configura il pool per una partita specifica
@@ -40,14 +43,14 @@ public sealed class MemoryPool : IDisposable
         var slotSize = _context.Layout.SlotSize;
         var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
 
-        if (newOffset > _poolMemory.Length)
+        if (newOffset > _memory.Length)
         {
             slot = default;
             return false;
         }
 
         var startOffset = (int)(newOffset - slotSize);
-        var slotSpan = _poolMemory.Span.Slice(startOffset, slotSize);
+        var slotSpan = _memory.Span.Slice(startOffset, slotSize);
     
         slot = new MemorySlot(slotSpan, in _context, _snakeIdMap);
         return true;
@@ -74,5 +77,9 @@ public sealed class MemoryPool : IDisposable
     public void Reset(GameContext context) => _context = context;
     
     // Restituisce la memoria al pool condiviso quando il nostro pool viene eliminato.
-    public void Dispose() => _memoryOwner.Dispose();
+    public void Dispose()
+    {
+        _memoryOwner.Dispose();
+        _memoryHandle.Dispose();
+    }
 }

@@ -11,6 +11,8 @@ public readonly ref struct WarSnake
     
     private readonly Span<ushort> _body;
 
+    public WarSnake(WarSnakeMemoryView view){}
+    
     public WarSnake(ref Profile profile, ref Health health, ref Anatomy anatomy, Span<ushort> body)
     {
         _profile = ref profile;
