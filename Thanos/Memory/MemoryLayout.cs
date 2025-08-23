@@ -29,7 +29,7 @@ public readonly struct MemoryLayout
 
 public readonly struct Offsets(int sizeOfNode, int sizeOfGrid)
 {
-    public const int Node = 0;
+    public readonly int Node = 0;
     
     public readonly int Grid = sizeOfNode;
     public readonly int Snakes = sizeOfNode + sizeOfGrid;

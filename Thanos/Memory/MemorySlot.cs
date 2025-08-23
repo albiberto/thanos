@@ -11,9 +11,11 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
     private readonly Span<byte> _slotMemory = slotMemory;
     private readonly MemoryLayout _layout = layout;
     
+    public void CloneFrom(in MemorySlot source) => source._slotMemory.CopyTo(_slotMemory);
+    
     public void InitializeFromRequest(in Request request)
     {
-        var nodeMemory = _slotMemory.Slice(Offsets.Node, _layout.Node.Size);
+        var nodeMemory = _slotMemory.Slice(_layout.Offsets.Node, _layout.Node.Size);
         InitializeNodeMemory(nodeMemory);
         
         var gridMemory = _slotMemory.Slice(_layout.Offsets.Grid, _layout.Grid.Size);
@@ -24,7 +26,7 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
     }
     
     // =================================================================
-    // Initialization
+    // Static Initializers (Pure Functions)
     // =================================================================
     
     private static void InitializeNodeMemory(Span<byte> memory)
@@ -96,12 +98,9 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
             }
         }
     }
-    
-    // =================================================================
-    // Views
-    // =================================================================
-    
-    public void CloneFrom(in MemorySlot source) => source._slotMemory.CopyTo(_slotMemory);
-    
-    public static ushort To1D(in Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
+
+    /// <summary>
+    /// A dedicated utility class for coordinate transformations.
+    /// </summary>
+    private static ushort To1D(in Coordinate coord, int width) => (ushort)(coord.Y * width + coord.X);
 }
