@@ -8,5 +8,5 @@ public static class Moves
     public const byte Left = 4;   // 0100
     public const byte Right = 8;  // 1000
     
-    public static readonly byte[] AllDirections = [Up, Down, Left, Right];
+    public static readonly byte All = 15;
 }
