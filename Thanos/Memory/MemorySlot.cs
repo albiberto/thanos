@@ -69,21 +69,23 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
     
         for (var i = 0; i < snakes.Length; i++)
         {
+            var singleSnakeMemory = snakesMemory.Slice(i * _layout.Snake.Stride, _layout.Snake.Stride);
+            
             var snake = snakes[i];
             
-            var profileMemory = snakesMemory.Slice(i * _layout.Snake.Stride, _layout.Snake.ProfileSize);
+            var profileMemory = singleSnakeMemory.Slice(0, _layout.Snake.ProfileSize);
             ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(profileMemory));
             profile = new Profile(snakeIdMap[snake.Id]);
             
-            var healthMemory = snakesMemory.Slice(i * _layout.Snake.Stride + _layout.Snake.ProfileSize, _layout.Snake.HealthSize);
+            var healthMemory = singleSnakeMemory.Slice(_layout.Snake.ProfileSize, _layout.Snake.HealthSize);
             ref var health = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Health>(healthMemory));
             health = new Health(snake.Health);
             
-            var anatomyMemory = snakesMemory.Slice(i * _layout.Snake.Stride + _layout.Snake.ProfileSize + _layout.Snake.HeaderSize, _layout.Snake.AnatomySize);
+            var anatomyMemory = singleSnakeMemory.Slice(_layout.Snake.ProfileSize + _layout.Snake.HealthSize, _layout.Snake.AnatomySize);
             ref var anatomy = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Anatomy>(anatomyMemory));
             anatomy = new Anatomy(capacity, snake.Body.Length);
             
-            var bodyMemoryByte = snakesMemory.Slice(i * _layout.Snake.Stride + _layout.Snake.HeaderSize, _layout.Snake.BodySize);
+            var bodyMemoryByte = singleSnakeMemory.Slice(_layout.Snake.HeaderSize, _layout.Snake.BodySize);
             var bodyMemoryUshort = MemoryMarshal.Cast<byte, ushort>(bodyMemoryByte);
 
             var body = snake.Body.AsSpan();
