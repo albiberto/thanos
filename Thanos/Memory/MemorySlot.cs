@@ -19,7 +19,7 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
         var gridMemory = _slotMemory.Slice(_layout.Offsets.Grid, _layout.Grid.Size);
         var grid = InitializeWarGrid(gridMemory, in _layout.Grid, request.Board.Width, request.Board.Height, request.Board.Food, request.Board.Hazards);
         
-        var snakesMemory = _slotMemory.Slice(_layout.Offsets.Snakes, _layout.Snake.Stride * snakeIdMap.Capacity);
+        var snakesMemory = _slotMemory.Slice(_layout.Offsets.Snakes, _layout.Snake.Stride * snakeIdMap.Count);
         InitializeWarSnakes(snakesMemory, in _layout.Snake, in grid, request.Board.Snakes, capacity, snakeIdMap);
     }
     
@@ -74,7 +74,7 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
             
             var profileMemory = snakeMemory.Slice(0, layout.ProfileSize);
             ref var profile = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Profile>(profileMemory));
-            profile = new Profile(snakeIdMap[snake.Id]);
+            profile = new Profile(index);
             
             var healthMemory = snakeMemory.Slice(layout.ProfileSize, layout.HealthSize);
             ref var health = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Health>(healthMemory));
