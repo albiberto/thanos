@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Thanos.War.Snake.Memory;
 
 namespace Thanos.War.Snake;
 
@@ -11,15 +12,13 @@ public readonly ref struct WarSnake
     
     private readonly Span<ushort> _body;
 
-    public WarSnake(WarSnakeMemoryView view){}
-    
-    public WarSnake(ref Profile profile, ref Health health, ref Anatomy anatomy, Span<ushort> body)
+    public WarSnake(WarSnakeMemoryView view)
     {
-        _profile = ref profile;
-        _health = ref health;
-        _anatomy = ref anatomy;
+        _profile = ref view.GetProfile();
+        _health = ref view.GetHealth();
+        _anatomy = ref view.GetAnatomy();
         
-        _body = body;
+        _body = view.GetBody();
     }
     
     // Public API

@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.SourceGen;
+using Thanos.War.Grid.Memory;
 
 namespace Thanos.War.Grid;
 
@@ -13,17 +14,15 @@ public readonly ref struct WarGrid
     public readonly Bitboard Hazards;
     public readonly Bitboard Snakes;
 
-    public WarGrid(ref Geography geography, Span<ulong> foodBitboard, Span<ulong> hazardsBitboard, Span<ulong> snakesBitboard)
+    public WarGrid(WarGridMemoryView view)
     {
-        Geography = ref geography;
+        Geography = ref view.Geography;
         
-        Food = new Bitboard(foodBitboard);
-        Hazards = new Bitboard(hazardsBitboard);
-        Snakes = new Bitboard(snakesBitboard);
+        Food = view.Food;
+        Hazards = view.Hazards;
+        Snakes = view.Snakes;
     }
-
-    // --- "HOT PATH" READ METHODS (Safe and highly optimized) ---
-
+    
     public bool IsOccupied(ushort position1D)
     {
         if (position1D == ushort.MaxValue) return true;

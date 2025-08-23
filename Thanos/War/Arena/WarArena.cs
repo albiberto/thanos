@@ -1,7 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Thanos.MCST;
-using Thanos.Memory;
+﻿using System.Runtime.InteropServices;
 using Thanos.War.Grid;
 using Thanos.War.Snake;
 
@@ -14,21 +11,13 @@ public ref struct WarArena
     private readonly WarGrid _grid;
     private readonly WarSnakes _snakes;
     
-    // NOTA: I parametri sono stati corretti per riflettere la gestione della memoria.
-    public WarArena(ref WarArenaHeader header, WarGrid grid, Span<byte> snakesMemory, in MemoryLayout layout)
+    public WarArena(ref WarArenaHeader header, WarGrid grid, WarSnakes snakes)
     {
         _header = ref header;
         _grid = grid;
-        _snakes = new WarSnakes(in layout, snakesMemory);
+        _snakes = snakes;
     }
-}
-    
 
-    /// <summary>
-    /// Returns the legal moves for a snake.
-    /// This version is almost branchless, relying on a pre-computed lookup table.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte GetLegalMoves(Snake.WarSnake warSnake)
     {
         var head = warSnake.Head;
@@ -56,7 +45,7 @@ public ref struct WarArena
     
     public float Evaluate()
     {
-        if (Snakes[0].Dead) return -1.0f;
+        if (WarSnakes[0].Dead) return -1.0f;
         return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
     }
 }

@@ -1,8 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.MCST;
-using Thanos.War.Grid;
-using Thanos.War.Snake;
+using Thanos.War.Arena.Memory;
+using Thanos.War.Grid.Memory;
+using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
@@ -11,17 +12,19 @@ public readonly struct MemoryLayout
 {
     public const int SizeOfCacheLine = 64;
     
-    public readonly MonteCarloLayout Node = new();
-    public readonly GridLayout Grid = new();
-    public readonly SnakeLayout Snake;
+    public readonly MonteCarloLayout Node;
+    public readonly WarGridMemoryLayout Grid;
+    public readonly WarSnakeMemoryLayout Snake;
+    public readonly WarArenaMemoryLayout Arena;
 
-    public readonly Offsets Offsets = new();
+    public readonly Offsets Offsets;
     
     public MemoryLayout(int capacity, int area)
     {
         Node = new();
         Grid = new(area);
         Snake = new(capacity);
+        Arena = new();
 
         Offsets = new(Node.Size, Grid.Size);
     }
@@ -33,6 +36,7 @@ public readonly struct Offsets(int sizeOfNode, int sizeOfGrid)
     
     public readonly int Grid = sizeOfNode;
     public readonly int Snakes = sizeOfNode + sizeOfGrid;
+    public readonly int Arena = sizeOfNode + sizeOfGrid;
 }
 
 public static class MemoryExtensions

@@ -10,7 +10,7 @@ namespace Thanos.Tests.Tests.WarSnakeTests;
 ///     and provides an accurate WarSnake view for each snake.
 /// </summary>
 [TestFixture]
-public class SnakesTests
+public class WarSnakesTests
 {
     // =================================================================
     // Indexer Tests
@@ -48,7 +48,7 @@ public class SnakesTests
         targetBody.AsSpan().CopyTo(bodyDestinationSpan);
 
         // 4. Create the WarSnakes instance that we are going to test.
-        var snakes = new Snakes(layout, snakesMemory);
+        var snakes = new WarSnakes(layout, snakesMemory);
 
         // ACT
         // Use the indexer to get a view of the snake at the target index.

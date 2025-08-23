@@ -1,7 +1,8 @@
 ﻿using Thanos.Memory;
-using Thanos.War.Grid;
 
-public readonly unsafe struct GridLayout
+namespace Thanos.War.Grid.Memory;
+
+public readonly unsafe struct WarGridMemoryLayout
 {
     private const int BitBoards = 3;
 
@@ -14,7 +15,7 @@ public readonly unsafe struct GridLayout
 
     public readonly int Size;
     
-    public GridLayout(int area)
+    public WarGridMemoryLayout(int area)
     {
         GeographySize = sizeof(Geography).AlignUp();
         
