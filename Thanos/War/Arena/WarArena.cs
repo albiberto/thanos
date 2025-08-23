@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Thanos.MCST;
 using Thanos.War.Grid;
 using Thanos.War.Snake;
 
@@ -7,19 +9,20 @@ namespace Thanos.War.Arena;
 [StructLayout(LayoutKind.Sequential)]
 public ref struct WarArena
 {
-    private ref WarArenaHeader _header;
+    private readonly ref WarArenaHeader _header;
+    private readonly ref Geography _movesLut;
     private readonly WarGrid _grid;
     private readonly WarSnakes _snakes;
     
     public WarArena(ref WarArenaHeader header, WarGrid grid, WarSnakes snakes)
     {
         _header = ref header;
-        _grid = grid;
-        _snakes = snakes;
-    }
 
-    public byte GetLegalMoves(Snake.WarSnake warSnake)
-    {
+    public byte GetLegalMoves(WarSnake warSnake)
+    {        _grid = grid;
+             _snakes = snakes;
+         }
+
         var head = warSnake.Head;
         
         // Ottiene le 4 posizioni adiacenti dalla LUT. Nessun calcolo, solo lookup.
@@ -43,9 +46,9 @@ public ref struct WarArena
         );
     }
     
-    public float Evaluate()
-    {
-        if (WarSnakes[0].Dead) return -1.0f;
-        return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
-    }
+    // public float Evaluate()
+    // {
+    //     if (WarSnakes[0].Dead) return -1.0f;
+    //     return _header.LiveSnakesCount <= 1 ? 1.0f : 0.0f;
+    // }
 }

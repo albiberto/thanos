@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Numerics;
+using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 using Thanos.War.Grid.Memory;
 
@@ -14,6 +15,8 @@ public readonly ref struct WarGrid
     public readonly Bitboard Hazards;
     public readonly Bitboard Snakes;
 
+    public readonly ReadOnlySpan<ushort> _neighborsBoard;
+
     public WarGrid(WarGridMemoryView view)
     {
         Geography = ref view.Geography;
@@ -21,19 +24,15 @@ public readonly ref struct WarGrid
         Food = view.Food;
         Hazards = view.Hazards;
         Snakes = view.Snakes;
+        
+        _neighborsBoard = view.NeighborsBoard;
     }
     
-    public bool IsOccupied(ushort position1D)
-    {
-        if (position1D == ushort.MaxValue) return true;
-        var ulongIndex = position1D >> 6;
-        var bitMask = 1UL << (position1D & 63);
-        
-        var snakesData = Snakes.GetRawData();
-        return (snakesData[ulongIndex] & bitMask) != 0;
-    }
+    public bool IsOccupied(ushort position) => position == ushort.MaxValue || Snakes.IsSet(position);
 
-    public bool IsFood(ushort position1D) => Food.IsSet(position1D);
+    public bool IsFood(ushort position) => Food.IsSet(position);
 
-    public bool IsHazard(ushort position1D) => Hazards.IsSet(position1D);
+    public bool IsHazard(ushort position) => Hazards.IsSet(position);
+    
+    public ushort GetNeighbor(ushort position, byte move) => _neighborsBoard[position * 4 + BitOperations.TrailingZeroCount(move)];
 }

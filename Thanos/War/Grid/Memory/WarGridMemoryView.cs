@@ -11,11 +11,14 @@ public readonly ref struct WarGridMemoryView(Span<byte> memory, in WarGridMemory
         ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Geography>(_memory[.._layout.GeographySize]));
 
     public Bitboard Food => 
-        new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize, _layout.BitboardStrideInBytes)));
+        new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize, _layout.BitboardStride)));
             
     public Bitboard Hazards => 
-        new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize + _layout.BitboardStrideInBytes, _layout.BitboardStrideInBytes)));
+        new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize + _layout.BitboardStride, _layout.BitboardStride)));
 
     public Bitboard Snakes => 
-        new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize + _layout.BitboardStrideInBytes * 2, _layout.BitboardStrideInBytes)));
+        new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize + _layout.BitboardStride * 2, _layout.BitboardStride)));
+    
+    public Span<ushort> NeighborsBoard => 
+        MemoryMarshal.Cast<byte, ushort>(_memory.Slice(_layout.GeographySize + _layout.BitboardsSize, _layout.NeighborsBoardSize));
 }

@@ -10,11 +10,12 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMemory , int capacity, Dictionary<string, int> snakeIdMap)
+public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMemory , int capacity, Dictionary<string, int> snakeIdMap, ReadOnlySpan<ushort> neighbors)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
     private readonly MemoryLayout _layout = layout;
-    
+    private readonly ReadOnlySpan<ushort> _neighbors = neighbors;
+
     public void CloneFrom(in MemorySlot source) => source._slotMemory.CopyTo(_slotMemory);
     
     public void InitializeFromRequest(in Request request)
@@ -25,7 +26,7 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
         InitializeNodeMemory(nodeMemory);
         
         var gridMemory = _slotMemory.Slice(_layout.Offsets.Grid, _layout.Grid.Size);
-        var snakesBitboard = InitializeWarGrid(gridMemory, in _layout.Grid, request.Board.Width, request.Board.Height, request.Board.Food, request.Board.Hazards);
+        var snakesBitboard = InitializeWarGrid(gridMemory, in _layout.Grid, request.Board.Width, request.Board.Height, request.Board.Food, request.Board.Hazards, _neighbors);
         
         var snakesMemory = _slotMemory.Slice(_layout.Offsets.Snakes, _layout.Snake.Stride * initialSnakes);
         InitializeWarSnakes(snakesMemory, in _layout.Snake, snakesBitboard, request.Board.Snakes, request.Board.Width, capacity, snakeIdMap);
@@ -45,7 +46,7 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
         node = new Node();
     }
     
-    private static Bitboard InitializeWarGrid(Span<byte> memory, in WarGridMemoryLayout layout, int width, int height, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards)
+    private static Bitboard InitializeWarGrid(Span<byte> memory, in WarGridMemoryLayout layout, int width, int height, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards, ReadOnlySpan<ushort> neighbors)
     {
         var view = new WarGridMemoryView(memory, in layout);
         
@@ -57,6 +58,9 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
 
         var hazardsBitboard = view.Hazards;
         foreach (var coord in hazards) hazardsBitboard.Set(To1D(coord, width));
+        
+        var neighborsBoard = view.NeighborsBoard;
+        neighbors.CopyTo(neighborsBoard);
 
         return view.Snakes;
     }

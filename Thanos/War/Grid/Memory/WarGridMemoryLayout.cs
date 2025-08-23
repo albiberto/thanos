@@ -10,8 +10,9 @@ public readonly unsafe struct WarGridMemoryLayout
     public readonly int BitboardsSize;
     
     // RINOMINATO E CORRETTO:
-    public readonly int BitboardStrideInUlongs; // Numero di ulong per bitboard
-    public readonly int BitboardStrideInBytes;   // Dimensione in byte allineata per bitboard
+    public readonly int BitboardStride;   // Dimensione in byte allineata per bitboard
+
+    public readonly int NeighborsBoardSize;
 
     public readonly int Size;
     
@@ -19,16 +20,12 @@ public readonly unsafe struct WarGridMemoryLayout
     {
         GeographySize = sizeof(Geography).AlignUp();
         
-        // 1. Calcola il numero PURO di ulong necessari (arrotondando per eccesso)
-        BitboardStrideInUlongs = (area + 63) / 64; 
+        var bitboardStrideInUlongs = (area + 63) / 64; 
+        BitboardStride = (bitboardStrideInUlongs * sizeof(ulong)).AlignUp();
+        BitboardsSize = BitboardStride * BitBoards;
         
-        // 2. Calcola la dimensione in byte e ALLINEALA
-        var unalignedByteSize = BitboardStrideInUlongs * sizeof(ulong);
-        BitboardStrideInBytes = unalignedByteSize.AlignUp();
+        NeighborsBoardSize = area * 4 * sizeof(ushort);
         
-        // 3. La dimensione totale è 3 volte lo stride allineato
-        BitboardsSize = BitboardStrideInBytes * BitBoards;
-        
-        Size = GeographySize + BitboardsSize;
+        Size = GeographySize + BitboardsSize + NeighborsBoardSize;
     }
 }
