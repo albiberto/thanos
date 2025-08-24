@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Thanos.MCST;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct Node
+public struct Node
 {
     public int StateSlotId;
 

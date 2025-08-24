@@ -4,28 +4,30 @@ namespace Thanos.Memory;
 
 public sealed class WarMemoryPool : IDisposable
 {
+    private GameContext _context; 
+    
     private readonly IMemoryOwner<byte> _memoryOwner;
     private readonly Memory<byte> _memory;
     private MemoryHandle _memoryHandle;
-    private long _currentOffset;
     
-    private GameContext _context; 
-
-    public WarMemoryPool(in GameContext context, int maxNodes = Constants.MaxNodes)
+    private long _offset;
+    
+    public WarMemoryPool(in GameContext context, int maxNodes)
     {
         _context = context;
         
         _memoryOwner = MemoryPool<byte>.Shared.Rent(_context.Layout.WarSlotSize * maxNodes);
+        
         _memory = _memoryOwner.Memory;
-        _memoryHandle = _memory.Pin();
         _memory.Span.Clear();
+        _memoryHandle = _memory.Pin();
     }
     
     public MemorySlot GetNext()
     {
         var slotSize = _context.Layout.WarSlotSize;
         
-        var newOffset = Interlocked.Add(ref _currentOffset, slotSize);
+        var newOffset = Interlocked.Add(ref _offset, slotSize);
         var startOffset = (int)(newOffset - slotSize);
         
         var slotSpan = _memory.Span.Slice(startOffset, slotSize);
@@ -33,12 +35,14 @@ public sealed class WarMemoryPool : IDisposable
         return new MemorySlot(slotSpan, in _context);
     }
 
-    public void Reset(in GameContext context)
+    public void Clear()
     {
-        _context = context;
-        _currentOffset = 0;
+        _memory.Span.Clear();
+        _offset = 0;
     }
     
+    public void Reset(in GameContext context) => _context = context;
+
     public void Dispose()
     {
         _memoryOwner.Dispose();

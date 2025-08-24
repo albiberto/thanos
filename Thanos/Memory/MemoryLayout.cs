@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.Common;
 using Thanos.MCST;
+using Thanos.MCST.Memory;
 using Thanos.War.Grid.Memory;
 using Thanos.War.Snake.Memory;
 
@@ -11,7 +12,7 @@ public readonly struct MemoryLayout
 {
     public const int SizeOfCacheLine = 64;
     
-    public readonly MonteCarloLayout Node;
+    public readonly NodeMemoryLayout Node;
     public readonly WarGridMemoryLayout WarGrid;
     public readonly WarSnakeMemoryLayout WarSnake;
 

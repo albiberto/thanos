@@ -5,23 +5,25 @@ using Thanos.War;
 
 namespace Thanos.MCST;
 
-public class MonteCarloEngine(WarMemoryPool pool)
+public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
-    private Node _root;
+    private readonly WarMemoryPool _warPool = warPool;
+    private readonly NodeMemoryPool _nodePool = nodePool;
 
     public byte FindBestMove(in Request request, int iterations = 10000)
     {
         // 1. Inizializza lo stato di partenza dalla richiesta
-        var rootSlot = pool.GetNext();
+        var rootIndex = _nodePool.GetNextIndex();
+        ref var node =  ref _nodePool[rootIndex];
+        var rootSlot = _warPool.GetNext();
+        
         rootSlot.InitializeFromRequest(in request);
         
-        _root = rootSlot.Node; 
-
         // 2. Esegui il ciclo di ricerca MCTS
         for (var i = 0; i < iterations; i++)
         {
             // Per ogni iterazione, partiamo sempre dallo stato originale della radice
-            var workingSlot = pool.GetNext();
+            var workingSlot = _warPool.GetNext();
             workingSlot.CloneFrom(in rootSlot);
             
             var workingArena = workingSlot.GetArena;

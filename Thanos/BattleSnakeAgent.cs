@@ -1,5 +1,6 @@
 ﻿using Thanos.Common;
 using Thanos.MCST;
+using Thanos.MCST.Memory;
 using Thanos.Memory;
 using Thanos.PreWarm;
 using Thanos.SourceGen;
@@ -8,7 +9,8 @@ namespace Thanos;
 
 public sealed class BattleSnakeAgent : IDisposable
 { 
-    private readonly WarMemoryPool _pool;
+    private readonly WarMemoryPool _warPool;
+    private readonly NodeMemoryPool _nodePool;
     private readonly MonteCarloEngine _engine;
 
     
@@ -16,9 +18,10 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         NeighborsBoardCache.Burn(Constants.MaxWidth);
         var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
-        
-        _pool = new WarMemoryPool(GameContext.Worst(neighborsLenght));
-        _engine = new MonteCarloEngine(_pool);
+
+        _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
+        _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
+        _engine = new MonteCarloEngine(_warPool);
     }
 
     /// <summary>
@@ -34,7 +37,7 @@ public sealed class BattleSnakeAgent : IDisposable
         
         var context = new GameContext(width, snakeIdMap, neighbors);
         
-        _pool.Reset(in context);
+        _warPool.Reset(in context);
     }
 
     /// <summary>
@@ -43,9 +46,12 @@ public sealed class BattleSnakeAgent : IDisposable
     /// </summary>
     public byte Move(in Request request) => Moves.Up;
 
-    public static void End(in Request request) => Console.WriteLine($"End: {request.Game.Id} - {request.Turn}");
+    public void End(in Request _)
+    {
+        _warPool.Clear();
+    } 
     
-    public void Dispose() => _pool.Dispose();
+    public void Dispose() => _warPool.Dispose();
     
     private static Dictionary<string, int> BuildIdMap(Request request)
     {
