@@ -9,7 +9,7 @@ public readonly ref struct WarGridMemoryView(Span<byte> memory, in WarGridMemory
     
     public ref Geography Geography => 
         ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Geography>(_memory[.._layout.GeographySize]));
-
+    
     public Bitboard Food => 
         new(MemoryMarshal.Cast<byte, ulong>(_memory.Slice(_layout.GeographySize, _layout.BitboardStride)));
             

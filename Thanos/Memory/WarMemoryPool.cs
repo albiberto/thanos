@@ -9,22 +9,18 @@ public sealed class WarMemoryPool : IDisposable
     private MemoryHandle _memoryHandle;
     private long _currentOffset;
     
-    // Il context e la mappa non sono più readonly, vengono impostati da Reset
     private GameContext _context; 
 
-    // COSTRUTTORE SEMPLIFICATO: alloca solo la memoria
     public WarMemoryPool(in GameContext context, int maxNodes = Constants.MaxNodes)
     {
         _context = context;
         
-        _memoryOwner = MemoryPool<byte>.Shared.Rent(_context.Layout.WarSlotSize * maxNodes); // Circa 2GB
+        _memoryOwner = MemoryPool<byte>.Shared.Rent(_context.Layout.WarSlotSize * maxNodes);
         _memory = _memoryOwner.Memory;
         _memoryHandle = _memory.Pin();
+        _memory.Span.Clear();
     }
-
-    /// <summary>
-    /// Tenta di ottenere il prossimo slot di memoria e restituisce la vista MemorySlot già pronta.
-    /// </summary>
+    
     public MemorySlot GetNext()
     {
         var slotSize = _context.Layout.WarSlotSize;

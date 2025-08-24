@@ -8,12 +8,10 @@ public ref struct Node
 {
     public int StateSlotId;
 
-    // Connessioni dell'albero tramite indici
     public int ParentIndex;
-    public int FirstChildIndex; // Indice del primo figlio
-    public int NextSiblingIndex; // Indice del prossimo fratello (per liste concatenate)
+    public int FirstChildIndex;
+    public int NextSiblingIndex;
 
-    // Statistiche
     public double Wins;
     public int Visits;
     public byte MoveThatLedToThisNode;
