@@ -4,7 +4,7 @@ using Thanos.War.Arena;
 
 namespace Thanos.MCST;
 
-public class MonteCarloEngine(MemoryPool pool)
+public class MonteCarloEngine(WarMemoryPool pool)
 {
     private Node _root;
 

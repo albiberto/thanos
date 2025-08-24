@@ -8,7 +8,7 @@ namespace Thanos;
 
 public sealed class BattleSnakeAgent : IDisposable
 { 
-    private readonly MemoryPool _pool;
+    private readonly WarMemoryPool _pool;
     private readonly MonteCarloEngine _engine;
 
     
@@ -17,7 +17,7 @@ public sealed class BattleSnakeAgent : IDisposable
         NeighborsBoardCache.Burn(Constants.MaxWidth);
         var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
         
-        _pool = new MemoryPool(GameContext.Worst(neighborsLenght));
+        _pool = new WarMemoryPool(GameContext.Worst(neighborsLenght));
         _engine = new MonteCarloEngine(_pool);
     }
 

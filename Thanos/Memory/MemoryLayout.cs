@@ -15,7 +15,7 @@ public readonly struct MemoryLayout
     public readonly WarGridMemoryLayout WarGrid;
     public readonly WarSnakeMemoryLayout WarSnake;
 
-    public readonly int SlotSize;
+    public readonly int WarSlotSize;
 
     public readonly Offsets Offsets;
     
@@ -25,7 +25,7 @@ public readonly struct MemoryLayout
         WarGrid = new(area, neighborsLenght);
         WarSnake = new(capacity);
 
-        SlotSize = (Node.Size + WarGrid.Size + WarSnake.Stride * snakeCount).AlignUp();
+        WarSlotSize = (WarGrid.Size + WarSnake.Stride * snakeCount).AlignUp();
         
         Offsets = new(Node.Size, WarGrid.Size);
     }
