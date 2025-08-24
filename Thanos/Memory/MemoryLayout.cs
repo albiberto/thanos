@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.MCST;
-using Thanos.War.Arena.Memory;
 using Thanos.War.Grid.Memory;
 using Thanos.War.Snake.Memory;
 
@@ -15,7 +14,6 @@ public readonly struct MemoryLayout
     public readonly MonteCarloLayout Node;
     public readonly WarGridMemoryLayout WarGrid;
     public readonly WarSnakeMemoryLayout WarSnake;
-    public readonly WarArenaMemoryLayout WarArena;
 
     public readonly int SlotSize;
 
@@ -26,9 +24,8 @@ public readonly struct MemoryLayout
         Node = new();
         WarGrid = new(area, neighborsLenght);
         WarSnake = new(capacity);
-        WarArena = new();
 
-        SlotSize = (Node.Size + WarGrid.Size + WarSnake.Stride * snakeCount + WarArena.Size).AlignUp();
+        SlotSize = (Node.Size + WarGrid.Size + WarSnake.Stride * snakeCount).AlignUp();
         
         Offsets = new(Node.Size, WarGrid.Size);
     }

@@ -2,7 +2,6 @@
 using Thanos.SourceGen;
 using Thanos.MCST;
 using Thanos.War.Arena;
-using Thanos.War.Arena.Memory;
 using Thanos.War.Grid;
 using Thanos.War.Grid.Memory;
 using Thanos.War.Snake;
@@ -13,23 +12,45 @@ namespace Thanos.Memory;
 public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext context)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
-    private readonly GameContext _context = context;
+    private readonly ref GameContext _context = ref context;
     
+    // =================================================================
+    // Memory Helpers
+    // =================================================================
+    
+    private Span<byte> NodeMemory => _slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size);
+
+    private Span<byte> WarGridMemory => _slotMemory.Slice(_context.Layout.Offsets.Grid, _context.Layout.WarGrid.Size);
+    
+    private Span<byte> WarSnakesMemory => _slotMemory.Slice(_context.Layout.Offsets.Snakes, _context.Layout.WarSnake.Stride * _context.SnakesCount);
+    
+
     // =================================================================
     // Views
     // =================================================================
 
-    public WarArena GetWarArena()
+    public Node GetNode() => MemoryMarshal.Read<Node>(_slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size));
+    
+    /// <summary>
+    /// Creates and returns a high-performance view of the entire game state (the Arena).
+    /// It assembles the Grid and Snakes views from the memory slot.
+    /// </summary>
+    public WarArena GetArena
     {
-        return new WarArena(
-            ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(_slotMemory.Slice(_context.Layout.Offsets.Arena, _context.Layout.WarArena.Header))),
-            new WarGrid(new WarGridMemoryView(_slotMemory.Slice(_context.Layout.Offsets.Grid, _context.Layout.WarGrid.Size), in _context.Layout.WarGrid)),
-            new WarSnakes(new WarSnakeMemoryView(_slotMemory.Slice(_context.Layout.Offsets.Snakes, _context.Layout.WarSnake.Stride * _context.SnakesCount), in _context.Layout.WarSnake), _context.SnakesCount)
-        );
+        get
+        {
+            // 1. Ottiene la vista sulla griglia di gioco.
+            var gridView = new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid);
+            var grid = new WarGrid(gridView);
+    
+            // 2. Ottiene la vista sulla collezione di serpenti.
+            var snakes = new WarSnakesMemoryView(WarSnakesMemory, in _context.Layout.WarSnake);
+
+            // 3. Assembla e restituisce la WarArena finale.
+            return new WarArena(grid, snakes);   
+        }
     }
     
-    public Node GetNode() => MemoryMarshal.Read<Node>(_slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size));
-
     // =================================================================
     // Initializers
     // =================================================================
@@ -41,23 +62,11 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
         var width = request.Board.Width;
         var layout = _context.Layout;
         
-        var snakeIdMap = _context.SnakeIdMap;
-        var initialSnakes = _context.SnakesCount;
-        var capacity = _context.Capacity;
+        InitializeNodeMemory(NodeMemory);
         
-        var neighbors = _context.Neighbors;
+        var snakesBitboard = InitializeWarGrid(WarGridMemory, in layout.WarGrid, width, request.Board.Food, request.Board.Hazards, _context.Neighbors);
         
-        var nodeMemory = _slotMemory.Slice(layout.Offsets.Node, layout.Node.Size);
-        InitializeNodeMemory(nodeMemory);
-        
-        var gridMemory = _slotMemory.Slice(layout.Offsets.Grid, layout.WarGrid.Size);
-        var snakesBitboard = InitializeWarGrid(gridMemory, in layout.WarGrid, width, request.Board.Food, request.Board.Hazards, neighbors);
-        
-        var snakesMemory = _slotMemory.Slice(layout.Offsets.Snakes, layout.WarSnake.Stride * initialSnakes);
-        InitializeWarSnakes(snakesMemory, in layout.WarSnake, snakesBitboard, request.Board.Snakes, width, capacity, snakeIdMap);
-        
-        var arenaMemory = _slotMemory.Slice(layout.Offsets.Arena, layout.WarArena.Header);
-        InitializeWarArena(arenaMemory, in layout.WarArena, initialSnakes);
+        InitializeWarSnakes(WarSnakesMemory, in layout.WarSnake, snakesBitboard, request.Board.Snakes, width, _context.Capacity, _context.SnakeIdMap);
     }
     
     // =================================================================
@@ -117,14 +126,6 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
                 snakesBitboard.Set(coord1D);
             }
         }
-    }
-
-    private static void InitializeWarArena(Span<byte> memory, in WarArenaMemoryLayout layout, int liveSnakes)
-    {
-        var view = new WarArenaMemoryView(memory, in layout);
-        
-        ref var header = ref view.Header;
-        header = new WarArenaHeader(liveSnakes);
     }
 
     /// <summary>

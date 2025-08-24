@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.Memory;
 using Thanos.War.Snake;
+using Thanos.War.Snake.Memory;
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
@@ -10,7 +11,7 @@ namespace Thanos.Tests.Tests.WarSnakeTests;
 ///     and provides an accurate WarSnake view for each snake.
 /// </summary>
 [TestFixture]
-public class WarSnakesTests
+public class WarSnakesMemoryViewTests
 {
     // =================================================================
     // Indexer Tests
@@ -48,7 +49,7 @@ public class WarSnakesTests
         targetBody.AsSpan().CopyTo(bodyDestinationSpan);
 
         // 4. Create the WarSnakes instance that we are going to test.
-        var snakes = new WarSnakes(layout, snakesMemory);
+        var snakes = new WarSnakesMemoryView(layout, snakesMemory);
 
         // ACT
         // Use the indexer to get a view of the snake at the target index.
