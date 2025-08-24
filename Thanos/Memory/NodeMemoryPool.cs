@@ -1,22 +1,16 @@
 ﻿using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Thanos.MCST; // Assumendo che Node sia qui
+using Thanos.MCST;
 
 namespace Thanos.Memory;
 
-/// <summary>
-/// A high-performance, thread-safe memory pool for MCTS Node structs.
-/// It pre-allocates a large, contiguous block of memory and hands out
-/// indices to nodes, providing direct ref access via an indexer.
-/// This design avoids heap allocations and garbage collection pressure.
-/// </summary>
 public sealed class NodeMemoryPool : IDisposable
 {
     private readonly IMemoryOwner<byte> _memoryOwner;
     private readonly Memory<byte> _memory;
     private MemoryHandle _memoryHandle;
-    private int _currentNodeIndex; // Usiamo un indice intero per l'allocazione, è più semplice del long offset.
+    private int _currentNodeIndex;
 
     private GameContext _context; 
 
@@ -26,7 +20,8 @@ public sealed class NodeMemoryPool : IDisposable
         
         _memoryOwner = MemoryPool<byte>.Shared.Rent(_context.Layout.Node.Size * maxNodes);
         _memory = _memoryOwner.Memory;
-        _memoryHandle = _memory.Pin(); // Pin della memoria per accesso sicuro
+        _memoryHandle = _memory.Pin();
+        _memory.Span.Clear();
         _currentNodeIndex = 0;
     }
     
