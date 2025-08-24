@@ -15,6 +15,25 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
     private readonly Span<byte> _slotMemory = slotMemory;
     private readonly GameContext _context = context;
     
+    // =================================================================
+    // Views
+    // =================================================================
+
+    public WarArena GetWarArena()
+    {
+        return new WarArena(
+            ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, WarArenaHeader>(_slotMemory.Slice(_context.Layout.Offsets.Arena, _context.Layout.WarArena.Header))),
+            new WarGrid(new WarGridMemoryView(_slotMemory.Slice(_context.Layout.Offsets.Grid, _context.Layout.WarGrid.Size), in _context.Layout.WarGrid)),
+            new WarSnakes(new WarSnakeMemoryView(_slotMemory.Slice(_context.Layout.Offsets.Snakes, _context.Layout.WarSnake.Stride * _context.SnakesCount), in _context.Layout.WarSnake), _context.SnakesCount)
+        );
+    }
+    
+    public Node GetNode() => MemoryMarshal.Read<Node>(_slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size));
+
+    // =================================================================
+    // Initializers
+    // =================================================================
+    
     public void CloneFrom(in MemorySlot source) => source._slotMemory.CopyTo(_slotMemory);
     
     public void InitializeFromRequest(in Request request)
