@@ -1,5 +1,5 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
+using Thanos.Common;
 using Thanos.MCST;
 using Thanos.War.Grid.Memory;
 using Thanos.War.Snake.Memory;
@@ -38,10 +38,4 @@ public readonly struct Offsets(int sizeOfNode, int sizeOfGrid)
     public readonly int Grid = sizeOfNode;
     public readonly int Snakes = sizeOfNode + sizeOfGrid;
     public readonly int Arena = sizeOfNode + sizeOfGrid;
-}
-
-public static class MemoryExtensions
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int AlignUp(this int value) => (value + MemoryLayout.SizeOfCacheLine - 1) & ~(MemoryLayout.SizeOfCacheLine - 1);
 }

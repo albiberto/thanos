@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 using Thanos.MCST;
-using Thanos.War.Arena;
+using Thanos.War;
 using Thanos.War.Grid;
 using Thanos.War.Grid.Memory;
 using Thanos.War.Snake;
@@ -18,8 +18,6 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
     // Memory Helpers
     // =================================================================
     
-    private Span<byte> NodeMemory => _slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size);
-
     private Span<byte> WarGridMemory => _slotMemory.Slice(_context.Layout.Offsets.Grid, _context.Layout.WarGrid.Size);
     
     private Span<byte> WarSnakesMemory => _slotMemory.Slice(_context.Layout.Offsets.Snakes, _context.Layout.WarSnake.Stride * _context.SnakesCount);
@@ -28,12 +26,9 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
     // =================================================================
     // Views
     // =================================================================
-
-    public Node Node => MemoryMarshal.Read<Node>(_slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size));
     
     /// <summary>
     /// Creates and returns a high-performance view of the entire game state (the Arena).
-    /// It assembles the Grid and Snakes views from the memory slot.
     /// </summary>
     public WarArena GetArena
     {
@@ -62,8 +57,6 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
         var width = request.Board.Width;
         var layout = _context.Layout;
         
-        InitializeNodeMemory(NodeMemory);
-        
         var snakesBitboard = InitializeWarGrid(WarGridMemory, in layout.WarGrid, width, request.Board.Food, request.Board.Hazards, _context.Neighbors);
         
         InitializeWarSnakes(WarSnakesMemory, in layout.WarSnake, snakesBitboard, request.Board.Snakes, width, _context.Capacity, _context.SnakeIdMap);
@@ -72,13 +65,6 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
     // =================================================================
     // Static Initializers (Pure Functions)
     // =================================================================
-    
-    private static void InitializeNodeMemory(Span<byte> memory)
-    {
-        
-        ref var node = ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(memory));
-        node = new Node();
-    }
     
     private static Bitboard InitializeWarGrid(Span<byte> memory, in WarGridMemoryLayout layout, int width, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards, ReadOnlySpan<ushort> neighbors)
     {

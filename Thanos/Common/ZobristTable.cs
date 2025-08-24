@@ -1,6 +1,4 @@
-﻿using Thanos.Enums;
-
-namespace Thanos.MCST;
+﻿namespace Thanos.Common;
 
 /// <summary>
 /// Contiene la tabella di hash Zobrist per l'intero gioco.

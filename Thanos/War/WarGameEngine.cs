@@ -1,8 +1,7 @@
-﻿using Thanos.MCST;
-using Thanos.War.Grid;
-using Thanos.War.Snake;
+﻿using Thanos.Common;
+using Thanos.MCST;
 
-namespace Thanos.War.Arena;
+namespace Thanos.War;
 
 /// <summary>
 /// A static class containing the pure logic for advancing the game state.

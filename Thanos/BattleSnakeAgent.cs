@@ -1,4 +1,4 @@
-﻿using Thanos.Enums;
+﻿using Thanos.Common;
 using Thanos.MCST;
 using Thanos.Memory;
 using Thanos.PreWarm;

@@ -1,5 +1,4 @@
 ﻿using System.Buffers;
-using Thanos.Enums;
 
 namespace Thanos.Memory;
 

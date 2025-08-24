@@ -1,9 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
-using Thanos.MCST;
 
 // Assicurati che il namespace per Node sia corretto
 
-namespace Thanos.UCT; // Creiamo un nuovo namespace per le utilità matematiche
+namespace Thanos.MCST; // Creiamo un nuovo namespace per le utilità matematiche
 
 public static unsafe class UctCalculator
 {

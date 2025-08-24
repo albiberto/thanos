@@ -1,4 +1,4 @@
-﻿namespace Thanos.MCST;
+﻿namespace Thanos.Common;
 
 public static class Moves
 {

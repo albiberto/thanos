@@ -1,9 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.War.Grid;
-using Thanos.War.Snake;
 using Thanos.War.Snake.Memory;
 
-namespace Thanos.War.Arena;
+namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
 public ref struct WarArena(WarGrid grid, WarSnakesMemoryView snakesMemoryView)
