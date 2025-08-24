@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Thanos.MCST;
+﻿using System.Runtime.InteropServices;
 using Thanos.War.Grid;
 using Thanos.War.Snake;
 
@@ -21,13 +19,7 @@ public ref struct WarArena
         _grid = grid;
         _snakes = snakes;
     }
-
-    public byte GetLegalMoves(ushort head)
-    {
-        var result = _grid.GetNeighbor(head);
-    }
-
-
+    
     // public float Evaluate()
     // {
     //     if (WarSnakes[0].Dead) return -1.0f;

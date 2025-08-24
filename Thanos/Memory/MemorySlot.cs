@@ -10,29 +10,35 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMemory , int capacity, Dictionary<string, int> snakeIdMap, ReadOnlySpan<ushort> neighbors)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext context)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
-    private readonly MemoryLayout _layout = layout;
-    private readonly ReadOnlySpan<ushort> _neighbors = neighbors;
-
+    private readonly GameContext _context = context;
+    
     public void CloneFrom(in MemorySlot source) => source._slotMemory.CopyTo(_slotMemory);
     
     public void InitializeFromRequest(in Request request)
     {
-        var initialSnakes = snakeIdMap.Count;
+        var width = request.Board.Width;
+        var layout = _context.Layout;
         
-        var nodeMemory = _slotMemory.Slice(_layout.Offsets.Node, _layout.Node.Size);
+        var snakeIdMap = _context.SnakeIdMap;
+        var initialSnakes = _context.SnakesCount;
+        var capacity = _context.Capacity;
+        
+        var neighbors = _context.Neighbors;
+        
+        var nodeMemory = _slotMemory.Slice(layout.Offsets.Node, layout.Node.Size);
         InitializeNodeMemory(nodeMemory);
         
-        var gridMemory = _slotMemory.Slice(_layout.Offsets.Grid, _layout.Grid.Size);
-        var snakesBitboard = InitializeWarGrid(gridMemory, in _layout.Grid, request.Board.Width, request.Board.Height, request.Board.Food, request.Board.Hazards, _neighbors);
+        var gridMemory = _slotMemory.Slice(layout.Offsets.Grid, layout.WarGrid.Size);
+        var snakesBitboard = InitializeWarGrid(gridMemory, in layout.WarGrid, width, request.Board.Food, request.Board.Hazards, neighbors);
         
-        var snakesMemory = _slotMemory.Slice(_layout.Offsets.Snakes, _layout.Snake.Stride * initialSnakes);
-        InitializeWarSnakes(snakesMemory, in _layout.Snake, snakesBitboard, request.Board.Snakes, request.Board.Width, capacity, snakeIdMap);
+        var snakesMemory = _slotMemory.Slice(layout.Offsets.Snakes, layout.WarSnake.Stride * initialSnakes);
+        InitializeWarSnakes(snakesMemory, in layout.WarSnake, snakesBitboard, request.Board.Snakes, width, capacity, snakeIdMap);
         
-        var arenaMemory = _slotMemory.Slice(_layout.Offsets.Arena, _layout.Arena.Header);
-        InitializeWarArena(arenaMemory, in _layout.Arena, initialSnakes);
+        var arenaMemory = _slotMemory.Slice(layout.Offsets.Arena, layout.WarArena.Header);
+        InitializeWarArena(arenaMemory, in layout.WarArena, initialSnakes);
     }
     
     // =================================================================
@@ -46,12 +52,12 @@ public readonly ref struct MemorySlot(in MemoryLayout layout, Span<byte> slotMem
         node = new Node();
     }
     
-    private static Bitboard InitializeWarGrid(Span<byte> memory, in WarGridMemoryLayout layout, int width, int height, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards, ReadOnlySpan<ushort> neighbors)
+    private static Bitboard InitializeWarGrid(Span<byte> memory, in WarGridMemoryLayout layout, int width, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards, ReadOnlySpan<ushort> neighbors)
     {
         var view = new WarGridMemoryView(memory, in layout);
         
         ref var geography = ref view.Geography;
-        geography = new Geography(width, height);
+        geography = new Geography(width, width);
         
         var foodBitboard = view.Food;
         foreach (var coord in food) foodBitboard.Set(To1D(coord, width));

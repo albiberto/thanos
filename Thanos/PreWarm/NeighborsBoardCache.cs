@@ -2,14 +2,14 @@
 
 namespace Thanos.PreWarm;
 
-public class NeighborsBoardCache
+public static class NeighborsBoardCache
 {
     private static readonly ConcurrentDictionary<int, ushort[]> _cache = [];
 
     /// <summary>
     /// Gets a MoveLookupTable for the specified square grid size.
     /// </summary>
-    public static ReadOnlySpan<ushort> Get(int width) => _cache[width];
+    public static ushort[] Get(int width) => _cache[width];
     
     public static void Burn(int maxWidth)
     {

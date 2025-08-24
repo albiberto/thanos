@@ -23,9 +23,9 @@ public static class ZobristTable
         // In produzione, potresti usare un seme casuale.
         var random = new Random(12345);
         
-        Table = new long[Constants.MaxSnakeCount, Constants.MaxArea];
+        Table = new long[Constants.MaxSnakesCount, Constants.MaxArea];
 
-        for (var i = 0; i < Constants.MaxSnakeCount; i++)
+        for (var i = 0; i < Constants.MaxSnakesCount; i++)
         {
             for (var j = 0; j < Constants.MaxArea; j++)
             {
@@ -41,7 +41,7 @@ public static class ZobristTable
     {
         // Aggiungiamo controlli per la sicurezza durante il debug.
         // In release, potresti rimuoverli se sei sicuro dei tuoi indici.
-        if (snakeIndex >= Constants.MaxSnakeCount || position1D >= Constants.MaxArea)
+        if (snakeIndex >= Constants.MaxSnakesCount || position1D >= Constants.MaxArea)
         {
             // Gestisci l'errore o torna 0 per evitare crash
             return 0; 

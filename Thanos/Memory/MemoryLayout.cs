@@ -13,20 +13,24 @@ public readonly struct MemoryLayout
     public const int SizeOfCacheLine = 64;
     
     public readonly MonteCarloLayout Node;
-    public readonly WarGridMemoryLayout Grid;
-    public readonly WarSnakeMemoryLayout Snake;
-    public readonly WarArenaMemoryLayout Arena;
+    public readonly WarGridMemoryLayout WarGrid;
+    public readonly WarSnakeMemoryLayout WarSnake;
+    public readonly WarArenaMemoryLayout WarArena;
+
+    public readonly int SlotSize;
 
     public readonly Offsets Offsets;
     
-    public MemoryLayout(int capacity, int area)
+    public MemoryLayout(int capacity, int area, int snakeCount, int neighborsLenght)
     {
         Node = new();
-        Grid = new(area);
-        Snake = new(capacity);
-        Arena = new();
+        WarGrid = new(area, neighborsLenght);
+        WarSnake = new(capacity);
+        WarArena = new();
 
-        Offsets = new(Node.Size, Grid.Size);
+        SlotSize = (Node.Size + WarGrid.Size + WarSnake.Stride * snakeCount + WarArena.Size).AlignUp();
+        
+        Offsets = new(Node.Size, WarGrid.Size);
     }
 }
 
