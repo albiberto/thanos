@@ -29,7 +29,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
     // Views
     // =================================================================
 
-    public Node GetNode() => MemoryMarshal.Read<Node>(_slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size));
+    public Node Node => MemoryMarshal.Read<Node>(_slotMemory.Slice(_context.Layout.Offsets.Node, _context.Layout.Node.Size));
     
     /// <summary>
     /// Creates and returns a high-performance view of the entire game state (the Arena).

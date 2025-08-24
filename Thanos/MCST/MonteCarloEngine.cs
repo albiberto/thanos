@@ -6,103 +6,112 @@ namespace Thanos.MCST;
 
 public class MonteCarloEngine(MemoryPool pool)
 {
-    public Node Root { get; private set; }
-    
-    // Il metodo principale che l'agent chiamerà
+    private Node _root;
+
     public byte FindBestMove(in Request request, int iterations = 10000)
     {
+        // 1. Inizializza lo stato di partenza dalla richiesta
         var rootSlot = pool.GetNext();
-        rootSlot.InitializeFromRequest(request);
+        rootSlot.InitializeFromRequest(in request);
         
-        Root = rootSlot.GetNode(); 
+        _root = rootSlot.Node; 
 
+        // 2. Esegui il ciclo di ricerca MCTS
         for (var i = 0; i < iterations; i++)
         {
-            var slot = pool.GetNext();
-            slot.CloneFrom(rootSlot); 
-            var currentArena = slot.GetWarArena();
+            // Per ogni iterazione, partiamo sempre dallo stato originale della radice
+            var workingSlot = pool.GetNext();
+            workingSlot.CloneFrom(in rootSlot);
             
-            // FASE 1: SELEZIONE
-            var selectedNode = Select(Root);
+            var workingArena = workingSlot.GetArena;
             
-            // FASE 2: ESPANSIONE
-            var expandedNode = Expand(selectedNode, ref currentArena);
+            // --- FASE 1: SELEZIONE ---
+            var selectedNode = Select(_root, ref workingArena);
             
-            // FASE 3: SIMULAZIONE
-            var simulationResult = Simulate(ref currentArena);
+            // --- FASE 2: ESPANSIONE ---
+            // Espandiamo il nodo solo se non è un nodo terminale (partita finita)
+            if (workingArena.Evaluate() == 0.0f)
+            {
+                Expand(selectedNode, ref workingArena);
+            }
             
-            // FASE 4: BACKPROPAGATION
-            Backpropagate(expandedNode, simulationResult);
+            // --- FASE 3: SIMULAZIONE ---
+            // La simulazione parte dallo stato raggiunto dopo l'espansione
+            float simulationResult = Simulate(ref workingArena);
+            
+            // --- FASE 4: BACKPROPAGATION ---
+            Backpropagate(selectedNode, simulationResult);
         }
 
-        // Finito il ciclo, scegliamo la mossa migliore (es. quella più visitata)
-        return GetBestMoveFromRoot();
+        // 3. Finito il ciclo, scegliamo la mossa del figlio più visitato
+        var bestChild = _root.Children.MaxBy(c => c.Visits);
+        return bestChild?.MoveThatLedToThisNode ?? Moves.None;
     }
 
-    private Node Select(Node node)
+    /// <summary>
+    /// Scende l'albero scegliendo i nodi più promettenti e aggiorna lo stato dell'arena di conseguenza.
+    /// </summary>
+    private Node Select(Node node, ref WarArena arena)
     {
-        // Logica per scegliere il figlio migliore usando la formula UCT/PUCT
-        // Per ora, immaginiamo solo di scendere l'albero.
-        while (node.HasChildren)
+        while (!node.IsLeafNode)
         {
-            // API NECESSARIA: Dobbiamo applicare la mossa del nodo figlio all'arena.
-            // arena.ApplySingleMove(node.BestChild.Move);
-            node = node.BestChild; // Placeholder per la logica di selezione
+            node = node.SelectBestChild();
+            if (node == null) break; // Non ci sono più mosse da esplorare da questo ramo
+            
+            // Applica la mossa all'arena per mantenerla sincronizzata con l'albero
+            WarGameEngine.ApplySingleMove(ref arena, node.PlayerIndex, node.MoveThatLedToThisNode);
         }
         return node;
     }
 
-    private Node Expand(Node node, ref WarArena arena)
+    /// <summary>
+    /// Crea i figli di un nodo foglia basandosi sulle mosse legali.
+    /// </summary>
+    private void Expand(Node node, ref WarArena arena)
     {
-        // API NECESSARIA: Chiediamo all'arena quali sono le mosse legali da questo stato.
-        byte legalMoves = arena.GetLegalMoves(snakeIndex: 0); // snakeIndex del giocatore corrente
-
-        // Creiamo i nodi figli, uno per ogni mossa legale.
-        // ... logica per estrarre le singole mosse dalla maschera di bit ...
-        // node.Children = ...;
+        // Chiedi all'arena le mosse legali per il giocatore corrente
+        byte legalMoves = arena.GetLegalMoves(arena.GetSnake(node.PlayerIndex));
         
-        // Selezioniamo un nuovo figlio da cui partire per la simulazione (es. il primo)
-        var childToExplore = node.Children[0];
-        
-        // API NECESSARIA: Applichiamo la mossa del nuovo figlio per far avanzare l'arena.
-        arena.ApplySingleMove(childToExplore.Move, snakeIndex: 0);
-        
-        return childToExplore;
+        // Chiedi al nodo di creare i suoi figli
+        node.Expand(legalMoves);
     }
 
+    /// <summary>
+    /// Esegue una partita casuale ("rollout") fino a un risultato terminale.
+    /// </summary>
     private float Simulate(ref WarArena arena)
     {
-        // Eseguiamo mosse casuali (o basate su una policy semplice) fino a fine partita.
-        while (true)
+        int turnLimit = 200; // Limite di sicurezza
+        for (int i = 0; i < turnLimit; i++)
         {
-            // API NECESSARIA: Controlliamo se la partita è finita.
             float evaluation = arena.Evaluate();
-            if (evaluation != 0.0f) // 1.0 per vittoria, -1.0 per sconfitta
+            if (evaluation != 0.0f)
             {
-                return evaluation;
+                return evaluation; // Partita finita
             }
-
-            // API NECESSARIA: Chiediamo le mosse legali per il giocatore di turno.
-            byte legalMoves = arena.GetLegalMoves(arena.CurrentPlayerIndex);
             
-            // Scegliamo una mossa a caso tra quelle legali
-            var randomMove = Heuristics.FindBestMove(legalMoves);
-
-            // API NECESSARIA: Applichiamo la mossa scelta.
-            arena.ApplySingleMove(randomMove, arena.CurrentPlayerIndex);
+            // TODO: Gestire i turni per più giocatori
+            var currentSnake = arena.GetSnake(0);
+            
+            // Usa una policy di default (es. euristica o casuale) per scegliere la mossa
+            var heuristic = new HeuristicMoveFinder(ref currentSnake, arena);
+            var legalMoves = arena.GetLegalMoves(currentSnake);
+            var move = heuristic.FindBestMove(legalMoves);
+            
+            WarGameEngine.ApplySingleMove(ref arena, 0, move);
         }
+        return 0.0f; // Pareggio per limite di turni
     }
 
+    /// <summary>
+    /// Propaga all'indietro il risultato della simulazione, aggiornando le statistiche dei nodi.
+    /// </summary>
     private void Backpropagate(Node node, float result)
     {
-        // Risaliamo l'albero fino alla radice aggiornando le statistiche.
         while (node != null)
         {
-            node.Visits++;
-            node.Wins += result; // Aggiustare il risultato in base al giocatore del nodo
+            node.UpdateStats(result);
             node = node.Parent;
         }
     }
-    
-    private byte GetBestMoveFromRoot() { /* ... */ return Moves.Up; }
 }
