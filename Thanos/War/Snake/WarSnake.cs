@@ -24,6 +24,7 @@ public readonly ref struct WarSnake
     // Public API
     public int Id => _profile.Id;
 
+    public int Health => _health.HealthPoints;
     public ushort Head => _body[_anatomy.HeadIndex];
     public ushort Tail => _body[_anatomy.TailIndex];
     public int Length => _anatomy.Length;
