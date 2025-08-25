@@ -7,55 +7,56 @@ namespace Thanos.MCST;
 
 public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
+    private readonly WarMemoryPool _warPool = warPool;
     private NodeMemoryPool _nodePool = nodePool;
 
     public byte FindBestMove(in Request request, int iterations = 10000)
     {
-        var rootSlot = warPool.GetNext();
+        // 2. Inizializza lo stato di gioco iniziale (rootSlot)
+        var rootSlot = _warPool.GetNext();
         rootSlot.InitializeFromRequest(in request);
-        
+
+        // 3. Inizializza il nodo radice dell'albero
         var rootIndex = _nodePool.GetNextIndex();
         ref var rootNode = ref _nodePool[rootIndex];
-        
-        rootNode.Initialize(parentIndex: -1, move: Moves.None);
+        rootNode.Initialize(-1, Moves.None);
 
-        // 2. CICLO DI RICERCA MCTS
+        // --- CICLO DI RICERCA MCTS ---
         for (var i = 0; i < iterations; i++)
         {
-            // Clona lo stato della radice per iniziare ogni iterazione
-            var workingSlot = warPool.GetNext();
+            // Per ogni iterazione, partiamo sempre dallo stato originale della radice
+            var workingSlot = _warPool.GetNext();
             workingSlot.CloneFrom(in rootSlot);
-            var arena = workingSlot.GetArena;
-            
+
+            // Ottieni l'arena per questa iterazione. È una 'ref struct', quindi vive sullo stack.
+            var workingArena = workingSlot.GetArena;
+
             // --- FASE 1: SELEZIONE ---
-            var selectedNodeIndex = Select(rootIndex, arena);
-            
+            // Passiamo 'workingArena' con 'ref' in modo che 'Select' possa modificarla
+            // e le modifiche siano visibili alle fasi successive.
+            var selectedNodeIndex = Select(rootIndex, ref workingArena);
             ref var selectedNode = ref _nodePool[selectedNodeIndex];
 
             // --- FASE 2: ESPANSIONE ---
-            // Espandi se il nodo non è terminale e se non è già stato espanso prima
             if (!selectedNode.IsTerminal && selectedNode.IsLeafNode)
             {
-                // Valuta lo stato PRIMA di espandere
-                if (workingArena.Evaluate() == 0.0f) 
-                {
+                // Valutiamo l'arena *dopo* che è stata modificata dalla fase di Selezione
+                if (workingArena.Evaluate() == 0.0f)
                     Expand(selectedNodeIndex, ref selectedNode, ref workingArena);
-                }
                 else
-                {
                     selectedNode.IsTerminal = true;
-                }
             }
-            
+
             // --- FASE 3: SIMULAZIONE (ROLLOUT) ---
+            // La simulazione parte dallo stato raggiunto DOPO selezione ed eventuale espansione
             var simulationResult = Simulate(ref workingArena);
-            
+
             // --- FASE 4: BACKPROPAGATION ---
             Backpropagate(selectedNodeIndex, simulationResult);
         }
 
-        // 3. SCELTA DELLA MOSSA MIGLIORE
-        // Finito il ciclo, scegliamo il figlio della radice più visitato
+        // --- SCELTA DELLA MOSSA MIGLIORE ---
+        // Questa parte era già corretta: scegli il figlio più visitato.
         var bestChildIndex = -1;
         var maxVisits = -1;
 
@@ -69,14 +70,14 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
                 bestChildIndex = childIndex;
             }
         }
-        
+
         return bestChildIndex != -1 ? _nodePool[bestChildIndex].MoveThatLedToThisNode : Moves.None;
     }
 
     /// <summary>
-    /// FASE 1: Scende l'albero partendo da un indice, scegliendo i figli più promettenti (UCT)
-    /// e aggiornando lo stato di gioco ('workingArena') di conseguenza.
-    /// Restituisce l'indice del nodo foglia selezionato.
+    ///     FASE 1: Scende l'albero partendo da un indice, scegliendo i figli più promettenti (UCT)
+    ///     e aggiornando lo stato di gioco ('workingArena') di conseguenza.
+    ///     Restituisce l'indice del nodo foglia selezionato.
     /// </summary>
     private int Select(int startNodeIndex, ref WarArena arena) // <-- BUG #2 RISOLTO: aggiunto 'ref'
     {
@@ -86,7 +87,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         {
             ref var currentNode = ref _nodePool[currentIndex];
             if (currentNode.IsLeafNode || currentNode.IsTerminal) return currentIndex;
-        
+
             var nextNodeIndex = currentNode.SelectBestChild(_nodePool);
 
             // Non ci sono più figli da esplorare da questo ramo.
@@ -94,14 +95,14 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             if (nextNodeIndex == -1) return currentIndex;
 
             currentIndex = nextNodeIndex;
-        
+
             ref var childNode = ref _nodePool[currentIndex];
             arena.ApplySingleMove(childNode.MoveThatLedToThisNode);
         }
     }
 
     /// <summary>
-    /// FASE 2: Crea i nodi figli per un dato nodo foglia usando un ciclo bitwise diretto.
+    ///     FASE 2: Crea i nodi figli per un dato nodo foglia usando un ciclo bitwise diretto.
     /// </summary>
     private void Expand(int nodeIndex, ref Node node, ref WarArena arena)
     {
@@ -119,7 +120,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 
         // 2. Cicla sulle possibili mosse, creando i figli man mano che le trovi
         var lastChildIndex = -1;
-    
+
         // Per rendere il codice leggibile, iteriamo su un array di mosse possibili
         ReadOnlySpan<byte> allMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
@@ -127,7 +128,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         {
             // Controlla se la mossa corrente è presente nella maschera
             if ((legalMovesMask & move) == 0) continue;
-            
+
             // È una mossa legale, quindi creiamo il figlio
             var newChildIndex = _nodePool.GetNextIndex();
             ref var childNode = ref _nodePool[newChildIndex];
@@ -145,7 +146,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
                 ref var lastChildNode = ref _nodePool[lastChildIndex];
                 lastChildNode.NextSiblingIndex = newChildIndex;
             }
-            
+
             // Aggiorniamo l'indice dell'ultimo figlio creato per il prossimo giro
             lastChildIndex = newChildIndex;
         }
@@ -153,36 +154,30 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 
 // All'interno della tua classe MonteCarloEngine
 
-    /// <summary>
-    /// FASE 3: Da uno stato di gioco, esegue una partita ("rollout") fino a un
-    /// risultato terminale, restituendo il punteggio (-1 per sconfitta, 1 per vittoria).
-    /// </summary>
-    private float Simulate(ref WarArena arena)
+/// <summary>
+///     FASE 3: Da uno stato di gioco, esegue una partita ("rollout") fino a un
+///     risultato terminale, restituendo il punteggio (-1 per sconfitta, 1 per vittoria).
+/// </summary>
+private float Simulate(ref WarArena arena)
     {
         // Limite di turni per evitare simulazioni infinite in caso di stallo
-        const int turnLimit = 200; 
+        const int turnLimit = 200;
 
         for (var i = 0; i < turnLimit; i++)
         {
             // 1. Controlla se la partita è già terminata
             var evaluation = arena.Evaluate();
-            if (evaluation != 0.0f)
-            {
-                return evaluation; // Ritorna -1.0f (sconfitta) o 1.0f (vittoria)
-            }
-        
+            if (evaluation != 0.0f) return evaluation; // Ritorna -1.0f (sconfitta) o 1.0f (vittoria)
+
             // 2. Ottieni le mosse legali come bitmask
             var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
-        
+
             // Se non ci sono mosse, è un pareggio (o una situazione di stallo)
-            if (legalMovesMask == 0)
-            {
-                return 0.0f;
-            }
+            if (legalMovesMask == 0) return 0.0f;
 
             // 3. Scegli UNA mossa usando la tua euristica veloce
             var move = Heuristics.FindBestMove(legalMovesMask);
-        
+
             // 4. Applica la mossa per far avanzare lo stato della simulazione
             arena.ApplySingleMove(move);
         }
@@ -192,8 +187,8 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     }
 
     /// <summary>
-    /// FASE 4: Propaga il risultato della simulazione a ritroso lungo l'albero,
-    /// aggiornando le statistiche (vittorie/visite) di ogni nodo attraversato.
+    ///     FASE 4: Propaga il risultato della simulazione a ritroso lungo l'albero,
+    ///     aggiornando le statistiche (vittorie/visite) di ogni nodo attraversato.
     /// </summary>
     private void Backpropagate(int startNodeIndex, float result)
     {
@@ -202,7 +197,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         {
             ref var currentNode = ref _nodePool[currentIndex];
             currentNode.UpdateStats(result);
-            
+
             // Risali al genitore per continuare la propagazione
             currentIndex = currentNode.ParentIndex;
         }
