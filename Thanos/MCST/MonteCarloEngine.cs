@@ -14,7 +14,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     public byte FindBestMove(in Request request, int iterations = 10000)
     {
         // 2. Inizializza lo stato di gioco iniziale (rootSlot)
-        var rootSlot = _warPool.GetNext();
+        var rootSlot = _warPool.GetNext(out var _);
         rootSlot.InitializeFromRequest(in request);
 
         // 3. Inizializza il nodo radice dell'albero
@@ -22,12 +22,22 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         ref var rootNode = ref _nodePool[rootIndex];
         rootNode.Initialize(-1, Moves.None);
         
+        var counter = 1;
+        
         // --- CICLO DI RICERCA MCTS ---
         var stopwatch = Stopwatch.StartNew();
-        while (stopwatch.ElapsedMilliseconds < 40000000000)
+        while (stopwatch.ElapsedMilliseconds < 400)
         {
             // Per ogni iterazione, partiamo sempre dallo stato originale della radice
-            var workingSlot = _warPool.GetNext();
+            var workingSlot = _warPool.GetNext(out var full);
+
+            if (full)
+            {
+                Console.WriteLine("WarMemoryPool pieno durante MCTS! {0}", counter);
+            }
+            
+            counter++;
+            
             workingSlot.CloneFrom(in rootSlot);
 
             // Ottieni l'arena per questa iterazione. È una 'ref struct', quindi vive sullo stack.
@@ -57,6 +67,8 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             Backpropagate(selectedNodeIndex, simulationResult);
         }
 
+        Console.WriteLine("MCTS completato in {0} ms con {1} iterazioni", stopwatch.ElapsedMilliseconds, counter);
+        
         // --- SCELTA DELLA MOSSA MIGLIORE ---
         // Questa parte era già corretta: scegli il figlio più visitato.
         var bestChildIndex = -1;
