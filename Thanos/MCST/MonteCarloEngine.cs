@@ -151,35 +151,44 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         }
     }
 
+// All'interno della tua classe MonteCarloEngine
+
     /// <summary>
-    /// FASE 3: Da uno stato di gioco, esegue mosse casuali o euristiche
-    /// fino a raggiungere un finale di partita, restituendo il risultato (-1, 0, 1).
+    /// FASE 3: Da uno stato di gioco, esegue una partita ("rollout") fino a un
+    /// risultato terminale, restituendo il punteggio (-1 per sconfitta, 1 per vittoria).
     /// </summary>
     private float Simulate(ref WarArena arena)
     {
-        const int turnLimit = 200; // Limite di sicurezza per evitare cicli infiniti
+        // Limite di turni per evitare simulazioni infinite in caso di stallo
+        const int turnLimit = 200; 
 
         for (var i = 0; i < turnLimit; i++)
         {
+            // 1. Controlla se la partita è già terminata
             var evaluation = arena.Evaluate();
             if (evaluation != 0.0f)
             {
-                return evaluation; // Partita finita: vittoria o sconfitta
+                return evaluation; // Ritorna -1.0f (sconfitta) o 1.0f (vittoria)
             }
-            
-            // --- LOGICA DI SCELTA MOSSA (POLICY DI DEFAULT) ---
-            // *PLACEHOLDER*: Qui va inserita la logica per scegliere la mossa durante il rollout.
-            // Può essere puramente casuale tra le mosse legali o basata su un'euristica veloce.
-            var legalMoves = arena.GetLegalMoves();
-            if (legalMoves.IsEmpty) return 0.0f; // Pareggio se non ci sono mosse
+        
+            // 2. Ottieni le mosse legali come bitmask
+            var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
+        
+            // Se non ci sono mosse, è un pareggio (o una situazione di stallo)
+            if (legalMovesMask == 0)
+            {
+                return 0.0f;
+            }
 
-            var move = legalMoves[Random.Shared.Next(legalMoves.Length)]; // Esempio: mossa casuale
-            
-            // *PLACEHOLDER*: Applica la mossa scelta per far progredire la simulazione
-            WarGameEngine.ApplySingleMove(ref arena, move);
+            // 3. Scegli UNA mossa usando la tua euristica veloce
+            var move = Heuristics.FindBestMove(legalMovesMask);
+        
+            // 4. Applica la mossa per far avanzare lo stato della simulazione
+            arena.ApplySingleMove(move);
         }
 
-        return 0.0f; // Pareggio per aver raggiunto il limite di turni
+        // Se la simulazione raggiunge il limite di turni, considerala un pareggio.
+        return 0.0f;
     }
 
     /// <summary>
