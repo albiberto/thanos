@@ -55,7 +55,9 @@ public readonly ref struct WarArena(WarGrid grid, WarSnakesMemoryView snakes)
     
     public float Evaluate()
     {
-        if (Snakes.Me.Dead) return -1.0f;
-        return _liveSnakesCount <= 1 ? 1.0f : 0.0f;
+        // if (Snakes.Me.Dead) return -1.0f;
+        // return _liveSnakesCount <= 1 ? 1.0f : 0.0f;
+        
+        return Snakes.Me.Dead ? -1.0f : 0.0f;
     }
 }

@@ -25,13 +25,12 @@ public static class NeighborsBoardCache
         for (ushort pos = 0; pos < area; pos++)
         {
             var offset = pos * 4;
-            
-            // Pre-calculate UP
-            neighbors[offset + 0] = pos < width ? ushort.MaxValue : (ushort)(pos - width);
-            
-            // Pre-calculate DOWN
-            neighbors[offset + 1] = pos >= area - width ? ushort.MaxValue : (ushort)(pos + width);
 
+            neighbors[offset + 0] = pos >= area - width ? ushort.MaxValue : (ushort)(pos + width);
+        
+            // Pre-calculate DOWN
+            neighbors[offset + 1] = pos < width ? ushort.MaxValue : (ushort)(pos - width);
+            
             // Pre-calculate LEFT
             neighbors[offset + 2] = pos % width == 0 ? ushort.MaxValue : (ushort)(pos - 1);
             

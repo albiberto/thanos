@@ -77,5 +77,5 @@ static string ToApiMove(byte move) =>
         Moves.Down => "down",
         Moves.Left => "left",
         Moves.Right => "right",
-        _ => "up" // Fallback
+        _ => "left" // Fallback
     };

@@ -37,7 +37,11 @@ public sealed class BattleSnakeAgent : IDisposable
         _nodePool.Reset();
     }
     
-    public byte Move(in Request request) => _engine.FindBestMove(in request);
+    public byte Move(in Request request)
+    {
+        _nodePool.Reset();
+        return _engine.FindBestMove(in request);
+    }
 
     public void End(in Request _)
     {
