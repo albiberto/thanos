@@ -2,7 +2,7 @@
 
 namespace Thanos.War.Snake.Memory;
 
-public readonly ref struct WarSnakesMemoryView(Span<byte> memory, in WarSnakeMemoryLayout layout)
+public readonly ref struct WarSnakesMemoryView(Span<byte> memory, ref WarSnakeMemoryLayout layout)
 {
     private readonly Span<byte> _memory = memory;
     private readonly ref WarSnakeMemoryLayout _memoryLayout = ref layout;

@@ -9,7 +9,7 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext context)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
     private readonly ref GameContext _context = ref context;
@@ -39,7 +39,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, in GameContext cont
             var grid = new WarGrid(gridView);
     
             // 2. Ottiene la vista sulla collezione di serpenti.
-            var snakes = new WarSnakesMemoryView(WarSnakesMemory, in _context.Layout.WarSnake);
+            var snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
 
             // 3. Assembla e restituisce la WarArena finale.
             return new WarArena(grid, snakes);   

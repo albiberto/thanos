@@ -8,13 +8,13 @@ using Thanos.War.Snake.Memory;
 namespace Thanos.Memory;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly struct MemoryLayout
+public struct MemoryLayout
 {
     public const int SizeOfCacheLine = 64;
     
     public readonly NodeMemoryLayout Node;
     public readonly WarGridMemoryLayout WarGrid;
-    public readonly WarSnakeMemoryLayout WarSnake;
+    public WarSnakeMemoryLayout WarSnake;
 
     public readonly int WarSlotSize;
 

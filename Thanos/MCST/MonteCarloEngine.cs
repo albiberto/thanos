@@ -1,4 +1,5 @@
-﻿using Thanos.Common;
+﻿using System.Diagnostics;
+using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
@@ -20,9 +21,10 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         var rootIndex = _nodePool.GetNextIndex();
         ref var rootNode = ref _nodePool[rootIndex];
         rootNode.Initialize(-1, Moves.None);
-
+        
         // --- CICLO DI RICERCA MCTS ---
-        for (var i = 0; i < iterations; i++)
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.ElapsedMilliseconds < 400)
         {
             // Per ogni iterazione, partiamo sempre dallo stato originale della radice
             var workingSlot = _warPool.GetNext();

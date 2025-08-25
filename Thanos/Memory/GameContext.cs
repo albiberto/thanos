@@ -2,7 +2,7 @@
 
 namespace Thanos.Memory;
 
-public readonly struct GameContext
+public struct GameContext
 {
     public readonly int Width;
     public readonly int Height;
@@ -16,7 +16,7 @@ public readonly struct GameContext
     public readonly int NeighborsCount;
     
     
-    public readonly MemoryLayout Layout;
+    public MemoryLayout Layout;
 
     /// <summary>
     /// Proprietà statica che rappresenta il peggior contesto di gioco possibile.
