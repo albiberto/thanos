@@ -22,7 +22,6 @@ public struct MemoryLayout
     
     public MemoryLayout(int capacity, int area, int snakeCount, int neighborsLenght)
     {
-        Node = new();
         WarGrid = new(area, neighborsLenght);
         WarSnake = new(capacity);
 
@@ -34,9 +33,7 @@ public struct MemoryLayout
 
 public readonly struct Offsets(int sizeOfNode, int sizeOfGrid)
 {
-    public readonly int Node = 0;
-    
-    public readonly int Grid = sizeOfNode;
+    public readonly int Grid = 0;
     public readonly int Snakes = sizeOfNode + sizeOfGrid;
     public readonly int Arena = sizeOfNode + sizeOfGrid;
 }

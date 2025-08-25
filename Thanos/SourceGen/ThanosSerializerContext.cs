@@ -68,7 +68,7 @@ public enum Source : byte
 }
 
 [method: JsonConstructor]
-public readonly struct Game(Guid id, Ruleset ruleset, GameMap gameMap, Source source, int timeout)
+public readonly struct Game(Guid id, Ruleset ruleset, string gameMap, string source, int timeout)
 {
     [JsonPropertyName("id")]
     public Guid Id { get; } = id;
@@ -77,10 +77,10 @@ public readonly struct Game(Guid id, Ruleset ruleset, GameMap gameMap, Source so
     public Ruleset Ruleset { get; } = ruleset;
 
     [JsonPropertyName("map")]
-    public GameMap gameMap { get; } = gameMap;
+    public string gameMap { get; } = gameMap;
 
     [JsonPropertyName("source")]
-    public Source Source { get; } = source;
+    public string Source { get; } = source;
 
     [JsonPropertyName("timeout")]
     public int Timeout { get; } = timeout;

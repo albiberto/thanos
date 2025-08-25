@@ -21,7 +21,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
     private Span<byte> WarGridMemory => _slotMemory.Slice(_context.Layout.Offsets.Grid, _context.Layout.WarGrid.Size);
     
     private Span<byte> WarSnakesMemory => _slotMemory.Slice(_context.Layout.Offsets.Snakes, _context.Layout.WarSnake.Stride * _context.SnakesCount);
-    
+
 
     // =================================================================
     // Views

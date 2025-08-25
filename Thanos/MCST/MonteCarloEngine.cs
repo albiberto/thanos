@@ -24,7 +24,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         
         // --- CICLO DI RICERCA MCTS ---
         var stopwatch = Stopwatch.StartNew();
-        while (stopwatch.ElapsedMilliseconds < 400)
+        while (stopwatch.ElapsedMilliseconds < 40000000000)
         {
             // Per ogni iterazione, partiamo sempre dallo stato originale della radice
             var workingSlot = _warPool.GetNext();

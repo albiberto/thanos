@@ -56,7 +56,7 @@ public sealed class BattleSnakeAgent : IDisposable
             [myId] = 0
         };
         
-        foreach (var snake in request.Board.Snakes.Where(s => string.Equals(s.Id, myId, StringComparison.InvariantCultureIgnoreCase))) snakeIdMap[snake.Id] = snakeIdMap.Count;
+        foreach (var snake in request.Board.Snakes.Where(s => !string.Equals(s.Id, myId, StringComparison.InvariantCultureIgnoreCase))) snakeIdMap[snake.Id] = snakeIdMap.Count;
         
         return snakeIdMap;
     }

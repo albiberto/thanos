@@ -23,6 +23,21 @@ app.MapGet("/", () => new
 
 app.MapPost("/start", async context =>
 {
+    // Permette di leggere lo stream del body più volte
+    context.Request.EnableBuffering();
+
+    // Legge l'intero body della richiesta come una stringa
+    using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+    var jsonString = await reader.ReadToEndAsync();
+
+    // --- STAMPA IL JSON GREZZO A CONSOLE ---
+    Console.WriteLine("--- RAW /start JSON RECEIVED ---");
+    Console.WriteLine(jsonString);
+    Console.WriteLine("------------------------------");
+
+    // Riporta lo stream all'inizio per permettere la normale deserializzazione
+    context.Request.Body.Position = 0;
+    
     var request = await ReadAsync(context);
     agent.Start(request!.Value);
 });
