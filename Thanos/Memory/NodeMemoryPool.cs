@@ -43,6 +43,12 @@ public sealed class NodeMemoryPool : IDisposable
         }
     }
 
+    public void Clear()
+    {
+        _memory.Span.Clear();
+        _offset = 0;
+    }
+    
     public void Reset() => _offset = 0;
 
     public void Dispose()

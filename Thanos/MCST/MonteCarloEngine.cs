@@ -7,114 +7,195 @@ namespace Thanos.MCST;
 
 public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
-    private readonly WarMemoryPool _warPool = warPool;
-    private readonly NodeMemoryPool _nodePool = nodePool;
+    private NodeMemoryPool _nodePool = nodePool;
 
     public byte FindBestMove(in Request request, int iterations = 10000)
     {
-        // 1. Inizializza lo stato di partenza dalla richiesta
-        var rootIndex = _nodePool.GetNextIndex();
-        ref var node =  ref _nodePool[rootIndex];
-        var rootSlot = _warPool.GetNext();
-        
+        var rootSlot = warPool.GetNext();
         rootSlot.InitializeFromRequest(in request);
         
-        // 2. Esegui il ciclo di ricerca MCTS
+        var rootIndex = _nodePool.GetNextIndex();
+        ref var rootNode = ref _nodePool[rootIndex];
+        
+        rootNode.Initialize(parentIndex: -1, move: Moves.None);
+
+        // 2. CICLO DI RICERCA MCTS
         for (var i = 0; i < iterations; i++)
         {
-            // Per ogni iterazione, partiamo sempre dallo stato originale della radice
-            var workingSlot = _warPool.GetNext();
+            // Clona lo stato della radice per iniziare ogni iterazione
+            var workingSlot = warPool.GetNext();
             workingSlot.CloneFrom(in rootSlot);
-            
-            var workingArena = workingSlot.GetArena;
+            var arena = workingSlot.GetArena;
             
             // --- FASE 1: SELEZIONE ---
-            var selectedNode = Select(_root, ref workingArena);
+            var selectedNodeIndex = Select(rootIndex, arena);
             
+            ref var selectedNode = ref _nodePool[selectedNodeIndex];
+
             // --- FASE 2: ESPANSIONE ---
-            // Espandiamo il nodo solo se non è un nodo terminale (partita finita)
-            if (workingArena.Evaluate() == 0.0f)
+            // Espandi se il nodo non è terminale e se non è già stato espanso prima
+            if (!selectedNode.IsTerminal && selectedNode.IsLeafNode)
             {
-                Expand(selectedNode, ref workingArena);
+                // Valuta lo stato PRIMA di espandere
+                if (workingArena.Evaluate() == 0.0f) 
+                {
+                    Expand(selectedNodeIndex, ref selectedNode, ref workingArena);
+                }
+                else
+                {
+                    selectedNode.IsTerminal = true;
+                }
             }
             
-            // --- FASE 3: SIMULAZIONE ---
-            // La simulazione parte dallo stato raggiunto dopo l'espansione
-            float simulationResult = Simulate(ref workingArena);
+            // --- FASE 3: SIMULAZIONE (ROLLOUT) ---
+            var simulationResult = Simulate(ref workingArena);
             
             // --- FASE 4: BACKPROPAGATION ---
-            Backpropagate(selectedNode, simulationResult);
+            Backpropagate(selectedNodeIndex, simulationResult);
         }
 
-        // 3. Finito il ciclo, scegliamo la mossa del figlio più visitato
-        var bestChild = _root.Children.MaxBy(c => c.Visits);
-        return bestChild?.MoveThatLedToThisNode ?? Moves.None;
-    }
+        // 3. SCELTA DELLA MOSSA MIGLIORE
+        // Finito il ciclo, scegliamo il figlio della radice più visitato
+        var bestChildIndex = -1;
+        var maxVisits = -1;
 
-    /// <summary>
-    /// Scende l'albero scegliendo i nodi più promettenti e aggiorna lo stato dell'arena di conseguenza.
-    /// </summary>
-    private Node Select(Node node, ref WarArena arena)
-    {
-        while (!node.IsLeafNode)
+        ref var finalRootNode = ref _nodePool[rootIndex];
+        foreach (var childIndex in finalRootNode.GetChildren(_nodePool))
         {
-            node = node.SelectBestChild();
-            if (node == null) break; // Non ci sono più mosse da esplorare da questo ramo
-            
-            // Applica la mossa all'arena per mantenerla sincronizzata con l'albero
-            WarGameEngine.ApplySingleMove(ref arena, node.PlayerIndex, node.MoveThatLedToThisNode);
+            ref var childNode = ref _nodePool[childIndex];
+            if (childNode.Visits > maxVisits)
+            {
+                maxVisits = childNode.Visits;
+                bestChildIndex = childIndex;
+            }
         }
-        return node;
-    }
-
-    /// <summary>
-    /// Crea i figli di un nodo foglia basandosi sulle mosse legali.
-    /// </summary>
-    private void Expand(Node node, ref WarArena arena)
-    {
-        // Chiedi all'arena le mosse legali per il giocatore corrente
-        byte legalMoves = arena.GetLegalMoves(arena.GetSnake(node.PlayerIndex));
         
-        // Chiedi al nodo di creare i suoi figli
-        node.Expand(legalMoves);
+        return bestChildIndex != -1 ? _nodePool[bestChildIndex].MoveThatLedToThisNode : Moves.None;
     }
 
     /// <summary>
-    /// Esegue una partita casuale ("rollout") fino a un risultato terminale.
+    /// FASE 1: Scende l'albero partendo da un indice, scegliendo i figli più promettenti (UCT)
+    /// e aggiornando lo stato di gioco ('workingArena') di conseguenza.
+    /// Restituisce l'indice del nodo foglia selezionato.
+    /// </summary>
+    private int Select(int startNodeIndex, ref WarArena arena) // <-- BUG #2 RISOLTO: aggiunto 'ref'
+    {
+        var currentIndex = startNodeIndex;
+
+        while (true)
+        {
+            ref var currentNode = ref _nodePool[currentIndex];
+            if (currentNode.IsLeafNode || currentNode.IsTerminal) return currentIndex;
+        
+            var nextNodeIndex = currentNode.SelectBestChild(_nodePool);
+
+            // Non ci sono più figli da esplorare da questo ramo.
+            // La selezione termina qui, restituendo il nodo attuale.
+            if (nextNodeIndex == -1) return currentIndex;
+
+            currentIndex = nextNodeIndex;
+        
+            ref var childNode = ref _nodePool[currentIndex];
+            arena.ApplySingleMove(childNode.MoveThatLedToThisNode);
+        }
+    }
+
+    /// <summary>
+    /// FASE 2: Crea i nodi figli per un dato nodo foglia usando un ciclo bitwise diretto.
+    /// </summary>
+    private void Expand(int nodeIndex, ref Node node, ref WarArena arena)
+    {
+        if (node.IsTerminal) return;
+
+        // 1. Ottieni la bitmask come prima
+        var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
+
+        // Se non ci sono mosse, il nodo è di fatto un nodo terminale
+        if (legalMovesMask == 0)
+        {
+            node.IsTerminal = true;
+            return;
+        }
+
+        // 2. Cicla sulle possibili mosse, creando i figli man mano che le trovi
+        var lastChildIndex = -1;
+    
+        // Per rendere il codice leggibile, iteriamo su un array di mosse possibili
+        ReadOnlySpan<byte> allMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+
+        foreach (var move in allMoves)
+        {
+            // Controlla se la mossa corrente è presente nella maschera
+            if ((legalMovesMask & move) == 0) continue;
+            
+            // È una mossa legale, quindi creiamo il figlio
+            var newChildIndex = _nodePool.GetNextIndex();
+            ref var childNode = ref _nodePool[newChildIndex];
+            childNode.Initialize(nodeIndex, move);
+
+            // Ora dobbiamo collegare il nuovo figlio alla lista dei fratelli
+            if (lastChildIndex == -1)
+            {
+                // Se è il primo figlio che troviamo, lo colleghiamo direttamente al genitore
+                node.FirstChildIndex = newChildIndex;
+            }
+            else
+            {
+                // Altrimenti, lo colleghiamo al fratello precedente
+                ref var lastChildNode = ref _nodePool[lastChildIndex];
+                lastChildNode.NextSiblingIndex = newChildIndex;
+            }
+            
+            // Aggiorniamo l'indice dell'ultimo figlio creato per il prossimo giro
+            lastChildIndex = newChildIndex;
+        }
+    }
+
+    /// <summary>
+    /// FASE 3: Da uno stato di gioco, esegue mosse casuali o euristiche
+    /// fino a raggiungere un finale di partita, restituendo il risultato (-1, 0, 1).
     /// </summary>
     private float Simulate(ref WarArena arena)
     {
-        int turnLimit = 200; // Limite di sicurezza
-        for (int i = 0; i < turnLimit; i++)
+        const int turnLimit = 200; // Limite di sicurezza per evitare cicli infiniti
+
+        for (var i = 0; i < turnLimit; i++)
         {
-            float evaluation = arena.Evaluate();
+            var evaluation = arena.Evaluate();
             if (evaluation != 0.0f)
             {
-                return evaluation; // Partita finita
+                return evaluation; // Partita finita: vittoria o sconfitta
             }
             
-            // TODO: Gestire i turni per più giocatori
-            var currentSnake = arena.GetSnake(0);
+            // --- LOGICA DI SCELTA MOSSA (POLICY DI DEFAULT) ---
+            // *PLACEHOLDER*: Qui va inserita la logica per scegliere la mossa durante il rollout.
+            // Può essere puramente casuale tra le mosse legali o basata su un'euristica veloce.
+            var legalMoves = arena.GetLegalMoves();
+            if (legalMoves.IsEmpty) return 0.0f; // Pareggio se non ci sono mosse
+
+            var move = legalMoves[Random.Shared.Next(legalMoves.Length)]; // Esempio: mossa casuale
             
-            // Usa una policy di default (es. euristica o casuale) per scegliere la mossa
-            var heuristic = new HeuristicMoveFinder(ref currentSnake, arena);
-            var legalMoves = arena.GetLegalMoves(currentSnake);
-            var move = heuristic.FindBestMove(legalMoves);
-            
-            WarGameEngine.ApplySingleMove(ref arena, 0, move);
+            // *PLACEHOLDER*: Applica la mossa scelta per far progredire la simulazione
+            WarGameEngine.ApplySingleMove(ref arena, move);
         }
-        return 0.0f; // Pareggio per limite di turni
+
+        return 0.0f; // Pareggio per aver raggiunto il limite di turni
     }
 
     /// <summary>
-    /// Propaga all'indietro il risultato della simulazione, aggiornando le statistiche dei nodi.
+    /// FASE 4: Propaga il risultato della simulazione a ritroso lungo l'albero,
+    /// aggiornando le statistiche (vittorie/visite) di ogni nodo attraversato.
     /// </summary>
-    private void Backpropagate(Node node, float result)
+    private void Backpropagate(int startNodeIndex, float result)
     {
-        while (node != null)
+        var currentIndex = startNodeIndex;
+        while (currentIndex != -1)
         {
-            node.UpdateStats(result);
-            node = node.Parent;
+            ref var currentNode = ref _nodePool[currentIndex];
+            currentNode.UpdateStats(result);
+            
+            // Risali al genitore per continuare la propagazione
+            currentIndex = currentNode.ParentIndex;
         }
     }
 }

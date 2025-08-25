@@ -21,13 +21,9 @@ public sealed class BattleSnakeAgent : IDisposable
 
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
         _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
-        _engine = new MonteCarloEngine(_warPool);
+        _engine = new MonteCarloEngine(_warPool, _nodePool);
     }
-
-    /// <summary>
-    /// Chiamato una sola volta all'inizio della partita.
-    /// Inizializza il contesto di gioco, la mappa degli ID e il memory pool.
-    /// </summary>
+    
     public void Start(in Request request)
     {
         var width = request.Board.Width;
@@ -38,17 +34,15 @@ public sealed class BattleSnakeAgent : IDisposable
         var context = new GameContext(width, snakeIdMap, neighbors);
         
         _warPool.Reset(in context);
+        _nodePool.Reset();
     }
-
-    /// <summary>
-    /// Chiamato a ogni turno per decidere la mossa.
-    /// Implementa la logica di riutilizzo dell'albero basata su hash.
-    /// </summary>
-    public byte Move(in Request request) => Moves.Up;
+    
+    public byte Move(in Request request) => _engine.FindBestMove(in request);
 
     public void End(in Request _)
     {
         _warPool.Clear();
+        _nodePool.Clear();
     } 
     
     public void Dispose() => _warPool.Dispose();

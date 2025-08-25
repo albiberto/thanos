@@ -58,7 +58,7 @@ public class BitboardTests
         Assert.That(bitboard.IsSet(position), Is.True, "Pre-condition check: The bit must be set before it can be cleared.");
 
         // Act
-        bitboard.Clear(position);
+        bitboard.Unset(position);
 
         // Assert
         Assert.That(bitboard.IsSet(position), Is.False, "The target bit should be reported as not set after being cleared.");
@@ -84,7 +84,7 @@ public class BitboardTests
 
         // Act
         // Clear only one of the bits.
-        bitboard.Clear(positionToClear);
+        bitboard.Unset(positionToClear);
 
         // Assert
         Assert.That(bitboard.IsSet(positionToClear), Is.False, "The bit at position 5 should have been cleared.");
@@ -116,7 +116,7 @@ public class BitboardTests
         Assert.That(bitboard.IsSet(position), Is.True, "Bit should be on after Set().");
 
         // Act 2: Clear the bit.
-        bitboard.Clear(position);
+        bitboard.Unset(position);
 
         // Assert 3: Verify the bit is 'off' again.
         Assert.That(bitboard.IsSet(position), Is.False, "Bit should be off again after Clear().");

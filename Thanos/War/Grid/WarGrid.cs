@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Thanos.Common;
 using Thanos.MCST;
 using Thanos.War.Grid.Memory;
+using Thanos.War.Snake;
 
 namespace Thanos.War.Grid;
 
@@ -60,5 +61,20 @@ public readonly ref struct WarGrid
 
         // Step 3: Combine the results into a final bitmask.
         return (byte)((upValid * Moves.Up) | (downValid * Moves.Down) | (leftValid * Moves.Left) | (rightValid * Moves.Right));
+    }
+    
+    public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
+    {
+        if (!hasEaten) _snakes.Unset(oldTail);
+        _snakes.Set(newHead);
+    }
+    
+    public void RemoveFood(ushort position) => _food.Unset(position);
+
+    public void KillSnakeOnGrid(WarSnake snake)
+    {
+        snake.GetSpans(out var bodyFirst, out var bodySecond);
+        foreach (var pos in bodyFirst) _snakes.Unset(pos);
+        foreach (var pos in bodySecond) _snakes.Unset(pos);
     }
 }

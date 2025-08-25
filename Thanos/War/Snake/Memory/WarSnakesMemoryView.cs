@@ -12,4 +12,10 @@ public readonly ref struct WarSnakesMemoryView(Span<byte> memory, in WarSnakeMem
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => new(new WarSnakeMemoryView(_memory, in _memoryLayout, index));
     }
+    
+    public WarSnake Me
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new(new WarSnakeMemoryView(_memory, in _memoryLayout, 0));
+    }
 }

@@ -8,7 +8,7 @@ public readonly ref struct Bitboard(Span<ulong> bitboard)
 
     public void Set(ushort position1D) => _bitboard[position1D >> 6] |= 1UL << (position1D & 63);
 
-    public void Clear(ushort position1D) => _bitboard[position1D >> 6] &= ~(1UL << (position1D & 63));
+    public void Unset(ushort position1D) => _bitboard[position1D >> 6] &= ~(1UL << (position1D & 63));
 
     public bool IsSet(ushort position1D)
     {
