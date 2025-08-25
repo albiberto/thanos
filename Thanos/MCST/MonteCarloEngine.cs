@@ -26,8 +26,8 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         
         // --- CICLO DI RICERCA MCTS ---
         var stopwatch = Stopwatch.StartNew();
-        // while (stopwatch.ElapsedMilliseconds < 400)
-        while (counter < 1000)
+        while (stopwatch.ElapsedMilliseconds < 450)
+        // while (counter < 1000)
         {
             // Per ogni iterazione, partiamo sempre dallo stato originale della radice
             var workingSlot = _warPool.GetNext(out var full);
@@ -176,7 +176,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 private float Simulate(ref WarArena arena)
     {
         // Limite di turni per evitare simulazioni infinite in caso di stallo
-        const int turnLimit = 200;
+        const int turnLimit = 2000;
 
         for (var i = 0; i < turnLimit; i++)
         {
