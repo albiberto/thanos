@@ -107,8 +107,10 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
             for (var i = 0; i < body.Length; i++)
             {
                 var coord1D = To1D(body[i], width);
-                
-                bodyMemory[i] = coord1D;
+
+                var destinationIndex = body.Length - 1 - i;
+    
+                bodyMemory[destinationIndex] = coord1D;
                 snakesBitboard.Set(coord1D);
             }
         }
