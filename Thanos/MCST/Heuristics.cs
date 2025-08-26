@@ -1,215 +1,146 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 using Thanos.Common;
 using Thanos.War;
+using Thanos.War.Grid;
 
 namespace Thanos.MCST;
 
 public static class Heuristics
 {
-    // --- PESI DELLE EURISTICHE ---
-    // Sentiti libero di sperimentare con questi valori!
-    private const float Alpha = 2.5f; // Peso per la mobilità
-    private const float Beta = 1.0f;  // Peso per il controllo area (Flood Fill)
-    private const float Delta = 7.0f; // Peso per la salute/vita
-    private const float Epsilon = 5.5f; // Peso per la ricerca di cibo
-
-    /// <summary>
-    /// Sceglie la mossa migliore da un set di mosse legali,
-    /// valutando lo stato del gioco dopo ogni possibile mossa.
-    /// </summary>
     public static byte FindBestMove(byte legalMoves, ref WarArena arena)
     {
-        if (BitOperations.PopCount(legalMoves) == 0) return Moves.Up;
+        if (legalMoves == 0) return Moves.Up;
 
-        byte bestMove = Moves.None;
-        float bestScore = float.MinValue;
+        // Se c'è una sola mossa, non c'è bisogno di valutare nulla.
+        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
 
-        ReadOnlySpan<byte> allMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+        var bestMove = Moves.None;
+        var bestScore = double.NegativeInfinity;
 
-        foreach (var move in allMoves)
+        var movesToEvaluate = legalMoves;
+        while (movesToEvaluate > 0)
         {
-            if ((legalMoves & move) == 0) continue;
+            var moveIndex = BitOperations.TrailingZeroCount(movesToEvaluate);
+            var currentMove = (byte)(1 << moveIndex);
 
-            var futureArena = arena;
-            futureArena.ApplySingleMove(move);
+            // --- LOGICA CHIAVE ---
+            // 1. Crea una copia dell'arena per simulare la mossa.
+            var lookaheadArena = arena;
 
-            float currentScore;
-            if (futureArena.Snakes.Me.Dead)
+            // 2. Applica la mossa alla copia.
+            lookaheadArena.ApplySingleMove(currentMove);
+
+            // 3. Usa la nostra nuova funzione Evaluate per ottenere il punteggio della posizione risultante.
+            var currentMoveScore = Evaluate(ref lookaheadArena);
+            // --- FINE LOGICA CHIAVE ---
+
+            if (currentMoveScore > bestScore)
             {
-                currentScore = float.MinValue; // La morte ha sempre il punteggio peggiore
-            }
-            else
-            {
-                currentScore = Evaluate(ref futureArena);
+                bestScore = currentMoveScore;
+                bestMove = currentMove;
             }
 
-            if (currentScore > bestScore)
-            {
-                bestScore = currentScore;
-                bestMove = move;
-            }
+            movesToEvaluate &= (byte)~currentMove;
         }
-        
+
         return bestMove != Moves.None ? bestMove : (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
     }
 
     /// <summary>
-    /// Calcola un punteggio numerico per una data configurazione del gioco.
+    ///     Valuta la bontà di una data posizione sulla scacchiera.
+    ///     Un punteggio alto indica una posizione vantaggiosa.
     /// </summary>
-    public static float Evaluate(ref WarArena arena)
+    public static double Evaluate(ref WarArena arena)
     {
-        var floodFill = CalculateFloodFillArea(ref arena);
-        var health = CalculateHealth(ref arena);
-        var foodIncentive = CalculateFoodIncentive(ref arena);
-        var mobility = CalculateMobilityImmediate(ref arena);
-        
-        // La Voronoi è intenzionalmente lasciata a 0 come da discussione precedente
-        var voronoi = 0f;
+        const double mobilityWeight = 15.0;
+        const double foodWeight = 1.5;
 
-        var score = (Alpha * mobility)
-                  + (Beta * floodFill)
-                  + (Delta * health)
-                  + (Epsilon * foodIncentive);
+        // Se il nostro serpente è morto in questa posizione, è la peggiore possibile.
+        if (arena.Snakes.Me.Dead) return double.NegativeInfinity;
 
-        return score;
+        // Calcola il punteggio combinando le varie euristiche con i loro pesi.
+        var finalScore = 0.0;
+
+        // Ottieni la posizione attuale della testa per le euristiche
+        var me = arena.Snakes.Me;
+        var head = me.Head;
+        var health = me.Health;
+
+        // --- Euristica 1: Mobilità Immediata (Avere più opzioni è sempre meglio)---
+        finalScore += mobilityWeight * CalculateImmediateMobilityScore(head, ref arena);
+
+        // --- Euristica 2: Incentivo al Cibo ---
+        finalScore += foodWeight * CalculateFoodIncentive(head, health, ref arena);
+
+
+        return finalScore;
     }
 
-    // --- IMPLEMENTAZIONE DELLE SINGOLE EURISTICHE ---
-
-    private static float CalculateMobilityImmediate(ref WarArena arena)
+    private static double CalculateImmediateMobilityScore(ushort headPosition, ref WarArena arena)
     {
-        var legalMoves = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
+        var legalMoves = arena.Grid.GetLegalMoves(headPosition);
         return BitOperations.PopCount(legalMoves);
     }
 
-    private static float CalculateHealth(ref WarArena arena) => arena.Snakes.Me.Health / 10.0f;
-
     /// <summary>
-    /// Calcola la dimensione dell'area sicura partendo dalla testa del serpente.
+    ///     Calcola un punteggio che incentiva il serpente a cercare cibo.
+    ///     L'incentivo è più forte se la vita è bassa.
     /// </summary>
-    private static float CalculateFloodFillArea(ref WarArena arena)
+    private static double CalculateFoodIncentive(ushort head, int health, ref WarArena arena)
     {
-        return CalculateFloodFillArea(ref arena, arena.Snakes.Me.Head);
-    }
-    
-    /// <summary>
-    /// **NUOVA VERSIONE FLESSIBILE**
-    /// Calcola la dimensione dell'area sicura partendo da una cella specifica.
-    /// </summary>
-    private static float CalculateFloodFillArea(ref WarArena arena, ushort startCell)
-    {
-        var grid = arena.Grid;
-        var queue = new Queue<ushort>();
-        var visited = new HashSet<int>();
+        var distance = FindClosestFoodDistance(head, ref arena);
 
-        if (!grid.IsOccupied(startCell))
-        {
-            queue.Enqueue((ushort)startCell);
-            visited.Add(startCell);
-        }
-        else
-        {
-            return 0; // Il punto di partenza non è valido
-        }
+        // Se non c'è cibo o siamo già sul cibo, non c'è incentivo
+        if (distance is >= int.MaxValue or 0) return 0.0;
 
-        int areaSize = 0;
-        ReadOnlySpan<byte> allMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+        // L'"urgenza" di mangiare è inversamente proporzionale alla vita.
+        // Se la vita è 100, l'urgenza è 0. Se la vita è 10, l'urgenza è 90.
+        var urgency = 100.0 - health;
 
-        while (queue.Count > 0)
-        {
-            var currentCell = queue.Dequeue();
-            areaSize++;
-
-            foreach (var move in allMoves)
-            {
-                var neighbor = grid.GetNeighbor(currentCell, move);
-                if (!visited.Contains(neighbor) && !grid.IsOccupied(neighbor))
-                {
-                    visited.Add(neighbor);
-                    queue.Enqueue(neighbor);
-                }
-            }
-        }
-        return areaSize;
+        // Il punteggio combina urgenza e vicinanza (più sei vicino, più è alto).
+        return urgency / distance;
     }
 
     /// <summary>
-    /// **LOGICA DI URGENZA MIGLIORATA**
-    /// Calcola un punteggio che incoraggia il serpente a mangiare quando ne ha bisogno.
+    ///     FUNZIONE DI SUPPORTO: Trova la distanza di Manhattan dal cibo più vicino.
+    ///     Scansiona il bitboard del cibo in modo efficiente.
+    ///     Ritorna int.MaxValue se non c'è cibo.
     /// </summary>
-    private static float CalculateFoodIncentive(ref WarArena arena)
+    private static int FindClosestFoodDistance(ushort headPosition, ref WarArena arena)
     {
-        var mySnake = arena.Snakes.Me;
+        var minDistance = int.MaxValue;
 
-        // Inizia a considerare il cibo quando la vita scende sotto 80
-        if (mySnake.Health > 80)
+        // Converti la posizione della testa in 2D una sola volta
+        var headX = headPosition % arena.Grid.Geography.Width;
+        var headY = headPosition / arena.Grid.Geography.Width;
+
+        // Ottieni i dati grezzi del bitboard del cibo
+        var foodData = arena.Grid.Food.GetRawData();
+
+        // Itera sui blocchi di 64 bit del bitboard
+        for (var i = 0; i < foodData.Length; i++)
         {
-            return 0f;
-        }
-        
-        FindClosestSafeFood(ref arena, out int distanceToFood);
-        
-        if (distanceToFood <= 0) // Nessun cibo sicuro trovato o siamo già sul cibo
-        {
-            return 0f;
-        }
+            var chunk = foodData[i];
+            if (chunk == 0) continue; // Salta i blocchi senza cibo
 
-        // Urgenza quadratica per un effetto "panico" a bassa vita
-        float proximityBonus = 1.0f / distanceToFood;
-        float healthDeficit = 100f - mySnake.Health;
-        float urgencyBonus = (healthDeficit * healthDeficit) / 10f;
-
-        return proximityBonus * urgencyBonus;
-    }
-
-    /// <summary>
-    /// **CONTROLLO DI SICUREZZA CORRETTO**
-    /// Trova il cibo più vicino e sicuro usando un BFS.
-    /// </summary>
-    private static void FindClosestSafeFood(ref WarArena arena, out int distance)
-    {
-        var grid = arena.Grid;
-        var mySnake = arena.Snakes.Me;
-        var myHead = mySnake.Head;
-        
-        var queue = new Queue<(ushort cell, int dist)>();
-        var visited = new HashSet<int> { myHead };
-
-        queue.Enqueue((myHead, 0));
-
-        while (queue.Count > 0)
-        {
-            var (currentCell, currentDist) = queue.Dequeue();
-
-            if (grid.IsFood(currentCell) && currentDist > 0)
+            // Finché ci sono bit accesi in questo blocco, trovali
+            while (chunk != 0)
             {
-                // **FIX APPLICATO QUI**
-                // Ora calcoliamo l'area partendo dalla posizione del CIBO.
-                var areaAroundFood = CalculateFloodFillArea(ref arena, currentCell);
+                var bitIndex = BitOperations.TrailingZeroCount(chunk);
+                var foodPosition1D = (ushort)(i * 64 + bitIndex);
 
-                if (areaAroundFood < mySnake.Length + 2) // +2 per un margine di sicurezza extra
-                {
-                    continue; // Cibo-trappola, ignora e continua la ricerca
-                }
+                // Calcola la distanza di Manhattan
+                var foodX = foodPosition1D % arena.Grid.Geography.Width;
+                var foodY = foodPosition1D / arena.Grid.Geography.Width;
+                var distance = Math.Abs(headX - foodX) + Math.Abs(headY - foodY);
 
-                distance = currentDist;
-                return;
-            }
-            
-            ReadOnlySpan<byte> allMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-            foreach (var move in allMoves)
-            {
-                var neighbor = grid.GetNeighbor(currentCell, move);
-                if (!visited.Contains(neighbor) && !grid.IsOccupied(neighbor))
-                {
-                    visited.Add(neighbor);
-                    queue.Enqueue((neighbor, currentDist + 1));
-                }
+                if (distance < minDistance) minDistance = distance;
+
+                // Spegni il bit che abbiamo appena processato per passare al prossimo
+                chunk &= ~(1UL << bitIndex);
             }
         }
-        
-        distance = -1; // Nessun cibo sicuro trovato
+
+        return minDistance;
     }
 }

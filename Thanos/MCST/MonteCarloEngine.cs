@@ -171,7 +171,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 ///     risultato terminale, restituendo il punteggio (-1 per sconfitta, 1 per vittoria).
 /// </summary>
 // File: MonteCarloEngine.cs
-    private float Simulate(ref WarArena arena)
+    private double Simulate(ref WarArena arena)
     {
         const int turnLimit = 200; // Ridotto il limite per simulazioni più veloci
 
@@ -196,14 +196,14 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 
         // Se si raggiunge il limite, consideralo un pareggio o valuta lo stato finale
         // con la nostra euristica per un risultato più sfumato.
-        return Heuristics.Evaluate(ref arena) / 100.0f; // Normalizza il punteggio finale per MCTS
+        return Heuristics.Evaluate(ref arena);
     }
 
     /// <summary>
     ///     FASE 4: Propaga il risultato della simulazione a ritroso lungo l'albero,
     ///     aggiornando le statistiche (vittorie/visite) di ogni nodo attraversato.
     /// </summary>
-    private void Backpropagate(int startNodeIndex, float result)
+    private void Backpropagate(int startNodeIndex, double result)
     {
         var currentIndex = startNodeIndex;
         while (currentIndex != -1)

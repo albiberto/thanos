@@ -13,9 +13,9 @@ public readonly ref struct WarGrid
 {
     public readonly ref Geography Geography;
 
-    private readonly Bitboard _food;
-    private readonly Bitboard _hazards;
-    private readonly Bitboard _snakes;
+    public readonly Bitboard Food;
+    public readonly Bitboard Hazards;
+    public readonly Bitboard Snakes;
 
     private readonly ReadOnlySpan<ushort> _neighborsBoard;
 
@@ -23,18 +23,18 @@ public readonly ref struct WarGrid
     {
         Geography = ref view.Geography;
 
-        _food = view.Food;
-        _hazards = view.Hazards;
-        _snakes = view.Snakes;
+        Food = view.Food;
+        Hazards = view.Hazards;
+        Snakes = view.Snakes;
 
         _neighborsBoard = view.NeighborsBoard;
     }
 
-    public bool IsOccupied(ushort position) => position == ushort.MaxValue || _snakes.IsSet(position);
+    public bool IsOccupied(ushort position) => position == ushort.MaxValue || Snakes.IsSet(position);
 
-    public bool IsFood(ushort position) => _food.IsSet(position);
+    public bool IsFood(ushort position) => Food.IsSet(position);
 
-    public bool IsHazard(ushort position) => _hazards.IsSet(position);
+    public bool IsHazard(ushort position) => Hazards.IsSet(position);
 
     public ushort GetNeighbor(ushort position, byte move) => _neighborsBoard[position * 4 + BitOperations.TrailingZeroCount(move)];
 
@@ -65,16 +65,16 @@ public readonly ref struct WarGrid
     
     public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
     {
-        if (!hasEaten) _snakes.Unset(oldTail);
-        _snakes.Set(newHead);
+        if (!hasEaten) Snakes.Unset(oldTail);
+        Snakes.Set(newHead);
     }
     
-    public void RemoveFood(ushort position) => _food.Unset(position);
+    public void RemoveFood(ushort position) => Food.Unset(position);
 
     public void KillSnakeOnGrid(WarSnake snake)
     {
         snake.GetSpans(out var bodyFirst, out var bodySecond);
-        foreach (var pos in bodyFirst) _snakes.Unset(pos);
-        foreach (var pos in bodySecond) _snakes.Unset(pos);
+        foreach (var pos in bodyFirst) Snakes.Unset(pos);
+        foreach (var pos in bodySecond) Snakes.Unset(pos);
     }
 }

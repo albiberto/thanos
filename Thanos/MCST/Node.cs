@@ -30,7 +30,7 @@ public struct Node
 
     public readonly bool IsLeafNode => FirstChildIndex == -1;
     
-    public void UpdateStats(float result)
+    public void UpdateStats(double result)
     {
         Visits++;
         Wins += result;
