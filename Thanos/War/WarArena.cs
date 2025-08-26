@@ -60,29 +60,20 @@ public readonly ref struct WarArena(WarGrid grid, WarSnakesMemoryView snakes)
         if (Snakes.Me.Dead) return -1.0f;
         return _liveSnakesCount <= 1 ? 1.0f : 0.0f;
     }
-
+    
     private float EvaluateSolo()
     {
-        // CONDIZIONE DI SCONFITTA: Se il serpente è morto, il risultato è -1.0.
         if (Snakes.Me.Dead)
         {
-            return -1.0f;
+            return -1.0f; // Sconfitta
         }
 
-        // --- CONDIZIONE DI VITTORIA ---
-        // Calcola il numero totale di caselle sicure sulla mappa.
-        // Assumiamo che la tua griglia conosca la sua area totale e che
-        // il tuo bitboard per gli hazard possa contare quanti ce ne sono.
-        var boardArea = Grid.Geography.Area;
-        var availableSquares = boardArea;
-    
-        // Se la lunghezza del serpente riempie (o supera) tutto lo spazio disponibile, è una vittoria!
+        var availableSquares = Grid.Geography.Area;
         if (Snakes.Me.Length >= availableSquares)
         {
-            return 1.0f; 
+            return 1.0f; // Vittoria: hai riempito la mappa!
         }
 
-        // CONDIZIONE DI GIOCO IN CORSO: Se non siamo né morti né abbiamo vinto, la partita continua.
-        return 0.0f;
+        return 0.0f; // Partita in corso
     }
 }

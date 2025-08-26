@@ -14,31 +14,28 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     public byte FindBestMove(in Request request, int iterations = 10000)
     {
         // 2. Inizializza lo stato di gioco iniziale (rootSlot)
-        var rootSlot = _warPool.GetNext(out var _);
+        var rootSlot = _warPool.GetNext(out _);
         rootSlot.InitializeFromRequest(in request);
 
         // 3. Inizializza il nodo radice dell'albero
         var rootIndex = _nodePool.GetNextIndex();
         ref var rootNode = ref _nodePool[rootIndex];
         rootNode.Initialize(-1, Moves.None);
-        
+
         var counter = 1;
-        
+
         // --- CICLO DI RICERCA MCTS ---
         var stopwatch = Stopwatch.StartNew();
         while (stopwatch.ElapsedMilliseconds < 450)
-        // while (counter < 1000)
+            // while (counter < 1000)
         {
             // Per ogni iterazione, partiamo sempre dallo stato originale della radice
             var workingSlot = _warPool.GetNext(out var full);
 
-            if (full)
-            {
-                Console.WriteLine("WarMemoryPool pieno durante MCTS! {0}", counter);
-            }
-            
+            if (full) Console.WriteLine("WarMemoryPool pieno durante MCTS! {0}", counter);
+
             counter++;
-            
+
             workingSlot.CloneFrom(in rootSlot);
 
             // Ottieni l'arena per questa iterazione. È una 'ref struct', quindi vive sullo stack.
@@ -69,7 +66,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         }
 
         Console.WriteLine("MCTS completato in {0} ms con {1} iterazioni", stopwatch.ElapsedMilliseconds, counter);
-        
+
         // --- SCELTA DELLA MOSSA MIGLIORE ---
         // Questa parte era già corretta: scegli il figlio più visitato.
         var bestChildIndex = -1;
@@ -173,32 +170,33 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 ///     FASE 3: Da uno stato di gioco, esegue una partita ("rollout") fino a un
 ///     risultato terminale, restituendo il punteggio (-1 per sconfitta, 1 per vittoria).
 /// </summary>
-private float Simulate(ref WarArena arena)
+// File: MonteCarloEngine.cs
+    private float Simulate(ref WarArena arena)
     {
-        // Limite di turni per evitare simulazioni infinite in caso di stallo
-        const int turnLimit = 2000;
+        const int turnLimit = 200; // Ridotto il limite per simulazioni più veloci
 
         for (var i = 0; i < turnLimit; i++)
         {
-            // 1. Controlla se la partita è già terminata
-            var evaluation = arena.Evaluate();
-            if (evaluation != 0.0f) return evaluation; // Ritorna -1.0f (sconfitta) o 1.0f (vittoria)
+            // 1. Controlla se la partita è terminata (vittoria/sconfitta)
+            var evaluation = arena.Evaluate(); // Usa la Evaluate di WarArena per stati terminali
+            if (evaluation != 0.0f) return evaluation;
 
-            // 2. Ottieni le mosse legali come bitmask
+            // 2. Ottieni le mosse legali
             var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
 
-            // Se non ci sono mosse, è un pareggio (o una situazione di stallo)
-            if (legalMovesMask == 0) return 0.0f;
+            if (legalMovesMask == 0) return -1.0f; // Se non ci sono mosse, è una sconfitta in simulazione
 
-            // 3. Scegli UNA mossa usando la tua euristica veloce
-            var move = Heuristics.FindBestMove(legalMovesMask);
+            // 3. Usa la nostra nuova euristica per scegliere la mossa migliore
+            //    invece di una mossa casuale.
+            var move = Heuristics.FindBestMove(legalMovesMask, ref arena);
 
-            // 4. Applica la mossa per far avanzare lo stato della simulazione
+            // 4. Applica la mossa per far avanzare lo stato
             arena.ApplySingleMove(move);
         }
 
-        // Se la simulazione raggiunge il limite di turni, considerala un pareggio.
-        return 0.0f;
+        // Se si raggiunge il limite, consideralo un pareggio o valuta lo stato finale
+        // con la nostra euristica per un risultato più sfumato.
+        return Heuristics.Evaluate(ref arena) / 100.0f; // Normalizza il punteggio finale per MCTS
     }
 
     /// <summary>
