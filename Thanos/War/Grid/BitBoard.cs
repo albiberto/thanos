@@ -4,7 +4,7 @@ public readonly ref struct Bitboard(Span<ulong> bitboard)
 {
     private readonly Span<ulong> _bitboard = bitboard;
     
-    public ReadOnlySpan<ulong> GetRawData() => _bitboard;
+    public ReadOnlySpan<ulong> GetRawData => _bitboard;
 
     public void Set(ushort position1D) => _bitboard[position1D >> 6] |= 1UL << (position1D & 63);
 
