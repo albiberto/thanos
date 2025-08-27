@@ -16,6 +16,8 @@ public sealed class BattleSnakeAgent : IDisposable
     
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
+        ConversionMapCache.Burn(Constants.MaxWidth);
+        
         NeighborsBoardCache.Burn(Constants.MaxWidth);
         var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
 
@@ -30,9 +32,11 @@ public sealed class BattleSnakeAgent : IDisposable
         
         var snakeIdMap = BuildIdMap(request);
         var neighbors = NeighborsBoardCache.Get(width);
+        var map = ConversionMapCache.Get(width);
         
         var context = new GameContext(width, snakeIdMap, neighbors);
         
+        _engine.Reset(map);
         _warPool.Reset(in context);
         _nodePool.Reset();
     }

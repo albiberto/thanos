@@ -13,7 +13,10 @@ public static class NeighborsBoardCache
     
     public static void Burn(int maxWidth)
     {
-        foreach (var width in Enumerable.Range(1, maxWidth)) _cache[width] = Build(width).ToArray();
+        Parallel.ForEach(Enumerable.Range(1, maxWidth), width =>
+        {
+            _cache[width] = Build(width).ToArray();
+        });
     }
 
     // The LUT stores 4 neighbors (U,D,L,R) for each of the 'area' squares.

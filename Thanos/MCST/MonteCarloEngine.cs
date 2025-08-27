@@ -11,6 +11,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
     private readonly WarMemoryPool _warPool = warPool;
     private readonly NodeMemoryPool _nodePool = nodePool;
+    private Coordinate[] _map = [];
 
     // <--- OTTIMIZZAZIONE: Definiamo l'array una sola volta per evitare allocazioni nel ciclo.
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
@@ -47,7 +48,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             {
                 // Se siamo arrivati in uno stato terminale, non c'è bisogno di simulare
                 nodeToProcess.IsTerminal = true;
-                simulationResult = Heuristics.Evaluate(ref workingArena);
+                simulationResult = Heuristics.Evaluate(ref workingArena, _map);
             }
             else if (nodeToProcess.IsLeafNode)
             {
@@ -178,7 +179,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             arena.ApplySingleMove(move);
         }
         
-        return Heuristics.Evaluate(ref arena);
+        return Heuristics.Evaluate(ref arena, _map);
     }
     
     private void Backpropagate(int startNodeIndex, double rawScore)
@@ -193,4 +194,6 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             currentIndex = currentNode.ParentIndex;
         }
     }
+    
+    public void Reset(in Coordinate[] map) => _map = map;
 }

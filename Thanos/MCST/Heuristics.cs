@@ -1,6 +1,8 @@
 ﻿using System.Buffers;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Thanos.Common;
+using Thanos.SourceGen;
 using Thanos.War;
 
 namespace Thanos.MCST;
@@ -60,12 +62,13 @@ public static class Heuristics
     /// <summary>
     ///     VALUTA UNA POSIZIONE: Assegna un punteggio a uno stato del gioco.
     /// </summary>
-    public static double Evaluate(ref WarArena arena)
+    public static double Evaluate(ref WarArena arena, ReadOnlySpan<Coordinate> map)
     {
         if (arena.Snakes.Me.Dead) return double.NegativeInfinity;
 
         var me = arena.Snakes.Me;
         var head = me.Head;
+        var health = me.Health;
         var grid = arena.Grid;
         var width = grid.Geography.Width;
 
@@ -75,7 +78,7 @@ public static class Heuristics
         score += MobilityWeight * BitOperations.PopCount(grid.GetLegalMoves(head));
 
         // 2) Incentivo cibo
-        score += FoodWeight * CalculateFoodIncentive(ref arena);
+        score += FoodWeight * CalculateFoodIncentive(head, health, grid.Food.GetRawData, map);
 
         // 3) Penalità bordo e Bonus centro
         var x = head % width;
@@ -98,43 +101,52 @@ public static class Heuristics
 
     // --- Euristiche di Supporto ---
 
-    private static double CalculateFoodIncentive(ref WarArena arena)
+    /// <summary>
+    /// Calcola l'incentivo al cibo trovando la distanza minima in modo super-performante
+    /// usando la LUT per le coordinate.
+    /// </summary>
+    private static double CalculateFoodIncentive(ushort head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
     {
-        var me = arena.Snakes.Me;
-        var head = me.Head;
-        var health = me.Health;
+        var headCoords = map[head];
+        var distance = int.MaxValue;
 
-        var distance = FindClosestFoodDistance(head, arena.Grid.Food.GetRawData, arena.Grid.Geography.Width);
-        if (distance is >= int.MaxValue or 0) return 0.0;
-
-        var urgency = 100.0 - health + 30.0;
-        return urgency / distance;
-    }
-
-    private static int FindClosestFoodDistance(ushort head, ReadOnlySpan<ulong> foodData, int w)
-    {
-        var headX = head % w;
-        var headY = head / w;
-        var minDistance = int.MaxValue;
-
-        for (var i = 0; i < foodData.Length; i++)
+        for (var i = 0; i < food.Length; i++)
         {
-            var chunk = foodData[i];
+            var chunk = food[i];
             if (chunk == 0) continue;
 
             while (chunk != 0)
             {
                 var bitIndex = BitOperations.TrailingZeroCount(chunk);
                 var pos1D = (ushort)((i << 6) + bitIndex);
-                var foodX = pos1D % w;
-                var foodY = pos1D / w;
-                var d = Math.Abs(headX - foodX) + Math.Abs(headY - foodY);
-                if (d < minDistance) minDistance = d;
+                
+                var foodCoords = map[pos1D];
+                
+                var d = Abs(headCoords.X - foodCoords.X) + Abs(headCoords.Y - foodCoords.Y);
+                if (d < distance)
+                {
+                    distance = d;
+                    if (distance == 1) goto EndLoop;
+                }
+                
                 chunk &= ~(1UL << bitIndex);
             }
         }
 
-        return minDistance;
+        EndLoop: // Etichetta per uscire da entrambi i cicli
+        if (distance is >= int.MaxValue or 0) return 0.0;
+
+        var urgency = 100.0 - health + 30.0;
+        return urgency / distance;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Abs(int n)
+    {
+        // Maschera con tutti i bit a 1 se n è negativo, 0 se positivo
+        var mask = n >> 31; 
+        // (n XOR mask) - mask
+        return (n + mask) ^ mask;
     }
 
     private static int EstimateSafeSpaceBitset(ushort start, ref WarArena arena, int nodeBudget)
