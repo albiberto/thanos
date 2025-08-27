@@ -47,20 +47,35 @@ public static class Heuristics
         var bestScore = double.NegativeInfinity;
 
         // Ora itera sullo Span mescolato invece di usare il ciclo bitwise
-        for (var i = 0; i < count; i++)
+        for (int i = 0; i < count; i++)
         {
-            var currentMove = moves[i];
-
-            // 1. Simula la mossa in una copia temporanea dell'arena
-            var lookaheadArena = arena;
+            byte currentMove = moves[i];
+        
+            WarArena lookaheadArena = arena;
             lookaheadArena.ApplySingleMove(currentMove);
 
-            // 2. Valuta la bontà della posizione risultante
-            var currentMoveScore = Evaluate(ref lookaheadArena);
+            // Per il debug, calcoliamo le euristiche una per una
+            var me = lookaheadArena.Snakes.Me;
+            var head = me.Head;
+            var grid = lookaheadArena.Grid;
 
-            if (currentMoveScore > bestScore)
+            double mobilityScore = MobilityWeight * BitOperations.PopCount(grid.GetLegalMoves(head));
+            double foodScore = FoodWeight * CalculateFoodIncentive(ref arena);
+            // ... (calcola gli altri punteggi individualmente come qui sotto)
+            double spaceScore = SpaceWeight * EstimateSafeSpaceBitset(head, ref lookaheadArena, SafeSpaceNodeBudget);
+        
+            double totalScore = mobilityScore + foodScore + spaceScore; // Aggiungi qui tutte le altre componenti
+
+            // STAMPA DI DEBUG
+            string moveName = currentMove switch { 1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?" };
+            Console.WriteLine(
+                $"Mossa: {moveName,-5} | Punteggio Totale: {totalScore:F2} " +
+                $"[Mobility: {mobilityScore:F2}, Food: {foodScore:F2}, Space: {spaceScore:F2}]"
+            );
+
+            if (totalScore > bestScore)
             {
-                bestScore = currentMoveScore;
+                bestScore = totalScore;
                 bestMove = currentMove;
             }
         }

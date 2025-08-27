@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Numerics;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -70,15 +71,39 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         // --- SCELTA DELLA MOSSA MIGLIORE ---
         // Questa parte era già corretta: scegli il figlio più visitato.
         var bestChildIndex = -1;
-        var maxVisits = -1;
+        double bestWinRate = double.NegativeInfinity;
 
         ref var finalRootNode = ref _nodePool[rootIndex];
+
+// Se non ci sono figli, restituisci una mossa di default (improbabile ma sicuro)
+        if (finalRootNode.IsLeafNode)
+        {
+            // Cerca la prima mossa legale e restituiscila
+            var legalMoves = rootSlot.GetArena.Grid.GetLegalMoves(rootSlot.GetArena.Snakes.Me.Head);
+            return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
+        }
+
+
         foreach (var childIndex in finalRootNode.GetChildren(_nodePool))
         {
             ref var childNode = ref _nodePool[childIndex];
-            if (childNode.Visits > maxVisits)
+    
+            // Non considerare mai figli non visitati
+            if (childNode.Visits == 0) continue;
+
+            // Calcola il "win rate" (punteggio medio per visita)
+            double winRate = childNode.Wins / childNode.Visits;
+    
+            // Debug: Stampa le statistiche di ogni opzione finale
+            string moveName = childNode.MoveThatLedToThisNode switch { 1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?" };
+            Console.WriteLine(
+                $"OPZIONE FINALE: {moveName,-5} | Win Rate: {winRate:F3} " +
+                $"(Value: {childNode.Wins}, Visits: {childNode.Visits})"
+            );
+
+            if (winRate > bestWinRate)
             {
-                maxVisits = childNode.Visits;
+                bestWinRate = winRate;
                 bestChildIndex = childIndex;
             }
         }
@@ -203,15 +228,26 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     ///     FASE 4: Propaga il risultato della simulazione a ritroso lungo l'albero,
     ///     aggiornando le statistiche (vittorie/visite) di ogni nodo attraversato.
     /// </summary>
-    private void Backpropagate(int startNodeIndex, double result)
+    private void Backpropagate(int startNodeIndex, double rawScore)
     {
+        // --- NORMALIZZAZIONE ---
+        // Convertiamo il punteggio grezzo (es. 19746.0) in un valore semplice
+        // che l'albero può capire:
+        // - Punteggio positivo => Buona posizione (+1.0)
+        // - Punteggio negativo => Cattiva posizione (-1.0)
+        // - Punteggio zero     => Neutrale (0.0)
+        var normalizedResult = (double)Math.Sign(rawScore);
+
+        Console.WriteLine("Raw Score: {0}, Normalized: {1}", rawScore, normalizedResult);
+        
         var currentIndex = startNodeIndex;
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
-            currentNode.UpdateStats(result);
+        
+            // Passiamo il valore normalizzato al nodo
+            currentNode.UpdateStats(normalizedResult); 
 
-            // Risali al genitore per continuare la propagazione
             currentIndex = currentNode.ParentIndex;
         }
     }
