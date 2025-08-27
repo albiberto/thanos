@@ -10,9 +10,9 @@ namespace Thanos.MCST;
 public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
     private readonly WarMemoryPool _warPool = warPool;
-    private NodeMemoryPool _nodePool = nodePool;
+    private readonly NodeMemoryPool _nodePool = nodePool;
 
-    public byte FindBestMove(in Request request, int iterations = 10000)
+    public byte FindBestMove(in Request request)
     {
         // 1. Inizializza lo stato di gioco iniziale (rootSlot)
         var rootSlot = _warPool.GetNext(out _);
