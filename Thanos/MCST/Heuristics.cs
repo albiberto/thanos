@@ -7,74 +7,13 @@ namespace Thanos.MCST;
 
 public static class Heuristics
 {
-    // --- Pesi delle Euristiche ---
-    private const double MobilityWeight = 1.0;
-    private const double FoodWeight = 150.0;
-    private const double BorderPenalty = -30.0;
-    private const double CenterBonus = 20.0;
-    private const double SpaceWeight = 2.0;
+    // --- Pesi delle Euristiche (Versione Ribilanciata per "Solo") ---
+    private const double SpaceWeight = 75.0; // PRIORITÀ 1: Controllare più spazio possibile è la chiave per sopravvivere.
+    private const double BorderPenalty = -200.0; // PRIORITÀ 2: I muri sono morte certa. La penalità deve essere forte e decisa.
+    private const double FoodWeight = 25.0; // PRIORITÀ 3: Il cibo è importante, ma NON più dello spazio e dei muri.
+    private const double CenterBonus = 5.0; // TIE-BREAKER: Un piccolo incentivo a rimanere al centro.
+    private const double MobilityWeight = 1.0; // TIE-BREAKER: Un incentivo minimo a "muoversi" in spazi aperti.
     private const int SafeSpaceNodeBudget = 512;
-
-    /// <summary>
-    ///     SCEGLIE LA MOSSA MIGLIORE: valuta ogni mossa legale guardando un turno nel futuro
-    ///     e scegliendo la mossa che porta alla posizione con il punteggio più alto.
-    ///     Spezza i pareggi in modo casuale per evitare un comportamento deterministico.
-    /// </summary>
-    public static byte FindBestMove(byte legalMoves, ref WarArena arena)
-    {
-        if (legalMoves == 0) return Moves.Up;
-        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
-
-        // --- INIZIO MODIFICA: Raccolta e Shuffle delle mosse ---
-        Span<byte> moves = stackalloc byte[4];
-        var count = 0;
-
-        // Raccogli le mosse legali in uno Span
-        var tempMoves = legalMoves;
-        while (tempMoves > 0)
-        {
-            var moveIndex = BitOperations.TrailingZeroCount(tempMoves);
-            var currentMove = (byte)(1 << moveIndex);
-            moves[count++] = currentMove;
-            tempMoves &= (byte)~currentMove;
-        }
-
-        // Mescola lo Span per rompere l'ordine deterministico
-        Shuffle(moves[..count]);
-        // --- FINE MODIFICA ---
-
-        var bestMove = Moves.None;
-        var bestScore = double.NegativeInfinity;
-
-        // Ora itera sullo Span mescolato invece di usare il ciclo bitwise
-        for (var i = 0; i < count; i++)
-        {
-            var currentMove = moves[i];
-
-            var lookaheadArena = arena;
-            lookaheadArena.ApplySingleMove(currentMove);
-
-            // Per il debug, calcoliamo le euristiche una per una
-            var me = lookaheadArena.Snakes.Me;
-            var head = me.Head;
-            var grid = lookaheadArena.Grid;
-
-            var mobilityScore = MobilityWeight * BitOperations.PopCount(grid.GetLegalMoves(head));
-            var foodScore = FoodWeight * CalculateFoodIncentive(ref arena);
-            // ... (calcola gli altri punteggi individualmente come qui sotto)
-            var spaceScore = SpaceWeight * EstimateSafeSpaceBitset(head, ref lookaheadArena, SafeSpaceNodeBudget);
-
-            var totalScore = mobilityScore + foodScore + spaceScore; // Aggiungi qui tutte le altre componenti
-
-            if (totalScore > bestScore)
-            {
-                bestScore = totalScore;
-                bestMove = currentMove;
-            }
-        }
-
-        return bestMove != Moves.None ? bestMove : (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
-    }
 
     /// <summary>
     ///     SCEGLIE LA MOSSA PER IL ROLLOUT: Una policy veloce e cauta
@@ -100,12 +39,11 @@ public static class Heuristics
             var nextPos = grid.GetNeighbor(head, currentMove);
             double currentMoveScore = 0;
 
-            // Priorità 1: Spazio futuro. Diamo un punteggio altissimo.
             var futureMoves = grid.GetLegalMoves(nextPos);
             currentMoveScore += 100 * BitOperations.PopCount(futureMoves);
 
-            // Priorità 2: Cibo, ma solo come bonus minore
-            if (grid.Food.IsSet(nextPos)) currentMoveScore += 20;
+            if (grid.Food.IsSet(nextPos))
+                currentMoveScore += 20;
 
             if (currentMoveScore > bestScore)
             {
@@ -117,18 +55,6 @@ public static class Heuristics
         }
 
         return bestMove;
-    }
-
-    /// <summary>
-    ///     Mescola gli elementi di uno Span in modo casuale (algoritmo di Fisher-Yates).
-    /// </summary>
-    private static void Shuffle(Span<byte> span)
-    {
-        for (var i = span.Length - 1; i > 0; i--)
-        {
-            var j = Random.Shared.Next(i + 1);
-            (span[i], span[j]) = (span[j], span[i]);
-        }
     }
 
     /// <summary>
@@ -154,17 +80,15 @@ public static class Heuristics
         // 3) Penalità bordo e Bonus centro
         var x = head % width;
         var y = head / width;
-        if (x == 0 || y == 0 || x == width - 1 || y == grid.Geography.Height - 1)
-        {
-            score += BorderPenalty;
-        }
-        else
-        {
-            var cx = width / 2;
-            var cy = grid.Geography.Height / 2;
-            var dCenter = Math.Abs(x - cx) + Math.Abs(y - cy);
-            score += CenterBonus / (1 + dCenter);
-        }
+
+        // <--- CORREZIONE: Applicati in modo indipendente ---
+        if (x == 0 || y == 0 || x == width - 1 || y == grid.Geography.Height - 1) score += BorderPenalty;
+
+        var cx = width / 2;
+        var cy = grid.Geography.Height / 2;
+        var dCenter = Math.Abs(x - cx) + Math.Abs(y - cy);
+        score += CenterBonus / (1 + dCenter);
+        // <--- FINE CORREZIONE ---
 
         // 4) Area sicura (stima flood-fill)
         score += SpaceWeight * EstimateSafeSpaceBitset(head, ref arena, SafeSpaceNodeBudget);
@@ -191,7 +115,6 @@ public static class Heuristics
     {
         var headX = head % w;
         var headY = head / w;
-
         var minDistance = int.MaxValue;
 
         for (var i = 0; i < foodData.Length; i++)
@@ -203,12 +126,10 @@ public static class Heuristics
             {
                 var bitIndex = BitOperations.TrailingZeroCount(chunk);
                 var pos1D = (ushort)((i << 6) + bitIndex);
-
                 var foodX = pos1D % w;
                 var foodY = pos1D / w;
                 var d = Math.Abs(headX - foodX) + Math.Abs(headY - foodY);
                 if (d < minDistance) minDistance = d;
-
                 chunk &= ~(1UL << bitIndex);
             }
         }
@@ -216,12 +137,9 @@ public static class Heuristics
         return minDistance;
     }
 
-    // ===================================================
-    // VERSIONE CORRETTA DI EstimateSafeSpaceBitset
-    // ===================================================
     private static int EstimateSafeSpaceBitset(ushort start, ref WarArena arena, int nodeBudget)
     {
-        // Allocazione e gestione memoria (invariata e corretta)
+        // Questa funzione era già corretta e performante. Nessuna modifica.
         var cells = arena.Grid.Geography.Area;
         if (cells <= 0) return 0;
         var words = (cells + 63) >> 6;
@@ -235,7 +153,6 @@ public static class Heuristics
 
         int qHead = 0, qTail = 0, count = 0, visitedCount = 0;
 
-        // Helper per marcare i nodi visitati (invariato)
         static bool TryMarkVisited(Span<ulong> bits, int idx)
         {
             var word = idx >> 6;
@@ -245,37 +162,27 @@ public static class Heuristics
             return true;
         }
 
-        // Inizializza la coda
         if (TryMarkVisited(visitedBits, start))
         {
             queue[qTail++] = start;
             visitedCount = 1;
         }
 
-        // BFS
         while (qHead != qTail && count < nodeBudget)
         {
             var pos = queue[qHead];
             qHead = (qHead + 1) % qCap;
             count++;
-
             var moves = arena.Grid.GetLegalMoves(pos);
-
-            // ### INIZIO DELLA CORREZIONE ###
             while (moves != 0)
             {
                 var moveIndex = BitOperations.TrailingZeroCount(moves);
                 var currentMove = (byte)(1 << moveIndex);
-
-                // Usa il metodo sicuro per ottenere il vicino, invece dell'aritmetica
                 var next = arena.Grid.GetNeighbor(pos, currentMove);
-
-                // Il tuo GetNeighbor ritorna ushort.MaxValue per i muri, quindi questo controllo
-                // è implicito, ma per sicurezza lo aggiungiamo. IsOccupied già lo fa.
                 if (next != ushort.MaxValue && TryMarkVisited(visitedBits, next))
                 {
                     visitedCount++;
-                    if ((qTail + 1) % qCap != qHead) // Controlla se la coda è piena
+                    if ((qTail + 1) % qCap != qHead)
                     {
                         queue[qTail] = next;
                         qTail = (qTail + 1) % qCap;
@@ -284,7 +191,6 @@ public static class Heuristics
 
                 moves &= (byte)~currentMove;
             }
-            // ### FINE DELLA CORREZIONE ###
         }
 
         if (rentedVisited is not null) ArrayPool<ulong>.Shared.Return(rentedVisited);
