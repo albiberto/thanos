@@ -82,6 +82,52 @@ public static class Heuristics
 
         return bestMove != Moves.None ? bestMove : (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
     }
+    
+    /// <summary>
+    /// SCEGLIE LA MOSSA PER IL ROLLOUT: Una policy veloce e cauta 
+    /// per guidare le simulazioni, preferendo lo spazio futuro.
+    /// </summary>
+    public static byte SelectRolloutMove(byte legalMoves, ref WarArena arena)
+    {
+        if (legalMoves == 0) return Moves.Up;
+        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
+
+        byte bestMove = Moves.None;
+        double bestScore = double.NegativeInfinity;
+        
+        var head = arena.Snakes.Me.Head;
+        var grid = arena.Grid;
+
+        byte movesToEvaluate = legalMoves;
+        while (movesToEvaluate > 0)
+        {
+            int moveIndex = BitOperations.TrailingZeroCount(movesToEvaluate);
+            byte currentMove = (byte)(1 << moveIndex);
+
+            ushort nextPos = grid.GetNeighbor(head, currentMove);
+            double currentMoveScore = 0;
+
+            // Priorità 1: Spazio futuro. Diamo un punteggio altissimo.
+            var futureMoves = grid.GetLegalMoves(nextPos);
+            currentMoveScore += 100 * BitOperations.PopCount(futureMoves);
+
+            // Priorità 2: Cibo, ma solo come bonus minore
+            if (grid.Food.IsSet(nextPos))
+            {
+                currentMoveScore += 20; 
+            }
+
+            if (currentMoveScore > bestScore)
+            {
+                bestScore = currentMoveScore;
+                bestMove = currentMove;
+            }
+
+            movesToEvaluate &= (byte)~currentMove;
+        }
+
+        return bestMove;
+    }
 
     /// <summary>
     ///     Mescola gli elementi di uno Span in modo casuale (algoritmo di Fisher-Yates).

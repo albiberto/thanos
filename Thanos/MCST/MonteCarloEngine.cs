@@ -13,103 +13,109 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     private NodeMemoryPool _nodePool = nodePool;
 
     public byte FindBestMove(in Request request, int iterations = 10000)
+{
+    Console.WriteLine(">>> Inizio FindBestMove con iterazioni max: {0}", iterations);
+
+    // 2. Inizializza lo stato di gioco iniziale (rootSlot)
+    var rootSlot = _warPool.GetNext(out _);
+    rootSlot.InitializeFromRequest(in request);
+    Console.WriteLine("RootSlot inizializzato da request. Head: {0}", rootSlot.GetArena.Snakes.Me.Head);
+
+    // 3. Inizializza il nodo radice dell'albero
+    var rootIndex = _nodePool.GetNextIndex();
+    ref var rootNode = ref _nodePool[rootIndex];
+    rootNode.Initialize(-1, Moves.None);
+    Console.WriteLine("Nodo radice creato. Index: {0}", rootIndex);
+
+    var counter = 1;
+
+    // --- CICLO DI RICERCA MCTS ---
+    var stopwatch = Stopwatch.StartNew();
+    while (stopwatch.ElapsedMilliseconds < 450)
     {
-        // 2. Inizializza lo stato di gioco iniziale (rootSlot)
-        var rootSlot = _warPool.GetNext(out _);
-        rootSlot.InitializeFromRequest(in request);
+        var workingSlot = _warPool.GetNext(out var full);
+        if (full)
+            Console.WriteLine("[WARN] WarMemoryPool pieno durante MCTS! Iterazione: {0}", counter);
 
-        // 3. Inizializza il nodo radice dell'albero
-        var rootIndex = _nodePool.GetNextIndex();
-        ref var rootNode = ref _nodePool[rootIndex];
-        rootNode.Initialize(-1, Moves.None);
+        counter++;
 
-        var counter = 1;
+        workingSlot.CloneFrom(in rootSlot);
 
-        // --- CICLO DI RICERCA MCTS ---
-        var stopwatch = Stopwatch.StartNew();
-        while (stopwatch.ElapsedMilliseconds < 450)
-            // while (counter < 1000)
+        // Ottieni l'arena per questa iterazione
+        var workingArena = workingSlot.GetArena;
+
+        // --- FASE 1: SELEZIONE ---
+        var selectedNodeIndex = Select(rootIndex, ref workingArena);
+        ref var selectedNode = ref _nodePool[selectedNodeIndex];
+        Console.WriteLine("[Iter {0}] Nodo selezionato: {1} (Move: {2})", counter, selectedNodeIndex, selectedNode.MoveThatLedToThisNode);
+
+        // --- FASE 2: ESPANSIONE ---
+        if (!selectedNode.IsTerminal && selectedNode.IsLeafNode)
         {
-            // Per ogni iterazione, partiamo sempre dallo stato originale della radice
-            var workingSlot = _warPool.GetNext(out var full);
+            float eval = workingArena.Evaluate();
+            Console.WriteLine("[Iter {0}] Espansione: eval={1:F3}", counter, eval);
 
-            if (full) Console.WriteLine("WarMemoryPool pieno durante MCTS! {0}", counter);
-
-            counter++;
-
-            workingSlot.CloneFrom(in rootSlot);
-
-            // Ottieni l'arena per questa iterazione. È una 'ref struct', quindi vive sullo stack.
-            var workingArena = workingSlot.GetArena;
-
-            // --- FASE 1: SELEZIONE ---
-            // Passiamo 'workingArena' con 'ref' in modo che 'Select' possa modificarla
-            // e le modifiche siano visibili alle fasi successive.
-            var selectedNodeIndex = Select(rootIndex, ref workingArena);
-            ref var selectedNode = ref _nodePool[selectedNodeIndex];
-
-            // --- FASE 2: ESPANSIONE ---
-            if (!selectedNode.IsTerminal && selectedNode.IsLeafNode)
+            if (eval == 0.0f)
             {
-                // Valutiamo l'arena *dopo* che è stata modificata dalla fase di Selezione
-                if (workingArena.Evaluate() == 0.0f)
-                    Expand(selectedNodeIndex, ref selectedNode, ref workingArena);
-                else
-                    selectedNode.IsTerminal = true;
+                Expand(selectedNodeIndex, ref selectedNode, ref workingArena);
+                Console.WriteLine("[Iter {0}] Nodo espanso. Figlio: {1}", counter, selectedNode.FirstChildIndex);
             }
-
-            // --- FASE 3: SIMULAZIONE (ROLLOUT) ---
-            // La simulazione parte dallo stato raggiunto DOPO selezione ed eventuale espansione
-            var simulationResult = Simulate(ref workingArena);
-
-            // --- FASE 4: BACKPROPAGATION ---
-            Backpropagate(selectedNodeIndex, simulationResult);
-        }
-
-        Console.WriteLine("MCTS completato in {0} ms con {1} iterazioni", stopwatch.ElapsedMilliseconds, counter);
-
-        // --- SCELTA DELLA MOSSA MIGLIORE ---
-        // Questa parte era già corretta: scegli il figlio più visitato.
-        var bestChildIndex = -1;
-        double bestWinRate = double.NegativeInfinity;
-
-        ref var finalRootNode = ref _nodePool[rootIndex];
-
-// Se non ci sono figli, restituisci una mossa di default (improbabile ma sicuro)
-        if (finalRootNode.IsLeafNode)
-        {
-            // Cerca la prima mossa legale e restituiscila
-            var legalMoves = rootSlot.GetArena.Grid.GetLegalMoves(rootSlot.GetArena.Snakes.Me.Head);
-            return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
-        }
-
-
-        foreach (var childIndex in finalRootNode.GetChildren(_nodePool))
-        {
-            ref var childNode = ref _nodePool[childIndex];
-    
-            // Non considerare mai figli non visitati
-            if (childNode.Visits == 0) continue;
-
-            // Calcola il "win rate" (punteggio medio per visita)
-            double winRate = childNode.Wins / childNode.Visits;
-    
-            // Debug: Stampa le statistiche di ogni opzione finale
-            string moveName = childNode.MoveThatLedToThisNode switch { 1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?" };
-            Console.WriteLine(
-                $"OPZIONE FINALE: {moveName,-5} | Win Rate: {winRate:F3} " +
-                $"(Value: {childNode.Wins}, Visits: {childNode.Visits})"
-            );
-
-            if (winRate > bestWinRate)
+            else
             {
-                bestWinRate = winRate;
-                bestChildIndex = childIndex;
+                selectedNode.IsTerminal = true;
+                Console.WriteLine("[Iter {0}] Nodo marcato come terminale (eval != 0)", counter);
             }
         }
 
-        return bestChildIndex != -1 ? _nodePool[bestChildIndex].MoveThatLedToThisNode : Moves.None;
+        // --- FASE 3: SIMULAZIONE ---
+        var simulationResult = Simulate(ref workingArena);
+        Console.WriteLine("[Iter {0}] Risultato simulazione: {1:F3}", counter, simulationResult);
+
+        // --- FASE 4: BACKPROPAGATION ---
+        Backpropagate(selectedNodeIndex, simulationResult);
     }
+
+    Console.WriteLine(">>> MCTS completato in {0} ms con {1} iterazioni", stopwatch.ElapsedMilliseconds, counter);
+
+    // --- SCELTA DELLA MOSSA MIGLIORE ---
+    var bestChildIndex = -1;
+    double bestWinRate = double.NegativeInfinity;
+
+    ref var finalRootNode = ref _nodePool[rootIndex];
+
+    if (finalRootNode.IsLeafNode)
+    {
+        var legalMoves = rootSlot.GetArena.Grid.GetLegalMoves(rootSlot.GetArena.Snakes.Me.Head);
+        Console.WriteLine("[WARN] Nessun figlio espanso. Ritorno mossa legale di fallback.");
+        return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
+    }
+
+    Console.WriteLine(">>> Analisi finale dei figli:");
+    foreach (var childIndex in finalRootNode.GetChildren(_nodePool))
+    {
+        ref var childNode = ref _nodePool[childIndex];
+        if (childNode.Visits == 0) continue;
+
+        double winRate = childNode.Wins / childNode.Visits;
+        string moveName = childNode.MoveThatLedToThisNode switch
+        {
+            1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?"
+        };
+
+        Console.WriteLine($"  - {moveName,-5} | WinRate: {winRate:F3} | Visits: {childNode.Visits}, Value: {childNode.Wins}");
+
+        if (winRate > bestWinRate)
+        {
+            bestWinRate = winRate;
+            bestChildIndex = childIndex;
+        }
+    }
+
+    var bestMove = bestChildIndex != -1 ? _nodePool[bestChildIndex].MoveThatLedToThisNode : Moves.None;
+    Console.WriteLine(">>> MOSSA SCELTA: {0} (WinRate: {1:F3})", bestMove, bestWinRate);
+
+    return bestMove;
+}
 
     /// <summary>
     ///     FASE 1: Scende l'albero partendo da un indice, scegliendo i figli più promettenti (UCT)
@@ -198,29 +204,26 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 // File: MonteCarloEngine.cs
     private double Simulate(ref WarArena arena)
     {
-        const int turnLimit = 200; // Ridotto il limite per simulazioni più veloci
+        const int turnLimit = 100; // Per i rollout, 100 turni sono già tanti
 
         for (var i = 0; i < turnLimit; i++)
         {
-            // 1. Controlla se la partita è terminata (vittoria/sconfitta)
-            var evaluation = arena.Evaluate(); // Usa la Evaluate di WarArena per stati terminali
-            if (evaluation != 0.0f) return evaluation;
-
-            // 2. Ottieni le mosse legali
+            // Controlla se il nostro serpente è morto o se è rimasto solo lui (vittoria)
+            if (arena.Snakes.Me.Dead) return double.NegativeInfinity;
+            // if (arena.Snakes.LiveSnakesCount <= 1) return double.PositiveInfinity;
+        
             var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
 
-            if (legalMovesMask == 0) return -1.0f; // Se non ci sono mosse, è una sconfitta in simulazione
+            if (legalMovesMask == 0) return double.NegativeInfinity;
 
-            // 3. Usa la nostra nuova euristica per scegliere la mossa migliore
-            //    invece di una mossa casuale.
-            var move = Heuristics.FindBestMove(legalMovesMask, ref arena);
-
-            // 4. Applica la mossa per far avanzare lo stato
+            // Usa la policy di rollout, non l'euristica complessa!
+            var move = Heuristics.SelectRolloutMove(legalMovesMask, ref arena);
+        
             arena.ApplySingleMove(move);
         }
 
-        // Se si raggiunge il limite, consideralo un pareggio o valuta lo stato finale
-        // con la nostra euristica per un risultato più sfumato.
+        // Se la simulazione finisce per limite di turni, usa l'euristica "pesante"
+        // per giudicare la posizione finale.
         return Heuristics.Evaluate(ref arena);
     }
 
@@ -250,5 +253,51 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 
             currentIndex = currentNode.ParentIndex;
         }
+    }
+
+    /// <summary>
+    /// Stampa le statistiche dei figli della radice per capire il "pensiero" dell'albero MCTS.
+    /// </summary>
+    public void PrintTreeStats(in Request request, int iterations = 10000)
+    {
+        // Inizializza lo stato di gioco iniziale (rootSlot)
+        var rootSlot = _warPool.GetNext(out _);
+        rootSlot.InitializeFromRequest(in request);
+        var rootIndex = _nodePool.GetNextIndex();
+        ref var rootNode = ref _nodePool[rootIndex];
+        rootNode.Initialize(-1, Moves.None);
+        // Esegui MCTS
+        var counter = 1;
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.ElapsedMilliseconds < 450)
+        {
+            var workingSlot = _warPool.GetNext(out var full);
+            counter++;
+            workingSlot.CloneFrom(in rootSlot);
+            var workingArena = workingSlot.GetArena;
+            var selectedNodeIndex = Select(rootIndex, ref workingArena);
+            ref var selectedNode = ref _nodePool[selectedNodeIndex];
+            if (!selectedNode.IsTerminal && selectedNode.IsLeafNode)
+            {
+                if (workingArena.Evaluate() == 0.0f)
+                    Expand(selectedNodeIndex, ref selectedNode, ref workingArena);
+                else
+                    selectedNode.IsTerminal = true;
+            }
+            var simulationResult = Simulate(ref workingArena);
+            Backpropagate(selectedNodeIndex, simulationResult);
+        }
+        // Stampa le statistiche dei figli della radice
+        ref var finalRootNode = ref _nodePool[rootIndex];
+        Console.WriteLine("--- STATISTICHE ALBERO MCTS ---");
+        foreach (var childIndex in finalRootNode.GetChildren(_nodePool))
+        {
+            ref var childNode = ref _nodePool[childIndex];
+            if (childNode.Visits == 0) continue;
+            double winRate = childNode.Wins / childNode.Visits;
+            string moveName = childNode.MoveThatLedToThisNode switch { 1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?" };
+            Console.WriteLine($"Mossa: {moveName,-5} | Win Rate: {winRate:F3} | Value: {childNode.Wins} | Visits: {childNode.Visits}");
+        }
+        Console.WriteLine("------------------------------");
     }
 }
