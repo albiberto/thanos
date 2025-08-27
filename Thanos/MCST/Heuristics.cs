@@ -47,11 +47,11 @@ public static class Heuristics
         var bestScore = double.NegativeInfinity;
 
         // Ora itera sullo Span mescolato invece di usare il ciclo bitwise
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
-            byte currentMove = moves[i];
-        
-            WarArena lookaheadArena = arena;
+            var currentMove = moves[i];
+
+            var lookaheadArena = arena;
             lookaheadArena.ApplySingleMove(currentMove);
 
             // Per il debug, calcoliamo le euristiche una per una
@@ -59,19 +59,12 @@ public static class Heuristics
             var head = me.Head;
             var grid = lookaheadArena.Grid;
 
-            double mobilityScore = MobilityWeight * BitOperations.PopCount(grid.GetLegalMoves(head));
-            double foodScore = FoodWeight * CalculateFoodIncentive(ref arena);
+            var mobilityScore = MobilityWeight * BitOperations.PopCount(grid.GetLegalMoves(head));
+            var foodScore = FoodWeight * CalculateFoodIncentive(ref arena);
             // ... (calcola gli altri punteggi individualmente come qui sotto)
-            double spaceScore = SpaceWeight * EstimateSafeSpaceBitset(head, ref lookaheadArena, SafeSpaceNodeBudget);
-        
-            double totalScore = mobilityScore + foodScore + spaceScore; // Aggiungi qui tutte le altre componenti
+            var spaceScore = SpaceWeight * EstimateSafeSpaceBitset(head, ref lookaheadArena, SafeSpaceNodeBudget);
 
-            // STAMPA DI DEBUG
-            string moveName = currentMove switch { 1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?" };
-            Console.WriteLine(
-                $"Mossa: {moveName,-5} | Punteggio Totale: {totalScore:F2} " +
-                $"[Mobility: {mobilityScore:F2}, Food: {foodScore:F2}, Space: {spaceScore:F2}]"
-            );
+            var totalScore = mobilityScore + foodScore + spaceScore; // Aggiungi qui tutte le altre componenti
 
             if (totalScore > bestScore)
             {
@@ -82,29 +75,29 @@ public static class Heuristics
 
         return bestMove != Moves.None ? bestMove : (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
     }
-    
+
     /// <summary>
-    /// SCEGLIE LA MOSSA PER IL ROLLOUT: Una policy veloce e cauta 
-    /// per guidare le simulazioni, preferendo lo spazio futuro.
+    ///     SCEGLIE LA MOSSA PER IL ROLLOUT: Una policy veloce e cauta
+    ///     per guidare le simulazioni, preferendo lo spazio futuro.
     /// </summary>
     public static byte SelectRolloutMove(byte legalMoves, ref WarArena arena)
     {
         if (legalMoves == 0) return Moves.Up;
         if (BitOperations.IsPow2(legalMoves)) return legalMoves;
 
-        byte bestMove = Moves.None;
-        double bestScore = double.NegativeInfinity;
-        
+        var bestMove = Moves.None;
+        var bestScore = double.NegativeInfinity;
+
         var head = arena.Snakes.Me.Head;
         var grid = arena.Grid;
 
-        byte movesToEvaluate = legalMoves;
+        var movesToEvaluate = legalMoves;
         while (movesToEvaluate > 0)
         {
-            int moveIndex = BitOperations.TrailingZeroCount(movesToEvaluate);
-            byte currentMove = (byte)(1 << moveIndex);
+            var moveIndex = BitOperations.TrailingZeroCount(movesToEvaluate);
+            var currentMove = (byte)(1 << moveIndex);
 
-            ushort nextPos = grid.GetNeighbor(head, currentMove);
+            var nextPos = grid.GetNeighbor(head, currentMove);
             double currentMoveScore = 0;
 
             // Priorità 1: Spazio futuro. Diamo un punteggio altissimo.
@@ -112,10 +105,7 @@ public static class Heuristics
             currentMoveScore += 100 * BitOperations.PopCount(futureMoves);
 
             // Priorità 2: Cibo, ma solo come bonus minore
-            if (grid.Food.IsSet(nextPos))
-            {
-                currentMoveScore += 20; 
-            }
+            if (grid.Food.IsSet(nextPos)) currentMoveScore += 20;
 
             if (currentMoveScore > bestScore)
             {
