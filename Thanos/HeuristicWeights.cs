@@ -21,6 +21,8 @@ public static class HeuristicWeights
     
     public const int SafeSpaceNodeBudget = 512;
 
+    public const int TrapPenaltyValue = -400;
+
     // MobilityBonusValue non serve più perché abbiamo rimosso la mobilità statica dalla LUT.
     // public const double MobilityBonusValue = 1.0; 
 }

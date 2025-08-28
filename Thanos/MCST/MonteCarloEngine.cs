@@ -33,7 +33,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         ref var finalRootNode = ref _nodePool[rootIndex];
         LogDebug(stopwatch, counter, finalRootNode);
         
-        var bestChildIndex = finalRootNode.SelectBestChild(_nodePool);
+        var bestChildIndex = finalRootNode.SelectBestChild(_nodePool, 0);
         
         if (bestChildIndex != -1) return _nodePool[bestChildIndex].MoveThatLedToThisNode;
 

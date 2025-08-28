@@ -4,38 +4,42 @@ using Thanos.War;
 
 namespace Thanos.MCST;
 
-public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPool warPool, NodeMemoryPool nodePool)
+public ref struct Worker
 {
-    // --- CAMPI ---
-    // <--- CORREZIONE: Campo per l'indice del nodo radice
+    // --- CAMPI CORRETTI ---
+    // Questi campi sono readonly perché vengono impostati una sola volta alla creazione.
+    private readonly int _rootNodeIndex;
+    private readonly MemorySlot _rootSlot;
+    private readonly WarMemoryPool _warPool;
+    private readonly NodeMemoryPool _nodePool;
 
-    private readonly MemorySlot _rootSlot = rootSlot; // Viene creata una copia dello slot radice
-        // <--- CORREZIONE: Campo per lo stato di gioco alla radice
-
-    
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
-    // Stato dell'iterazione corrente
-    private MemorySlot _workingSlot; // Il nostro slot di memoria per la simulazione
-    private NodeMemoryPool _nodePool = nodePool;
+    // Stato dell'iterazione (l'unico campo non readonly)
+    private MemorySlot _workingSlot;
 
-    // --- Costruttore ---
-    // Imposta tutti i campi readonly
-
+    // --- COSTRUTTORE CORRETTO ---
+    // Riceve tutti i parametri e li assegna ai rispettivi campi.
+    public Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPool warPool, NodeMemoryPool nodePool)
+    {
+        _rootNodeIndex = rootNodeIndex;
+        _rootSlot = rootSlot;
+        _warPool = warPool;
+        _nodePool = nodePool;
+    }
 
     // --- METODO PRINCIPALE ---
     public void RunIteration()
     {
-        // 1. Setup: Clona lo stato radice
-        _workingSlot = warPool.GetNext();
+        // 1. Setup: Ora ha accesso a _warPool e _rootSlot
+        _workingSlot = _warPool.GetNext();
         _workingSlot.CloneFrom(in _rootSlot); 
         
-        // <--- CORREZIONE: Creiamo entrambe le viste, una per scrivere e una per leggere
-        var workingArena = _workingSlot.General; // La nostra API di SCRITTURA (per modificare lo stato)
-        var scout = _workingSlot.Scout;         // La nostra API di LETTURA (per valutare lo stato)
+        var workingArena = _workingSlot.General;
+        var scout = _workingSlot.Scout;
 
-        // 2. Selezione (modifica lo stato di workingArena)
-        var leafNodeIndex = Select(rootNodeIndex, ref workingArena);
+        // 2. Selezione: Ora ha accesso a _rootNodeIndex
+        var leafNodeIndex = Select(_rootNodeIndex, ref workingArena);
         ref var leafNode = ref _nodePool[leafNodeIndex];
 
         // 3. Espansione e Simulazione
@@ -43,25 +47,17 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
         if (workingArena.Snakes.Me.Dead)
         {
             leafNode.IsTerminal = true;
-            // <--- CORREZIONE: Usiamo lo Scout per la valutazione
             simulationResult = scout.Evaluate();
         }
         else if (leafNode.IsLeafNode)
         {
-            // Espandiamo l'albero (non modifica workingArena, solo i nodi)
             Expand(leafNodeIndex, ref leafNode, ref workingArena);
-            
-            // Eseguiamo la simulazione (rollout), che modifica pesantemente workingArena
             Simulate(ref workingArena, in scout);
-            
-            // Valutiamo lo stato FINALE dopo la simulazione
-            // <--- CORREZIONE: Creiamo un nuovo scout per lo stato finale di workingArena
             simulationResult = _workingSlot.Scout.Evaluate();
         }
-        else // Il nodo non è una foglia, quindi simuliamo direttamente
+        else
         {
             Simulate(ref workingArena, in scout);
-            // <--- CORREZIONE: Creiamo un nuovo scout per lo stato finale
             simulationResult = _workingSlot.Scout.Evaluate();
         }
 
@@ -69,7 +65,7 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
         Backpropagate(leafNodeIndex, simulationResult);
     }
 
-    // --- FASI MCTS ---
+    // --- FASI MCTS (Queste erano già corrette) ---
     private int Select(int startNodeIndex, ref General arena)
     {
         var currentIndex = startNodeIndex;
@@ -83,12 +79,10 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
 
             currentIndex = nextNodeIndex;
             ref var childNode = ref _nodePool[currentIndex];
-            // L'arena viene MODIFICATA, quindi serve la vista General
             arena.ApplySingleMove(childNode.MoveThatLedToThisNode);
         }
     }
 
-    // Questo metodo legge lo stato per decidere come creare i figli, quindi General va bene
     private void Expand(int nodeIndex, ref Node node, ref General arena)
     {
         if (node.IsTerminal) return;
@@ -119,12 +113,10 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
                 ref var lastChildNode = ref _nodePool[lastChildIndex];
                 lastChildNode.NextSiblingIndex = newChildIndex;
             }
-
             lastChildIndex = newChildIndex;
         }
     }
 
-    // <--- CORREZIONE: La firma del metodo ora accetta sia la vista di scrittura che quella di lettura
     private void Simulate(ref General arena, in Scout scout)
     {
         const int turnLimit = 100;
@@ -136,24 +128,28 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
             var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
             if (legalMovesMask == 0) return;
             
-            // <--- CORREZIONE: Usiamo lo Scout per SCEGLIERE la mossa (lettura)
             var move = scout.SelectRolloutMove(legalMovesMask);
             
-            // <--- CORREZIONE: Usiamo l'Arena per APPLICARE la mossa (scrittura)
             arena.ApplySingleMove(move);
         }
-        // <--- CORREZIONE: La valutazione finale viene fatta fuori da questo metodo
     }
 
     private void Backpropagate(int startNodeIndex, double rawScore)
     {
-        // Math.Sign normalizza il risultato a +1 (vittoria), -1 (sconfitta), 0 (pareggio)
-        var normalizedResult = (double)Math.Sign(rawScore);
+        // Un punteggio di 0 rimane 0.
+        // Un punteggio molto alto (es. +200) si avvicina a +1.
+        // Un punteggio molto basso (es. -200) si avvicina a -1.
+        // Un punteggio basso (es. +10) diventa un valore intermedio (es. +0.2).
+        // Questo "scalingFactor" controlla la sensibilità della curva. 
+        // Un valore più basso rende la curva più ripida. Iniziamo con 100.
+        const double scalingFactor = 100.0;
+        var normalizedResult = Math.Tanh(rawScore / scalingFactor);
 
         var currentIndex = startNodeIndex;
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
+            // Ora aggiorniamo le statistiche con un valore molto più informativo di un semplice +1 o -1
             currentNode.UpdateStats(normalizedResult);
             currentIndex = currentNode.ParentIndex;
         }

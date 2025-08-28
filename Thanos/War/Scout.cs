@@ -61,28 +61,42 @@ public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadO
     {
         var me = _snakes.Me;
 
+        // 1. Condizione Terminale: Se siamo morti, questo è lo scenario peggiore in assoluto.
         if (me.Dead) return double.NegativeInfinity;
 
         var head = me.Head;
         var health = me.Health;
-
         var food = _grid.Food.GetRawData;
-
-        // Ottieni il "pacchetto" di LUT per la dimensione della griglia corrente
         var headCoord = _conversionsMap[head];
-
         var score = 0.0;
 
-        // 1. PUNTEGGIO POSIZIONALE STATICO (dalla LUT)
-        // Questo singolo lookup sostituisce Mobilità, Bordo e Centro.
+        // --- 2. EURISTICA POSIZIONALE (Statica, dalla LUT) ---
+        // Fornisce una "spinta" strategica a lungo termine, favorendo il centro
+        // e penalizzando la vicinanza ai bordi.
         score += _positionalScores[head];
 
-        // 2. INCENTIVO CIBO (dinamico)
+        // --- 3. EURISTICA DEL CIBO (Dinamica) ---
+        // Calcola l'urgenza di mangiare in base alla salute e alla distanza dal cibo più vicino.
         score += HeuristicWeights.FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
 
-        // 3. AREA SICURA (dinamico)
-        // Questa è la valutazione più importante, perché tiene conto degli ostacoli ATTUALI.
-        score += HeuristicWeights.SpaceWeight * EstimateSafeSpaceBitset(head, _grid.Geography.Area, HeuristicWeights.SafeSpaceNodeBudget, in _grid);
+        // --- 4. EURISTICA DELLO SPAZIO/MOBILITÀ (Dinamica) ---
+        // La componente principale: calcola l'area sicura raggiungibile da ora (flood fill).
+        // Questo è il nostro indicatore di libertà di movimento a medio termine.
+        var safeSpace = EstimateSafeSpaceBitset(head, _grid.Geography.Area, HeuristicWeights.SafeSpaceNodeBudget, in _grid);
+        score += HeuristicWeights.SpaceWeight * safeSpace;
+
+        // --- 5. EURISTICA ANTI-TRAPPOLA (Dinamica, Visione a Breve Termine) ---
+        // Riconosce il pericolo imminente. Se dalla nostra posizione attuale abbiamo
+        // una sola via di fuga, siamo quasi in trappola e dobbiamo penalizzare pesantemente questo stato.
+        var immediateMoves = _grid.GetLegalMoves(head);
+    
+        // BitOperations.IsPow2 è un modo velocissimo per controllare se c'è un solo bit a '1'.
+        // Aggiungiamo un controllo sulla lunghezza per non penalizzare i primissimi turni di gioco.
+        if (BitOperations.IsPow2(immediateMoves) && me.Length > 3)
+        {
+            // Applica una penalità pesante e fissa per le situazioni disperate.
+            score += HeuristicWeights.TrapPenaltyValue;
+        }
 
         return score;
     }
