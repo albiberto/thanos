@@ -5,7 +5,7 @@ using Thanos.War.Snake.Memory;
 namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly ref struct WarArena(WarGrid grid, WarSnakesMemoryView snakes)
+public readonly ref struct General(WarGrid grid, WarSnakesMemoryView snakes)
 {
     public readonly WarGrid Grid = grid;
     public readonly WarSnakesMemoryView Snakes = snakes;

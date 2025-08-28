@@ -21,8 +21,8 @@ public sealed class BattleSnakeAgent : IDisposable
         var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
 
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
-        _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
+        _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), _lutProvider, maxNodes);
         _engine = new MonteCarloEngine(_warPool, _nodePool, _lutProvider);
     }
     

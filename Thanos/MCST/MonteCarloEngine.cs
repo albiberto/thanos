@@ -22,7 +22,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool, Lu
         ref var rootNode = ref _nodePool[rootIndex];
         rootNode.Initialize(-1, Moves.None);
 
-        var worker = new Worker(rootIndex, in rootSlot, _warPool, _nodePool, in _lutProvider);
+        var worker = new Worker(rootIndex, in rootSlot, _warPool, _nodePool);
 
         var counter = 0;
         var stopwatch = Stopwatch.StartNew();
@@ -39,7 +39,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool, Lu
         
         if (bestChildIndex != -1) return _nodePool[bestChildIndex].MoveThatLedToThisNode;
 
-        var legalMoves = rootSlot.GetArena.Grid.GetLegalMoves(rootSlot.GetArena.Snakes.Me.Head);
+        var legalMoves = rootSlot.General.Grid.GetLegalMoves(rootSlot.General.Snakes.Me.Head);
         return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
     }
 

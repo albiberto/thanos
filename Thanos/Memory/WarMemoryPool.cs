@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices; // Necessario per NativeMemory
 using System.Threading;
+using Thanos.PreWarm.Memory;
 
 namespace Thanos.Memory;
 
@@ -8,7 +9,8 @@ namespace Thanos.Memory;
 public sealed unsafe class WarMemoryPool : IDisposable
 {
     private GameContext _context;
-    
+    private readonly LutProvider _provider;
+
     // Sostituiamo Memory<byte> con un puntatore alla memoria non gestita
     private readonly byte* _basePointer;
     private readonly long _totalSize;
@@ -16,9 +18,10 @@ public sealed unsafe class WarMemoryPool : IDisposable
     private long _offset;
     private bool _disposed;
 
-    public WarMemoryPool(in GameContext context, long maxNodes) // <-- Usiamo long per maxNodes
+    public WarMemoryPool(in GameContext context, in LutProvider provider, long maxNodes) // <-- Usiamo long per maxNodes
     {
         _context = context;
+        _provider = provider;
         _totalSize = context.Layout.WarSlotSize * maxNodes;
 
         _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)_totalSize, 64);
@@ -38,7 +41,7 @@ public sealed unsafe class WarMemoryPool : IDisposable
         var slotPointer = _basePointer + startOffset;
         var slotSpan = new Span<byte>(slotPointer, slotSize);
 
-        return new MemorySlot(slotSpan, ref _context);
+        return new MemorySlot(slotSpan, ref _context, _provider);
     }
 
     public void Clear()

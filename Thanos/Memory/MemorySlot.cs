@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 using Thanos.MCST;
+using Thanos.PreWarm.Memory;
 using Thanos.War;
 using Thanos.War.Grid;
 using Thanos.War.Grid.Memory;
@@ -9,10 +10,12 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, LutProvider provider)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
+
     private readonly ref GameContext _context = ref context;
+    private readonly LutProvider _provider = provider;
     
     // =================================================================
     // Memory Helpers
@@ -27,10 +30,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
     // Views
     // =================================================================
     
-    /// <summary>
-    /// Creates and returns a high-performance view of the entire game state (the Arena).
-    /// </summary>
-    public WarArena GetArena
+    public General General
     {
         get
         {
@@ -42,7 +42,23 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
             var snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
 
             // 3. Assembla e restituisce la WarArena finale.
-            return new WarArena(grid, snakes);   
+            return new General(grid, snakes);   
+        }
+    }
+    
+    public Scout Scout
+    {
+        get
+        {
+            // 1. Ottiene la vista sulla griglia di gioco.
+            var gridView = new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid);
+            var grid = new WarGrid(gridView);
+    
+            // 2. Ottiene la vista sulla collezione di serpenti.
+            var snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
+
+            // 3. Assembla e restituisce la WarArena finale.
+            return new Scout(grid, snakes, _provider);   
         }
     }
     

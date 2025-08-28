@@ -53,11 +53,8 @@ public struct Node
         {
             ref var childNode = ref pool[childIndex];
 
-            if (childNode.Visits == 0)
-            {
-                // Un figlio mai visitato ha priorità assoluta per l'esplorazione.
-                return childIndex;
-            }
+            // Un figlio mai visitato ha priorità assoluta per l'esplorazione.
+            if (childNode.Visits == 0) return childIndex;
 
             var exploitation = childNode.Wins / childNode.Visits;
             var exploration = Math.Sqrt(logParentVisits / childNode.Visits);
