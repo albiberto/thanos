@@ -2,37 +2,33 @@
 
 public static class PositionalScoreCache
 {
-    // Spostiamo i pesi qui, così la logica è tutta in un posto
-    private const double BorderPenaltyValue = -200.0;
-    private const double CenterBonusValue = 5.0;
-    private const double MobilityBonusValue = 1.0; // Uguale al tuo vecchio MobilityWeight
-
     public static void Build(int width, Span<double> scores)
     {
         var area = width * width;
         var centerX = width / 2;
-        var centerY = width / 2; // Assumendo griglia quadrata
+        var centerY = width / 2;
 
         for (ushort pos = 0; pos < area; pos++)
         {
             var x = pos % width;
             var y = pos / width;
 
-            // 1. Punteggio Posizionale (Bordo + Centro)
+            // --- CORREZIONE: La LUT ora calcola solo il posizionamento Centro vs Bordo ---
+
+            // 1. Penalità per il bordo.
+            // Usiamo un gradiente: più sei vicino, peggio è.
             var distBorder = Math.Min(Math.Min(x, width - 1 - x), Math.Min(y, width - 1 - y));
-            var borderScore = distBorder == 0 ? BorderPenaltyValue : 0;
+            // Se distBorder è 0, sei sul bordo. Se è 1, sei a una casella dal bordo, ecc.
+            var borderScore = 0.0;
+            if (distBorder == 0) borderScore = HeuristicWeights.BorderPenaltyValue;
+            if (distBorder == 1) borderScore = HeuristicWeights.BorderPenaltyValue / 4; // Penalità ridotta se sei vicino
 
+            // 2. Bonus per il centro
             var distCenter = Math.Abs(x - centerX) + Math.Abs(y - centerY);
-            var centerScore = CenterBonusValue / (1 + distCenter);
+            var centerScore = HeuristicWeights.CenterBonusValue / (1 + distCenter);
 
-            // 2. Punteggio Mobilità di Base (quante uscite ha una casella vuota)
-            var exits = 4;
-            if (x == 0 || x == width - 1) exits--;
-            if (y == 0 || y == width - 1) exits--;
-            var mobilityScore = exits * MobilityBonusValue;
-
-            // 3. Salva il punteggio combinato pre-calcolato
-            scores[pos] = borderScore + centerScore + mobilityScore;
+            // 3. Il punteggio combinato ora è solo posizionale
+            scores[pos] = borderScore + centerScore;
         }
     }
 }

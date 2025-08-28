@@ -2,7 +2,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Common;
-using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 using Thanos.War.Grid;
 using Thanos.War.Snake.Memory;
@@ -15,13 +14,6 @@ public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadO
     private readonly WarSnakesMemoryView _snakes = snakes;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<double> _positionalScores = positionalScores;
-
-    // --- Pesi delle Euristiche Dinamiche ---
-    private const double SpaceWeight = 75.0; // Punteggio per lo spazio VERO, calcolato ora
-    private const double FoodWeight = 25.0; // Punteggio per il cibo
-
-    // I pesi posizionali sono stati spostati nel builder della cache
-    private const int SafeSpaceNodeBudget = 512;
 
     /// <summary>
     ///     SCEGLIE LA MOSSA PER IL ROLLOUT: Una policy veloce e cauta
@@ -68,7 +60,7 @@ public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadO
     public double Evaluate()
     {
         var me = _snakes.Me;
-        
+
         if (me.Dead) return double.NegativeInfinity;
 
         var head = me.Head;
@@ -86,11 +78,11 @@ public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadO
         score += _positionalScores[head];
 
         // 2. INCENTIVO CIBO (dinamico)
-        score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
+        score += HeuristicWeights.FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
 
         // 3. AREA SICURA (dinamico)
         // Questa è la valutazione più importante, perché tiene conto degli ostacoli ATTUALI.
-        score += SpaceWeight * EstimateSafeSpaceBitset(head, _grid.Geography.Area, SafeSpaceNodeBudget, in _grid);
+        score += HeuristicWeights.SpaceWeight * EstimateSafeSpaceBitset(head, _grid.Geography.Area, HeuristicWeights.SafeSpaceNodeBudget, in _grid);
 
         return score;
     }
