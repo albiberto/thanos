@@ -9,11 +9,12 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.War;
 
-public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, LutProvider provider)
+public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
 {
     private readonly WarGrid _grid = grid;
     private readonly WarSnakesMemoryView _snakes = snakes;
-    private readonly LutProvider _provider = provider;
+    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
+    private readonly ReadOnlySpan<double> _positionalScores = positionalScores;
 
     // --- Pesi delle Euristiche Dinamiche ---
     private const double SpaceWeight = 75.0; // Punteggio per lo spazio VERO, calcolato ora
@@ -76,17 +77,16 @@ public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, LutPr
         var food = _grid.Food.GetRawData;
 
         // Ottieni il "pacchetto" di LUT per la dimensione della griglia corrente
-        var slot = _provider.Get(_grid.Geography.Width);
-        var headCoord = slot.ConversionMap[head];
+        var headCoord = _conversionsMap[head];
 
         var score = 0.0;
 
         // 1. PUNTEGGIO POSIZIONALE STATICO (dalla LUT)
         // Questo singolo lookup sostituisce Mobilità, Bordo e Centro.
-        score += slot.PositionalScores[head];
+        score += _positionalScores[head];
 
         // 2. INCENTIVO CIBO (dinamico)
-        score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, slot.ConversionMap);
+        score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
 
         // 3. AREA SICURA (dinamico)
         // Questa è la valutazione più importante, perché tiene conto degli ostacoli ATTUALI.

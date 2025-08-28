@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices; // Necessario per NativeMemory
 using System.Threading;
 using Thanos.PreWarm.Memory;
+using Thanos.SourceGen;
 
 namespace Thanos.Memory;
 
@@ -9,63 +10,46 @@ namespace Thanos.Memory;
 public sealed unsafe class WarMemoryPool : IDisposable
 {
     private GameContext _context;
-    private readonly LutProvider _provider;
+    private Luts _luts;
 
     // Sostituiamo Memory<byte> con un puntatore alla memoria non gestita
     private readonly byte* _basePointer;
     private readonly long _totalSize;
     
     private long _offset;
-    private bool _disposed;
 
-    public WarMemoryPool(in GameContext context, in LutProvider provider, long maxNodes) // <-- Usiamo long per maxNodes
+    public WarMemoryPool(in GameContext context, long maxNodes) // <-- Usiamo long per maxNodes
     {
         _context = context;
-        _provider = provider;
         _totalSize = context.Layout.WarSlotSize * maxNodes;
 
         _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)_totalSize, 64);
         NativeMemory.Clear(_basePointer, (nuint)_totalSize);
         
         _offset = 0;
-        _disposed = false;
     }
     
     public MemorySlot GetNext()
     {
         var slotSize = _context.Layout.WarSlotSize;
         var newOffset = Interlocked.Add(ref _offset, slotSize);
-        
+
+        if (newOffset > _totalSize) throw new InvalidOperationException("WarMemoryPool overflow: superata la dimensione massima del pool.");
+
         var startOffset = newOffset - slotSize;
-        
         var slotPointer = _basePointer + startOffset;
         var slotSpan = new Span<byte>(slotPointer, slotSize);
 
-        return new MemorySlot(slotSpan, ref _context, _provider);
+        return new MemorySlot(slotSpan, ref _context, ref _luts);
     }
 
-    public void Clear()
-    {
-        _offset = 0;
-        // Opzionale: se vuoi azzerare fisicamente la memoria all'inizio di ogni turno
-        // NativeMemory.Clear(_basePointer, (nuint)_totalSize);
-    }
-    
-    public void Reset(in GameContext context) => _context = context;
+    public void Clear() => _offset = 0;
 
-    public void Dispose()
+    public void Reset(in GameContext context, in Luts luts)
     {
-        if (_disposed) return;
-        
-        // 3. RILASCIO: Liberiamo la memoria non gestita che avevamo allocato.
-        // Se questo non viene chiamato, la memoria rimarrà occupata fino alla chiusura del processo.
-        if (_basePointer != null)
-        {
-            NativeMemory.Free(_basePointer);
-        }
-        
-        _disposed = true;
-        // GC.SuppressFinalize(this) non è strettamente necessario per una classe sealed,
-        // ma è una buona pratica se si implementa il pattern IDisposable completo.
+        _context = context;
+        _luts = luts;
     }
+
+    public void Dispose() => NativeMemory.Free(_basePointer);
 }

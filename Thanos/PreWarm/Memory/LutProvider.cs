@@ -22,7 +22,7 @@ public sealed unsafe class LutProvider : IDisposable
     /// Restituisce una struct "contenitore" con tutte le LUT per la larghezza specificata.
     /// Questa operazione è a costo quasi zero (creazione di una struct sullo stack).
     /// </summary>
-    public LutSlot Get(int width)
+    public Luts Get(int width)
     {
         var positionalInfo = _layout.PositionalScoreLayout[width];
         var positionalSpan = new ReadOnlySpan<double>((byte*)_memoryBlock + positionalInfo.Offset, positionalInfo.Area);
@@ -30,7 +30,7 @@ public sealed unsafe class LutProvider : IDisposable
         var conversionInfo = _layout.ConversionMapLayout[width];
         var conversionSpan = new ReadOnlySpan<Coordinate>((byte*)_memoryBlock + conversionInfo.Offset, conversionInfo.Area);
 
-        return new LutSlot(positionalSpan, conversionSpan);
+        return new Luts(positionalSpan.ToArray(), conversionSpan.ToArray());
     }
     
     private void Burn(int maxWidth)

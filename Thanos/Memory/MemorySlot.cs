@@ -10,12 +10,12 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, LutProvider provider)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, ref Luts luts)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
 
     private readonly ref GameContext _context = ref context;
-    private readonly LutProvider _provider = provider;
+    private readonly ref Luts _luts = ref luts;
     
     // =================================================================
     // Memory Helpers
@@ -34,14 +34,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
     {
         get
         {
-            // 1. Ottiene la vista sulla griglia di gioco.
-            var gridView = new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid);
-            var grid = new WarGrid(gridView);
-    
-            // 2. Ottiene la vista sulla collezione di serpenti.
-            var snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
-
-            // 3. Assembla e restituisce la WarArena finale.
+            BuildEnvironment(out var grid, out var snakes);
             return new General(grid, snakes);   
         }
     }
@@ -50,18 +43,21 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
     {
         get
         {
-            // 1. Ottiene la vista sulla griglia di gioco.
-            var gridView = new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid);
-            var grid = new WarGrid(gridView);
-    
-            // 2. Ottiene la vista sulla collezione di serpenti.
-            var snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
-
-            // 3. Assembla e restituisce la WarArena finale.
-            return new Scout(grid, snakes, _provider);   
+            BuildEnvironment(out var grid, out var snakes);
+            return new Scout(grid, snakes, _luts.ConversionsMap, _luts.PositionalScores);
         }
     }
+
+    private void BuildEnvironment(out WarGrid grid, out WarSnakesMemoryView snakes)
+    {
+        // 1. Ottiene la vista sulla griglia di gioco.
+        var gridView = new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid);
+        grid = new WarGrid(gridView);
     
+        // 2. Ottiene la vista sulla collezione di serpenti.
+        snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
+    }
+
     // =================================================================
     // Initializers
     // =================================================================
