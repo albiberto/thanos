@@ -2,16 +2,14 @@
 using System.Numerics;
 using Thanos.Common;
 using Thanos.Memory;
-using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
-public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool, LutProvider lutProvider)
+public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
     private readonly WarMemoryPool _warPool = warPool;
     private readonly NodeMemoryPool _nodePool = nodePool;
-    private readonly LutProvider  _lutProvider = lutProvider;
 
     public byte FindBestMove(in Request request)
     {

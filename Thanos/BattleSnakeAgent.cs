@@ -23,7 +23,7 @@ public sealed class BattleSnakeAgent : IDisposable
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
         _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), _lutProvider, maxNodes);
-        _engine = new MonteCarloEngine(_warPool, _nodePool, _lutProvider);
+        _engine = new MonteCarloEngine(_warPool, _nodePool);
     }
     
     public void Start(in Request request)
