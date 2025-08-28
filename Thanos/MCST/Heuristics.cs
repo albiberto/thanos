@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Common;
+using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
 
@@ -9,12 +10,11 @@ namespace Thanos.MCST;
 
 public static class Heuristics
 {
-    // --- Pesi delle Euristiche (Versione Ribilanciata per "Solo") ---
-    private const double SpaceWeight = 75.0; // PRIORITÀ 1: Controllare più spazio possibile è la chiave per sopravvivere.
-    private const double BorderPenalty = -200.0; // PRIORITÀ 2: I muri sono morte certa. La penalità deve essere forte e decisa.
-    private const double FoodWeight = 25.0; // PRIORITÀ 3: Il cibo è importante, ma NON più dello spazio e dei muri.
-    private const double CenterBonus = 5.0; // TIE-BREAKER: Un piccolo incentivo a rimanere al centro.
-    private const double MobilityWeight = 1.0; // TIE-BREAKER: Un incentivo minimo a "muoversi" in spazi aperti.
+    // --- Pesi delle Euristiche Dinamiche ---
+    private const double SpaceWeight = 75.0; // Punteggio per lo spazio VERO, calcolato ora
+    private const double FoodWeight = 25.0; // Punteggio per il cibo
+
+    // I pesi posizionali sono stati spostati nel builder della cache
     private const int SafeSpaceNodeBudget = 512;
 
     /// <summary>
@@ -59,10 +59,7 @@ public static class Heuristics
         return bestMove;
     }
 
-    /// <summary>
-    ///     VALUTA UNA POSIZIONE: Assegna un punteggio a uno stato del gioco.
-    /// </summary>
-    public static double Evaluate(ref WarArena arena, ReadOnlySpan<Coordinate> map)
+    public static double Evaluate(ref WarArena arena, in LutProvider provider)
     {
         if (arena.Snakes.Me.Dead) return double.NegativeInfinity;
 
@@ -70,44 +67,36 @@ public static class Heuristics
         var head = me.Head;
         var health = me.Health;
         var grid = arena.Grid;
-        var width = grid.Geography.Width;
+
+        var food = grid.Food.GetRawData;
+
+        // Ottieni il "pacchetto" di LUT per la dimensione della griglia corrente
+        var slot = provider.Get(grid.Geography.Width);
+        var headCoord = slot.ConversionMap[head];
 
         var score = 0.0;
 
-        // 1) Mobilità immediata
-        score += MobilityWeight * BitOperations.PopCount(grid.GetLegalMoves(head));
+        // 1. PUNTEGGIO POSIZIONALE STATICO (dalla LUT)
+        // Questo singolo lookup sostituisce Mobilità, Bordo e Centro.
+        score += slot.PositionalScores[head];
 
-        // 2) Incentivo cibo
-        score += FoodWeight * CalculateFoodIncentive(head, health, grid.Food.GetRawData, map);
+        // 2. INCENTIVO CIBO (dinamico)
+        score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, slot.ConversionMap);
 
-        // 3) Penalità bordo e Bonus centro
-        var x = head % width;
-        var y = head / width;
-
-        // <--- CORREZIONE: Applicati in modo indipendente ---
-        if (x == 0 || y == 0 || x == width - 1 || y == grid.Geography.Height - 1) score += BorderPenalty;
-
-        var cx = width / 2;
-        var cy = grid.Geography.Height / 2;
-        var dCenter = Math.Abs(x - cx) + Math.Abs(y - cy);
-        score += CenterBonus / (1 + dCenter);
-        // <--- FINE CORREZIONE ---
-
-        // 4) Area sicura (stima flood-fill)
+        // 3. AREA SICURA (dinamico)
+        // Questa è la valutazione più importante, perché tiene conto degli ostacoli ATTUALI.
         score += SpaceWeight * EstimateSafeSpaceBitset(head, ref arena, SafeSpaceNodeBudget);
 
         return score;
     }
 
-    // --- Euristiche di Supporto ---
-
-    /// <summary>
-    /// Calcola l'incentivo al cibo trovando la distanza minima in modo super-performante
-    /// usando la LUT per le coordinate.
-    /// </summary>
-    private static double CalculateFoodIncentive(ushort head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
+// --- Euristiche di Supporto ---
+/// <summary>
+///     Calcola l'incentivo al cibo trovando la distanza minima in modo super-performante
+///     usando la LUT per le coordinate.
+/// </summary>
+private static double CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
     {
-        var headCoords = map[head];
         var distance = int.MaxValue;
 
         for (var i = 0; i < food.Length; i++)
@@ -119,16 +108,16 @@ public static class Heuristics
             {
                 var bitIndex = BitOperations.TrailingZeroCount(chunk);
                 var pos1D = (ushort)((i << 6) + bitIndex);
-                
+
                 var foodCoords = map[pos1D];
-                
-                var d = Abs(headCoords.X - foodCoords.X) + Abs(headCoords.Y - foodCoords.Y);
+
+                var d = Abs(head.X - foodCoords.X) + Abs(head.Y - foodCoords.Y);
                 if (d < distance)
                 {
                     distance = d;
                     if (distance == 1) goto EndLoop;
                 }
-                
+
                 chunk &= ~(1UL << bitIndex);
             }
         }
@@ -139,12 +128,12 @@ public static class Heuristics
         var urgency = 100.0 - health + 30.0;
         return urgency / distance;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Abs(int n)
     {
         // Maschera con tutti i bit a 1 se n è negativo, 0 se positivo
-        var mask = n >> 31; 
+        var mask = n >> 31;
         // (n XOR mask) - mask
         return (n + mask) ^ mask;
     }

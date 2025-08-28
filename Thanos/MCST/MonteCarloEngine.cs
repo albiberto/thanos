@@ -2,23 +2,25 @@
 using System.Numerics;
 using Thanos.Common;
 using Thanos.Memory;
+using Thanos.PreWarm;
+using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
 
 namespace Thanos.MCST;
 
-public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
+public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool, LutProvider lutProvider)
 {
     private readonly WarMemoryPool _warPool = warPool;
     private readonly NodeMemoryPool _nodePool = nodePool;
-    private Coordinate[] _map = [];
+    private readonly LutProvider  _lutProvider = lutProvider;
 
     // <--- OTTIMIZZAZIONE: Definiamo l'array una sola volta per evitare allocazioni nel ciclo.
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
     public byte FindBestMove(in Request request)
     {
-        var rootSlot = _warPool.GetNext(out _);
+        var rootSlot = _warPool.GetNext();
         rootSlot.InitializeFromRequest(in request);
 
         var rootIndex = _nodePool.GetNextIndex();
@@ -30,7 +32,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
         var stopwatch = Stopwatch.StartNew();
         while (stopwatch.ElapsedMilliseconds < 450)
         {
-            var workingSlot = _warPool.GetNext(out _);
+            var workingSlot = _warPool.GetNext();
             counter++;
             workingSlot.CloneFrom(in rootSlot);
             var workingArena = workingSlot.GetArena;
@@ -48,7 +50,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             {
                 // Se siamo arrivati in uno stato terminale, non c'è bisogno di simulare
                 nodeToProcess.IsTerminal = true;
-                simulationResult = Heuristics.Evaluate(ref workingArena, _map);
+                simulationResult = Heuristics.Evaluate(ref workingArena, in _lutProvider);
             }
             else if (nodeToProcess.IsLeafNode)
             {
@@ -179,7 +181,7 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             arena.ApplySingleMove(move);
         }
         
-        return Heuristics.Evaluate(ref arena, _map);
+        return Heuristics.Evaluate(ref arena, in _lutProvider);
     }
     
     private void Backpropagate(int startNodeIndex, double rawScore)
@@ -194,6 +196,4 @@ public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
             currentIndex = currentNode.ParentIndex;
         }
     }
-    
-    public void Reset(in Coordinate[] map) => _map = map;
 }

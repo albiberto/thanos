@@ -1,8 +1,8 @@
-﻿using Thanos.Common;
-using Thanos.MCST;
+﻿using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
 using Thanos.PreWarm;
+using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos;
@@ -11,19 +11,19 @@ public sealed class BattleSnakeAgent : IDisposable
 { 
     private readonly WarMemoryPool _warPool;
     private readonly NodeMemoryPool _nodePool;
+    
+    private readonly LutProvider _lutProvider;
     private readonly MonteCarloEngine _engine;
-
     
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
-        ConversionMapCache.Burn(Constants.MaxWidth);
-        
         NeighborsBoardCache.Burn(Constants.MaxWidth);
         var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
 
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
         _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
-        _engine = new MonteCarloEngine(_warPool, _nodePool);
+        _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
+        _engine = new MonteCarloEngine(_warPool, _nodePool, _lutProvider);
     }
     
     public void Start(in Request request)
@@ -32,11 +32,9 @@ public sealed class BattleSnakeAgent : IDisposable
         
         var snakeIdMap = BuildIdMap(request);
         var neighbors = NeighborsBoardCache.Get(width);
-        var map = ConversionMapCache.Get(width);
         
         var context = new GameContext(width, snakeIdMap, neighbors);
         
-        _engine.Reset(map);
         _warPool.Reset(in context);
         _nodePool.Reset();
     }
@@ -53,8 +51,13 @@ public sealed class BattleSnakeAgent : IDisposable
         _nodePool.Clear();
     } 
     
-    public void Dispose() => _warPool.Dispose();
-    
+    public void Dispose()
+    {
+        _lutProvider.Dispose();
+        _warPool.Dispose();
+        _nodePool.Dispose();
+    }
+
     private static Dictionary<string, int> BuildIdMap(Request request)
     {
         var myId = request.You.Id;

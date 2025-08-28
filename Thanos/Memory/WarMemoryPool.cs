@@ -28,26 +28,16 @@ public sealed unsafe class WarMemoryPool : IDisposable
         _disposed = false;
     }
     
-    public MemorySlot GetNext(out bool full)
+    public MemorySlot GetNext()
     {
         var slotSize = _context.Layout.WarSlotSize;
         var newOffset = Interlocked.Add(ref _offset, slotSize);
         
-        // CONTROLLO FONDAMENTALE: Assicuriamoci di non superare la memoria allocata
-        if (newOffset > _totalSize)
-        {
-            full = true;
-            return new MemorySlot();
-        }
-        
         var startOffset = newOffset - slotSize;
         
-        // 2. ACCESSO: Creiamo uno Span che "punta" a una sezione della nostra memoria non gestita.
-        // Anche se il buffer totale è >2GB, ogni singolo Span che creiamo è piccolo.
         var slotPointer = _basePointer + startOffset;
         var slotSpan = new Span<byte>(slotPointer, slotSize);
 
-        full = false;
         return new MemorySlot(slotSpan, ref _context);
     }
 
