@@ -50,11 +50,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
 
     private void BuildEnvironment(out WarGrid grid, out WarSnakesMemoryView snakes)
     {
-        // 1. Ottiene la vista sulla griglia di gioco.
-        var gridView = new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid);
-        grid = new WarGrid(gridView);
-    
-        // 2. Ottiene la vista sulla collezione di serpenti.
+        grid = new WarGrid(new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid));
         snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
     }
 
