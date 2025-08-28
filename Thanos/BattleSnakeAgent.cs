@@ -22,7 +22,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
-        _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
+        _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), _lutProvider, maxNodes);
         _engine = new MonteCarloEngine(_warPool, _nodePool, _lutProvider);
     }
     
@@ -34,9 +34,8 @@ public sealed class BattleSnakeAgent : IDisposable
         var neighbors = NeighborsBoardCache.Get(width);
         
         var context = new GameContext(width, snakeIdMap, neighbors);
-        var luts = _lutProvider.Get(width);
         
-        _warPool.Reset(in context, in luts);
+        _warPool.Reset(in context);
         _nodePool.Reset();
     }
     

@@ -10,12 +10,12 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, ref Luts luts)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, Luts luts)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
 
     private readonly ref GameContext _context = ref context;
-    private readonly ref Luts _luts = ref luts;
+    private readonly Luts _luts =  luts;
     
     // =================================================================
     // Memory Helpers

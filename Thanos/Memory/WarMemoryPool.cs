@@ -10,7 +10,7 @@ namespace Thanos.Memory;
 public sealed unsafe class WarMemoryPool : IDisposable
 {
     private GameContext _context;
-    private Luts _luts;
+    private LutProvider _provider;
 
     // Sostituiamo Memory<byte> con un puntatore alla memoria non gestita
     private readonly byte* _basePointer;
@@ -18,9 +18,10 @@ public sealed unsafe class WarMemoryPool : IDisposable
     
     private long _offset;
 
-    public WarMemoryPool(in GameContext context, long maxNodes) // <-- Usiamo long per maxNodes
+    public WarMemoryPool(in GameContext context, LutProvider provider, long maxNodes) // <-- Usiamo long per maxNodes
     {
         _context = context;
+        _provider = provider;
         _totalSize = context.Layout.WarSlotSize * maxNodes;
 
         _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)_totalSize, 64);
@@ -39,17 +40,13 @@ public sealed unsafe class WarMemoryPool : IDisposable
         var startOffset = newOffset - slotSize;
         var slotPointer = _basePointer + startOffset;
         var slotSpan = new Span<byte>(slotPointer, slotSize);
-
-        return new MemorySlot(slotSpan, ref _context, ref _luts);
+        
+        return new MemorySlot(slotSpan, ref _context, _provider.Get(_context.Width));
     }
 
     public void Clear() => _offset = 0;
 
-    public void Reset(in GameContext context, in Luts luts)
-    {
-        _context = context;
-        _luts = luts;
-    }
+    public void Reset(in GameContext context) => _context = context;
 
     public void Dispose() => NativeMemory.Free(_basePointer);
 }

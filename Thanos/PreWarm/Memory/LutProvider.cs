@@ -30,7 +30,7 @@ public sealed unsafe class LutProvider : IDisposable
         var conversionInfo = _layout.ConversionMapLayout[width];
         var conversionSpan = new ReadOnlySpan<Coordinate>((byte*)_memoryBlock + conversionInfo.Offset, conversionInfo.Area);
 
-        return new Luts(positionalSpan.ToArray(), conversionSpan.ToArray());
+        return new Luts(positionalSpan, conversionSpan);
     }
     
     private void Burn(int maxWidth)
