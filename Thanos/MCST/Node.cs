@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Thanos.Memory;
 
 namespace Thanos.MCST;
@@ -71,18 +70,5 @@ public struct Node
     }
     
     public ChildEnumerator GetChildren(NodeMemoryPool pool) => new(FirstChildIndex, pool);
-    
-
-    /// <summary>
-    /// Ottiene un riferimento al nodo genitore.
-    /// </summary>
-    public ref Node GetParent(NodeMemoryPool pool)
-    {
-        if (ParentIndex == -1)
-        {
-            return ref Unsafe.NullRef<Node>();
-        }
-        return ref pool[ParentIndex];
-    }
 }
 

@@ -1,45 +1,63 @@
 ﻿using Thanos.Common;
 using Thanos.Memory;
 using Thanos.War;
+using Thanos.War.Snake;
 
 namespace Thanos.MCST;
 
-public ref struct Worker
+public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
+    // private static void LogSnakeBody(string prefix, in WarSnake snake)
+    // {
+    //     snake.GetSpans(out var first, out var second);
+    //
+    //     Console.Write($"{prefix} | Length: {snake.Length} | Segments: ");
+    //
+    //     foreach (var segment in first)
+    //     {
+    //         var x = segment % 11; // oppure snake.GridWidth
+    //         var y = segment / 11;
+    //         Console.Write($"({x},{y}) ");
+    //     }
+    //
+    //     foreach (var segment in second)
+    //     {
+    //         var x = segment % 11;
+    //         var y = segment / 11;
+    //         Console.Write($"({x},{y}) ");
+    //     }
+    //
+    //     Console.WriteLine();
+    // }
+
+    
     // --- CAMPI CORRETTI ---
     // Questi campi sono readonly perché vengono impostati una sola volta alla creazione.
-    private readonly int _rootNodeIndex;
-    private readonly MemorySlot _rootSlot;
-    private readonly WarMemoryPool _warPool;
-    private readonly NodeMemoryPool _nodePool;
+    private readonly MemorySlot _rootSlot = rootSlot;
 
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
     // Stato dell'iterazione (l'unico campo non readonly)
     private MemorySlot _workingSlot;
+    private NodeMemoryPool _nodePool = nodePool;
 
     // --- COSTRUTTORE CORRETTO ---
     // Riceve tutti i parametri e li assegna ai rispettivi campi.
-    public Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPool warPool, NodeMemoryPool nodePool)
-    {
-        _rootNodeIndex = rootNodeIndex;
-        _rootSlot = rootSlot;
-        _warPool = warPool;
-        _nodePool = nodePool;
-    }
 
     // --- METODO PRINCIPALE ---
     public void RunIteration()
     {
         // 1. Setup: Ora ha accesso a _warPool e _rootSlot
-        _workingSlot = _warPool.GetNext();
+        _workingSlot = warPool.GetNext();
         _workingSlot.CloneFrom(in _rootSlot); 
+        
+        // LogSnakeBody("Initial", _workingSlot.General.Snakes.Me);
         
         var workingArena = _workingSlot.General;
         var scout = _workingSlot.Scout;
 
         // 2. Selezione: Ora ha accesso a _rootNodeIndex
-        var leafNodeIndex = Select(_rootNodeIndex, ref workingArena);
+        var leafNodeIndex = Select(rootNodeIndex, ref workingArena);
         ref var leafNode = ref _nodePool[leafNodeIndex];
 
         // 3. Espansione e Simulazione
@@ -130,7 +148,12 @@ public ref struct Worker
             
             var move = scout.SelectRolloutMove(legalMovesMask);
             
+            // Console.WriteLine($"[Simulate] Step {i}, Move: {move}");
+            // LogSnakeBody("BeforeMove", arena.Snakes.Me);
+
             arena.ApplySingleMove(move);
+
+            // LogSnakeBody("AfterMove", arena.Snakes.Me);
         }
     }
 

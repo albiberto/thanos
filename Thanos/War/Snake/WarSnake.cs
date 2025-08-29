@@ -68,7 +68,7 @@ public readonly ref struct WarSnake
             return;
         }
 
-        var headIndex = (tailIndex + length - 1) & capacityMask;
+        var headIndex = _anatomy.HeadIndex;
 
         if (tailIndex <= headIndex)
         {
