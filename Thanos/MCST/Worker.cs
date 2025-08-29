@@ -1,92 +1,57 @@
-﻿using Thanos.Common;
+﻿using System.Numerics;
+using Thanos.Common;
 using Thanos.Memory;
 using Thanos.War;
 using Thanos.War.Snake;
 
 namespace Thanos.MCST;
 
-public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPool warPool, NodeMemoryPool nodePool)
+public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
 {
-    // private static void LogSnakeBody(string prefix, in WarSnake snake)
-    // {
-    //     snake.GetSpans(out var first, out var second);
-    //
-    //     Console.Write($"{prefix} | Length: {snake.Length} | Segments: ");
-    //
-    //     foreach (var segment in first)
-    //     {
-    //         var x = segment % 11; // oppure snake.GridWidth
-    //         var y = segment / 11;
-    //         Console.Write($"({x},{y}) ");
-    //     }
-    //
-    //     foreach (var segment in second)
-    //     {
-    //         var x = segment % 11;
-    //         var y = segment / 11;
-    //         Console.Write($"({x},{y}) ");
-    //     }
-    //
-    //     Console.WriteLine();
-    // }
-
-    
-    // --- CAMPI CORRETTI ---
-    // Questi campi sono readonly perché vengono impostati una sola volta alla creazione.
-    private readonly MemorySlot _rootSlot = rootSlot;
-
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-
-    // Stato dell'iterazione (l'unico campo non readonly)
-    private MemorySlot _workingSlot;
+    
+    private readonly WarMemoryPool _warPool = warPool;
     private NodeMemoryPool _nodePool = nodePool;
 
-    // --- COSTRUTTORE CORRETTO ---
-    // Riceve tutti i parametri e li assegna ai rispettivi campi.
-
-    // --- METODO PRINCIPALE ---
-    public void RunIteration()
+    public void RunIteration(int rootNodeIndex, in MemorySlot rootSlot)
     {
-        // 1. Setup: Ora ha accesso a _warPool e _rootSlot
-        _workingSlot = warPool.GetNext();
-        _workingSlot.CloneFrom(in _rootSlot); 
-        
-        // LogSnakeBody("Initial", _workingSlot.General.Snakes.Me);
-        
-        var workingArena = _workingSlot.General;
-        var scout = _workingSlot.Scout;
+        // 1. Setup
+        var workingSlot = _warPool.GetNext();
+        workingSlot.CloneFrom(in rootSlot);
+        var arena = workingSlot.Arena;
 
-        // 2. Selezione: Ora ha accesso a _rootNodeIndex
-        var leafNodeIndex = Select(rootNodeIndex, ref workingArena);
+        // 2. Selezione
+        var leafNodeIndex = Select(rootNodeIndex, ref arena);
         ref var leafNode = ref _nodePool[leafNodeIndex];
 
-        // 3. Espansione e Simulazione
-        double simulationResult;
-        if (workingArena.Snakes.Me.Dead)
+        // 3. Espansione e Simulazione (Logica Unificata)
+        if (arena.ILose)
         {
             leafNode.IsTerminal = true;
-            simulationResult = scout.Evaluate();
         }
         else if (leafNode.IsLeafNode)
         {
-            Expand(leafNodeIndex, ref leafNode, ref workingArena);
-            Simulate(ref workingArena, in scout);
-            simulationResult = _workingSlot.Scout.Evaluate();
+            // Espandi solo se è un nuovo nodo foglia
+            Expand(leafNodeIndex, ref leafNode, in arena);
         }
-        else
+    
+        // Simula SEMPRE a meno che il nodo non sia già terminale dopo Select/Expand
+        if (!leafNode.IsTerminal) 
         {
-            Simulate(ref workingArena, in scout);
-            simulationResult = _workingSlot.Scout.Evaluate();
+            Simulate(ref arena);
         }
+    
+        // La valutazione finale usa lo stato dell'arena DOPO la simulazione
+        var simulationResult = workingSlot.Arena.Evaluate();
 
         // 4. Backpropagation
         Backpropagate(leafNodeIndex, simulationResult);
     }
 
-    // --- FASI MCTS (Queste erano già corrette) ---
-    private int Select(int startNodeIndex, ref General arena)
+    private int Select(int startNodeIndex, ref WarArena arena)
     {
         var currentIndex = startNodeIndex;
+        
         while (true)
         {
             ref var currentNode = ref _nodePool[currentIndex];
@@ -97,15 +62,16 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
 
             currentIndex = nextNodeIndex;
             ref var childNode = ref _nodePool[currentIndex];
+            
             arena.ApplySingleMove(childNode.MoveThatLedToThisNode);
         }
     }
 
-    private void Expand(int nodeIndex, ref Node node, ref General arena)
+    private void Expand(int nodeIndex, ref Node node, in WarArena arena)
     {
         if (node.IsTerminal) return;
 
-        var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
+        var legalMovesMask = arena.GetLegalMoves();
         if (legalMovesMask == 0)
         {
             node.IsTerminal = true;
@@ -135,26 +101,38 @@ public ref struct Worker(int rootNodeIndex, in MemorySlot rootSlot, WarMemoryPoo
         }
     }
 
-    private void Simulate(ref General arena, in Scout scout)
+    private static void Simulate(ref WarArena arena)
     {
         const int turnLimit = 100;
 
         for (var i = 0; i < turnLimit; i++)
         {
-            if (arena.Snakes.Me.Dead) return;
-
-            var legalMovesMask = arena.Grid.GetLegalMoves(arena.Snakes.Me.Head);
+            var legalMovesMask = arena.GetLegalMoves();
             if (legalMovesMask == 0) return;
             
-            var move = scout.SelectRolloutMove(legalMovesMask);
+            var move = RolloutMove(legalMovesMask);
             
-            // Console.WriteLine($"[Simulate] Step {i}, Move: {move}");
-            // LogSnakeBody("BeforeMove", arena.Snakes.Me);
-
             arena.ApplySingleMove(move);
-
-            // LogSnakeBody("AfterMove", arena.Snakes.Me);
         }
+    }
+    
+    private static byte RolloutMove(byte legalMoves)
+    {
+        if (legalMoves == 0) return Moves.Up; // Nessuna mossa legale, non dovrebbe succedere
+        if (BitOperations.IsPow2(legalMoves)) return legalMoves; // Solo una mossa, prendi quella
+
+        // Scegli una delle mosse legali a caso.
+        var count = BitOperations.PopCount(legalMoves);
+        var randomIndex = Random.Shared.Next(count);
+
+        byte move = 0;
+        while (randomIndex >= 0)
+        {
+            move = (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
+            legalMoves &= (byte)~move;
+            randomIndex--;
+        }
+        return move;
     }
 
     private void Backpropagate(int startNodeIndex, double rawScore)

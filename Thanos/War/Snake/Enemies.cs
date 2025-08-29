@@ -1,8 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
+using Thanos.War.Snake.Memory;
 
-namespace Thanos.War.Snake.Memory;
+namespace Thanos.War.Snake;
 
-public readonly ref struct WarSnakesMemoryView(Span<byte> memory, ref WarSnakeMemoryLayout layout)
+public readonly ref struct Enemies(Span<byte> memory, ref WarSnakeMemoryLayout layout)
 {
     private readonly Span<byte> _memory = memory;
     private readonly ref WarSnakeMemoryLayout _memoryLayout = ref layout;
@@ -11,11 +12,5 @@ public readonly ref struct WarSnakesMemoryView(Span<byte> memory, ref WarSnakeMe
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => new(new WarSnakeMemoryView(_memory, in _memoryLayout, index));
-    }
-    
-    public WarSnake Me
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new(new WarSnakeMemoryView(_memory, in _memoryLayout, 0));
     }
 }

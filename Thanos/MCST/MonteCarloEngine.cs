@@ -6,55 +6,48 @@ using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
-public class MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
+public class MonteCarloEngine
 {
-    private readonly WarMemoryPool _warPool = warPool;
-    private readonly NodeMemoryPool _nodePool = nodePool;
+    private readonly WarMemoryPool _warPool;
+    private readonly NodeMemoryPool _nodePool;
+    private readonly Worker _worker;
+    
+    public MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
+    {
+        _warPool = warPool;
+        _nodePool = nodePool;
+        _worker = new Worker(_warPool, _nodePool);
+    }
 
     public byte FindBestMove(in Request request)
     {
-        var rootSlot = _warPool.GetNext();
-        rootSlot.InitializeFromRequest(in request);
+        var slot = _warPool.GetNext();
+        slot.InitializeFromRequest(in request);
 
         var rootIndex = _nodePool.GetNextIndex();
-        ref var rootNode = ref _nodePool[rootIndex];
-        rootNode.Initialize(-1, Moves.None);
-
-        var worker = new Worker(rootIndex, in rootSlot, _warPool, _nodePool);
+        ref var root = ref _nodePool[rootIndex];
+        root.Initialize(-1, Moves.None);
 
         var counter = 0;
         var stopwatch = Stopwatch.StartNew();
         while (stopwatch.ElapsedMilliseconds < 450)
         {
-            worker.RunIteration();
+            // 4. Usiamo il nostro worker riutilizzabile, passando i dati del turno
+            _worker.RunIteration(rootIndex, in slot);
             counter++;
         }
         
         ref var finalRootNode = ref _nodePool[rootIndex];
-        LogDebug(stopwatch, counter, finalRootNode);
         
         var bestChildIndex = finalRootNode.SelectBestChild(_nodePool, 0);
         
         if (bestChildIndex != -1) return _nodePool[bestChildIndex].MoveThatLedToThisNode;
 
-        var legalMoves = rootSlot.General.Grid.GetLegalMoves(rootSlot.General.Snakes.Me.Head);
+        var initialArena = slot.Arena; 
+        var legalMoves = initialArena.GetLegalMoves();
+    
+        Console.WriteLine($"[MCST] No best move found after {counter} iterations in {stopwatch.ElapsedMilliseconds}ms. Legal moves: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
+        
         return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
-    }
-
-    /// <summary>
-    /// Log per il DEBUG
-    /// </summary>
-    private void LogDebug(Stopwatch stopwatch, int counter, Node finalRootNode)
-    {
-        Console.WriteLine(">>> MCTS completato in {0} ms con {1} iterazioni", stopwatch.ElapsedMilliseconds, counter);
-        Console.WriteLine(">>> Analisi finale dei figli:");
-        foreach (var childIndex in finalRootNode.GetChildren(_nodePool))
-        {
-            ref var childNode = ref _nodePool[childIndex];
-            if (childNode.Visits == 0) continue;
-            var winRate = childNode.Wins / childNode.Visits;
-            var moveName = childNode.MoveThatLedToThisNode switch { 1 => "Up", 2 => "Down", 4 => "Left", 8 => "Right", _ => "?" };
-            Console.WriteLine($"  - {moveName,-5} | WinRate: {winRate:F3} | Visits: {childNode.Visits}");
-        }
     }
 }

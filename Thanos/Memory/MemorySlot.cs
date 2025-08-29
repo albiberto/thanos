@@ -10,12 +10,12 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, Luts luts)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, ref Luts luts)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
 
     private readonly ref GameContext _context = ref context;
-    private readonly Luts _luts =  luts;
+    private readonly ref Luts _luts =  ref luts;
     
     // =================================================================
     // Memory Helpers
@@ -25,33 +25,25 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
     
     private Span<byte> WarSnakesMemory => _slotMemory.Slice(_context.Layout.Offsets.Snakes, _context.Layout.WarSnake.Stride * _context.SnakesCount);
 
+    private Span<byte> MySnakeMemory => WarSnakesMemory[.._context.Layout.WarSnake.Stride];
+    
+    private Span<byte> EnemiesMemory => WarSnakesMemory[_context.Layout.WarSnake.Stride..];
+
 
     // =================================================================
     // Views
     // =================================================================
     
-    public General General
+    public WarArena Arena
     {
         get
         {
-            BuildEnvironment(out var grid, out var snakes);
-            return new General(grid, snakes);   
+            var grid = new WarGrid(new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid));
+            var me = new WarSnake(new WarSnakeMemoryView(MySnakeMemory, in _context.Layout.WarSnake, 0));
+            var enemies = new Enemies(EnemiesMemory, ref _context.Layout.WarSnake);
+            
+            return new WarArena(grid, me, enemies, _luts.ConversionsMap, _luts.PositionalScores);
         }
-    }
-    
-    public Scout Scout
-    {
-        get
-        {
-            BuildEnvironment(out var grid, out var snakes);
-            return new Scout(grid, snakes, _luts.ConversionsMap, _luts.PositionalScores);
-        }
-    }
-
-    private void BuildEnvironment(out WarGrid grid, out WarSnakesMemoryView snakes)
-    {
-        grid = new WarGrid(new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid));
-        snakes = new WarSnakesMemoryView(WarSnakesMemory, ref _context.Layout.WarSnake);
     }
 
     // =================================================================

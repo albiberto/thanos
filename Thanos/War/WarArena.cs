@@ -4,69 +4,94 @@ using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
 using Thanos.War.Grid;
-using Thanos.War.Snake.Memory;
+using Thanos.War.Snake;
 
 namespace Thanos.War;
 
-public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
+public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
 {
-    private readonly WarGrid _grid = grid;
-    private readonly WarSnakesMemoryView _snakes = snakes;
+    private readonly WarGrid Grid = grid;
+    private readonly WarSnake Me = me;
+    private readonly Enemies Enemies = enemies;
+    
+    public bool ILose => Me.Dead;
+    
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<double> _positionalScores = positionalScores;
 
+    private readonly int _liveSnakesCount;
+	
+    public byte GetLegalMoves() => Me.Dead 
+	    ? (byte)0 
+	    : Grid.GetLegalMoves(Me.Head);
+
     /// <summary>
-    ///     SCEGLIE LA MOSSA PER IL ROLLOUT: Una policy veloce e cauta
-    ///     per guidare le simulazioni, preferendo lo spazio futuro.
-    /// </summary>
-    public byte SelectRolloutMove(byte legalMoves)
-    {
-        if (legalMoves == 0) return Moves.Up;
-        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
+	/// Applica una singola mossa allo stato di gioco corrente, modificandolo.
+	/// </summary>
+	public void ApplySingleMove(byte move)
+	{
+		if (Me.Dead) return;
 
-        var bestMove = Moves.None;
-        var bestScore = double.NegativeInfinity;
+		var oldTail = Me.Tail;
+		var head = Me.Head;
+		
+		var newHead = Grid.GetNeighbor(head, move);
+		var hasEaten = Grid.IsFood(newHead);
+		
+		if (Grid.IsOccupied(newHead))
+		{
+			// È una collisione fatale, A MENO CHE non stiamo andando sulla nostra coda
+			// e NON stiamo mangiando (se non mangiamo, la coda si sposterà).
+			var isMovingOntoOwnVacatingTail = (newHead == oldTail && !hasEaten);
 
-        var me = _snakes.Me;
-        var head = me.Head;
+			if (!isMovingOntoOwnVacatingTail)
+			{
+				Me.Kill();
+				Grid.RemoveSnake(Me);
+				return;
+			}
+		}
 
-        var movesToEvaluate = legalMoves;
-        while (movesToEvaluate > 0)
-        {
-            var moveIndex = BitOperations.TrailingZeroCount(movesToEvaluate);
-            var currentMove = (byte)(1 << moveIndex);
+		var damage = Grid.IsHazard(newHead) ? 10 : 1; // Danno base 1, 10 su hazard
 
-            var nextPos = _grid.GetNeighbor(head, currentMove);
-            double currentMoveScore = 0;
+		Me.Move(newHead, hasEaten, damage);
+		
+		if (Me.Dead)
+		{
+			Grid.RemoveSnake(Me);
+			return;
+		}
 
-            var futureMoves = _grid.GetLegalMoves(nextPos);
-            currentMoveScore += 100 * BitOperations.PopCount(futureMoves);
+		Grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
+		if (hasEaten) Grid.RemoveFood(newHead);
+	}
+	
+	public float Outcome()
+	{
+		return OutcomeSolo();
+		
+		if (Me.Dead) return -1.0f;
+		return _liveSnakesCount <= 1 ? 1.0f : 0.0f;
+	}
+	
+	private float OutcomeSolo()
+	{
+		if (Me.Dead) return -1.0f; // Sconfitta
 
-            if (_grid.Food.IsSet(nextPos))
-                currentMoveScore += 20;
-
-            if (currentMoveScore > bestScore)
-            {
-                bestScore = currentMoveScore;
-                bestMove = currentMove;
-            }
-
-            movesToEvaluate &= (byte)~currentMove;
-        }
-
-        return bestMove;
-    }
+		var availableSquares = Grid.Geography.Area;
+		return Me.Length >= availableSquares 
+			? 1.0f // Vittoria: hai riempito la mappa! 
+			: 0.0f; // Partita in corso
+	}
 
     public double Evaluate()
     {
-        var me = _snakes.Me;
-
         // 1. Condizione Terminale: Se siamo morti, questo è lo scenario peggiore in assoluto.
-        if (me.Dead) return double.NegativeInfinity;
+        if (Me.Dead) return double.NegativeInfinity;
 
-        var head = me.Head;
-        var health = me.Health;
-        var food = _grid.Food.GetRawData;
+        var head = Me.Head;
+        var health = Me.Health;
+        var food = Grid.Food.GetRawData;
         var headCoord = _conversionsMap[head];
         var score = 0.0;
 
@@ -82,17 +107,17 @@ public readonly ref struct Scout(WarGrid grid, WarSnakesMemoryView snakes, ReadO
         // --- 4. EURISTICA DELLO SPAZIO/MOBILITÀ (Dinamica) ---
         // La componente principale: calcola l'area sicura raggiungibile da ora (flood fill).
         // Questo è il nostro indicatore di libertà di movimento a medio termine.
-        var safeSpace = EstimateSafeSpaceBitset(head, _grid.Geography.Area, HeuristicWeights.SafeSpaceNodeBudget, in _grid);
-        score += HeuristicWeights.SpaceWeight * safeSpace;
+        // var safeSpace = EstimateSafeSpaceBitset(head, _grid.Geography.Area, HeuristicWeights.SafeSpaceNodeBudget, in _grid);
+        // score += HeuristicWeights.SpaceWeight * safeSpace;
 
         // --- 5. EURISTICA ANTI-TRAPPOLA (Dinamica, Visione a Breve Termine) ---
         // Riconosce il pericolo imminente. Se dalla nostra posizione attuale abbiamo
         // una sola via di fuga, siamo quasi in trappola e dobbiamo penalizzare pesantemente questo stato.
-        var immediateMoves = _grid.GetLegalMoves(head);
+        var immediateMoves = Grid.GetLegalMoves(head);
     
         // BitOperations.IsPow2 è un modo velocissimo per controllare se c'è un solo bit a '1'.
         // Aggiungiamo un controllo sulla lunghezza per non penalizzare i primissimi turni di gioco.
-        if (BitOperations.IsPow2(immediateMoves) && me.Length > 3)
+        if (BitOperations.IsPow2(immediateMoves) && Me.Length > 3)
         {
             // Applica una penalità pesante e fissa per le situazioni disperate.
             score += HeuristicWeights.TrapPenaltyValue;

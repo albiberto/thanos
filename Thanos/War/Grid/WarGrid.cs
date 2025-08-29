@@ -71,7 +71,7 @@ public readonly ref struct WarGrid
     
     public void RemoveFood(ushort position) => Food.Unset(position);
 
-    public void KillSnakeOnGrid(WarSnake snake)
+    public void RemoveSnake(WarSnake snake)
     {
         snake.GetSpans(out var bodyFirst, out var bodySecond);
         foreach (var pos in bodyFirst) Snakes.Unset(pos);
