@@ -41,12 +41,13 @@ public class MonteCarloEngine
         
         var bestChildIndex = finalRootNode.SelectBestChild(_nodePool, 0);
         
+        Console.WriteLine($"Completed {counter} iterations in {stopwatch.ElapsedMilliseconds} ms, avg {stopwatch.ElapsedMilliseconds / (double)counter:0.00} ms/iteration");
+       
+        
         if (bestChildIndex != -1) return _nodePool[bestChildIndex].MoveThatLedToThisNode;
 
         var initialArena = slot.Arena; 
         var legalMoves = initialArena.GetLegalMoves();
-    
-        Console.WriteLine($"[MCST] No best move found after {counter} iterations in {stopwatch.ElapsedMilliseconds}ms. Legal moves: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
         
         return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
     }

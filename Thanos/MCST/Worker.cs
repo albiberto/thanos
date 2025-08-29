@@ -42,7 +42,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         }
     
         // La valutazione finale usa lo stato dell'arena DOPO la simulazione
-        var simulationResult = workingSlot.Arena.Evaluate();
+        var simulationResult = workingSlot.Arena.Outcome();
 
         // 4. Backpropagation
         Backpropagate(leafNodeIndex, simulationResult);
