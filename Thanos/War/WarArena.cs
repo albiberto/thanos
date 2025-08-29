@@ -24,6 +24,8 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
     public byte GetLegalMoves() => Me.Dead 
 	    ? (byte)0 
 	    : Grid.GetLegalMoves(Me.Head);
+    
+    public byte GetLegalMoves(ushort position) => Grid.GetLegalMoves(position);
 
     /// <summary>
 	/// Applica una singola mossa allo stato di gioco corrente, modificandolo.
@@ -66,6 +68,8 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		if (hasEaten) Grid.RemoveFood(newHead);
 	}
 	
+    public ushort GetMyNeighbor(byte move) => Grid.GetNeighbor(Me.Head, move);
+    
 	public float Outcome()
 	{
 		return OutcomeSolo();

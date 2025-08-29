@@ -101,27 +101,64 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         }
     }
 
-    private static void Simulate(ref WarArena arena)
+    private static void Simulate(ref WarArena arena) // <-- DEVE essere 'ref' perché modifica lo stato
     {
         const int turnLimit = 100;
 
         for (var i = 0; i < turnLimit; i++)
         {
+            if (arena.ILose) return;
+
             var legalMovesMask = arena.GetLegalMoves();
             if (legalMovesMask == 0) return;
-            
-            var move = RolloutMove(legalMovesMask);
-            
+        
+            // Passiamo l'arena alla nuova policy di rollout
+            var move = SelectRolloutMove(in arena, legalMovesMask);
+        
             arena.ApplySingleMove(move);
         }
     }
     
-    private static byte RolloutMove(byte legalMoves)
+    
+    
+    private static byte SelectRolloutMove(in WarArena arena, byte legalMoves)
     {
-        if (legalMoves == 0) return Moves.Up; // Nessuna mossa legale, non dovrebbe succedere
         if (BitOperations.IsPow2(legalMoves)) return legalMoves; // Solo una mossa, prendi quella
 
-        // Scegli una delle mosse legali a caso.
+        byte bestMove = 0;
+        int bestScore = -1;
+
+        // Itera sulle mosse possibili
+        var movesToEvaluate = legalMoves;
+        while (movesToEvaluate > 0)
+        {
+            var move = (byte)(1 << BitOperations.TrailingZeroCount(movesToEvaluate));
+        
+            // Calcola la posizione successiva
+            var nextPos = arena.GetMyNeighbor(move);
+        
+            // Controlla quante mosse avremo a disposizione DOPO questa mossa
+            var futureMoves = arena.GetLegalMoves();
+            var score = BitOperations.PopCount(futureMoves);
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestMove = move;
+            }
+
+            movesToEvaluate &= (byte)~move; // Rimuovi la mossa appena valutata
+        }
+    
+        // Se tutte le mosse portano a 0 vie di fuga, scegline una a caso tra le legali
+        return bestMove != 0 ? bestMove : RolloutMoveRandom(legalMoves);
+    }
+
+// La vecchia logica casuale ora è un helper di fallback
+    private static byte RolloutMoveRandom(byte legalMoves)
+    {
+        if (legalMoves == 0) return Moves.Up;
+    
         var count = BitOperations.PopCount(legalMoves);
         var randomIndex = Random.Shared.Next(count);
 
