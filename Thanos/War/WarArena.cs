@@ -111,8 +111,8 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
         // --- 4. EURISTICA DELLO SPAZIO/MOBILITÀ (Dinamica) ---
         // La componente principale: calcola l'area sicura raggiungibile da ora (flood fill).
         // Questo è il nostro indicatore di libertà di movimento a medio termine.
-        // var safeSpace = EstimateSafeSpaceBitset(head, _grid.Geography.Area, HeuristicWeights.SafeSpaceNodeBudget, in _grid);
-        // score += HeuristicWeights.SpaceWeight * safeSpace;
+        var safeSpace = EstimateSafeSpaceBitset(head, HeuristicWeights.SafeSpaceNodeBudget, in Grid);
+        score += HeuristicWeights.SpaceWeight * safeSpace;
 
         // --- 5. EURISTICA ANTI-TRAPPOLA (Dinamica, Visione a Breve Termine) ---
         // Riconosce il pericolo imminente. Se dalla nostra posizione attuale abbiamo
@@ -178,8 +178,9 @@ private static double CalculateFoodIncentive(Coordinate head, int health, ReadOn
         return (n + mask) ^ mask;
     }
 
-    private static int EstimateSafeSpaceBitset(ushort start, int area, int nodeBudget, in WarGrid grid)
+    private static int EstimateSafeSpaceBitset(ushort start, int nodeBudget, in WarGrid grid)
     {
+	    var area = grid.Geography.Area;
         if (area <= 0) return 0;
         var words = (area + 63) >> 6;
         ulong[]? rentedVisited = null;
