@@ -53,7 +53,7 @@ public sealed class NodeMemoryPool : IDisposable
 
     public void Dispose()
     {
-        _memoryOwner.Dispose();
-        _memoryHandle.Dispose();
+        _memoryHandle.Dispose(); // 1. Prima rilascia l'handle
+        _memoryOwner.Dispose();  // 2. Poi restituisci la memoria
     }
 }

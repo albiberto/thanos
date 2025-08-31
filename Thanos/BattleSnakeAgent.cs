@@ -49,13 +49,14 @@ public sealed class BattleSnakeAgent : IDisposable
     public byte Move(in Request request)
     {
         Console.WriteLine($"Turn {request.Turn}, Head: ({request.You.Head.X}, {request.You.Head.Y}), Length: {request.You.Length}, Health: {request.You.Health}");
-        // 2. A ogni mossa, resetta SOLO il pool degli stati di simulazione
+        
+        // 1. A ogni mossa, resetta SOLO il pool degli stati di simulazione
         _warPool.Reset(); 
         
-        // All'inizio del turno, prova ad aggiornare la radice dell'albero
+        // 2. All'inizio del turno, prova ad aggiornare la radice dell'albero
         _engine.PrepareNextTurn(_lastChosenNodeIndex, in request, BuildIdMap(request));
         
-        // Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
+        // 3. Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
         var bestNodeIndex = _engine.FindBestMove(in request);
 
         if (bestNodeIndex != -1)
@@ -72,6 +73,7 @@ public sealed class BattleSnakeAgent : IDisposable
         // Fallback
         _lastChosenNodeIndex = 0; // Resetta per il prossimo turno
         _engine.Reset();
+        _nodePool.Reset(); // <-- CORREZIONE: Resetta anche il pool
         return Moves.Up; // O FindQuickSafeMove
     }
 

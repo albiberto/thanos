@@ -66,38 +66,39 @@ public class MonteCarloEngine
     
     public void PrepareNextTurn(int previousChosenNodeIndex, in Request newTurnRequest, Dictionary<string, int> snakeIdMap)
     {
-        // Se non stiamo riutilizzando un albero, non facciamo nulla. La radice verrà creata in FindBestMove.
+        // Se non c'è un albero precedente, riparti da zero.
         if (previousChosenNodeIndex == 0)
         {
             Reset();
             return;
         }
 
+        // 1. Calcola l'hash dello stato REALE in cui ci troviamo ora.
         long realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
 
-        ref var parentNode = ref _nodePool[previousChosenNodeIndex];
-        int newRootIndex = 0;
-        
-        // Cerca tra i "nipoti" se ce n'è uno che corrisponde allo stato reale
-        foreach (var childIndex in parentNode.GetChildren(_nodePool))
+        // 2. Il nodo scelto al turno precedente (`previousChosenNodeIndex`) è la nostra
+        //    nuova radice. Non dobbiamo cercare tra i suoi figli.
+        //    Lo stato del gioco DOVREBBE corrispondere a questo nodo.
+        ref var chosenNode = ref _nodePool[previousChosenNodeIndex];
+
+        // 3. Verifica di coerenza (opzionale ma consigliata)
+        // Se l'hash non corrisponde, qualcosa è andato storto nella simulazione vs realtà.
+        // In questo caso, è più sicuro resettare tutto.
+        if (chosenNode.StateHash != realStateHash)
         {
-            ref var childNode = ref _nodePool[childIndex];
-            if (childNode.StateHash == realStateHash)
-            {
-                newRootIndex = childIndex; // Trovato!
-                break;
-            }
+            // Cache Miss: la realtà non corrisponde alla nostra previsione. Resetta.
+            Console.WriteLine("Tree Reuse Cache Miss! Resetting tree."); // Utile per il debug
+            Reset(); 
+            return;
         }
 
-        if (newRootIndex != 0) // Cache Hit
-        {
-            _currentRootIndex = newRootIndex;
-            ref var newRoot = ref _nodePool[_currentRootIndex];
-            newRoot.ParentIndex = -1; // È la nuova radice
-        }
-        else // Cache Miss
-        {
-            Reset(); // Non abbiamo trovato una corrispondenza, resettiamo l'albero
-        }
+        // 4. Cache Hit! Promuovi il nodo scelto a nuova radice.
+        _currentRootIndex = previousChosenNodeIndex;
+        ref var newRoot = ref _nodePool[_currentRootIndex];
+        newRoot.ParentIndex = -1; // Taglia il collegamento con il suo vecchio genitore.
+    
+        // Non è necessario fare il Clear/Reset del NodePool, perché stiamo riutilizzando
+        // una porzione valida dell'albero. I nodi "vecchi" e non più raggiungibili
+        // verranno semplicemente sovrascritti quando l'offset del pool avanzerà.
     }
 }
