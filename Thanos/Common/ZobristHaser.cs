@@ -19,8 +19,8 @@ public static class ZobristHasher
         {
             // Otteniamo i due span che rappresentano il corpo
             me.GetSpans(out var meBodyPart1, out var meBodyPart2);
-            Console.WriteLine($"Me Body Part 1: {string.Join(", ", meBodyPart1.ToArray())}");
-            Console.WriteLine($"Me Body Part 2: {string.Join(", ", meBodyPart2.ToArray())}");
+            // Console.WriteLine($"Me Body Part 1: {string.Join(", ", meBodyPart1.ToArray())}");
+            // Console.WriteLine($"Me Body Part 2: {string.Join(", ", meBodyPart2.ToArray())}");
             // Iteriamo sulla prima parte del corpo
             foreach (var part in meBodyPart1)
             {
@@ -32,6 +32,10 @@ public static class ZobristHasher
             {
                 hash ^= ZobristTable.GetSnakeValue(me.Id, part);
             }
+        }
+        else
+        {
+            hash ^= ZobristTable.GetDeathValue(me.Id); 
         }
         
         // --- Hash dei nemici (Enemies) ---
@@ -52,6 +56,10 @@ public static class ZobristHasher
                 {
                     hash ^= ZobristTable.GetSnakeValue(enemy.Id, part);
                 }
+            }
+            else
+            {
+                hash ^= ZobristTable.GetDeathValue(enemy.Id); 
             }
         }
         

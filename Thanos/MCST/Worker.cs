@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Text.Json;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.War;
@@ -19,8 +20,13 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         var workingSlot = _warPool.GetNext();
         workingSlot.CloneFrom(in rootSlot);
         var arena = workingSlot.Arena;
+        
+        // Console.WriteLine($"[Worker] Starting iteration from root node {rootNodeIndex}");
+        
         var leafNodeIndex = Select(rootNodeIndex, ref arena);
+        // Console.WriteLine($"[Worker] Selected leaf node {leafNodeIndex}");
         ref var leafNode = ref _nodePool[leafNodeIndex];
+        // Console.WriteLine($"[Worker] Leaf Node StateHash: {leafNode.StateHash}, IsLeafNode: {leafNode.IsLeafNode}, IsTerminal: {leafNode.IsTerminal}");
 
         if (arena.ILose) {
             leafNode.IsTerminal = true;
@@ -79,6 +85,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         if (node.IsTerminal) return;
 
         var legalMovesMask = arena.GetLegalMoves();
+        // Console.WriteLine($"[Worker] Expanding node {nodeIndex}, LegalMovesMask: {Convert.ToString(legalMovesMask, 2).PadLeft(4, '0')}");
         if (legalMovesMask == 0)
         {
             node.IsTerminal = true;
@@ -101,11 +108,13 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
 
             // 3. Calcola l'hash del nuovo stato risultante
             long newStateHash = ZobristHasher.CalculateHash(in tempArena);
+            // Console.WriteLine($"[Worker] Move: {move}, New StateHash: {newStateHash}");
         
             // --- FINE CODICE DA AGGIUNGERE ---
         
             var newChildIndex = _nodePool.GetNextIndex();
             ref var childNode = ref _nodePool[newChildIndex];
+            // Console.WriteLine($"[Worker] Created child node {newChildIndex} for move {move}");
             childNode.Initialize(nodeIndex, move);
         
             childNode.StateHash = newStateHash; // <-- Salva l'hash calcolato nel nuovo nodo
@@ -132,10 +141,12 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
             if (arena.ILose) return;
 
             var legalMovesMask = arena.GetLegalMoves();
+            // Console.WriteLine($"[Worker] Simulation turn {i}, LegalMovesMask: {Convert.ToString(legalMovesMask, 2).PadLeft(4, '0')}");
             if (legalMovesMask == 0) return;
         
             // Passiamo l'arena alla nuova policy di rollout
             var move = SelectRolloutMove(in arena, legalMovesMask);
+            // Console.WriteLine($"[Worker] Simulation turn {i}, Selected Move: {move}");
         
             arena.ApplySingleMove(move);
         }
@@ -158,10 +169,14 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
             var move = (byte)(1 << BitOperations.TrailingZeroCount(movesToEvaluate));
             var nextPos = arena.Grid.GetNeighbor(head, move);
 
+            // Console.WriteLine($"[Rollout] Evaluating move {move} to position {nextPos}");
+            
             // --- CORREZIONE CHIAVE ---
             // Calcola le mosse legali DALLA POSIZIONE FUTURA (nextPos)
             var futureMoves = arena.Grid.GetLegalMoves(nextPos);
+            // Console.WriteLine($"[Rollout] Future legal moves mask from position {nextPos}: {Convert.ToString(futureMoves, 2).PadLeft(4, '0')}");
             var score = BitOperations.PopCount(futureMoves);
+            // Console.WriteLine($"[Rollout] Move {move} has score {score} based on future moves count");
         
             // (Opzionale, ma consigliato) Aggiungi un piccolo bonus per il cibo
             if (arena.Grid.IsFood(nextPos))
@@ -193,6 +208,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
 // La vecchia logica casuale ora è un helper di fallback
     private static byte RolloutMoveRandom(byte legalMoves)
     {
+        // Console.WriteLine($"[Rollout] No best move found, selecting random from legal moves mask: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
         if (legalMoves == 0) return Moves.Up;
     
         var count = BitOperations.PopCount(legalMoves);
@@ -225,6 +241,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
             ref var currentNode = ref _nodePool[currentIndex];
             // Ora aggiorniamo le statistiche con un valore molto più informativo di un semplice +1 o -1
             currentNode.UpdateStats(normalizedResult);
+            // Console.WriteLine($"[Worker] Backpropagated to node {currentIndex}, New Wins: {currentNode.Wins}, Visits: {currentNode.Visits}");
             currentIndex = currentNode.ParentIndex;
         }
     }

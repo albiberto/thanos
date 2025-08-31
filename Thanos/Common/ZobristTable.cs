@@ -7,6 +7,7 @@ namespace Thanos.Common;
 public static class ZobristTable
 {
     private static readonly long[,] SnakeTable;
+    private static readonly long[] DeathTable; // <-- AGGIUNGI QUESTO
 
     static ZobristTable()
     {
@@ -23,8 +24,16 @@ public static class ZobristTable
             }
         }
         
+        DeathTable = new long[Constants.MaxSnakesCount];
+        for (var i = 0; i < Constants.MaxSnakesCount; i++)
+        {
+            DeathTable[i] = random.NextInt64();
+        }
+        
         
     }
 
     public static long GetSnakeValue(int snakeIndex, ushort position1D) => SnakeTable[snakeIndex, position1D];
+    
+    public static long GetDeathValue(int snakeIndex) => DeathTable[snakeIndex];
 }
