@@ -24,6 +24,8 @@ app.MapGet("/", () => new
 app.MapPost("/start", async context =>
 {
     var request = await ReadAsync(context);
+    
+    Console.WriteLine($"[START] New game started: {JsonSerializer.Serialize(request)}");
     agent.Start(request!.Value);
 });
 
@@ -33,6 +35,8 @@ app.MapPost("/move", async context =>
     var result = agent.Move(request!.Value);
     
     context.Response.ContentType = "application/json";
+    var move = ToApiMove(result);
+    Console.WriteLine($"[MOVE] Chosen move: {move}");
     await context.Response.WriteAsJsonAsync(new { move = ToApiMove(result) });
 });
 

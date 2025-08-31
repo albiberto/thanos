@@ -37,7 +37,7 @@ public class MonteCarloEngine
 
         var stopwatch = Stopwatch.StartNew();
         var counter = 0;
-        while (counter < 100)
+        while (stopwatch.ElapsedMilliseconds < 450)
         {
             _worker.RunIteration(_currentRootIndex, in slot);
             counter++;
