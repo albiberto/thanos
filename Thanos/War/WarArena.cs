@@ -30,27 +30,29 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		    byte legalMoves = 0;
 		    var head = Me.Head;
 		    var tail = Me.Tail;
+		    
+		    // Console.WriteLine($"Head: {head}, Tail: {tail}");
         
-		    // Controlliamo se abbiamo appena mangiato. La salute viene settata a 100 nel turno in cui si mangia.
-		    // Quindi, nel turno successivo, se la salute non è 100, la coda si muoverà.
-		    bool willGrow = Me.Health == 100;
-
 		    // Itera sulle 4 direzioni
 		    foreach (var move in new[] { Moves.Up, Moves.Down, Moves.Left, Moves.Right })
 		    {
 			    var neighbor = Grid.GetNeighbor(head, move);
 
+			    // Console.WriteLine($"  Move: {move}, Neighbor: {neighbor}");
+			    
 			    // Controlla se è una casella valida (non fuori dalla mappa)
 			    if (neighbor == ushort.MaxValue) continue;
 
 			    bool isOccupied = Grid.IsOccupied(neighbor);
+			    // Console.WriteLine($"    IsOccupied: {isOccupied}");
 			    bool isOwnTail = (neighbor == tail);
-
+			    // Console.WriteLine($"    IsOwnTail: {isOwnTail}");
+			    bool willGrowOnThisMove = Grid.IsFood(neighbor);
 			    // Una mossa è legale se:
 			    // 1. La casella NON è occupata.
 			    //    OPPURE
 			    // 2. La casella È occupata, ma è la nostra coda E non stiamo crescendo.
-			    if (!isOccupied || (isOwnTail && !willGrow))
+			    if (!isOccupied || (isOwnTail && !willGrowOnThisMove))
 			    {
 				    legalMoves |= move;
 			    }
@@ -58,10 +60,8 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		    return legalMoves;
 	    }
 
-	
-    public byte GetLegalMoves(ushort position) => Grid.GetLegalMoves(position);
 
-    /// <summary>
+	    /// <summary>
 	/// Applica una singola mossa allo stato di gioco corrente, modificandolo.
 	/// </summary>
 	public void ApplySingleMove(byte move)
@@ -71,11 +71,16 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		var oldTail = Me.Tail;
 		var head = Me.Head;
 		
+		// Console.WriteLine($"Applying move {move} for snake {Me.Id} at head {head} with tail {oldTail}");
+		
 		var newHead = Grid.GetNeighbor(head, move);
 		var hasEaten = Grid.IsFood(newHead);
 		
+		// Console.WriteLine($"  New head: {newHead}, Has eaten: {hasEaten}");
+		
 		if (newHead == ushort.MaxValue)
 		{
+			// Console.WriteLine("  Move is out of bounds! Snake dies.");
 			Me.Kill();
 			Grid.RemoveSnake(Me); // Rimuovi il serpente dalla griglia
 			return;
@@ -87,6 +92,8 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 			// e NON stiamo mangiando (se non mangiamo, la coda si sposterà).
 			var isMovingOntoOwnVacatingTail = (newHead == oldTail && !hasEaten);
 
+			// Console.WriteLine($"  Collision detected at {newHead}. Moving onto own vacating tail: {isMovingOntoOwnVacatingTail}");
+			
 			if (!isMovingOntoOwnVacatingTail)
 			{
 				Me.Kill();
@@ -97,7 +104,17 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 
 		var damage = Grid.IsHazard(newHead) ? 10 : 1; // Danno base 1, 10 su hazard
 
+		// Console.WriteLine($"  Damage to be applied: {damage}");
+
+		Me.GetSpans(out var meBodyPart1, out var meBodyPart2);
+		// Console.WriteLine($"Me Body Part 1: {string.Join(", ", meBodyPart1.ToArray())}");
+		// Console.WriteLine($"Me Body Part 2: {string.Join(", ", meBodyPart2.ToArray())}");
+		
 		Me.Move(newHead, hasEaten, damage);
+		
+		Me.GetSpans(out meBodyPart1, out meBodyPart2);
+		// Console.WriteLine($"After Move - Me Body Part 1: {string.Join(", ", meBodyPart1.ToArray())}");
+		// Console.WriteLine($"After Move - Me Body Part 2: {string.Join(", ", meBodyPart2.ToArray())}");
 		
 		if (Me.Dead)
 		{
@@ -105,12 +122,12 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 			return;
 		}
 
+		// Console.WriteLine($"  New head after move: {Me.Head}, New tail after move: {Me.Tail}, Length: {Me.Length}, Health: {Me.Health}");
 		Grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
+		// Console.WriteLine($"  Grid updated. Is new head occupied? {Grid.IsOccupied(newHead)}");
 		if (hasEaten) Grid.RemoveFood(newHead);
 	}
-	
-    public ushort GetMyNeighbor(byte move) => Grid.GetNeighbor(Me.Head, move);
-    
+
 	public float Outcome()
 	{
 		return OutcomeSolo();
@@ -121,6 +138,7 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 	
 	private float OutcomeSolo()
 	{
+		// Console.WriteLine($"Evaluating outcome for snake {Me.Id} with length {Me.Length}");
 		if (Me.Dead) return -1.0f; // Sconfitta
 
 		var availableSquares = Grid.Geography.Area;
@@ -131,6 +149,7 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 
     public double Evaluate()
     {
+	    // Console.WriteLine($"Evaluating state for snake {Me.Id} with head at {Me.Head}, health {Me.Health}, length {Me.Length}");
         // 1. Condizione Terminale: Se siamo morti, questo è lo scenario peggiore in assoluto.
         if (Me.Dead) return double.NegativeInfinity;
 
@@ -140,6 +159,7 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
         var headCoord = _conversionsMap[head];
         var score = 0.0;
 
+        // Console.WriteLine($"  Head: {head}, Health: {health}, Length: {Me.Length}");
         // --- 2. EURISTICA POSIZIONALE (Statica, dalla LUT) ---
         // Fornisce una "spinta" strategica a lungo termine, favorendo il centro
         // e penalizzando la vicinanza ai bordi.
