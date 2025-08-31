@@ -37,11 +37,15 @@ public class MonteCarloEngine
         }
 
         var stopwatch = Stopwatch.StartNew();
-        while (stopwatch.ElapsedMilliseconds < 450)
+        int counter = 0;
+        while (counter < 100)
         {
             // Il worker lavora sempre sulla radice corrente
             _worker.RunIteration(_currentRootIndex, in slot);
+            counter++;
         }
+        
+        Console.WriteLine($"MCTS Iterations: {counter} in {stopwatch.ElapsedMilliseconds}ms");
         
         ref var finalRootNode = ref _nodePool[_currentRootIndex];
         var bestChildIndex = finalRootNode.SelectMostVisitedChild(_nodePool);
