@@ -1,8 +1,7 @@
-﻿using System.Reflection.Metadata;
-using Thanos;
-using Thanos.Common;
-using Thanos.SourceGen;
+﻿using Thanos.SourceGen;
 using Thanos.War;
+
+namespace Thanos.Common;
 
 public static class ZobristHasher
 {
@@ -20,7 +19,8 @@ public static class ZobristHasher
         {
             // Otteniamo i due span che rappresentano il corpo
             me.GetSpans(out var meBodyPart1, out var meBodyPart2);
-
+            Console.WriteLine($"Me Body Part 1: {string.Join(", ", meBodyPart1.ToArray())}");
+            Console.WriteLine($"Me Body Part 2: {string.Join(", ", meBodyPart2.ToArray())}");
             // Iteriamo sulla prima parte del corpo
             foreach (var part in meBodyPart1)
             {

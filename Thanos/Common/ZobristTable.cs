@@ -1,5 +1,7 @@
 ﻿// File: ZobristTable.cs (Versione Corretta)
 
+using System.Text.Json;
+
 namespace Thanos.Common;
 
 public static class ZobristTable
@@ -15,9 +17,13 @@ public static class ZobristTable
         {
             for (var j = 0; j < Constants.MaxArea; j++)
             {
-                SnakeTable[i, j] = random.NextInt64();
+                var value = random.NextInt64();
+                // Console.WriteLine($"ZobristTable[{i}, {j}] = {value}");
+                SnakeTable[i, j] = value;
             }
         }
+        
+        
     }
 
     public static long GetSnakeValue(int snakeIndex, ushort position1D) => SnakeTable[snakeIndex, position1D];
