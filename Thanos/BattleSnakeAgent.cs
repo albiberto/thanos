@@ -52,19 +52,22 @@ public sealed class BattleSnakeAgent : IDisposable
         // 3. L'engine ci dà l'INDICE del nodo che rappresenta la nostra mossa migliore
         var bestNodeIndex = _engine.FindBestMove(in request);
 
-        if (bestNodeIndex == -1) return Moves.Up; // Fallback se non troviamo un nodo valido
-
-        // 4. Se abbiamo trovato un nodo valido...
-        ref var chosenNode = ref _nodePool[bestNodeIndex];
-        var move = chosenNode.MoveThatLedToThisNode;
-            
-        // ...diciamo all'engine di promuovere questo nodo a nuova radice per il prossimo turno...
-        _engine.SetNewRoot(bestNodeIndex);
-            
-        Console.WriteLine($"Chosen Move: {move} (Node Index: {bestNodeIndex}, Visits: {chosenNode.Visits}, Wins: {chosenNode.Wins})");
+        if (bestNodeIndex != -1)
+        {
+            ref var chosenNode = ref _nodePool[bestNodeIndex];
+            byte move = chosenNode.MoveThatLedToThisNode;
         
-        // ...e restituiamo la mossa al server.
-        return move;
+            _engine.SetNewRoot(bestNodeIndex);
+        
+            Console.WriteLine($"Chosen Move: {move} (Node Index: {bestNodeIndex}, Visits: {chosenNode.Visits}, Wins: {chosenNode.Wins})");
+            return move;
+        }
+    
+        // Se bestNodeIndex è -1, significa che non ci sono figli validi.
+        // Il serpente è già morto o intrappolato. Qualsiasi mossa è ininfluente.
+        Console.WriteLine("!!! MCTS FALLBACK: No valid child found. Snake is trapped.");
+        _engine.Reset(); // Resettiamo l'albero per la prossima partita.
+        return Moves.Up; 
     }
 
     public void End(in Request _)

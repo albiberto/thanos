@@ -19,30 +19,37 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         var workingSlot = _warPool.GetNext();
         workingSlot.CloneFrom(in rootSlot);
         var arena = workingSlot.Arena;
-
-        // 2. Selezione
         var leafNodeIndex = Select(rootNodeIndex, ref arena);
         ref var leafNode = ref _nodePool[leafNodeIndex];
 
-        // 3. Espansione e Simulazione (Logica Unificata)
-        if (arena.ILose)
-        {
+        if (arena.ILose) {
             leafNode.IsTerminal = true;
         }
-        else if (leafNode.IsLeafNode)
-        {
-            // Espandi solo se è un nuovo nodo foglia
+        else if (leafNode.IsLeafNode) {
             Expand(leafNodeIndex, ref leafNode, in arena);
         }
     
-        // Simula SEMPRE a meno che il nodo non sia già terminale dopo Select/Expand
-        if (!leafNode.IsTerminal) 
-        {
+        if (!leafNode.IsTerminal) {
             Simulate(ref arena);
         }
     
-        // La valutazione finale usa lo stato dell'arena DOPO la simulazione
-        var simulationResult = workingSlot.Arena.Outcome();
+        // --- INIZIO LOGICA CORRETTA ---
+        double simulationResult;
+        var finalArena = workingSlot.Arena;
+
+        // Prima controlliamo l'esito definitivo
+        var finalOutcome = finalArena.Outcome(); 
+    
+        if (finalOutcome != 0.0f) // C'è una vittoria o sconfitta netta?
+        {
+            // Sì, usiamo il risultato definitivo (-1 o 1)
+            simulationResult = finalOutcome; 
+        }
+        else // No, la partita è ancora in corso (la simulazione ha raggiunto il limite)
+        {
+            // Usiamo l'euristica per stimare la qualità della posizione
+            simulationResult = finalArena.Evaluate(); 
+        }
 
         // 4. Backpropagation
         Backpropagate(leafNodeIndex, simulationResult);
@@ -123,34 +130,48 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
     
     private static byte SelectRolloutMove(in WarArena arena, byte legalMoves)
     {
-        if (BitOperations.IsPow2(legalMoves)) return legalMoves; // Solo una mossa, prendi quella
+        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
 
         byte bestMove = 0;
-        int bestScore = -1;
+        var bestScore = -1;
+        var countOfBest = 1;
 
-        // Itera sulle mosse possibili
+        var head = arena.Me.Head;
         var movesToEvaluate = legalMoves;
         while (movesToEvaluate > 0)
         {
             var move = (byte)(1 << BitOperations.TrailingZeroCount(movesToEvaluate));
-        
-            // Calcola la posizione successiva
-            var nextPos = arena.GetMyNeighbor(move);
-        
-            // Controlla quante mosse avremo a disposizione DOPO questa mossa
-            var futureMoves = arena.GetLegalMoves();
+            var nextPos = arena.Grid.GetNeighbor(head, move);
+
+            // --- CORREZIONE CHIAVE ---
+            // Calcola le mosse legali DALLA POSIZIONE FUTURA (nextPos)
+            var futureMoves = arena.Grid.GetLegalMoves(nextPos);
             var score = BitOperations.PopCount(futureMoves);
+        
+            // (Opzionale, ma consigliato) Aggiungi un piccolo bonus per il cibo
+            if (arena.Grid.IsFood(nextPos))
+            {
+                score += 5; 
+            }
 
             if (score > bestScore)
             {
                 bestScore = score;
                 bestMove = move;
+                countOfBest = 1;
             }
-
-            movesToEvaluate &= (byte)~move; // Rimuovi la mossa appena valutata
+            else if (score == bestScore)
+            {
+                countOfBest++;
+                if (Random.Shared.Next(countOfBest) == 0)
+                {
+                    bestMove = move;
+                }
+            }
+        
+            movesToEvaluate &= (byte)~move;
         }
     
-        // Se tutte le mosse portano a 0 vie di fuga, scegline una a caso tra le legali
         return bestMove != 0 ? bestMove : RolloutMoveRandom(legalMoves);
     }
 

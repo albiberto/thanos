@@ -44,7 +44,7 @@ public class MonteCarloEngine
         }
         
         ref var finalRootNode = ref _nodePool[_currentRootIndex];
-        var bestChildIndex = finalRootNode.SelectBestChild(_nodePool, 0);
+        var bestChildIndex = finalRootNode.SelectMostVisitedChild(_nodePool);
         
         return bestChildIndex; // 4. Restituisce l'INDICE del figlio migliore
     }

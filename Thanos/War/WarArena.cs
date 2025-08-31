@@ -10,8 +10,8 @@ namespace Thanos.War;
 
 public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
 {
-    private readonly WarGrid Grid = grid;
-    private readonly WarSnake Me = me;
+    public readonly WarGrid Grid = grid;
+    public readonly WarSnake Me = me;
     private readonly Enemies Enemies = enemies;
     
     public bool ILose => Me.Dead;

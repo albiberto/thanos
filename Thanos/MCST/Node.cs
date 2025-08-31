@@ -69,6 +69,37 @@ public struct Node
         return bestChildIndex;
     }
     
+    /// <summary>
+    /// Trova l'INDICE del figlio che è stato visitato più volte.
+    /// Questo è il metodo più robusto per la decisione finale.
+    /// </summary>
+    public int SelectMostVisitedChild(NodeMemoryPool pool)
+    {
+        // Se questo nodo non ha figli, non c'è nulla da scegliere.
+        if (IsLeafNode)
+        {
+            return -1;
+        }
+
+        int bestChildIndex = -1;
+        int maxVisits = -1;
+
+        // Itera su tutti i figli
+        int currentChildIndex = FirstChildIndex;
+        while (currentChildIndex != -1)
+        {
+            ref var childNode = ref pool[currentChildIndex];
+            if (childNode.Visits > maxVisits)
+            {
+                maxVisits = childNode.Visits;
+                bestChildIndex = currentChildIndex;
+            }
+            currentChildIndex = childNode.NextSiblingIndex;
+        }
+    
+        return bestChildIndex;
+    }
+    
     public ChildEnumerator GetChildren(NodeMemoryPool pool) => new(FirstChildIndex, pool);
 }
 
