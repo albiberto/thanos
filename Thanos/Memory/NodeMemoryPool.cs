@@ -20,7 +20,7 @@ public sealed class NodeMemoryPool : IDisposable
     {
         _layout = layout;
         
-        _memoryOwner = MemoryPool<byte>.Shared.Rent(_layout.Size * maxNodes);
+        _memoryOwner = MemoryPool<byte>.Shared.Rent(_layout.Size * maxNodes * 10);
         
         _memory = _memoryOwner.Memory;
         _memory.Span.Clear();

@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Numerics;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -12,6 +11,9 @@ public class MonteCarloEngine
     private readonly NodeMemoryPool _nodePool;
     private readonly Worker _worker;
     
+    // 1. L'indice della radice diventa un campo per mantenere lo stato tra i turni
+    private int _currentRootIndex = 0; 
+
     public MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     {
         _warPool = warPool;
@@ -19,36 +21,46 @@ public class MonteCarloEngine
         _worker = new Worker(_warPool, _nodePool);
     }
 
-    public byte FindBestMove(in Request request)
+    // 2. Il metodo ora restituisce l'INDICE del nodo scelto, non la mossa.
+    // Questo è FONDAMENTALE per sapere quale nodo promuovere.
+    public int FindBestMove(in Request request)
     {
-        var slot = _warPool.GetNext();
+        var slot = _warPool.GetNext(/* ... se hai aggiunto le Luts ... */);
         slot.InitializeFromRequest(in request);
 
-        var rootIndex = _nodePool.GetNextIndex();
-        ref var root = ref _nodePool[rootIndex];
-        root.Initialize(-1, Moves.None);
+        // 3. Se la radice non è inizializzata (inizio partita), creala.
+        if (_currentRootIndex == 0)
+        {
+            _currentRootIndex = _nodePool.GetNextIndex();
+            ref var root = ref _nodePool[_currentRootIndex];
+            root.Initialize(-1, Moves.None);
+        }
 
-        var counter = 0;
         var stopwatch = Stopwatch.StartNew();
         while (stopwatch.ElapsedMilliseconds < 450)
         {
-            // 4. Usiamo il nostro worker riutilizzabile, passando i dati del turno
-            _worker.RunIteration(rootIndex, in slot);
-            counter++;
+            // Il worker lavora sempre sulla radice corrente
+            _worker.RunIteration(_currentRootIndex, in slot);
         }
         
-        ref var finalRootNode = ref _nodePool[rootIndex];
-        
+        ref var finalRootNode = ref _nodePool[_currentRootIndex];
         var bestChildIndex = finalRootNode.SelectBestChild(_nodePool, 0);
         
-        Console.WriteLine($"Completed {counter} iterations in {stopwatch.ElapsedMilliseconds} ms, avg {stopwatch.ElapsedMilliseconds / (double)counter:0.00} ms/iteration");
-       
-        
-        if (bestChildIndex != -1) return _nodePool[bestChildIndex].MoveThatLedToThisNode;
-
-        var initialArena = slot.Arena; 
-        var legalMoves = initialArena.GetLegalMoves();
-        
-        return legalMoves != 0 ? (byte)(1 << BitOperations.TrailingZeroCount(legalMoves)) : Moves.Up;
+        return bestChildIndex; // 4. Restituisce l'INDICE del figlio migliore
     }
+
+    // 5. NUOVO METODO: L'Agent lo userà per dirci qual è la nuova radice
+    public void SetNewRoot(int nodeIndex)
+    {
+        _currentRootIndex = nodeIndex;
+        if (_currentRootIndex > 0)
+        {
+            // Questo è cruciale: il nuovo nodo radice non ha un genitore.
+            ref var newRootNode = ref _nodePool[_currentRootIndex];
+            newRootNode.ParentIndex = -1; 
+        }
+    }
+
+    // 6. NUOVO METODO: L'Agent lo userà per resettare lo stato tra le partite
+    public void Reset() => _currentRootIndex = 0;
 }

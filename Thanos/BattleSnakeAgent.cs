@@ -1,4 +1,5 @@
-﻿using Thanos.MCST;
+﻿using Thanos.Common;
+using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
 using Thanos.PreWarm;
@@ -28,6 +29,7 @@ public sealed class BattleSnakeAgent : IDisposable
     
     public void Start(in Request request)
     {
+        Console.WriteLine($"Board: {request.Board.Width}x{request.Board.Height}");
         var width = request.Board.Width;
         
         var snakeIdMap = BuildIdMap(request);
@@ -37,18 +39,36 @@ public sealed class BattleSnakeAgent : IDisposable
         var luts = _lutProvider.Get(width);
         _warPool.Reset(in context, in luts);
         _nodePool.Reset();
+        _engine.Reset();
     }
     
     public byte Move(in Request request)
     {
-        _nodePool.Reset();
-        return _engine.FindBestMove(in request);
+        Console.WriteLine($"Turn {request.Turn}, Head: ({request.You.Head.X}, {request.You.Head.Y}), Length: {request.You.Length}, Health: {request.You.Health}");
+        // 2. A ogni mossa, resetta SOLO il pool degli stati di simulazione
+        _warPool.Clear(); 
+        // NON TOCCARE _nodePool.Reset() QUI!
+
+        // 3. L'engine ci dà l'INDICE del nodo che rappresenta la nostra mossa migliore
+        var bestNodeIndex = _engine.FindBestMove(in request);
+
+        if (bestNodeIndex == -1) return Moves.Up; // Fallback se non troviamo un nodo valido
+
+        // 4. Se abbiamo trovato un nodo valido...
+        ref var chosenNode = ref _nodePool[bestNodeIndex];
+        var move = chosenNode.MoveThatLedToThisNode;
+            
+        // ...diciamo all'engine di promuovere questo nodo a nuova radice per il prossimo turno...
+        _engine.SetNewRoot(bestNodeIndex);
+            
+        Console.WriteLine($"Chosen Move: {move} (Node Index: {bestNodeIndex}, Visits: {chosenNode.Visits}, Wins: {chosenNode.Wins})");
+        
+        // ...e restituiamo la mossa al server.
+        return move;
     }
 
     public void End(in Request _)
     {
-        _warPool.Clear();
-        _nodePool.Clear();
     } 
     
     public void Dispose()
