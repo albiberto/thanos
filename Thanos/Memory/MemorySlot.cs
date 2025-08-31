@@ -40,7 +40,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
         {
             var grid = new WarGrid(new WarGridMemoryView(WarGridMemory, in _context.Layout.WarGrid));
             var me = new WarSnake(new WarSnakeMemoryView(MySnakeMemory, in _context.Layout.WarSnake, 0));
-            var enemies = new Enemies(EnemiesMemory, ref _context.Layout.WarSnake);
+            var enemies = new Enemies(EnemiesMemory, ref _context.Layout.WarSnake, _context.SnakesCount - 1);
             
             return new WarArena(grid, me, enemies, _luts.ConversionsMap, _luts.PositionalScores);
         }

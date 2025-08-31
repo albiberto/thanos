@@ -43,13 +43,13 @@ public sealed unsafe class WarMemoryPool : IDisposable
         return new MemorySlot(slotSpan, ref _context, ref _luts);
     }
 
-    public void Clear() => _offset = 0;
-
-    public void Reset(in GameContext context, in Luts luts)
+    public void Set(in GameContext context, in Luts luts)
     {
         _context = context;
         _luts = luts;
     }
+    
+    public void Reset() => _offset = 0;
 
     public void Dispose() => NativeMemory.Free(_basePointer);
 }

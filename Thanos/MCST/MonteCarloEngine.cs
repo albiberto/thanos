@@ -63,4 +63,41 @@ public class MonteCarloEngine
 
     // 6. NUOVO METODO: L'Agent lo userà per resettare lo stato tra le partite
     public void Reset() => _currentRootIndex = 0;
+    
+    public void PrepareNextTurn(int previousChosenNodeIndex, in Request newTurnRequest, Dictionary<string, int> snakeIdMap)
+    {
+        // Se non stiamo riutilizzando un albero, non facciamo nulla. La radice verrà creata in FindBestMove.
+        if (previousChosenNodeIndex == 0)
+        {
+            Reset();
+            return;
+        }
+
+        long realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
+
+        ref var parentNode = ref _nodePool[previousChosenNodeIndex];
+        int newRootIndex = 0;
+        
+        // Cerca tra i "nipoti" se ce n'è uno che corrisponde allo stato reale
+        foreach (var childIndex in parentNode.GetChildren(_nodePool))
+        {
+            ref var childNode = ref _nodePool[childIndex];
+            if (childNode.StateHash == realStateHash)
+            {
+                newRootIndex = childIndex; // Trovato!
+                break;
+            }
+        }
+
+        if (newRootIndex != 0) // Cache Hit
+        {
+            _currentRootIndex = newRootIndex;
+            ref var newRoot = ref _nodePool[_currentRootIndex];
+            newRoot.ParentIndex = -1; // È la nuova radice
+        }
+        else // Cache Miss
+        {
+            Reset(); // Non abbiamo trovato una corrispondenza, resettiamo l'albero
+        }
+    }
 }

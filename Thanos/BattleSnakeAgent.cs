@@ -16,6 +16,8 @@ public sealed class BattleSnakeAgent : IDisposable
     private readonly LutProvider _lutProvider;
     private readonly MonteCarloEngine _engine;
     
+    private int _lastChosenNodeIndex = 0; 
+    
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
         NeighborsBoardCache.Burn(Constants.MaxWidth);
@@ -29,6 +31,8 @@ public sealed class BattleSnakeAgent : IDisposable
     
     public void Start(in Request request)
     {
+        _lastChosenNodeIndex = 0; // Resetta a inizio partita
+        
         Console.WriteLine($"Board: {request.Board.Width}x{request.Board.Height}");
         var width = request.Board.Width;
         
@@ -37,7 +41,7 @@ public sealed class BattleSnakeAgent : IDisposable
         
         var context = new GameContext(width, snakeIdMap, neighbors);
         var luts = _lutProvider.Get(width);
-        _warPool.Reset(in context, in luts);
+        _warPool.Set(in context, in luts);
         _nodePool.Reset();
         _engine.Reset();
     }
@@ -46,28 +50,29 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         Console.WriteLine($"Turn {request.Turn}, Head: ({request.You.Head.X}, {request.You.Head.Y}), Length: {request.You.Length}, Health: {request.You.Health}");
         // 2. A ogni mossa, resetta SOLO il pool degli stati di simulazione
-        _warPool.Clear(); 
-        // NON TOCCARE _nodePool.Reset() QUI!
-
-        // 3. L'engine ci dà l'INDICE del nodo che rappresenta la nostra mossa migliore
+        _warPool.Reset(); 
+        
+        // All'inizio del turno, prova ad aggiornare la radice dell'albero
+        _engine.PrepareNextTurn(_lastChosenNodeIndex, in request, BuildIdMap(request));
+        
+        // Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
         var bestNodeIndex = _engine.FindBestMove(in request);
 
         if (bestNodeIndex != -1)
         {
             ref var chosenNode = ref _nodePool[bestNodeIndex];
             byte move = chosenNode.MoveThatLedToThisNode;
-        
-            _engine.SetNewRoot(bestNodeIndex);
-        
-            Console.WriteLine($"Chosen Move: {move} (Node Index: {bestNodeIndex}, Visits: {chosenNode.Visits}, Wins: {chosenNode.Wins})");
+            
+            _lastChosenNodeIndex = bestNodeIndex; // Salva la scelta per il prossimo turno
+            
+            // Log e return
             return move;
         }
-    
-        // Se bestNodeIndex è -1, significa che non ci sono figli validi.
-        // Il serpente è già morto o intrappolato. Qualsiasi mossa è ininfluente.
-        Console.WriteLine("!!! MCTS FALLBACK: No valid child found. Snake is trapped.");
-        _engine.Reset(); // Resettiamo l'albero per la prossima partita.
-        return Moves.Up; 
+        
+        // Fallback
+        _lastChosenNodeIndex = 0; // Resetta per il prossimo turno
+        _engine.Reset();
+        return Moves.Up; // O FindQuickSafeMove
     }
 
     public void End(in Request _)

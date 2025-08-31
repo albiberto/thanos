@@ -15,8 +15,12 @@ public struct Node
     public byte MoveThatLedToThisNode;
     public bool IsTerminal;
     
+    public long StateHash; // <-- NUOVO CAMPO
+    
     public void Initialize(int parentIndex, byte move)
     {
+        StateHash = 0; // Inizializza a 0
+        
         ParentIndex = parentIndex;
         MoveThatLedToThisNode = move;
         

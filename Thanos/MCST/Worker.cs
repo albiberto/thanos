@@ -91,9 +91,24 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         {
             if ((legalMovesMask & move) == 0) continue;
 
+            // --- INIZIO CODICE DA AGGIUNGERE ---
+        
+            // 1. Clona l'arena per simulare la mossa in modo sicuro
+            var tempArena = arena;
+        
+            // 2. Applica la mossa all'arena temporanea per ottenere lo stato futuro
+            tempArena.ApplySingleMove(move);
+
+            // 3. Calcola l'hash del nuovo stato risultante
+            long newStateHash = ZobristHasher.CalculateHash(in tempArena);
+        
+            // --- FINE CODICE DA AGGIUNGERE ---
+        
             var newChildIndex = _nodePool.GetNextIndex();
             ref var childNode = ref _nodePool[newChildIndex];
             childNode.Initialize(nodeIndex, move);
+        
+            childNode.StateHash = newStateHash; // <-- Salva l'hash calcolato nel nuovo nodo
 
             if (lastChildIndex == -1)
             {

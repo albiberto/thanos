@@ -12,7 +12,7 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 {
     public readonly WarGrid Grid = grid;
     public readonly WarSnake Me = me;
-    private readonly Enemies Enemies = enemies;
+    public readonly Enemies Enemies = enemies;
     
     public bool ILose => Me.Dead;
     
@@ -58,9 +58,7 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		    return legalMoves;
 	    }
 
-	    // ... resto della tua classe WarArena (ApplySingleMove, Evaluate, etc.)...
-    
-    
+	
     public byte GetLegalMoves(ushort position) => Grid.GetLegalMoves(position);
 
     /// <summary>
@@ -75,6 +73,13 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		
 		var newHead = Grid.GetNeighbor(head, move);
 		var hasEaten = Grid.IsFood(newHead);
+		
+		if (newHead == ushort.MaxValue)
+		{
+			Me.Kill();
+			Grid.RemoveSnake(Me); // Rimuovi il serpente dalla griglia
+			return;
+		}
 		
 		if (Grid.IsOccupied(newHead))
 		{
