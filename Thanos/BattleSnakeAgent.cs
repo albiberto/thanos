@@ -1,4 +1,5 @@
-﻿using Thanos.Common;
+﻿using System.Text.Json;
+using Thanos.Common;
 using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
@@ -33,13 +34,19 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         _lastChosenNodeIndex = 0; // Resetta a inizio partita
         
-        Console.WriteLine($"Board: {request.Board.Width}x{request.Board.Height}");
+        // Console.WriteLine($"Board: {request.Board.Width}x{request.Board.Height}");
+        
         var width = request.Board.Width;
         
         var snakeIdMap = BuildIdMap(request);
+        // Console.WriteLine($"Snake IDs: {JsonSerializer.Serialize(snakeIdMap)}");
+        
         var neighbors = NeighborsBoardCache.Get(width);
+        // Console.WriteLine($"Neighbors: {JsonSerializer.Serialize(neighbors)}");
         
         var context = new GameContext(width, snakeIdMap, neighbors);
+        // Console.WriteLine($"Context: {JsonSerializer.Serialize(snakeIdMap)}");
+        
         var luts = _lutProvider.Get(width);
         _warPool.Set(in context, in luts);
         _nodePool.Reset();
@@ -48,7 +55,7 @@ public sealed class BattleSnakeAgent : IDisposable
     
     public byte Move(in Request request)
     {
-        Console.WriteLine($"Turn {request.Turn}, Head: ({request.You.Head.X}, {request.You.Head.Y}), Length: {request.You.Length}, Health: {request.You.Health}");
+        // Console.WriteLine($"Turn {request.Turn}, Head: ({request.You.Head.X}, {request.You.Head.Y}), Length: {request.You.Length}, Health: {request.You.Health}");
         
         // 1. A ogni mossa, resetta SOLO il pool degli stati di simulazione
         _warPool.Reset(); 
@@ -58,11 +65,14 @@ public sealed class BattleSnakeAgent : IDisposable
         
         // 3. Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
         var bestNodeIndex = _engine.FindBestMove(in request);
-
+        // Console.WriteLine($"Best Node Index: {bestNodeIndex}");
+        
         if (bestNodeIndex != -1)
         {
             ref var chosenNode = ref _nodePool[bestNodeIndex];
-            byte move = chosenNode.MoveThatLedToThisNode;
+            // Console.WriteLine($"Node: {JsonSerializer.Serialize(chosenNode)}");
+            
+            var move = chosenNode.MoveThatLedToThisNode;
             
             _lastChosenNodeIndex = bestNodeIndex; // Salva la scelta per il prossimo turno
             

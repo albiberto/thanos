@@ -45,8 +45,6 @@ public class MonteCarloEngine
             counter++;
         }
         
-        Console.WriteLine($"MCTS Iterations: {counter} in {stopwatch.ElapsedMilliseconds}ms");
-        
         ref var finalRootNode = ref _nodePool[_currentRootIndex];
         var bestChildIndex = finalRootNode.SelectMostVisitedChild(_nodePool);
         
@@ -91,7 +89,6 @@ public class MonteCarloEngine
         if (chosenNode.StateHash != realStateHash)
         {
             // Cache Miss: la realtà non corrisponde alla nostra previsione. Resetta.
-            Console.WriteLine("Tree Reuse Cache Miss! Resetting tree."); // Utile per il debug
             Reset(); 
             return;
         }
