@@ -21,9 +21,45 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 
     private readonly int _liveSnakesCount;
 	
-    public byte GetLegalMoves() => Me.Dead 
-	    ? (byte)0 
-	    : Grid.GetLegalMoves(Me.Head);
+    // File: WarArena.cs
+	
+	    public byte GetLegalMoves()
+	    {
+		    if (Me.Dead) return 0;
+
+		    byte legalMoves = 0;
+		    var head = Me.Head;
+		    var tail = Me.Tail;
+        
+		    // Controlliamo se abbiamo appena mangiato. La salute viene settata a 100 nel turno in cui si mangia.
+		    // Quindi, nel turno successivo, se la salute non è 100, la coda si muoverà.
+		    bool willGrow = Me.Health == 100;
+
+		    // Itera sulle 4 direzioni
+		    foreach (var move in new[] { Moves.Up, Moves.Down, Moves.Left, Moves.Right })
+		    {
+			    var neighbor = Grid.GetNeighbor(head, move);
+
+			    // Controlla se è una casella valida (non fuori dalla mappa)
+			    if (neighbor == ushort.MaxValue) continue;
+
+			    bool isOccupied = Grid.IsOccupied(neighbor);
+			    bool isOwnTail = (neighbor == tail);
+
+			    // Una mossa è legale se:
+			    // 1. La casella NON è occupata.
+			    //    OPPURE
+			    // 2. La casella È occupata, ma è la nostra coda E non stiamo crescendo.
+			    if (!isOccupied || (isOwnTail && !willGrow))
+			    {
+				    legalMoves |= move;
+			    }
+		    }
+		    return legalMoves;
+	    }
+
+	    // ... resto della tua classe WarArena (ApplySingleMove, Evaluate, etc.)...
+    
     
     public byte GetLegalMoves(ushort position) => Grid.GetLegalMoves(position);
 
