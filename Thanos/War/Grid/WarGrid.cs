@@ -39,10 +39,20 @@ public readonly ref struct WarGrid
 
     public ushort GetNeighbor(ushort position, byte move) => _neighborsBoard[position * 4 + BitOperations.TrailingZeroCount(move)];
     
-    public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool hasEaten)
+    // Dentro WarGrid.cs
+    public void SynchronizeSnakeOnGrid(WarSnake snake, ushort oldTail, bool hasEaten)
     {
-        if (!hasEaten) Snakes.Unset(oldTail);
-        Snakes.Set(newHead);
+        // L'approccio più semplice e sicuro: cancella la coda e ridisegna tutto il corpo.
+        // Questo gestisce correttamente tutti i casi, inclusi i segmenti sovrapposti.
+        if (!hasEaten)
+        {
+            Snakes.Unset(oldTail);
+        }
+
+        // Ridisegna l'intero corpo del serpente sulla bitboard per garantire la coerenza.
+        snake.GetSpans(out var bodyFirst, out var bodySecond);
+        foreach (var pos in bodyFirst) Snakes.Set(pos);
+        foreach (var pos in bodySecond) Snakes.Set(pos);
     }
     
     public void RemoveFood(ushort position) => Food.Unset(position);

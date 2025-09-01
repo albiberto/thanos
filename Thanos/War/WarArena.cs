@@ -49,7 +49,7 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 	/// <summary>
 	/// Applica una singola mossa allo stato di gioco corrente, modificandolo.
 	/// </summary>
-	public void ApplySingleMove(byte move)
+	public void ApplySingleMove(byte move, bool logging = false)
 	{
 		// Rimosso: var me = Me;
 		// Ora lavoriamo direttamente sul campo 'Me' della struct.
@@ -87,7 +87,18 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 
 		var damage = Grid.IsHazard(newHead) ? 10 : 1; // Danno base 1, 10 su hazard
 		Me.Move(newHead, hasEaten, damage); // Modifica direttamente lo stato di 'Me'
-    
+
+		if (logging)
+		{
+
+			Console.WriteLine("===========================================================");
+			Console.WriteLine("ApplySingleMove:");
+			Me.GetSpans(out var body13, out var body23);
+			Console.WriteLine($"Body of snake length: {Me.Length}, health: {Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
+			Console.WriteLine($"Snakes Bitboard: {string.Join(',', Grid.Snakes.GetRawData.ToArray())}");
+			Console.WriteLine("===========================================================");
+		}
+
 		if (Me.Dead)
 		{
 			Grid.RemoveSnake(Me);
@@ -95,8 +106,16 @@ public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies, 
 		}
 
 		// Modifica direttamente lo stato di 'Grid'
-		Grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
+		Grid.SynchronizeSnakeOnGrid(Me, oldTail, hasEaten);
 		if (hasEaten) Grid.RemoveFood(newHead);
+		
+		if (!logging) return;
+		Console.WriteLine("===========================================================");
+		Console.WriteLine("ApplySingleMove 2:");
+		Me.GetSpans(out var body132, out var body232);
+		Console.WriteLine($"Body of snake length: {Me.Length}, health: {Me.Health}, body1: {string.Join(",", body132.ToArray())}, body2: {string.Join(",", body232.ToArray())}");
+		Console.WriteLine($"Snakes Bitboard: {string.Join(',', Grid.Snakes.GetRawData.ToArray())}");
+		Console.WriteLine("===========================================================");
 	}
 
 	public float Outcome()

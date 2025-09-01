@@ -21,43 +21,37 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         Console.WriteLine($"[ITERATION START] Root Node Index: {rootNodeIndex}");
         rootArena.Me.GetSpans(out var body11, out var body21);
         Console.WriteLine($"Body of snake length: {rootArena.Me.Length}, health: {rootArena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', rootArena.Grid.Food.GetRawData.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', rootArena.Grid.Snakes.GetRawData.ToArray())}");
         Console.WriteLine("===========================================================");
         
         // 1. Setup - Prepara uno stato di lavoro copiando lo stato della radice.
         var workingSlot = _warPool.GetNext();
         workingSlot.CloneFrom(in rootSlot);
-        var arena = workingSlot.Arena;
+        
 
         Console.WriteLine("===========================================================");
         Console.WriteLine($"[SETUP] Working slot prepared.");
-        arena.Me.GetSpans(out var body12, out var body22);
-        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        workingSlot.Arena.Me.GetSpans(out var body12, out var body22);
+        Console.WriteLine($"Body of snake length: {workingSlot.Arena.Me.Length}, health: {workingSlot.Arena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', workingSlot.Arena.Grid.Snakes.GetRawData.ToArray())}");
         Console.WriteLine("===========================================================");
         
         // 2. Selection - Scende nell'albero fino a un nodo foglia.
         //    'Select' è l'unica fase che modifica l'arena principale per farla avanzare.
-        var leafNodeIndex = Select(rootNodeIndex, ref arena);
+        var leafNodeIndex = Select(rootNodeIndex, workingSlot.Arena);
+        ref var leafNode = ref _nodePool[leafNodeIndex];
         
         Console.WriteLine("===========================================================");
         Console.WriteLine("After Selection:");
-        arena.Me.GetSpans(out var body13, out var body23);
-        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        workingSlot.Arena.Me.GetSpans(out var body13, out var body23);
+        Console.WriteLine($"Body of snake length: {workingSlot.Arena.Me.Length}, health: {workingSlot.Arena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', workingSlot.Arena.Grid.Snakes.GetRawData.ToArray())}");
         Console.WriteLine("===========================================================");
-        
-        ref var leafNode = ref _nodePool[leafNodeIndex];
-
-        // --- COMMENTO ---
-        // A questo punto, 'arena' contiene lo stato esatto del 'leafNodeIndex'.
 
         double simulationResult;
-
-        // Se il nodo selezionato è già terminale (partita finita), non espandiamo né simuliamo.
-        if (arena.ILose || leafNode.IsTerminal)
+        if (workingSlot.Arena.ILose || leafNode.IsTerminal)
         {
-            simulationResult = arena.Outcome();
+            simulationResult = workingSlot.Arena.Outcome();
         }
         else
         {
@@ -70,14 +64,11 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
             }
 
             // 4. Simulation (Rollout) - Simula una partita partendo dallo stato del nodo foglia.
-            // --- COMMENTO ---
-            // Creiamo una copia ESPLICITA dello stato del nodo foglia per la simulazione.
-            // In questo modo, la simulazione può modificare 'simulationArena' liberamente
-            // senza corrompere lo stato originale del nodo foglia ('arena').
-            var simulationArena = arena;
-            Simulate(ref simulationArena);
+            var simulationSlot = _warPool.GetNext();
+            simulationSlot.CloneFrom(in workingSlot); // Crea una copia isolata
+            var simulationArena = simulationSlot.Arena;
+            Simulate(ref simulationArena); // Simula sulla copia
             
-            // Il risultato si basa sullo stato finale della simulazione.
             var finalOutcome = simulationArena.Outcome();
 
             if (finalOutcome != 0.0f)
@@ -98,7 +89,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
     // --- COMMENTO ---
     // 'Select' è CORRETTO così com'è. Il suo scopo è proprio modificare l'arena
     // passata per riferimento per farla corrispondere allo stato del nodo foglia trovato.
-    private int Select(int startNodeIndex, ref WarArena arena)
+    private int Select(int startNodeIndex, WarArena arena)
     {
         var currentIndex = startNodeIndex;
         
@@ -113,7 +104,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
             currentIndex = nextNodeIndex;
             ref var childNode = ref _nodePool[currentIndex];
             
-            arena.ApplySingleMove(childNode.MoveThatLedToThisNode);
+            arena.ApplySingleMove(childNode.MoveThatLedToThisNode, true);
         }
     }
     
@@ -130,7 +121,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
     // La firma di 'Expand' ora usa 'in WarArena'. Questo è un vincolo a livello di compilatore
     // che ci impedisce di modificare accidentalmente l'arena originale.
     // La firma ora accetta un MemorySlot per permettere la clonazione
-private void Expand(int nodeIndex, ref Node node, in MemorySlot slot)
+private void Expand(int nodeIndex, ref Node node, in MemorySlot parentSlot)
 {
     Console.WriteLine($"[EXPAND] Espansione del nodo {nodeIndex}: " +
                       $"Score={node.Wins:F2}, Visits={node.Visits}, " +
@@ -138,15 +129,15 @@ private void Expand(int nodeIndex, ref Node node, in MemorySlot slot)
                       
     if (node.IsTerminal) return;
 
-    var arena = slot.Arena;
+    var parentArena = parentSlot.Arena;
     Console.WriteLine("===========================================================");
     Console.WriteLine("Expanding Arena State:");
-    arena.Me.GetSpans(out var body11, out var body21);
-    Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
-    Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+    parentArena.Me.GetSpans(out var body11, out var body21);
+    Console.WriteLine($"Body of snake length: {parentArena.Me.Length}, health: {parentArena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
+    Console.WriteLine($"Snakes Bitboard: {string.Join(',', parentArena.Grid.Snakes.GetRawData.ToArray())}");
     Console.WriteLine("===========================================================");
     
-    var legalMoves = arena.GetLegalMoves();
+    var legalMoves = parentArena.GetLegalMoves();
 
     Console.WriteLine($"[EXPAND] Legal Moves Bitmask: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
     
@@ -162,28 +153,28 @@ private void Expand(int nodeIndex, ref Node node, in MemorySlot slot)
     {
         if ((legalMoves & move) == 0) continue;
 
-        var tempSlot = _warPool.GetNext();
-        tempSlot.CloneFrom(slot);
-        var tempArena = tempSlot.Arena;
+        var childSlot = _warPool.GetNext();
+        childSlot.CloneFrom(in parentSlot);
+        var childArena = childSlot.Arena;
         
         Console.WriteLine("===========================================================");
         Console.WriteLine($"[EXPAND] Applying move {MoveToString(move)} to create child node.");
-        arena.Me.GetSpans(out var body12, out var body22);
-        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        childArena.Me.GetSpans(out var body12, out var body22);
+        Console.WriteLine($"Body of snake length: {childArena.Me.Length}, health: {childArena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', childArena.Grid.Snakes.GetRawData.ToArray())}");
         Console.WriteLine("===========================================================");
         
-        tempArena.ApplySingleMove(move);
+        childArena.ApplySingleMove(move, true);
         
         Console.WriteLine("===========================================================");
         Console.WriteLine("After Applying Move:");
-        arena.Me.GetSpans(out var body13, out var body23);
-        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        childArena.Me.GetSpans(out var body13, out var body23);
+        Console.WriteLine($"Body of snake length: {childArena.Me.Length}, health: {childArena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', childArena.Grid.Snakes.GetRawData.ToArray())}");
         Console.WriteLine("===========================================================");
         
         // Il resto della logica rimane simile...
-        var hash = ZobristHasher.CalculateHash(in tempArena);
+        var hash = ZobristHasher.CalculateHash(in childArena);
         
         var childIndex = _nodePool.GetNextIndex();
         ref var childNode = ref _nodePool[childIndex];
