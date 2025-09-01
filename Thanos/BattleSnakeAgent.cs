@@ -10,15 +10,15 @@ using Thanos.SourceGen;
 namespace Thanos;
 
 public sealed class BattleSnakeAgent : IDisposable
-{ 
+{
     private readonly WarMemoryPool _warPool;
     private readonly NodeMemoryPool _nodePool;
-    
+
     private readonly LutProvider _lutProvider;
     private readonly MonteCarloEngine _engine;
-    
-    private int _lastChosenNodeIndex = 0; 
-    
+
+    private int _lastChosenNodeIndex = 0;
+
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
         NeighborsBoardCache.Burn(Constants.MaxWidth);
@@ -29,57 +29,49 @@ public sealed class BattleSnakeAgent : IDisposable
         _warPool = new WarMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
         _engine = new MonteCarloEngine(_warPool, _nodePool);
     }
-    
+
     public void Start(in Request request)
     {
         _lastChosenNodeIndex = 0; // Resetta a inizio partita
-        
-        // Console.WriteLine($"Board: {request.Board.Width}x{request.Board.Height}");
-        
+
+
         var width = request.Board.Width;
-        
+
         var snakeIdMap = BuildIdMap(request);
-        // Console.WriteLine($"Snake IDs: {JsonSerializer.Serialize(snakeIdMap)}");
-        
+
         var neighbors = NeighborsBoardCache.Get(width);
-        // Console.WriteLine($"Neighbors: {JsonSerializer.Serialize(neighbors)}");
-        
+
         var context = new GameContext(width, snakeIdMap, neighbors);
-        // Console.WriteLine($"Context: {JsonSerializer.Serialize(snakeIdMap)}");
-        
+
         var luts = _lutProvider.Get(width);
         _warPool.Set(in context, in luts);
         _nodePool.Reset();
         _engine.Reset();
     }
-    
+
     public byte Move(in Request request)
     {
-        // Console.WriteLine($"Turn {request.Turn}, Head: ({request.You.Head.X}, {request.You.Head.Y}), Length: {request.You.Length}, Health: {request.You.Health}");
-        
         // 1. A ogni mossa, resetta SOLO il pool degli stati di simulazione
-        _warPool.Reset(); 
-        
+        _warPool.Reset();
+
         // 2. All'inizio del turno, prova ad aggiornare la radice dell'albero
         _engine.PrepareNextTurn(_lastChosenNodeIndex, in request, BuildIdMap(request));
-        
+
         // 3. Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
         var bestNodeIndex = _engine.FindBestMove(in request);
-        // Console.WriteLine($"Best Node Index: {bestNodeIndex}");
-        
+
         if (bestNodeIndex != -1)
         {
             ref var chosenNode = ref _nodePool[bestNodeIndex];
-            // Console.WriteLine($"Node: {JsonSerializer.Serialize(chosenNode)}");
-            
+
             var move = chosenNode.MoveThatLedToThisNode;
-            
+
             _lastChosenNodeIndex = bestNodeIndex; // Salva la scelta per il prossimo turno
-            
+
             // Log e return
             return move;
         }
-        
+
         // Fallback
         _lastChosenNodeIndex = 0; // Resetta per il prossimo turno
         _engine.Reset();
@@ -89,8 +81,12 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void End(in Request _)
     {
-    } 
-    
+        // LOG: Stampa lo stato finale dell'albero dell'ultima mossa
+        Console.WriteLine("===== Fine Partita: Stato Finale dell'Albero =====");
+        // Dovrai accedere al _nodePool e all'indice della radice dell'ultimo turno
+        TreeLogger.LogTreeState(_nodePool, _engine._currentRootIndex);
+    }
+
     public void Dispose()
     {
         _lutProvider.Dispose();
@@ -106,9 +102,64 @@ public sealed class BattleSnakeAgent : IDisposable
         {
             [myId] = 0
         };
-        
+
         foreach (var snake in request.Board.Snakes.Where(s => !string.Equals(s.Id, myId, StringComparison.InvariantCultureIgnoreCase))) snakeIdMap[snake.Id] = snakeIdMap.Count;
-        
+
         return snakeIdMap;
     }
+}
+
+public static class TreeLogger
+{
+    public static void LogTreeState(NodeMemoryPool nodePool, int rootNodeIndex)
+    {
+        Console.WriteLine("\n--- Stato Albero di Ricerca ---");
+        if (rootNodeIndex < 0 || rootNodeIndex >= nodePool._offset)
+        {
+            Console.WriteLine("Radice non valida.");
+            return;
+        }
+        PrintNodeRecursive(rootNodeIndex, nodePool, "", true);
+        Console.WriteLine("--- Fine Stato Albero ---\n");
+    }
+
+    private static void PrintNodeRecursive(int nodeIndex, NodeMemoryPool nodePool, string indent, bool isLast)
+    {
+        ref var node = ref nodePool[nodeIndex];
+        
+        Console.Write(indent);
+        if (isLast)
+        {
+            Console.Write("└── ");
+            indent += "    ";
+        }
+        else
+        {
+            Console.Write("├── ");
+            indent += "|   ";
+        }
+
+        Console.WriteLine($"Nodo {nodeIndex}: Move={MoveToString(node.MoveThatLedToThisNode)}, " +
+                          $"Parent={node.ParentIndex}, Child={node.FirstChildIndex}, Sibling={node.NextSiblingIndex}");
+
+        // Itera sui figli usando la struttura a lista concatenata
+        var childIndex = node.FirstChildIndex;
+        while (childIndex != -1)
+        {
+            ref var childNode = ref nodePool[childIndex];
+            var isLastChild = childNode.NextSiblingIndex == -1;
+            PrintNodeRecursive(childIndex, nodePool, indent, isLastChild);
+            childIndex = childNode.NextSiblingIndex;
+        }
+    }
+    
+    // Includi anche questo helper se non l'hai già messo altrove
+    private static string MoveToString(byte move) => move switch
+    {
+        Moves.Up => "Up",
+        Moves.Down => "Down",
+        Moves.Left => "Left",
+        Moves.Right => "Right",
+        _ => "Root/None" // È utile per il nodo radice
+    };
 }

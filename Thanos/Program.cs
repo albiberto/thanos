@@ -25,13 +25,15 @@ app.MapPost("/start", async context =>
 {
     var request = await ReadAsync(context);
     
-    Console.WriteLine($"[START] New game started: {JsonSerializer.Serialize(request)}");
+    // Console.WriteLine($"[START] New game started: {JsonSerializer.Serialize(request)}");
     agent.Start(request!.Value);
 });
 
 app.MapPost("/move", async context =>
 {
     var request = await ReadAsync(context);
+    // Console.WriteLine($"[MOVE] New game started: {JsonSerializer.Serialize(request)}");
+
     var result = agent.Move(request!.Value);
     
     context.Response.ContentType = "application/json";
@@ -49,30 +51,11 @@ app.MapPost("/end", async context =>
 app.Run();
 return;
 
-static async Task<Request?> ReadAsync(HttpContext context)
-{
-    // Permette di leggere lo stream del body più volte
-    // context.Request.EnableBuffering();
-    //
-    // // Legge l'intero body della richiesta come una stringa
-    // using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
-    // var jsonString = await reader.ReadToEndAsync();
-    //
-    // // --- STAMPA IL JSON GREZZO A CONSOLE ---
-    // Console.WriteLine("--- RAW /start JSON RECEIVED ---");
-    // Console.WriteLine(jsonString);
-    // Console.WriteLine("------------------------------");
-    //
-    // // Riporta lo stream all'inizio per permettere la normale deserializzazione
-    // context.Request.Body.Position = 0;
-    
-    // Usa l'override che accetta lo Stream, il JsonTypeInfo dal source generator
-    // e un CancellationToken per gestire l'annullamento della richiesta.
-    return await JsonSerializer.DeserializeAsync(
+static async Task<Request?> ReadAsync(HttpContext context) =>
+    await JsonSerializer.DeserializeAsync(
         context.Request.Body,
         ThanosSerializerContext.Default.Request,
-        context.RequestAborted); 
-}
+        context.RequestAborted);
 
 static string ToApiMove(byte move) =>
     move switch

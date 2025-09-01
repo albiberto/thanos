@@ -19,7 +19,6 @@ public static class ZobristTable
             for (var j = 0; j < Constants.MaxArea; j++)
             {
                 var value = random.NextInt64();
-                // Console.WriteLine($"ZobristTable[{i}, {j}] = {value}");
                 SnakeTable[i, j] = value;
             }
         }

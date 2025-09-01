@@ -16,4 +16,11 @@ public readonly ref struct Bitboard(Span<ulong> bitboard)
         var mask = 1UL << (position1D & 63);
         return (_bitboard[index] & mask) != 0;
     }
+    
+    public bool IsUnset(ushort position1D)
+    {
+        var index = position1D >> 6;
+        var mask = 1UL << (position1D & 63);
+        return (_bitboard[index] & mask) == 0;
+    }
 }

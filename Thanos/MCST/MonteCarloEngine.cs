@@ -12,7 +12,7 @@ public class MonteCarloEngine
     private readonly NodeMemoryPool _nodePool;
     private readonly Worker _worker;
     
-    private int _currentRootIndex; 
+    public int _currentRootIndex; 
 
     public MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
     {
@@ -23,31 +23,35 @@ public class MonteCarloEngine
     
     public int FindBestMove(in Request request)
     {
-        var slot = _warPool.GetNext();
-        slot.InitializeFromRequest(in request);
+        var rootSlot = _warPool.GetNext();
+        rootSlot.InitializeFromRequest(in request);
 
         if (_currentRootIndex == 0)
         {
             _currentRootIndex = _nodePool.GetNextIndex();
-            ref var root = ref _nodePool[_currentRootIndex];
-            root.Initialize(-1, Moves.None);
-            
-            // Console.WriteLine($"[MCST] New root node created at index {JsonSerializer.Serialize(root)}");
+            ref var rootIndex = ref _nodePool[_currentRootIndex];
+            rootIndex.Initialize(-1, Moves.None);
         }
 
         var stopwatch = Stopwatch.StartNew();
         var counter = 0;
-        while (stopwatch.ElapsedMilliseconds < 450)
+        // while (stopwatch.ElapsedMilliseconds < 450)
+        while (counter < 10)
         {
-            _worker.RunIteration(_currentRootIndex, in slot);
+            _worker.RunIteration(_currentRootIndex, in rootSlot);
             counter++;
         }
         
+        Console.WriteLine($"[MCST] Iterations: {counter} in {stopwatch.ElapsedMilliseconds}ms");
+        Console.WriteLine();
+        Console.WriteLine("[MCST] ==========================================================");
+        Console.WriteLine("[MCST] ==========================================================");
+        Console.WriteLine("[MCST] ==========================================================");
+        Console.WriteLine();
+        
         ref var finalRootNode = ref _nodePool[_currentRootIndex];
-        // Console.WriteLine($"[MCST] New root node created at index {JsonSerializer.Serialize(finalRootNode)}");
         
         var bestChildIndex = finalRootNode.SelectMostVisitedChild(_nodePool);
-        // Console.WriteLine($"[MCST] BestChild index {JsonSerializer.Serialize(bestChildIndex)}");        
         return bestChildIndex;
     }
 
@@ -63,12 +67,9 @@ public class MonteCarloEngine
 
         // 1. Calcola l'hash dello stato REALE in cui ci troviamo ora.
         var realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
-        // Console.WriteLine($"[MCST] Real State Hash: {realStateHash}");
 
         // 2. Il nodo scelto al turno precedente (`previousChosenNodeIndex`) è la nostra nuova radice.
         ref var chosenNode = ref _nodePool[previousChosenNodeIndex];
-        // Console.WriteLine($"[MCST] Chosen Node: {JsonSerializer.Serialize(chosenNode)}");
-        
 
         // 3. Verifica di coerenza (opzionale ma consigliata)
         // Se l'hash non corrisponde, qualcosa è andato storto nella simulazione vs realtà.
@@ -82,7 +83,6 @@ public class MonteCarloEngine
         // 4. Cache Hit! Promuovi il nodo scelto a nuova radice.
         _currentRootIndex = previousChosenNodeIndex;
         ref var newRoot = ref _nodePool[_currentRootIndex];
-        // Console.WriteLine($"[MCST] Promoted Node to Root: {JsonSerializer.Serialize(newRoot)}");
         newRoot.ParentIndex = -1; // Taglia il collegamento con il suo vecchio genitore.
     }
 }

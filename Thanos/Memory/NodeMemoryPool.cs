@@ -14,7 +14,7 @@ public sealed class NodeMemoryPool : IDisposable
     private readonly Memory<byte> _memory;
     private MemoryHandle _memoryHandle;
     
-    private int _offset;
+    public int _offset;
 
     public NodeMemoryPool(in NodeMemoryLayout layout, int maxNodes)
     {

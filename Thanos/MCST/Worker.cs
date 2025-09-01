@@ -12,55 +12,92 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
     
     private readonly WarMemoryPool _warPool = warPool;
-    private NodeMemoryPool _nodePool = nodePool;
+    private readonly NodeMemoryPool _nodePool = nodePool;
 
     public void RunIteration(int rootNodeIndex, in MemorySlot rootSlot)
     {
-        // 1. Setup
+        var rootArena = rootSlot.Arena;
+        Console.WriteLine("===========================================================");
+        Console.WriteLine($"[ITERATION START] Root Node Index: {rootNodeIndex}");
+        rootArena.Me.GetSpans(out var body11, out var body21);
+        Console.WriteLine($"Body of snake length: {rootArena.Me.Length}, health: {rootArena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', rootArena.Grid.Food.GetRawData.ToArray())}");
+        Console.WriteLine("===========================================================");
+        
+        // 1. Setup - Prepara uno stato di lavoro copiando lo stato della radice.
         var workingSlot = _warPool.GetNext();
         workingSlot.CloneFrom(in rootSlot);
         var arena = workingSlot.Arena;
+
+        Console.WriteLine("===========================================================");
+        Console.WriteLine($"[SETUP] Working slot prepared.");
+        arena.Me.GetSpans(out var body12, out var body22);
+        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        Console.WriteLine("===========================================================");
         
-        // Console.WriteLine($"[Worker] Starting iteration from root node {rootNodeIndex}");
-        
+        // 2. Selection - Scende nell'albero fino a un nodo foglia.
+        //    'Select' è l'unica fase che modifica l'arena principale per farla avanzare.
         var leafNodeIndex = Select(rootNodeIndex, ref arena);
-        // Console.WriteLine($"[Worker] Selected leaf node {leafNodeIndex}");
+        
+        Console.WriteLine("===========================================================");
+        Console.WriteLine("After Selection:");
+        arena.Me.GetSpans(out var body13, out var body23);
+        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        Console.WriteLine("===========================================================");
+        
         ref var leafNode = ref _nodePool[leafNodeIndex];
-        // Console.WriteLine($"[Worker] Leaf Node StateHash: {leafNode.StateHash}, IsLeafNode: {leafNode.IsLeafNode}, IsTerminal: {leafNode.IsTerminal}");
 
-        if (arena.ILose) {
-            leafNode.IsTerminal = true;
-        }
-        else if (leafNode.IsLeafNode) {
-            Expand(leafNodeIndex, ref leafNode, in arena);
-        }
-    
-        if (!leafNode.IsTerminal) {
-            Simulate(ref arena);
-        }
-    
-        // --- INIZIO LOGICA CORRETTA ---
+        // --- COMMENTO ---
+        // A questo punto, 'arena' contiene lo stato esatto del 'leafNodeIndex'.
+
         double simulationResult;
-        var finalArena = workingSlot.Arena;
 
-        // Prima controlliamo l'esito definitivo
-        var finalOutcome = finalArena.Outcome(); 
+        // Se il nodo selezionato è già terminale (partita finita), non espandiamo né simuliamo.
+        if (arena.ILose || leafNode.IsTerminal)
+        {
+            simulationResult = arena.Outcome();
+        }
+        else
+        {
+            // 3. Expansion - Se il nodo è una foglia, crea i suoi figli.
+            //    Passiamo l'arena con 'in' per garantire che 'Expand' non la modifichi.
+            if (leafNode.IsLeafNode)
+            {
+                // Passiamo l'intero slot di memoria, non solo l'arena
+                Expand(leafNodeIndex, ref leafNode, in workingSlot);
+            }
+
+            // 4. Simulation (Rollout) - Simula una partita partendo dallo stato del nodo foglia.
+            // --- COMMENTO ---
+            // Creiamo una copia ESPLICITA dello stato del nodo foglia per la simulazione.
+            // In questo modo, la simulazione può modificare 'simulationArena' liberamente
+            // senza corrompere lo stato originale del nodo foglia ('arena').
+            var simulationArena = arena;
+            Simulate(ref simulationArena);
+            
+            // Il risultato si basa sullo stato finale della simulazione.
+            var finalOutcome = simulationArena.Outcome();
+
+            if (finalOutcome != 0.0f)
+            {
+                simulationResult = finalOutcome;
+            }
+            else
+            {
+                // Se la simulazione finisce in timeout, usiamo un'euristica minima.
+                simulationResult = simulationArena.Me.Length * 0.1 + simulationArena.Me.Health * 0.01;
+            }
+        }
     
-        if (finalOutcome != 0.0f) // C'è una vittoria o sconfitta netta?
-        {
-            // Sì, usiamo il risultato definitivo (-1 o 1)
-            simulationResult = finalOutcome; 
-        }
-        else // No, la partita è ancora in corso (la simulazione ha raggiunto il limite)
-        {
-            // Usiamo l'euristica per stimare la qualità della posizione
-            simulationResult = finalArena.Evaluate(); 
-        }
-
-        // 4. Backpropagation
+        // 5. Backpropagation - Propaga il risultato all'indietro.
         Backpropagate(leafNodeIndex, simulationResult);
     }
-
+    
+    // --- COMMENTO ---
+    // 'Select' è CORRETTO così com'è. Il suo scopo è proprio modificare l'arena
+    // passata per riferimento per farla corrispondere allo stato del nodo foglia trovato.
     private int Select(int startNodeIndex, ref WarArena arena)
     {
         var currentIndex = startNodeIndex;
@@ -79,159 +116,137 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
             arena.ApplySingleMove(childNode.MoveThatLedToThisNode);
         }
     }
-
-    private void Expand(int nodeIndex, ref Node node, in WarArena arena)
+    
+    private static string MoveToString(byte move) => move switch
     {
-        if (node.IsTerminal) return;
+        Moves.Up => "Up",
+        Moves.Down => "Down",
+        Moves.Left => "Left",
+        Moves.Right => "Right",
+        _ => "None"
+    };
 
-        var legalMovesMask = arena.GetLegalMoves();
-        // Console.WriteLine($"[Worker] Expanding node {nodeIndex}, LegalMovesMask: {Convert.ToString(legalMovesMask, 2).PadLeft(4, '0')}");
-        if (legalMovesMask == 0)
-        {
-            node.IsTerminal = true;
-            return;
-        }
+    // --- COMMENTO ---
+    // La firma di 'Expand' ora usa 'in WarArena'. Questo è un vincolo a livello di compilatore
+    // che ci impedisce di modificare accidentalmente l'arena originale.
+    // La firma ora accetta un MemorySlot per permettere la clonazione
+private void Expand(int nodeIndex, ref Node node, in MemorySlot slot)
+{
+    Console.WriteLine($"[EXPAND] Espansione del nodo {nodeIndex}: " +
+                      $"Score={node.Wins:F2}, Visits={node.Visits}, " +
+                      $"Move={MoveToString(node.MoveThatLedToThisNode)}");
+                      
+    if (node.IsTerminal) return;
 
-        var lastChildIndex = -1;
+    var arena = slot.Arena;
+    Console.WriteLine("===========================================================");
+    Console.WriteLine("Expanding Arena State:");
+    arena.Me.GetSpans(out var body11, out var body21);
+    Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
+    Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+    Console.WriteLine("===========================================================");
+    
+    var legalMoves = arena.GetLegalMoves();
 
-        foreach (var move in AllMovesArray)
-        {
-            if ((legalMovesMask & move) == 0) continue;
-
-            // --- INIZIO CODICE DA AGGIUNGERE ---
-        
-            // 1. Clona l'arena per simulare la mossa in modo sicuro
-            var tempArena = arena;
-        
-            // 2. Applica la mossa all'arena temporanea per ottenere lo stato futuro
-            tempArena.ApplySingleMove(move);
-
-            // 3. Calcola l'hash del nuovo stato risultante
-            long newStateHash = ZobristHasher.CalculateHash(in tempArena);
-            // Console.WriteLine($"[Worker] Move: {move}, New StateHash: {newStateHash}");
-        
-            // --- FINE CODICE DA AGGIUNGERE ---
-        
-            var newChildIndex = _nodePool.GetNextIndex();
-            ref var childNode = ref _nodePool[newChildIndex];
-            // Console.WriteLine($"[Worker] Created child node {newChildIndex} for move {move}");
-            childNode.Initialize(nodeIndex, move);
-        
-            childNode.StateHash = newStateHash; // <-- Salva l'hash calcolato nel nuovo nodo
-
-            if (lastChildIndex == -1)
-            {
-                node.FirstChildIndex = newChildIndex;
-            }
-            else
-            {
-                ref var lastChildNode = ref _nodePool[lastChildIndex];
-                lastChildNode.NextSiblingIndex = newChildIndex;
-            }
-            lastChildIndex = newChildIndex;
-        }
+    Console.WriteLine($"[EXPAND] Legal Moves Bitmask: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
+    
+    if (legalMoves == 0)
+    {
+        node.IsTerminal = true;
+        return;
     }
 
-    private static void Simulate(ref WarArena arena) // <-- DEVE essere 'ref' perché modifica lo stato
+    var lastChildIndex = -1;
+
+    foreach (var move in AllMovesArray)
+    {
+        if ((legalMoves & move) == 0) continue;
+
+        var tempSlot = _warPool.GetNext();
+        tempSlot.CloneFrom(slot);
+        var tempArena = tempSlot.Arena;
+        
+        Console.WriteLine("===========================================================");
+        Console.WriteLine($"[EXPAND] Applying move {MoveToString(move)} to create child node.");
+        arena.Me.GetSpans(out var body12, out var body22);
+        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        Console.WriteLine("===========================================================");
+        
+        tempArena.ApplySingleMove(move);
+        
+        Console.WriteLine("===========================================================");
+        Console.WriteLine("After Applying Move:");
+        arena.Me.GetSpans(out var body13, out var body23);
+        Console.WriteLine($"Body of snake length: {arena.Me.Length}, health: {arena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
+        Console.WriteLine($"Snakes Bitboard: {string.Join(',', arena.Grid.Food.GetRawData.ToArray())}");
+        Console.WriteLine("===========================================================");
+        
+        // Il resto della logica rimane simile...
+        var hash = ZobristHasher.CalculateHash(in tempArena);
+        
+        var childIndex = _nodePool.GetNextIndex();
+        ref var childNode = ref _nodePool[childIndex];
+        childNode.Initialize(nodeIndex, move, hash);
+        
+        Console.WriteLine($"    └── Creato figlio {childIndex} per la mossa {MoveToString(move)}");
+        
+        if (lastChildIndex == -1)
+        {
+            node.FirstChildIndex = childIndex;
+        }
+        else
+        {
+            ref var lastChildNode = ref _nodePool[lastChildIndex];
+            lastChildNode.NextSiblingIndex = childIndex;
+        }
+        
+        lastChildIndex = childIndex;
+    }
+}
+
+    // --- COMMENTO ---
+    // 'Simulate' è corretto con 'ref', perché il suo scopo è proprio quello di
+    // modificare uno stato fino a raggiungere un esito. La cosa importante è che
+    // 'RunIteration' gli passi una COPIA dello stato su cui lavorare.
+    private static void Simulate(ref WarArena arena)
     {
         const int turnLimit = 100;
 
         for (var i = 0; i < turnLimit; i++)
         {
-            if (arena.ILose) return;
+            // --- Modifica: Controlla l'esito, non solo se sei morto ---
+            if (arena.Outcome() != 0.0f) return;
 
             var legalMovesMask = arena.GetLegalMoves();
-            // Console.WriteLine($"[Worker] Simulation turn {i}, LegalMovesMask: {Convert.ToString(legalMovesMask, 2).PadLeft(4, '0')}");
             if (legalMovesMask == 0) return;
         
-            // Passiamo l'arena alla nuova policy di rollout
-            var move = SelectRolloutMove(in arena, legalMovesMask);
-            // Console.WriteLine($"[Worker] Simulation turn {i}, Selected Move: {move}");
-        
+            var move = RolloutMoveRandom(legalMovesMask); // Usiamo la policy casuale per semplicità
             arena.ApplySingleMove(move);
         }
     }
     
-    
-    
-    private static byte SelectRolloutMove(in WarArena arena, byte legalMoves)
-    {
-        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
+    // ... Gli altri metodi (SelectRolloutMove, RolloutMoveRandom, Backpropagate) possono rimanere invariati ...
 
-        byte bestMove = 0;
-        var bestScore = -1;
-        var countOfBest = 1;
-
-        var head = arena.Me.Head;
-        var movesToEvaluate = legalMoves;
-        while (movesToEvaluate > 0)
-        {
-            var move = (byte)(1 << BitOperations.TrailingZeroCount(movesToEvaluate));
-            var nextPos = arena.Grid.GetNeighbor(head, move);
-
-            // Console.WriteLine($"[Rollout] Evaluating move {move} to position {nextPos}");
-            
-            // --- CORREZIONE CHIAVE ---
-            // Calcola le mosse legali DALLA POSIZIONE FUTURA (nextPos)
-            var futureMoves = arena.Grid.GetLegalMoves(nextPos);
-            // Console.WriteLine($"[Rollout] Future legal moves mask from position {nextPos}: {Convert.ToString(futureMoves, 2).PadLeft(4, '0')}");
-            var score = BitOperations.PopCount(futureMoves);
-            // Console.WriteLine($"[Rollout] Move {move} has score {score} based on future moves count");
-        
-            // (Opzionale, ma consigliato) Aggiungi un piccolo bonus per il cibo
-            if (arena.Grid.IsFood(nextPos))
-            {
-                score += 5; 
-            }
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestMove = move;
-                countOfBest = 1;
-            }
-            else if (score == bestScore)
-            {
-                countOfBest++;
-                if (Random.Shared.Next(countOfBest) == 0)
-                {
-                    bestMove = move;
-                }
-            }
-        
-            movesToEvaluate &= (byte)~move;
-        }
-    
-        return bestMove != 0 ? bestMove : RolloutMoveRandom(legalMoves);
-    }
-
-// La vecchia logica casuale ora è un helper di fallback
     private static byte RolloutMoveRandom(byte legalMoves)
     {
-        // Console.WriteLine($"[Rollout] No best move found, selecting random from legal moves mask: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
-        if (legalMoves == 0) return Moves.Up;
-    
+        if (legalMoves == 0) return Moves.Up; // Fallback
+        if (BitOperations.IsPow2(legalMoves)) return legalMoves;
+        
         var count = BitOperations.PopCount(legalMoves);
         var randomIndex = Random.Shared.Next(count);
 
         byte move = 0;
-        while (randomIndex >= 0)
+        for (var i = 0; i <= randomIndex; i++)
         {
             move = (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
             legalMoves &= (byte)~move;
-            randomIndex--;
         }
         return move;
     }
 
     private void Backpropagate(int startNodeIndex, double rawScore)
     {
-        // Un punteggio di 0 rimane 0.
-        // Un punteggio molto alto (es. +200) si avvicina a +1.
-        // Un punteggio molto basso (es. -200) si avvicina a -1.
-        // Un punteggio basso (es. +10) diventa un valore intermedio (es. +0.2).
-        // Questo "scalingFactor" controlla la sensibilità della curva. 
-        // Un valore più basso rende la curva più ripida. Iniziamo con 100.
         const double scalingFactor = 100.0;
         var normalizedResult = Math.Tanh(rawScore / scalingFactor);
 
@@ -239,9 +254,7 @@ public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
-            // Ora aggiorniamo le statistiche con un valore molto più informativo di un semplice +1 o -1
             currentNode.UpdateStats(normalizedResult);
-            // Console.WriteLine($"[Worker] Backpropagated to node {currentIndex}, New Wins: {currentNode.Wins}, Visits: {currentNode.Visits}");
             currentIndex = currentNode.ParentIndex;
         }
     }

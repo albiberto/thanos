@@ -17,7 +17,7 @@ public struct Node
     
     public long StateHash;
     
-    public void Initialize(int parentIndex, byte move)
+    public void Initialize(int parentIndex, byte move, long stateHash = 0)
     {
         StateHash = 0; // Inizializza a 0
         
@@ -37,8 +37,6 @@ public struct Node
     {
         Visits++;
         Wins += result;
-        
-        // Console.WriteLine($"[Node] Updated stats: Wins={Wins}, Visits={Visits}, WinRate={(Visits > 0 ? Wins / Visits : 0):F2}");
     }
     
     /// <summary>
@@ -65,8 +63,6 @@ public struct Node
             var exploration = Math.Sqrt(logParentVisits / childNode.Visits);
             var uctScore = exploitation + explorationParameter * exploration;
 
-            // Console.WriteLine($"[Node] Child {childIndex}: Wins={childNode.Wins}, Visits={childNode.Visits}, UCT Score={uctScore:F4}");
-            
             if (uctScore > bestScore)
             {
                 bestScore = uctScore;
@@ -97,14 +93,12 @@ public struct Node
         while (currentChildIndex != -1)
         {
             ref var childNode = ref pool[currentChildIndex];
-            // Console.WriteLine($"[Node] Child {currentChildIndex}: Visits={childNode.Visits}, Wins={childNode.Wins}");
             if (childNode.Visits > maxVisits)
             {
                 maxVisits = childNode.Visits;
                 bestChildIndex = currentChildIndex;
             }
             currentChildIndex = childNode.NextSiblingIndex;
-            // Console.WriteLine($"[Node] Moving to next sibling: {currentChildIndex}");
         }
     
         return bestChildIndex;
