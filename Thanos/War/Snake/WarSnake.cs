@@ -41,12 +41,11 @@ public readonly ref struct WarSnake
 
         if (_health.IsDead) return;
 
+        // La testa si muove sempre
         _body[_anatomy.NextHeadIndex] = newHead;
 
-        if (hasEaten)
-            _anatomy.IncrementLength();
-        else
-            _anatomy.PopTail();
+        // Tutta la logica di coda e lunghezza è ora delegata ad Anatomy.
+        _anatomy.UpdateAfterMove(hasEaten);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
