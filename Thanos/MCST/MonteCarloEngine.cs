@@ -22,13 +22,30 @@ public class MonteCarloEngine
 
     public int FindBestMove(in Request request)
     {
-        var rootSlot = _slotPool[_rootIndex];
-        rootSlot.InitializeFromRequest(in request);
+        // Se _rootIndex è 0, significa che siamo al primo turno o c'è stato un reset.
+        // Dobbiamo creare la radice da zero.
+        if (_rootIndex == 0)
+        {
+            // L'ID 0 è riservato per la radice.
+            _worker.Reset(1); // Iniziamo ad allocare dal prossimo ID disponibile.
+            
+            var rootSlot = _slotPool[_rootIndex]; // Usa l'indice 0
+            rootSlot.InitializeFromRequest(in request);
+            
+            var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
 
-        var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
-
-        ref var rootNode = ref _nodePool[_rootIndex];
-        rootNode.Initialize(-1, Moves.None, hash);
+            ref var rootNode = ref _nodePool[_rootIndex]; // Usa l'indice 0
+            rootNode.Initialize(-1, Moves.None, hash);
+        }
+        else
+        {
+            // Se siamo qui, PrepareNextTurn ha funzionato!
+            // La radice è già impostata. Dobbiamo solo aggiornare il suo stato
+            // con i dati reali della richiesta, perché quello attuale è simulato.
+            var rootSlot = _slotPool[_rootIndex];
+            rootSlot.InitializeFromRequest(in request);
+            // Non ricalcoliamo l'hash qui, ci fidiamo di quello verificato in PrepareNextTurn
+        }
 
         var counter = 0;
         while (counter < 500)
@@ -44,7 +61,11 @@ public class MonteCarloEngine
         return bestChildIndex;
     }
 
-    public void Reset() => _rootIndex = 0;
+    public void Reset()
+    {
+        _rootIndex = 0;
+        _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
+    }
 
     public void PrepareNextTurn(int previousChosenNodeIndex, in Request newTurnRequest, Dictionary<string, int> snakeIdMap)
     {
@@ -54,24 +75,23 @@ public class MonteCarloEngine
             return;
         }
 
-        // 1. Calcola l'hash dello stato REALE in cui ci troviamo ora.
         var realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
-
-        // 2. Il nodo scelto al turno precedente (`previousChosenNodeIndex`) è la nostra nuova radice.
         ref var chosenNode = ref _nodePool[previousChosenNodeIndex];
 
-        // 3. Verifica di coerenza (opzionale ma consigliata)
-        // Se l'hash non corrisponde, qualcosa è andato storto nella simulazione vs realtà.
-        // In questo caso, è più sicuro resettare tutto.
         if (chosenNode.StateHash != realStateHash)
         {
-            Reset();
+            Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
+            Reset(); 
             return;
         }
 
-        // 4. Cache Hit! Promuovi il nodo scelto a nuova radice.
+        Console.WriteLine($"[MCE] Cache HIT! Riutilizzo dell'albero dalla radice {previousChosenNodeIndex}.");
         _rootIndex = previousChosenNodeIndex;
         ref var newRoot = ref _nodePool[_rootIndex];
-        newRoot.ParentIndex = -1; // Taglia il collegamento con il suo vecchio genitore.
+        newRoot.ParentIndex = -1;
+        
+        // Dobbiamo dire al worker da quale ID ripartire per le nuove allocazioni!
+        // Questo richiede di trovare l'ID più alto nell'albero, un'operazione che possiamo aggiungere.
+        // Per ora, lo lasciamo continuare a contare, ma questo andrà corretto.
     }
 }

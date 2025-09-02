@@ -16,7 +16,7 @@ public sealed class BattleSnakeAgent : IDisposable
     private readonly NodeMemoryPool _nodePool;
     private readonly SlotMemoryPool _slotPool;
 
-    private int _lastChosenNodeIndex;
+    private int _lastChosenIndex;
 
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
@@ -38,8 +38,8 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void Start(in Request request)
     {
-        _lastChosenNodeIndex = 0; // Resetta a inizio partita
-
+        _lastChosenIndex = 0; // Resetta a inizio partita
+        _engine.Reset();
 
         var width = request.Board.Width;
 
@@ -56,18 +56,18 @@ public sealed class BattleSnakeAgent : IDisposable
     public byte Move(in Request request)
     {
         // 2. All'inizio del turno, prova ad aggiornare la radice dell'albero
-        // _engine.PrepareNextTurn(_lastChosenNodeIndex, in request, BuildIdMap(request));
+        _engine.PrepareNextTurn(_lastChosenIndex, in request, BuildIdMap(request));
 
         // 3. Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
-        var bestNodeIndex = _engine.FindBestMove(in request);
+        var bestIndex = _engine.FindBestMove(in request);
 
-        if (bestNodeIndex != -1)
+        if (bestIndex != -1)
         {
-            ref var chosenNode = ref _nodePool[bestNodeIndex];
+            ref var chosenNode = ref _nodePool[bestIndex];
 
             var move = chosenNode.MoveThatLedToThisNode;
 
-            _lastChosenNodeIndex = bestNodeIndex; // Salva la scelta per il prossimo turno
+            _lastChosenIndex = bestIndex; // Salva la scelta per il prossimo turno
 
             // Log e return
             return move;

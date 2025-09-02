@@ -229,32 +229,5 @@ public sealed class Worker
         }
     }
 
-    public void Reset(int newRootIndex) => _nextId = newRootIndex;
-    
-    // --- METODI HELPER PER LA STAMPA ---
-    // Metti questi metodi di utilità da qualche parte nella tua classe Worker.
-
-    private static string MoveToString(byte move) => move switch
-    {
-        Moves.Up => "Up",
-        Moves.Down => "Down",
-        Moves.Left => "Left",
-        Moves.Right => "Right",
-        Moves.None => "None", // Utile per il nodo radice
-        _ => "Sconosciuta"
-    };
-    
-    // Helper per stampare più mosse da una maschera di bit
-    private static string MovesToString(byte moves)
-    {
-        if (moves == 0) return "Nessuna";
-    
-        var moveList = new List<string>();
-        if ((moves & Moves.Up) != 0) moveList.Add("Up");
-        if ((moves & Moves.Down) != 0) moveList.Add("Down");
-        if ((moves & Moves.Left) != 0) moveList.Add("Left");
-        if ((moves & Moves.Right) != 0) moveList.Add("Right");
-    
-        return string.Join('/', moveList);
-    }
+    public void Reset(int startId) => _nextId = startId;
 }
