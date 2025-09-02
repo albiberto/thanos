@@ -3,14 +3,14 @@
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
 /// <summary>
-/// Contains all unit tests for the Anatomy struct, verifying its state and behavior
-/// across various buffer capacities and conditions.
+///     Contains all unit tests for the Anatomy struct, verifying its state and behavior
+///     across various buffer capacities and conditions.
 /// </summary>
 [TestFixtureSource(nameof(Capacities))]
 public class AnatomyTests(int capacity)
 {
     /// <summary>
-    /// Provides a set of different capacities to run all tests against, ensuring robustness.
+    ///     Provides a set of different capacities to run all tests against, ensuring robustness.
     /// </summary>
     public static int[] Capacities { get; } = [8, 16, 32, 128, 256, 512, 1024];
 
@@ -62,7 +62,7 @@ public class AnatomyTests(int capacity)
             Assert.That(anatomy.Length, Is.EqualTo(capacity), "Length should match the capacity.");
             Assert.That(anatomy.TailIndex, Is.Zero, "Default TailIndex should be 0.");
             Assert.That(anatomy.IsFull, Is.True, "IsFull must be true when length equals capacity.");
-            
+
             var expectedHeadIndex = (capacity - 1) & (capacity - 1);
             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be the last index of the buffer.");
 
@@ -119,7 +119,7 @@ public class AnatomyTests(int capacity)
             Assert.That(anatomy.NextHeadIndex, Is.EqualTo(1), "NextHeadIndex should now be where the new TailIndex is.");
         });
     }
-    
+
     [Test(Description = "Ensures calling PopTail 'capacity' times returns the state to its origin.")]
     public void PopTail_WhenCalledCapacityTimes_ShouldReturnToInitialState()
     {
@@ -128,7 +128,7 @@ public class AnatomyTests(int capacity)
         var initialState = anatomy;
 
         // Act
-        for(var i = 0; i < capacity; i++) anatomy.PopTail();
+        for (var i = 0; i < capacity; i++) anatomy.PopTail();
 
         // Assert
         Assert.Multiple(() =>
@@ -160,7 +160,7 @@ public class AnatomyTests(int capacity)
             Assert.That(anatomy.Length, Is.EqualTo(length + 1), "Length should increment by one.");
             Assert.That(anatomy.TailIndex, Is.Zero, "TailIndex should not change when length is incremented.");
             Assert.That(anatomy.Capacity, Is.EqualTo(capacity), "Capacity should not change.");
-            
+
             var expectedHeadIndex = length & (capacity - 1); // (0 + (length + 1) - 1) = length
             Assert.That(anatomy.HeadIndex, Is.EqualTo(expectedHeadIndex), "HeadIndex should be recalculated for the new length.");
         });

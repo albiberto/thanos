@@ -1,6 +1,5 @@
 ﻿using System.Runtime.InteropServices;
 using Thanos.Common;
-using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.War.Grid.Memory;
 using Thanos.War.Snake.Memory;
@@ -11,7 +10,7 @@ namespace Thanos.Memory;
 public struct MemoryLayout
 {
     public const int SizeOfCacheLine = 64;
-    
+
     public readonly NodeMemoryLayout Node;
     public readonly WarGridMemoryLayout WarGrid;
     public WarSnakeMemoryLayout WarSnake;
@@ -19,14 +18,14 @@ public struct MemoryLayout
     public readonly int WarSlotSize;
 
     public readonly Offsets Offsets;
-    
+
     public MemoryLayout(int capacity, int area, int snakeCount, int neighborsLenght)
     {
         WarGrid = new(area, neighborsLenght);
         WarSnake = new(capacity);
 
         WarSlotSize = (WarGrid.Size + WarSnake.Stride * snakeCount).AlignUp();
-        
+
         Offsets = new(Node.Size, WarGrid.Size);
     }
 }

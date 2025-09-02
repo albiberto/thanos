@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Drawing;
-using Thanos.SourceGen;
+﻿using Thanos.SourceGen;
 
 namespace Thanos.PreWarm;
 
@@ -14,7 +12,7 @@ public static class ConversionMapCache
         {
             var x = (ushort)(pos1D % width);
             var y = (ushort)(pos1D / width);
-            
+
             coordinates[pos1D] = new Coordinate(x, y);
         }
     }

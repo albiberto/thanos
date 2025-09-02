@@ -18,7 +18,7 @@ public class ThanosSerializerContextTests
         var rawJson = _testsProvider[testCaseName];
 
         // JsonSerializer (expected)
-        var expectedOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true,  };
+        var expectedOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var expected = JsonSerializer.Deserialize<TestRequest>(rawJson, expectedOptions);
 
         // Source Generator (actual)
@@ -34,39 +34,39 @@ public class ThanosSerializerContextTests
         Assert.Multiple(() =>
         {
             AssertGamesAreEqual(expected.Game, actual.Game);
-            
+
             Assert.That(actual.Turn, Is.EqualTo(expected.Turn), "Turn should match.");
-    
+
             AssertBoardsAreEqual(expected.Board, actual.Board);
-            
+
             AssertSnakesAreEqual(expected.You, actual.You, "You");
         });
     }
-    
+
     private static void AssertGamesAreEqual(TestGame expected, Game actual)
     {
         Assert.Multiple(() =>
         {
             Assert.That(expected.Id, Is.EqualTo(actual.Id), "Game.Id should match.");
-            Assert.That(expected.Map, Is.EqualTo(actual.gameMap.ToString()).IgnoreCase, "Game.Map should match.");
-            Assert.That(expected.Source, Is.EqualTo(actual.Source.ToString()).IgnoreCase, "Game.Source should match.");
+            Assert.That(expected.Map, Is.EqualTo(actual.gameMap).IgnoreCase, "Game.Map should match.");
+            Assert.That(expected.Source, Is.EqualTo(actual.Source).IgnoreCase, "Game.Source should match.");
             Assert.That(expected.Timeout, Is.EqualTo(actual.Timeout), "Game.Timeout should match.");
-    
+
             AssertRulesetsAreEqual(expected.Ruleset, actual.Ruleset);
         });
     }
-    
+
     private static void AssertRulesetsAreEqual(TestRuleset expected, Ruleset actual)
     {
         Assert.Multiple(() =>
         {
             Assert.That(expected.Name, Has.Length.GreaterThan(1), "Expected Ruleset.Name should have length > 1.");
             Assert.That(expected.Version, Does.Match(@"v\d+\.\d+\.\d+"), "Expected Ruleset.Version should match the expected pattern.");
-    
+
             AssertRulesetSettingsAreEqual(expected.Settings, actual.Settings);
         });
     }
-    
+
     private static void AssertRulesetSettingsAreEqual(TestRulesetSettings expected, RulesetSettings actual)
     {
         Assert.Multiple(() =>
@@ -74,15 +74,15 @@ public class ThanosSerializerContextTests
             Assert.That(expected.FoodSpawnChance, Is.EqualTo(actual.FoodSpawnChance), "Settings.FoodSpawnChance should match.");
             Assert.That(expected.MinimumFood, Is.EqualTo(actual.MinimumFood), "Settings.MinimumFood should match.");
             Assert.That(expected.HazardDamagePerTurn, Is.EqualTo(actual.HazardDamagePerTurn), "Settings.HazardDamagePerTurn should match.");
-    
+
             Assert.That(expected.Royale is not null, Is.EqualTo(actual.Royale.HasValue), "Royale null state should match.");
             if (expected.Royale is not null && actual.Royale.HasValue) Assert.That(expected.Royale.ShrinkEveryNTurns, Is.EqualTo(actual.Royale.Value.ShrinkEveryNTurns), "Royale.ShrinkEveryNTurns should match.");
-    
+
             Assert.That(expected.Squad is not null, Is.EqualTo(actual.Squad.HasValue), "Squad null state should match.");
             if (expected.Squad is not null && actual.Squad.HasValue) AssertSquadAreEqual(expected.Squad, actual.Squad.Value);
         });
     }
-    
+
     private static void AssertSquadAreEqual(TestSquad expected, Squad actual)
     {
         Assert.Multiple(() =>
@@ -93,20 +93,20 @@ public class ThanosSerializerContextTests
             Assert.That(expected.SharedLength, Is.EqualTo(actual.SharedLength), "Squad.SharedLength should match.");
         });
     }
-    
+
     private static void AssertBoardsAreEqual(TestBoard expected, Board actual)
     {
         Assert.Multiple(() =>
         {
             Assert.That(actual.Height, Is.EqualTo(expected.Height), "Board.Height should match.");
             Assert.That(actual.Width, Is.EqualTo(expected.Width), "Board.Width should match.");
-    
+
             AssertCollectionsAreEqual(expected.Food, actual.Food, "Board.Food", AssertCoordinatesAreEqual);
             AssertCollectionsAreEqual(expected.Hazards, actual.Hazards, "Board.Hazards", AssertCoordinatesAreEqual);
             AssertCollectionsAreEqual(expected.Snakes, actual.Snakes, "Board.Snakes", AssertSnakesAreEqual);
         });
     }
-    
+
     private static void AssertSnakesAreEqual(TestHealth expected, Snake actual, string context)
     {
         Assert.Multiple(() =>
@@ -117,13 +117,13 @@ public class ThanosSerializerContextTests
             // Assert.That(expected.Latency, Is.EqualTo(actual.Latency), $"{context}.Latency should match.");
             Assert.That(expected.Length, Is.EqualTo(actual.Length), $"{context}.Length should match.");
             // Assert.That(expected.Shout, Is.EqualTo(actual.Shout), $"{context}.Shout should match.");
-    
+
             AssertCoordinatesAreEqual(expected.Head, actual.Head, $"{context}.Head");
             // AssertCustomizationsAreEqual(expected.Customizations, actual.Customizations $"{context}.Customizations");
             AssertCollectionsAreEqual(expected.Body, actual.Body, $"{context}.Body", AssertCoordinatesAreEqual);
         });
     }
-    
+
     private static void AssertCoordinatesAreEqual(TestCoordinate expected, Coordinate actual, string context)
     {
         Assert.Multiple(() =>
@@ -132,7 +132,7 @@ public class ThanosSerializerContextTests
             Assert.That(actual.Y, Is.EqualTo(expected.Y), $"{context}.Y should match.");
         });
     }
-    
+
     // private static void AssertCustomizationsAreEqual(TestCustomizations expected, Customizations actual, string context)
     // {
     //     Assert.Multiple(() =>
@@ -142,15 +142,15 @@ public class ThanosSerializerContextTests
     //         Assert.That(expected.Tail, Is.EqualTo(actual.Tail), $"{context}.Tail should match.");
     //     });
     // }
-    
+
     private static void AssertCollectionsAreEqual<TExpected, TActual>(ICollection<TExpected> expectedCollection, ICollection<TActual> actualCollection, string collectionName, Action<TExpected, TActual, string> elementComparer)
     {
         Assert.That(expectedCollection, Has.Count.EqualTo(actualCollection.Count), $"{collectionName} count should match.");
-        
+
         var zip = expectedCollection.Zip(actualCollection, (expected, actual) => (Expected: expected, Actual: actual))
             .Select((zip, i) => (zip.Expected, zip.Actual, Index: i))
             .ToList();
-    
+
         foreach (var pair in zip) elementComparer(pair.Expected, pair.Actual, $"{collectionName}[{pair.Index}]");
     }
 }

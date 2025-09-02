@@ -9,7 +9,7 @@ public readonly ref struct WarSnake
     private readonly ref Profile _profile;
     private readonly ref Health _health;
     private readonly ref Anatomy _anatomy;
-    
+
     private readonly Span<ushort> _body;
 
     public WarSnake(WarSnakeMemoryView view)
@@ -17,10 +17,10 @@ public readonly ref struct WarSnake
         _profile = ref view.GetProfile();
         _health = ref view.GetHealth();
         _anatomy = ref view.GetAnatomy();
-        
+
         _body = view.GetBody();
     }
-    
+
     // Public API
     public int Id => _profile.Id;
 

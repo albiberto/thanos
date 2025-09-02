@@ -1,5 +1,4 @@
-﻿using System.Buffers;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.SourceGen;
 using Thanos.War.Grid;
@@ -15,7 +14,7 @@ public ref struct Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnl
 
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<double> _positionalScores = positionalScores;
-    
+
     public double Evaluate()
     {
         // 1. Condizione Terminale: Se siamo morti, questo è lo scenario peggiore in assoluto.
@@ -108,7 +107,7 @@ private static double CalculateFoodIncentive(Coordinate head, int health, ReadOn
 
     // private static int EstimateSafeSpaceBitset(ushort start, int nodeBudget, in WarGrid grid)
     // {
-	   //  var area = grid.Geography.Area;
+    //  var area = grid.Geography.Area;
     //     if (area <= 0) return 0;
     //     var words = (area + 63) >> 6;
     //     ulong[]? rentedVisited = null;

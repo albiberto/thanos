@@ -1,229 +1,165 @@
 ﻿using System.Numerics;
-using System.Text.Json;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.War;
-using Thanos.War.Snake;
 
 namespace Thanos.MCST;
 
-public sealed class Worker(WarMemoryPool warPool, NodeMemoryPool nodePool)
+public sealed class Worker
 {
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-    
-    private readonly WarMemoryPool _warPool = warPool;
-    private readonly NodeMemoryPool _nodePool = nodePool;
+    private readonly NodeMemoryPool _nodePool;
 
-    public void RunIteration(int rootNodeIndex, in MemorySlot rootSlot)
+    private readonly SlotMemoryPool _slotPool;
+
+    private int _nextId;
+
+    // Il costruttore non ha bisogno di essere una expression body per chiarezza
+    public Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
-        var rootArena = rootSlot.Arena;
-        Console.WriteLine("===========================================================");
-        Console.WriteLine($"[ITERATION START] Root Node Index: {rootNodeIndex}");
-        rootArena.Me.GetSpans(out var body11, out var body21);
-        Console.WriteLine($"Body of snake length: {rootArena.Me.Length}, health: {rootArena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', rootArena.Grid.Snakes.GetRawData.ToArray())}");
-        Console.WriteLine("===========================================================");
-        
-        // 1. Setup - Prepara uno stato di lavoro copiando lo stato della radice.
-        var workingSlot = _warPool.GetNext();
-        workingSlot.CloneFrom(in rootSlot);
-        
+        _slotPool = slotPool;
+        _nodePool = nodePool;
 
-        Console.WriteLine("===========================================================");
-        Console.WriteLine($"[SETUP] Working slot prepared.");
-        workingSlot.Arena.Me.GetSpans(out var body12, out var body22);
-        Console.WriteLine($"Body of snake length: {workingSlot.Arena.Me.Length}, health: {workingSlot.Arena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', workingSlot.Arena.Grid.Snakes.GetRawData.ToArray())}");
-        Console.WriteLine("===========================================================");
-        
-        // 2. Selection - Scende nell'albero fino a un nodo foglia.
-        //    'Select' è l'unica fase che modifica l'arena principale per farla avanzare.
-        var leafNodeIndex = Select(rootNodeIndex, workingSlot.Arena);
-        ref var leafNode = ref _nodePool[leafNodeIndex];
-        
-        Console.WriteLine("===========================================================");
-        Console.WriteLine("After Selection:");
-        workingSlot.Arena.Me.GetSpans(out var body13, out var body23);
-        Console.WriteLine($"Body of snake length: {workingSlot.Arena.Me.Length}, health: {workingSlot.Arena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', workingSlot.Arena.Grid.Snakes.GetRawData.ToArray())}");
-        Console.WriteLine("===========================================================");
-
-        double simulationResult;
-        if (workingSlot.Arena.ILose || leafNode.IsTerminal)
-        {
-            simulationResult = workingSlot.Arena.Outcome();
-        }
-        else
-        {
-            // 3. Expansion - Se il nodo è una foglia, crea i suoi figli.
-            //    Passiamo l'arena con 'in' per garantire che 'Expand' non la modifichi.
-            if (leafNode.IsLeafNode)
-            {
-                // Passiamo l'intero slot di memoria, non solo l'arena
-                Expand(leafNodeIndex, ref leafNode, in workingSlot);
-            }
-
-            // 4. Simulation (Rollout) - Simula una partita partendo dallo stato del nodo foglia.
-            var simulationSlot = _warPool.GetNext();
-            simulationSlot.CloneFrom(in workingSlot); // Crea una copia isolata
-            var simulationArena = simulationSlot.Arena;
-            Simulate(ref simulationArena); // Simula sulla copia
-            
-            var finalOutcome = simulationArena.Outcome();
-
-            if (finalOutcome != 0.0f)
-            {
-                simulationResult = finalOutcome;
-            }
-            else
-            {
-                // Se la simulazione finisce in timeout, usiamo un'euristica minima.
-                simulationResult = simulationArena.Me.Length * 0.1 + simulationArena.Me.Health * 0.01;
-            }
-        }
-    
-        // 5. Backpropagation - Propaga il risultato all'indietro.
-        Backpropagate(leafNodeIndex, simulationResult);
+        _nextId = 0;
     }
-    
-    // --- COMMENTO ---
-    // 'Select' è CORRETTO così com'è. Il suo scopo è proprio modificare l'arena
-    // passata per riferimento per farla corrispondere allo stato del nodo foglia trovato.
-    private int Select(int startNodeIndex, WarArena arena)
+
+    private int AllocateNextId() => _nextId++;
+
+    public void RunIteration(int rootIndex)
+    {
+        // 1. SELECTION - Scende nell'albero fino a trovare un nodo foglia.
+        var leafIndex = Select(rootIndex);
+
+        Expand(leafIndex);
+    }
+
+    private int Select(int startNodeIndex)
     {
         var currentIndex = startNodeIndex;
-        
+
         while (true)
         {
             ref var currentNode = ref _nodePool[currentIndex];
+
+            // Condizione di terminazione: siamo arrivati a una foglia o a un nodo terminale.
             if (currentNode.IsLeafNode || currentNode.IsTerminal) return currentIndex;
 
-            var nextNodeIndex = currentNode.SelectBestChild(_nodePool);
-            if (nextNodeIndex == -1) return currentIndex;
+            // 1. TROVA: il miglior figlio del nodo CORRENTE
+            var nextNodeIndex = SelectBestChild(ref currentNode);
 
+            if (nextNodeIndex == -1) throw new InvalidOperationException("SelectBestChild ha restituito -1 in un nodo non foglia.");
+
+            // 2. AGGIORNA: l'indice e lascia che il ciclo continui per scendere al livello successivo
             currentIndex = nextNodeIndex;
-            ref var childNode = ref _nodePool[currentIndex];
-            
-            arena.ApplySingleMove(childNode.MoveThatLedToThisNode, true);
         }
     }
-    
-    private static string MoveToString(byte move) => move switch
+
+    private int SelectBestChild(ref Node node, double explorationParameter = 1.41)
     {
-        Moves.Up => "Up",
-        Moves.Down => "Down",
-        Moves.Left => "Left",
-        Moves.Right => "Right",
-        _ => "None"
-    };
+        var bestScore = double.MinValue;
+        var bestChildIndex = -1;
 
-    // --- COMMENTO ---
-    // La firma di 'Expand' ora usa 'in WarArena'. Questo è un vincolo a livello di compilatore
-    // che ci impedisce di modificare accidentalmente l'arena originale.
-    // La firma ora accetta un MemorySlot per permettere la clonazione
-private void Expand(int nodeIndex, ref Node node, in MemorySlot parentSlot)
-{
-    Console.WriteLine($"[EXPAND] Espansione del nodo {nodeIndex}: " +
-                      $"Score={node.Wins:F2}, Visits={node.Visits}, " +
-                      $"Move={MoveToString(node.MoveThatLedToThisNode)}");
-                      
-    if (node.IsTerminal) return;
+        var logParentVisits = Math.Log(node.Visits);
 
-    var parentArena = parentSlot.Arena;
-    Console.WriteLine("===========================================================");
-    Console.WriteLine("Expanding Arena State:");
-    parentArena.Me.GetSpans(out var body11, out var body21);
-    Console.WriteLine($"Body of snake length: {parentArena.Me.Length}, health: {parentArena.Me.Health}, body1: {string.Join(",", body11.ToArray())}, body2: {string.Join(",", body21.ToArray())}");
-    Console.WriteLine($"Snakes Bitboard: {string.Join(',', parentArena.Grid.Snakes.GetRawData.ToArray())}");
-    Console.WriteLine("===========================================================");
-    
-    var legalMoves = parentArena.GetLegalMoves();
-
-    Console.WriteLine($"[EXPAND] Legal Moves Bitmask: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')}");
-    
-    if (legalMoves == 0)
-    {
-        node.IsTerminal = true;
-        return;
-    }
-
-    var lastChildIndex = -1;
-
-    foreach (var move in AllMovesArray)
-    {
-        if ((legalMoves & move) == 0) continue;
-
-        var childSlot = _warPool.GetNext();
-        childSlot.CloneFrom(in parentSlot);
-        var childArena = childSlot.Arena;
-        
-        Console.WriteLine("===========================================================");
-        Console.WriteLine($"[EXPAND] Applying move {MoveToString(move)} to create child node.");
-        childArena.Me.GetSpans(out var body12, out var body22);
-        Console.WriteLine($"Body of snake length: {childArena.Me.Length}, health: {childArena.Me.Health}, body1: {string.Join(",", body12.ToArray())}, body2: {string.Join(",", body22.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', childArena.Grid.Snakes.GetRawData.ToArray())}");
-        Console.WriteLine("===========================================================");
-        
-        childArena.ApplySingleMove(move, true);
-        
-        Console.WriteLine("===========================================================");
-        Console.WriteLine("After Applying Move:");
-        childArena.Me.GetSpans(out var body13, out var body23);
-        Console.WriteLine($"Body of snake length: {childArena.Me.Length}, health: {childArena.Me.Health}, body1: {string.Join(",", body13.ToArray())}, body2: {string.Join(",", body23.ToArray())}");
-        Console.WriteLine($"Snakes Bitboard: {string.Join(',', childArena.Grid.Snakes.GetRawData.ToArray())}");
-        Console.WriteLine("===========================================================");
-        
-        // Il resto della logica rimane simile...
-        var hash = ZobristHasher.CalculateHash(in childArena);
-        
-        var childIndex = _nodePool.GetNextIndex();
-        ref var childNode = ref _nodePool[childIndex];
-        childNode.Initialize(nodeIndex, move, hash);
-        
-        Console.WriteLine($"    └── Creato figlio {childIndex} per la mossa {MoveToString(move)}");
-        
-        if (lastChildIndex == -1)
+        var childIndex = node.FirstChildIndex;
+        while (childIndex != -1)
         {
-            node.FirstChildIndex = childIndex;
-        }
-        else
-        {
-            ref var lastChildNode = ref _nodePool[lastChildIndex];
-            lastChildNode.NextSiblingIndex = childIndex;
-        }
-        
-        lastChildIndex = childIndex;
-    }
-}
+            ref var childNode = ref _nodePool[childIndex];
 
-    // --- COMMENTO ---
-    // 'Simulate' è corretto con 'ref', perché il suo scopo è proprio quello di
-    // modificare uno stato fino a raggiungere un esito. La cosa importante è che
-    // 'RunIteration' gli passi una COPIA dello stato su cui lavorare.
+            if (childNode.Visits == 0) return childIndex;
+
+            var exploitation = childNode.Wins / childNode.Visits;
+            var exploration = Math.Sqrt(logParentVisits / childNode.Visits);
+            var uctScore = exploitation + explorationParameter * exploration;
+
+            if (uctScore > bestScore)
+            {
+                bestScore = uctScore;
+                bestChildIndex = childIndex;
+            }
+
+            childIndex = childNode.NextSiblingIndex;
+        }
+
+        return bestChildIndex;
+    }
+
+    private void Expand(int parentNodeIndex)
+    {
+        ref var parentNode = ref _nodePool[parentNodeIndex];
+        var parentSlot = _slotPool[parentNodeIndex]; // Legame implicito!
+        var parentArena = parentSlot.Arena;
+
+        // 2. CONTROLLI PRELIMINARI
+        if (parentArena.GameOver)
+        {
+            parentNode.IsTerminal = true;
+            return;
+        }
+
+        // 3. CALCOLA LE MOSSE POSSIBILI
+        var legalMoves = parentArena.GetLegalMoves();
+        if (legalMoves == 0)
+        {
+            parentNode.IsTerminal = true;
+            return;
+        }
+
+        // 4. CREA I NODI FIGLI
+        var lastChildIndex = -1;
+        foreach (var move in AllMovesArray)
+        {
+            if ((legalMoves & move) == 0) continue;
+
+            // --- Alloca un INDEX unificato per il nuovo figlio ---
+            var childIndex = AllocateNextId();
+
+            // --- a. Usa INDEX per preparare lo stato del figlio ---
+            var childSlot = _slotPool[childIndex];
+            childSlot.CloneFrom(in parentSlot);
+            var arena = childSlot.Arena;
+            arena.ApplySingleMove(move);
+
+            var hash = ZobristHasher.CalculateHash(in arena);
+
+            // --- b. Usa LO STESSO INDEX per preparare il nodo del figlio ---
+            ref var childNode = ref _nodePool[childIndex];
+            childNode.Initialize(parentNodeIndex, move, hash);
+
+            // --- c. Collega il nuovo figlio all'albero ---
+            if (lastChildIndex == -1)
+            {
+                parentNode.FirstChildIndex = childIndex;
+            }
+            else
+            {
+                ref var lastChildNode = ref _nodePool[lastChildIndex];
+                lastChildNode.NextSiblingIndex = childIndex;
+            }
+
+            lastChildIndex = childIndex;
+        }
+    }
+
+
     private static void Simulate(ref WarArena arena)
     {
         const int turnLimit = 100;
-
         for (var i = 0; i < turnLimit; i++)
         {
-            // --- Modifica: Controlla l'esito, non solo se sei morto ---
             if (arena.Outcome() != 0.0f) return;
-
             var legalMovesMask = arena.GetLegalMoves();
             if (legalMovesMask == 0) return;
-        
-            var move = RolloutMoveRandom(legalMovesMask); // Usiamo la policy casuale per semplicità
+            var move = RolloutMoveRandom(legalMovesMask);
             arena.ApplySingleMove(move);
         }
     }
-    
-    // ... Gli altri metodi (SelectRolloutMove, RolloutMoveRandom, Backpropagate) possono rimanere invariati ...
 
     private static byte RolloutMoveRandom(byte legalMoves)
     {
-        if (legalMoves == 0) return Moves.Up; // Fallback
+        if (legalMoves == 0) return Moves.Up;
         if (BitOperations.IsPow2(legalMoves)) return legalMoves;
-        
+
         var count = BitOperations.PopCount(legalMoves);
         var randomIndex = Random.Shared.Next(count);
 
@@ -233,6 +169,7 @@ private void Expand(int nodeIndex, ref Node node, in MemorySlot parentSlot)
             move = (byte)(1 << BitOperations.TrailingZeroCount(legalMoves));
             legalMoves &= (byte)~move;
         }
+
         return move;
     }
 
@@ -249,4 +186,6 @@ private void Expand(int nodeIndex, ref Node node, in MemorySlot parentSlot)
             currentIndex = currentNode.ParentIndex;
         }
     }
+
+    public void Reset(int newRootIndex) => _nextId = newRootIndex;
 }

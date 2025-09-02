@@ -1,12 +1,11 @@
-﻿using NUnit.Framework;
-using Thanos.War.Snake;
+﻿using Thanos.War.Snake;
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
 /// <summary>
-/// Contains all unit tests for the Health struct.
-/// Tests verify the state transitions (e.g., becoming dead) and the behavior
-/// of methods that mutate the health value (Damage, FullCure, Kill).
+///     Contains all unit tests for the Health struct.
+///     Tests verify the state transitions (e.g., becoming dead) and the behavior
+///     of methods that mutate the health value (Damage, FullCure, Kill).
 /// </summary>
 [TestFixture]
 public class HealthTests
@@ -36,7 +35,7 @@ public class HealthTests
     // =================================================================
     // Method Behavior Tests
     // =================================================================
-    
+
     [TestCase(100, TestName = "From full health")]
     [TestCase(1, TestName = "From minimal positive health")]
     [TestCase(0, TestName = "From zero health (revival)")]
@@ -57,7 +56,7 @@ public class HealthTests
             Assert.That(health.HealthPoints, Is.EqualTo(100), "HealthPoints should be exactly 100 after FullCure.");
         });
     }
-    
+
     [TestCase(100, 30, false, TestName = "Non-fatal damage should not kill")]
     [TestCase(30, 30, true, TestName = "Fatal damage (exact) should kill")]
     [TestCase(20, 30, true, TestName = "Fatal damage (overkill) should kill")]
@@ -78,7 +77,7 @@ public class HealthTests
             Assert.That(health.HealthPoints, Is.EqualTo(expectedHealth), "HealthPoints should be correctly reduced by the damage amount.");
         });
     }
-    
+
     [TestCase(100, TestName = "From positive health")]
     [TestCase(0, TestName = "From zero health")]
     [TestCase(-10, TestName = "From negative health")]

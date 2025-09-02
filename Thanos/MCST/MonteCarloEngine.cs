@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text.Json;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -8,29 +7,30 @@ namespace Thanos.MCST;
 
 public class MonteCarloEngine
 {
-    private readonly WarMemoryPool _warPool;
     private readonly NodeMemoryPool _nodePool;
+    private readonly SlotMemoryPool _slotPool;
     private readonly Worker _worker;
-    
-    public int _currentRootIndex; 
 
-    public MonteCarloEngine(WarMemoryPool warPool, NodeMemoryPool nodePool)
+    public int _rootIndex;
+
+    public MonteCarloEngine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
-        _warPool = warPool;
+        _slotPool = slotPool;
         _nodePool = nodePool;
-        _worker = new Worker(_warPool, _nodePool);
+        _worker = new Worker(_slotPool, _nodePool);
     }
-    
+
     public int FindBestMove(in Request request)
     {
-        var rootSlot = _warPool.GetNext();
-        rootSlot.InitializeFromRequest(in request);
-
-        if (_currentRootIndex == 0)
+        if (_rootIndex == 0)
         {
-            _currentRootIndex = _nodePool.GetNextIndex();
-            ref var rootIndex = ref _nodePool[_currentRootIndex];
-            rootIndex.Initialize(-1, Moves.None);
+            var rootSlot = _slotPool[_rootIndex];
+            rootSlot.InitializeFromRequest(in request);
+
+            var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
+
+            ref var rootNode = ref _nodePool[_rootIndex];
+            rootNode.Initialize(-1, Moves.None, _rootIndex, hash);
         }
 
         var stopwatch = Stopwatch.StartNew();
@@ -38,25 +38,25 @@ public class MonteCarloEngine
         // while (stopwatch.ElapsedMilliseconds < 450)
         while (counter < 10)
         {
-            _worker.RunIteration(_currentRootIndex, in rootSlot);
+            _worker.RunIteration(_rootIndex);
             counter++;
         }
-        
+
         Console.WriteLine($"[MCST] Iterations: {counter} in {stopwatch.ElapsedMilliseconds}ms");
         Console.WriteLine();
         Console.WriteLine("[MCST] ==========================================================");
         Console.WriteLine("[MCST] ==========================================================");
         Console.WriteLine("[MCST] ==========================================================");
         Console.WriteLine();
-        
-        ref var finalRootNode = ref _nodePool[_currentRootIndex];
-        
+
+        ref var finalRootNode = ref _nodePool[_rootIndex];
+
         var bestChildIndex = finalRootNode.SelectMostVisitedChild(_nodePool);
         return bestChildIndex;
     }
 
-    public void Reset() => _currentRootIndex = 0;
-    
+    public void Reset() => _rootIndex = 0;
+
     public void PrepareNextTurn(int previousChosenNodeIndex, in Request newTurnRequest, Dictionary<string, int> snakeIdMap)
     {
         if (previousChosenNodeIndex == 0)
@@ -76,13 +76,13 @@ public class MonteCarloEngine
         // In questo caso, è più sicuro resettare tutto.
         if (chosenNode.StateHash != realStateHash)
         {
-            Reset(); 
+            Reset();
             return;
         }
 
         // 4. Cache Hit! Promuovi il nodo scelto a nuova radice.
-        _currentRootIndex = previousChosenNodeIndex;
-        ref var newRoot = ref _nodePool[_currentRootIndex];
+        _rootIndex = previousChosenNodeIndex;
+        ref var newRoot = ref _nodePool[_rootIndex];
         newRoot.ParentIndex = -1; // Taglia il collegamento con il suo vecchio genitore.
     }
 }

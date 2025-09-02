@@ -7,7 +7,7 @@ public sealed unsafe class LutProvider : IDisposable
 {
     private readonly LutMemoryLayout _layout;
     private readonly void* _memoryBlock;
-    
+
     private bool _disposed;
 
     public LutProvider(int maxWidth, int maxArea)
@@ -18,9 +18,17 @@ public sealed unsafe class LutProvider : IDisposable
         Burn(maxWidth);
     }
 
+    public void Dispose()
+    {
+        if (_disposed) return;
+        NativeMemory.Free(_memoryBlock);
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
+
     /// <summary>
-    /// Restituisce una struct "contenitore" con tutte le LUT per la larghezza specificata.
-    /// Questa operazione è a costo quasi zero (creazione di una struct sullo stack).
+    ///     Restituisce una struct "contenitore" con tutte le LUT per la larghezza specificata.
+    ///     Questa operazione è a costo quasi zero (creazione di una struct sullo stack).
     /// </summary>
     public Luts Get(int width)
     {
@@ -32,7 +40,7 @@ public sealed unsafe class LutProvider : IDisposable
 
         return new Luts(positionalSpan.ToArray(), conversionSpan.ToArray());
     }
-    
+
     private void Burn(int maxWidth)
     {
         Parallel.For(1, maxWidth + 1, width =>
@@ -42,14 +50,6 @@ public sealed unsafe class LutProvider : IDisposable
         });
     }
 
-    public void Dispose()
-    {
-        if (_disposed) return;
-        NativeMemory.Free(_memoryBlock);
-        _disposed = true;
-        GC.SuppressFinalize(this);
-    }
-    
     ~LutProvider()
     {
         Dispose();

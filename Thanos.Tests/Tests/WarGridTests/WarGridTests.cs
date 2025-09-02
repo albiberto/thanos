@@ -195,3 +195,4 @@
 //         Assert.That(actualPosition, Is.EqualTo(expectedPosition), "The instance method should produce the correct 1D index based on grid.Width.");
 //     }
 // }
+

@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Thanos;
 using Thanos.Common;
-using Thanos.MCST;
 using Thanos.SourceGen;
 
 // --- Setup iniziale del server web ---
@@ -24,7 +23,7 @@ app.MapGet("/", () => new
 app.MapPost("/start", async context =>
 {
     var request = await ReadAsync(context);
-    
+
     // Console.WriteLine($"[START] New game started: {JsonSerializer.Serialize(request)}");
     agent.Start(request!.Value);
 });
@@ -35,7 +34,7 @@ app.MapPost("/move", async context =>
     // Console.WriteLine($"[MOVE] New game started: {JsonSerializer.Serialize(request)}");
 
     var result = agent.Move(request!.Value);
-    
+
     context.Response.ContentType = "application/json";
     var move = ToApiMove(result);
     Console.WriteLine($"[MOVE] Chosen move: {move}");

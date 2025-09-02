@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Thanos.SourceGen;
@@ -27,25 +26,20 @@ namespace Thanos.SourceGen;
 ///     removing them eliminates these costs for a net gain in throughput and latency.
 ///     ===================================================================================
 /// </remarks>
-
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web,  UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,  Converters = [typeof(JsonStringEnumConverter)])]
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip, Converters = [typeof(JsonStringEnumConverter)])]
 [JsonSerializable(typeof(Request))]
 public partial class ThanosSerializerContext : JsonSerializerContext;
 
 [method: JsonConstructor]
 public readonly struct Request(Game game, int turn, Board board, Snake you)
 {
-    [JsonPropertyName("game")]
-    public Game Game { get; } = game;
+    [JsonPropertyName("game")] public Game Game { get; } = game;
 
-    [JsonPropertyName("turn")]
-    public int Turn { get; } = turn;
+    [JsonPropertyName("turn")] public int Turn { get; } = turn;
 
-    [JsonPropertyName("board")]
-    public Board Board { get; } = board;
+    [JsonPropertyName("board")] public Board Board { get; } = board;
 
-    [JsonPropertyName("you")]
-    public Snake You { get; } = you;
+    [JsonPropertyName("you")] public Snake You { get; } = you;
 }
 
 public enum GameMap : byte
@@ -70,23 +64,17 @@ public enum Source : byte
 [method: JsonConstructor]
 public readonly struct Game(Guid id, Ruleset ruleset, string gameMap, string source, int timeout)
 {
-    [JsonPropertyName("id")]
-    public Guid Id { get; } = id;
+    [JsonPropertyName("id")] public Guid Id { get; } = id;
 
-    [JsonPropertyName("ruleset")]
-    public Ruleset Ruleset { get; } = ruleset;
+    [JsonPropertyName("ruleset")] public Ruleset Ruleset { get; } = ruleset;
 
-    [JsonPropertyName("map")]
-    public string gameMap { get; } = gameMap;
+    [JsonPropertyName("map")] public string gameMap { get; } = gameMap;
 
-    [JsonPropertyName("source")]
-    public string Source { get; } = source;
+    [JsonPropertyName("source")] public string Source { get; } = source;
 
-    [JsonPropertyName("timeout")]
-    public int Timeout { get; } = timeout;
+    [JsonPropertyName("timeout")] public int Timeout { get; } = timeout;
 
-    [JsonIgnore]
-    public int TimeLimit => (int)(Timeout * Constants.TimeoutRatio);
+    [JsonIgnore] public int TimeLimit => (int)(Timeout * Constants.TimeoutRatio);
 }
 
 [method: JsonConstructor]
@@ -98,27 +86,22 @@ public readonly struct Ruleset(RulesetSettings settings)
     // [JsonPropertyName("version")]
     // public string Version { get; } = version;
 
-    [JsonPropertyName("settings")]
-    public RulesetSettings Settings { get; } = settings;
+    [JsonPropertyName("settings")] public RulesetSettings Settings { get; } = settings;
 }
 
 [method: JsonConstructor]
 public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int hazardDamagePerTurn, Royale? royale, Squad? squad)
 {
-    [JsonPropertyName("foodSpawnChance")]
-    public int FoodSpawnChance { get; } = foodSpawnChance;
+    [JsonPropertyName("foodSpawnChance")] public int FoodSpawnChance { get; } = foodSpawnChance;
 
-    [JsonPropertyName("minimumFood")]
-    public int MinimumFood { get; } = minimumFood;
+    [JsonPropertyName("minimumFood")] public int MinimumFood { get; } = minimumFood;
 
     [JsonPropertyName("hazardDamagePerTurn")]
     public int HazardDamagePerTurn { get; } = hazardDamagePerTurn;
 
-    [JsonPropertyName("royale")]
-    public Royale? Royale { get; } = royale;
+    [JsonPropertyName("royale")] public Royale? Royale { get; } = royale;
 
-    [JsonPropertyName("squad")]
-    public Squad? Squad { get; } = squad;
+    [JsonPropertyName("squad")] public Squad? Squad { get; } = squad;
 }
 
 [method: JsonConstructor]
@@ -137,74 +120,55 @@ public readonly struct Squad(bool allowBodyCollisions, bool sharedElimination, b
     [JsonPropertyName("sharedElimination")]
     public bool SharedElimination { get; } = sharedElimination;
 
-    [JsonPropertyName("sharedHealth")]
-    public bool SharedHealth { get; } = sharedHealth;
+    [JsonPropertyName("sharedHealth")] public bool SharedHealth { get; } = sharedHealth;
 
-    [JsonPropertyName("sharedLength")]
-    public bool SharedLength { get; } = sharedLength;
+    [JsonPropertyName("sharedLength")] public bool SharedLength { get; } = sharedLength;
 }
 
 [method: JsonConstructor]
 public readonly struct Board(int height, int width, Coordinate[] food, Coordinate[] hazards, Snake[] snakes)
 {
-    [JsonPropertyName("height")]
-    public int Height { get; } = height;
+    [JsonPropertyName("height")] public int Height { get; } = height;
 
-    [JsonPropertyName("width")]
-    public int Width { get; } = width;
+    [JsonPropertyName("width")] public int Width { get; } = width;
 
-    [JsonPropertyName("food")]
-    public Coordinate[] Food { get; } = food;
+    [JsonPropertyName("food")] public Coordinate[] Food { get; } = food;
 
-    [JsonPropertyName("hazards")]
-    public Coordinate[] Hazards { get; } = hazards;
+    [JsonPropertyName("hazards")] public Coordinate[] Hazards { get; } = hazards;
 
-    [JsonPropertyName("snakes")]
-    public Snake[] Snakes { get; } = snakes;
+    [JsonPropertyName("snakes")] public Snake[] Snakes { get; } = snakes;
 
-    [JsonIgnore]
-    public int Area => Width * Height;
+    [JsonIgnore] public int Area => Width * Height;
 
-    [JsonIgnore]
-    public int SnakeCount => Snakes.Length;
+    [JsonIgnore] public int SnakeCount => Snakes.Length;
 }
 
 [method: JsonConstructor]
 public readonly struct Coordinate(int x, int y)
 {
-    [JsonPropertyName("x")]
-    public int X { get; } = x;
+    [JsonPropertyName("x")] public int X { get; } = x;
 
-    [JsonPropertyName("y")]
-    public int Y { get; } = y;
+    [JsonPropertyName("y")] public int Y { get; } = y;
 }
 
 [method: JsonConstructor]
 public readonly struct Snake(string id, string name, int health, Coordinate[] body, string latency, Coordinate head, int length, string shout)
 {
-    [JsonPropertyName("id")]
-    public string Id { get; } = id;
-    
-    [JsonPropertyName("name")]
-    public string Name { get; } = name;
+    [JsonPropertyName("id")] public string Id { get; } = id;
 
-    [JsonPropertyName("health")]
-    public int Health { get; } = health;
+    [JsonPropertyName("name")] public string Name { get; } = name;
 
-    [JsonPropertyName("body")]
-    public Coordinate[] Body { get; } = body;
-    
-    [JsonPropertyName("latency")]
-    public string Latency { get; } = latency;
+    [JsonPropertyName("health")] public int Health { get; } = health;
 
-    [JsonPropertyName("head")]
-    public Coordinate Head { get; } = head;
+    [JsonPropertyName("body")] public Coordinate[] Body { get; } = body;
 
-    [JsonPropertyName("length")]
-    public int Length { get; } = length;
-    
-    [JsonPropertyName("shout")]
-    public string Shout { get; } = shout;
+    [JsonPropertyName("latency")] public string Latency { get; } = latency;
+
+    [JsonPropertyName("head")] public Coordinate Head { get; } = head;
+
+    [JsonPropertyName("length")] public int Length { get; } = length;
+
+    [JsonPropertyName("shout")] public string Shout { get; } = shout;
 
 //     [JsonPropertyName("customizations")]
 //     public Customizations Customizations { get; } = customizations;

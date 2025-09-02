@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Text.Json;
 
 namespace Thanos.PreWarm;
 
@@ -8,16 +7,13 @@ public static class NeighborsBoardCache
     private static readonly ConcurrentDictionary<int, ushort[]> _cache = [];
 
     /// <summary>
-    /// Gets a MoveLookupTable for the specified square grid size.
+    ///     Gets a MoveLookupTable for the specified square grid size.
     /// </summary>
     public static ushort[] Get(int width) => _cache[width];
-    
+
     public static void Burn(int maxWidth)
     {
-        Parallel.ForEach(Enumerable.Range(1, maxWidth), width =>
-        {
-            _cache[width] = Build(width).ToArray();
-        });
+        Parallel.ForEach(Enumerable.Range(1, maxWidth), width => { _cache[width] = Build(width).ToArray(); });
     }
 
     // The LUT stores 4 neighbors (U,D,L,R) for each of the 'area' squares.
@@ -31,13 +27,13 @@ public static class NeighborsBoardCache
             var offset = pos * 4;
 
             neighbors[offset + 0] = pos >= area - width ? ushort.MaxValue : (ushort)(pos + width);
-        
+
             // Pre-calculate DOWN
             neighbors[offset + 1] = pos < width ? ushort.MaxValue : (ushort)(pos - width);
-            
+
             // Pre-calculate LEFT
             neighbors[offset + 2] = pos % width == 0 ? ushort.MaxValue : (ushort)(pos - 1);
-            
+
             // Pre-calculate RIGHT
             neighbors[offset + 3] = (pos + 1) % width == 0 ? ushort.MaxValue : (ushort)(pos + 1);
         }
