@@ -99,10 +99,15 @@ public sealed class Worker
 
     private void Expand(int parentIndex)
     {
+        // 1. PREPARA I DATI DEL NODO PADRE
         ref var parentNode = ref _nodePool[parentIndex];
         var parentSlot = _slotPool[parentIndex];
         var parentArena = parentSlot.Arena;
 
+        // --- LOG: INIZIO ESPANSIONE ---
+        // Stampa il nodo che stiamo per espandere.
+        Console.WriteLine($"|-- Espansione Nodo {parentIndex}, Padre: {parentNode.ParentIndex} (raggiunto con mossa: {MoveToString(parentNode.MoveThatLedToThisNode)})");
+        
         // 2. CONTROLLI PRELIMINARI-
         if (parentArena.GameOver)
         {
@@ -112,6 +117,11 @@ public sealed class Worker
 
         // 3. CALCOLA LE MOSSE POSSIBILI
         var legalMoves = parentArena.GetLegalMoves();
+        
+        // --- LOG: MOSSE VALIDE ---
+        // Stampa le mosse che verranno usate per creare i figli.
+        Console.WriteLine($"|   |-- Mosse valide: {MovesToString(legalMoves)}");
+        
         if (legalMoves == 0)
         {
             parentNode.IsTerminal = true;
@@ -139,6 +149,10 @@ public sealed class Worker
             ref var childNode = ref _nodePool[childIndex];
             childNode.Initialize(parentIndex, move, hash);
 
+            // --- LOG: CREAZIONE FIGLIO ---
+            // Stampa ogni figlio appena viene creato.
+            Console.WriteLine($"|   |-- Creato figlio {childIndex} per la mossa {MoveToString(move)}");
+            
             // --- c. Collega il nuovo figlio all'albero ---
             if (lastChildIndex == -1)
             {
@@ -216,4 +230,31 @@ public sealed class Worker
     }
 
     public void Reset(int newRootIndex) => _nextId = newRootIndex;
+    
+    // --- METODI HELPER PER LA STAMPA ---
+    // Metti questi metodi di utilità da qualche parte nella tua classe Worker.
+
+    private static string MoveToString(byte move) => move switch
+    {
+        Moves.Up => "Up",
+        Moves.Down => "Down",
+        Moves.Left => "Left",
+        Moves.Right => "Right",
+        Moves.None => "None", // Utile per il nodo radice
+        _ => "Sconosciuta"
+    };
+    
+    // Helper per stampare più mosse da una maschera di bit
+    private static string MovesToString(byte moves)
+    {
+        if (moves == 0) return "Nessuna";
+    
+        var moveList = new List<string>();
+        if ((moves & Moves.Up) != 0) moveList.Add("Up");
+        if ((moves & Moves.Down) != 0) moveList.Add("Down");
+        if ((moves & Moves.Left) != 0) moveList.Add("Left");
+        if ((moves & Moves.Right) != 0) moveList.Add("Right");
+    
+        return string.Join('/', moveList);
+    }
 }
