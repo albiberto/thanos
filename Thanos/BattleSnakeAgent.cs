@@ -74,10 +74,7 @@ public sealed class BattleSnakeAgent : IDisposable
         }
 
         // Fallback
-        _lastChosenNodeIndex = 0; // Resetta per il prossimo turno
-        _engine.Reset();
-        // _nodePool.Reset(); // <-- CORREZIONE: Resetta anche il pool
-        return Moves.Up; // O FindQuickSafeMove
+        throw new InvalidOperationException("No valid move found");
     }
 
     public void End(in Request _)

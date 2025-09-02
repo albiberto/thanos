@@ -66,6 +66,8 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
 
     private static Bitboard InitializeWarGrid(Span<byte> memory, in WarGridMemoryLayout layout, int width, ReadOnlySpan<Coordinate> food, ReadOnlySpan<Coordinate> hazards, ReadOnlySpan<ushort> neighbors)
     {
+        memory.Clear();
+        
         var view = new WarGridMemoryView(memory, in layout);
 
         ref var geography = ref view.Geography;
