@@ -106,7 +106,7 @@ public sealed class Worker
 
         // --- LOG: INIZIO ESPANSIONE ---
         // Stampa il nodo che stiamo per espandere.
-        Console.WriteLine($"|-- Espansione Nodo {parentIndex}, Padre: {parentNode.ParentIndex} (raggiunto con mossa: {MoveToString(parentNode.MoveThatLedToThisNode)})");
+        // Console.WriteLine($"|-- Espansione Nodo {parentIndex}, Padre: {parentNode.ParentIndex} (raggiunto con mossa: {MoveToString(parentNode.MoveThatLedToThisNode)})");
         
         // 2. CONTROLLI PRELIMINARI-
         if (parentArena.GameOver)
@@ -120,7 +120,7 @@ public sealed class Worker
         
         // --- LOG: MOSSE VALIDE ---
         // Stampa le mosse che verranno usate per creare i figli.
-        Console.WriteLine($"|   |-- Mosse valide: {MovesToString(legalMoves)}");
+        // Console.WriteLine($"|   |-- Mosse valide: {MovesToString(legalMoves)}");
         
         if (legalMoves == 0)
         {
@@ -151,7 +151,7 @@ public sealed class Worker
 
             // --- LOG: CREAZIONE FIGLIO ---
             // Stampa ogni figlio appena viene creato.
-            Console.WriteLine($"|   |-- Creato figlio {childIndex} per la mossa {MoveToString(move)}");
+            // Console.WriteLine($"|   |-- Creato figlio {childIndex} per la mossa {MoveToString(move)}");
             
             // --- c. Collega il nuovo figlio all'albero ---
             if (lastChildIndex == -1)

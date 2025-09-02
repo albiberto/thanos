@@ -37,7 +37,7 @@ app.MapPost("/move", async context =>
 
     context.Response.ContentType = "application/json";
     var move = ToApiMove(result);
-    Console.WriteLine($"[MOVE] Chosen move: {move}");
+    // Console.WriteLine($"[MOVE] Chosen move: {move}");
     await context.Response.WriteAsJsonAsync(new { move = ToApiMove(result) });
 });
 

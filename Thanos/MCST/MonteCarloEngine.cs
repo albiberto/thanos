@@ -31,7 +31,7 @@ public class MonteCarloEngine
         rootNode.Initialize(-1, Moves.None, hash);
 
         var counter = 0;
-        while (counter < 10)
+        while (counter < 500)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
