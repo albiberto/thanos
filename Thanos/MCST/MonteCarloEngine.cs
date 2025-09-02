@@ -22,32 +22,21 @@ public class MonteCarloEngine
 
     public int FindBestMove(in Request request)
     {
-        if (_rootIndex == 0)
-        {
-            var rootSlot = _slotPool[_rootIndex];
-            rootSlot.InitializeFromRequest(in request);
+        var rootSlot = _slotPool[_rootIndex];
+        rootSlot.InitializeFromRequest(in request);
 
-            var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
+        var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
 
-            ref var rootNode = ref _nodePool[_rootIndex];
-            rootNode.Initialize(-1, Moves.None, _rootIndex, hash);
-        }
+        ref var rootNode = ref _nodePool[_rootIndex];
+        rootNode.Initialize(-1, Moves.None, hash);
 
-        var stopwatch = Stopwatch.StartNew();
         var counter = 0;
-        // while (stopwatch.ElapsedMilliseconds < 450)
         while (counter < 10)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
         }
 
-        Console.WriteLine($"[MCST] Iterations: {counter} in {stopwatch.ElapsedMilliseconds}ms");
-        Console.WriteLine();
-        Console.WriteLine("[MCST] ==========================================================");
-        Console.WriteLine("[MCST] ==========================================================");
-        Console.WriteLine("[MCST] ==========================================================");
-        Console.WriteLine();
 
         ref var finalRootNode = ref _nodePool[_rootIndex];
 

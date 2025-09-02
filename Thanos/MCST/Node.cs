@@ -16,10 +16,12 @@ public struct Node
     public bool IsTerminal;
 
     public long StateHash;
+    public long Index;
 
     public void Initialize(int parentIndex, byte move, long stateHash)
     {
         StateHash = stateHash;
+        Index = 0;
 
         ParentIndex = parentIndex;
         MoveThatLedToThisNode = move;

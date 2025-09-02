@@ -20,22 +20,35 @@ public sealed class Worker
         _slotPool = slotPool;
         _nodePool = nodePool;
 
-        _nextId = 0;
+        _nextId = 1;
     }
 
     private int AllocateNextId() => _nextId++;
 
     public void RunIteration(int rootIndex)
     {
-        // 1. SELECTION - Scende nell'albero fino a trovare un nodo foglia.
+        // 1. SELECTION: Trova un nodo foglia da cui partire.
         var leafIndex = Select(rootIndex);
+        ref var leafNode = ref _nodePool[leafIndex];
 
-        Expand(leafIndex);
+        // 2. EXPANSION: Se il nodo è nuovo e non terminale, crea i suoi figli.
+        if (leafNode is { IsLeafNode: true, IsTerminal: false })
+        {
+            Expand(leafIndex);
+            // Potremmo decidere di scendere in uno dei nuovi figli per la simulazione,
+            // ma per semplicità partiamo dalla foglia originale.
+        }
+
+        // 3. SIMULATION: Esegui un rollout partendo dallo stato del nodo foglia.
+        var outcome = Simulate(leafIndex);
+        
+        // 4. BACKPROPAGATION: Propaga il risultato all'indietro.
+        Backpropagate(leafIndex, outcome);
     }
 
-    private int Select(int startNodeIndex)
+    private int Select(int rootIndex)
     {
-        var currentIndex = startNodeIndex;
+        var currentIndex = rootIndex;
 
         while (true)
         {
@@ -45,12 +58,12 @@ public sealed class Worker
             if (currentNode.IsLeafNode || currentNode.IsTerminal) return currentIndex;
 
             // 1. TROVA: il miglior figlio del nodo CORRENTE
-            var nextNodeIndex = SelectBestChild(ref currentNode);
+            var candidateIndex = SelectBestChild(ref currentNode);
 
-            if (nextNodeIndex == -1) throw new InvalidOperationException("SelectBestChild ha restituito -1 in un nodo non foglia.");
+            if (candidateIndex == -1) throw new InvalidOperationException("SelectBestChild ha restituito -1 in un nodo non foglia.");
 
             // 2. AGGIORNA: l'indice e lascia che il ciclo continui per scendere al livello successivo
-            currentIndex = nextNodeIndex;
+            currentIndex = candidateIndex;
         }
     }
 
@@ -84,13 +97,13 @@ public sealed class Worker
         return bestChildIndex;
     }
 
-    private void Expand(int parentNodeIndex)
+    private void Expand(int parentIndex)
     {
-        ref var parentNode = ref _nodePool[parentNodeIndex];
-        var parentSlot = _slotPool[parentNodeIndex]; // Legame implicito!
+        ref var parentNode = ref _nodePool[parentIndex];
+        var parentSlot = _slotPool[parentIndex];
         var parentArena = parentSlot.Arena;
 
-        // 2. CONTROLLI PRELIMINARI
+        // 2. CONTROLLI PRELIMINARI-
         if (parentArena.GameOver)
         {
             parentNode.IsTerminal = true;
@@ -124,7 +137,7 @@ public sealed class Worker
 
             // --- b. Usa LO STESSO INDEX per preparare il nodo del figlio ---
             ref var childNode = ref _nodePool[childIndex];
-            childNode.Initialize(parentNodeIndex, move, hash);
+            childNode.Initialize(parentIndex, move, hash);
 
             // --- c. Collega il nuovo figlio all'albero ---
             if (lastChildIndex == -1)
@@ -140,19 +153,34 @@ public sealed class Worker
             lastChildIndex = childIndex;
         }
     }
-
-
-    private static void Simulate(ref WarArena arena)
+    
+    private double Simulate(int leafIndex)
     {
+        // 1. Ottieni lo stato di partenza (una delle tue "fotografie" originali)
+        var leafSlot = _slotPool[leafIndex];
+
+        // 2. Prendi una sandbox e copia la fotografia lì dentro per non rovinarla
+        var sandbox = _slotPool.GetSandBox(); 
+        sandbox.CloneFrom(in leafSlot);      
+        var arena = sandbox.Arena;
+    
+        // 3. Esegui il rollout sull'arena della sandbox
         const int turnLimit = 100;
         for (var i = 0; i < turnLimit; i++)
         {
-            if (arena.Outcome() != 0.0f) return;
+            // La tua logica è corretta, ma possiamo semplificare i return
+            var outcome = arena.Outcome();
+            if (outcome != 0.0f) return outcome;
+        
             var legalMovesMask = arena.GetLegalMoves();
-            if (legalMovesMask == 0) return;
+            if (legalMovesMask == 0) return -1.0; // Sconfitta
+
             var move = RolloutMoveRandom(legalMovesMask);
             arena.ApplySingleMove(move);
         }
+    
+        // Se il loop finisce, usiamo un'euristica basata sullo stato finale
+        return arena.Outcome(); // O una tua euristica, es: arena.Me.Length * 0.1
     }
 
     private static byte RolloutMoveRandom(byte legalMoves)
