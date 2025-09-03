@@ -2,8 +2,8 @@
 
 namespace Thanos.PreWarm.Memory;
 
-public readonly struct Luts(double[] positionalScores, Coordinate[] conversionsMap)
+public readonly struct Luts(float[] positionalScores, Coordinate[] conversionsMap)
 {
-    public readonly double[] PositionalScores = positionalScores;
+    public readonly float[] PositionalScores = positionalScores;
     public readonly Coordinate[] ConversionsMap = conversionsMap;
 }

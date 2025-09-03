@@ -33,7 +33,7 @@ public sealed unsafe class LutProvider : IDisposable
     public Luts Get(int width)
     {
         var positionalInfo = _layout.PositionalScoreLayout[width];
-        var positionalSpan = new ReadOnlySpan<double>((byte*)_memoryBlock + positionalInfo.Offset, positionalInfo.Area);
+        var positionalSpan = new ReadOnlySpan<float>((byte*)_memoryBlock + positionalInfo.Offset, positionalInfo.Area);
 
         var conversionInfo = _layout.ConversionMapLayout[width];
         var conversionSpan = new ReadOnlySpan<Coordinate>((byte*)_memoryBlock + conversionInfo.Offset, conversionInfo.Area);

@@ -15,24 +15,24 @@ public readonly ref struct Heuristics
     /// La penalità per trovarsi su una casella del bordo.
     /// Deve essere un valore negativo forte per scoraggiare il serpente.
     /// </summary>
-    public const double BorderPenaltyValue = -100.0;
+    public const float BorderPenaltyValue = -100.0f;
 
     /// <summary>
     /// Il bonus massimo per trovarsi al centro esatto del tabellone.
     /// Il bonus diminuisce allontanandosi dal centro.
     /// </summary>
-    public const double CenterBonusValue = 25.0;
+    public const float CenterBonusValue = 25.0f;
     
     /// <summary>
     /// Controlla l'importanza di avere più spazio a disposizione.
     /// È il fattore più importante per la sopravvivenza.
     /// </summary>
-    private const double SpaceWeight = 3.0;
+    private const float SpaceWeight = 3.0f;
 
     /// <summary>
     /// Controlla l'importanza del cibo. Viene usato solo quando la salute è bassa.
     /// </summary>
-    private const double FoodWeight = 0.5;
+    private const float FoodWeight = 0.5f;
 
     /// <summary>
     /// La soglia di salute sotto la quale il serpente inizia a cercare attivamente cibo.
@@ -45,11 +45,11 @@ public readonly ref struct Heuristics
     private readonly WarSnake Me;
     private readonly Enemies Enemies;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap;
-    private readonly ReadOnlySpan<double> _positionalScores;
+    private readonly ReadOnlySpan<float> _positionalScores;
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
 
-    public Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
+    public Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
     {
         Grid = grid;
         Me = me;
@@ -58,14 +58,14 @@ public readonly ref struct Heuristics
         _positionalScores = positionalScores;
     }
 
-    public double Evaluate()
+    public float Evaluate()
     {
         // 1. Condizione Terminale: Se siamo morti, questo è lo scenario peggiore in assoluto.
-        if (Me.Dead) return double.NegativeInfinity;
+        if (Me.Dead) return float.NegativeInfinity;
 
         var head = Me.Head;
         var health = Me.Health;
-        var score = 0.0;
+        var score = 0.0f;
         
         // --- 1. EURISTICA DELLO SPAZIO (Flood Fill) ---
         var walls = Grid.Snakes;
@@ -95,7 +95,7 @@ public readonly ref struct Heuristics
 ///     Calcola l'incentivo al cibo trovando la distanza minima in modo super-performante
 ///     usando la LUT per le coordinate.
 /// </summary>
-private static double CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
+private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
     {
         var distance = int.MaxValue;
 
@@ -123,9 +123,9 @@ private static double CalculateFoodIncentive(Coordinate head, int health, ReadOn
         }
 
         EndLoop: // Etichetta per uscire da entrambi i cicli
-        if (distance is >= int.MaxValue or 0) return 0.0;
+        if (distance is >= int.MaxValue or 0) return 0.0f;
 
-        var urgency = 100.0 - health + 30.0;
+        var urgency = 100.0f - health + 30.0f;
         return urgency / distance;
     }
 

@@ -198,7 +198,7 @@ public sealed class Worker
     /// <summary>
     /// Valuta un nodo foglia usando l'euristica. Sostituisce la simulazione casuale.
     /// </summary>
-    private double Evaluate(int leafIndex) // <-- Metodo rinominato
+    private float Evaluate(int leafIndex) // <-- Metodo rinominato
     {
         // 1. Ottieni lo stato del nodo da valutare.
         var arena = _slotPool[leafIndex].Arena;
@@ -231,10 +231,10 @@ public sealed class Worker
         return move;
     }
 
-    private void Backpropagate(int startNodeIndex, double rawScore)
+    private void Backpropagate(int startNodeIndex, float rawScore)
     {
-        const double scalingFactor = 100.0;
-        var normalizedResult = Math.Tanh(rawScore / scalingFactor);
+        const float scalingFactor = 100.0f;
+        var normalizedResult = MathF.Tanh(rawScore / scalingFactor);
 
         var currentIndex = startNodeIndex;
         while (currentIndex != -1)

@@ -6,17 +6,20 @@ namespace Thanos.MCST;
 [StructLayout(LayoutKind.Sequential)]
 public struct Node
 {
+    public long StateHash;
+
+    // 28 byte (7 campi * 4 byte)
+    public float Wins;
     public int ParentIndex;
     public int FirstChildIndex;
     public int NextSiblingIndex;
-
-    public double Wins;
     public int Visits;
+    public int Index;
+    public ushort GenerationId; // Aggiungiamo il campo per la sicurezza del pool circolare
+
+    // 2 byte (2 campi * 1 byte)
     public byte MoveThatLedToThisNode;
     public bool IsTerminal;
-
-    public long StateHash;
-    public long Index;
 
     public void Initialize(int parentIndex, byte move, long stateHash)
     {
@@ -35,7 +38,7 @@ public struct Node
 
     public readonly bool IsLeafNode => FirstChildIndex == -1;
 
-    public void UpdateStats(double result)
+    public void UpdateStats(float result)
     {
         Visits++;
         Wins += result;
