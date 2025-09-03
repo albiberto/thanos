@@ -5,57 +5,46 @@ namespace Thanos.Memory;
 
 public sealed unsafe class SlotMemoryPool : IDisposable
 {
-    // Memoria per l'albero MCTS
-    private byte* TreeMemoryBasePointer { get; }
-
-    // Memoria separata per le simulazioni
-    private byte* SandboxMemoryBasePointer { get; }
+    private GameContext _context;
+    
+    private readonly byte* _basePointer;
     
     private readonly int _slotSize;
-    private GameContext _context;
+    private readonly long _maxNodes;
+    private readonly nuint _totalSize;
 
-    public SlotMemoryPool(in GameContext context, long maxTreeNodes, int sandboxCount)
+    public SlotMemoryPool(in GameContext context, long maxNodes)
     {
         _context = context;
         _slotSize = context.Layout.WarSlotSize;
+        _maxNodes = maxNodes;
 
-        // Alloca memoria per l'albero
-        var treeTotalSize = _slotSize * maxTreeNodes;
-        TreeMemoryBasePointer = (byte*)NativeMemory.AlignedAlloc((nuint)treeTotalSize, 64);
-        NativeMemory.Clear(TreeMemoryBasePointer, (nuint)treeTotalSize);
-
-        // Alloca memoria separata per le sandbox
-        long sandboxTotalSize = _slotSize * sandboxCount;
-        SandboxMemoryBasePointer = (byte*)NativeMemory.AlignedAlloc((nuint)sandboxTotalSize, 64);
-        NativeMemory.Clear(SandboxMemoryBasePointer, (nuint)sandboxTotalSize);
+        _totalSize = (nuint)(_slotSize * maxNodes);
+        
+        _basePointer = (byte*)NativeMemory.AlignedAlloc(_totalSize, 64);
+        NativeMemory.Clear(_basePointer, _totalSize);
+        
+        Console.WriteLine($"[SlotMemoryPool] Allocated {(double)_totalSize / (1024 * 1024 * 1024):F3} GB for {_slotSize}-byte slots, max nodes: {maxNodes}");
     }
     
-    // L'indexer ora accede solo alla memoria dell'albero
     public MemorySlot this[int index]
     {
         get
         {
+            // --- 1. PROTEZIONE DELLA MEMORIA ---
+            if (index >= _maxNodes) throw new OutOfMemoryException($"Accesso illegale allo SlotMemoryPool. Richiesto indice {index}, ma la capacità massima è {_maxNodes}.");
+            
+            // Console.WriteLine($"[SlotMemoryPool] Allocated {(double)(_slotSize * index) / (1024 * 1024 * 1024):F3} GB for {_slotSize}-byte slots, current node: {index}, max nodes: {_maxNodes}");
+            
+            // --- 2. CALCOLO DEL PUNTATORE ---
             var startOffset = (long)index * _slotSize;
-            var slotPointer = TreeMemoryBasePointer + startOffset;
+            var slotPointer = _basePointer + startOffset;
             var slotSpan = new Span<byte>(slotPointer, _slotSize);
             return new MemorySlot(slotSpan, ref _context);
         }
     }
-    
-    // GetSandBox ora accede solo alla memoria della sandbox
-    public MemorySlot GetSandBox(int sandboxId = 0)
-    {
-        var startOffset = (long)sandboxId * _slotSize;
-        var slotPointer = SandboxMemoryBasePointer + startOffset;
-        var slotSpan = new Span<byte>(slotPointer, _slotSize);
-        return new MemorySlot(slotSpan, ref _context);
-    }
 
-    public void Dispose()
-    {
-        NativeMemory.Free(TreeMemoryBasePointer);
-        NativeMemory.Free(SandboxMemoryBasePointer);
-    }
+    public void Dispose() => NativeMemory.Free(_basePointer);
 
     public void Set(in GameContext context) => _context = context;
 }

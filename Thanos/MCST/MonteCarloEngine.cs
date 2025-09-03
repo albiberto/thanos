@@ -48,13 +48,16 @@ public class MonteCarloEngine
             // Non ricalcoliamo l'hash qui, ci fidiamo di quello verificato in PrepareNextTurn
         }
 
+        var stopwatch = Stopwatch.StartNew();
         var counter = 0;
-        while (counter < 5000)
+        // while (stopwatch.ElapsedMilliseconds < 450) // Limite di tempo per l'iterazione
+        while (counter < 20000)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
         }
 
+        Console.WriteLine($"[MCE] Iterazioni completate: {counter}");
 
         ref var finalRootNode = ref _nodePool[_rootIndex];
 
@@ -86,12 +89,12 @@ public class MonteCarloEngine
 
         if (chosenNode.StateHash != realStateHash)
         {
-            Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
+            // Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
             Reset(); 
             return;
         }
 
-        Console.WriteLine($"[MCE] Cache HIT! Riutilizzo dell'albero dalla radice {previousChosenNodeIndex}.");
+        // Console.WriteLine($"[MCE] Cache HIT! Riutilizzo dell'albero dalla radice {previousChosenNodeIndex}.");
         _rootIndex = previousChosenNodeIndex;
         ref var newRoot = ref _nodePool[_rootIndex];
         newRoot.ParentIndex = -1;
