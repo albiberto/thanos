@@ -29,6 +29,7 @@ public readonly ref struct WarSnake
     public ushort Tail => _body[_anatomy.TailIndex];
     public int Length => _anatomy.Length;
     public bool Dead => _health.IsDead;
+    public bool WillGrow => _anatomy.WillGrow;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]

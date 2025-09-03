@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Thanos.Common;
 using Thanos.Memory;
+using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos.MCST;
@@ -9,7 +10,7 @@ public class MonteCarloEngine
 {
     private readonly NodeMemoryPool _nodePool;
     private readonly SlotMemoryPool _slotPool;
-    private readonly Worker _worker;
+    private Worker _worker;
 
     public int _rootIndex;
 
@@ -17,7 +18,7 @@ public class MonteCarloEngine
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
-        _worker = new Worker(_slotPool, _nodePool);
+        _worker = new Worker(_slotPool, _nodePool, new Luts());
     }
 
     public int FindBestMove(in Request request)
@@ -48,7 +49,7 @@ public class MonteCarloEngine
         }
 
         var counter = 0;
-        while (counter < 500)
+        while (counter < 5000)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
@@ -61,8 +62,13 @@ public class MonteCarloEngine
         return bestChildIndex;
     }
 
-    public void Reset()
+    public void Reset(in Luts? luts = null)
     {
+        if (luts.HasValue)
+        {
+            _worker = new Worker(_slotPool, _nodePool, luts.Value);
+        }
+        
         _rootIndex = 0;
         _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
     }

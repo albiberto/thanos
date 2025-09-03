@@ -1,19 +1,62 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
+using Thanos.Common;
 using Thanos.SourceGen;
 using Thanos.War.Grid;
 using Thanos.War.Snake;
 
 namespace Thanos.War;
 
-public ref struct Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
+public readonly ref struct Heuristics
 {
-    public readonly WarGrid Grid = grid;
-    public readonly WarSnake Me = me;
-    public readonly Enemies Enemies = enemies;
+    // --- COSTANTI E PESI DELL'EURISTICA (Tutto in un unico posto) ---
+    
+    /// <summary>
+    /// La penalità per trovarsi su una casella del bordo.
+    /// Deve essere un valore negativo forte per scoraggiare il serpente.
+    /// </summary>
+    public const double BorderPenaltyValue = -100.0;
 
-    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
-    private readonly ReadOnlySpan<double> _positionalScores = positionalScores;
+    /// <summary>
+    /// Il bonus massimo per trovarsi al centro esatto del tabellone.
+    /// Il bonus diminuisce allontanandosi dal centro.
+    /// </summary>
+    public const double CenterBonusValue = 25.0;
+    
+    /// <summary>
+    /// Controlla l'importanza di avere più spazio a disposizione.
+    /// È il fattore più importante per la sopravvivenza.
+    /// </summary>
+    private const double SpaceWeight = 3.0;
+
+    /// <summary>
+    /// Controlla l'importanza del cibo. Viene usato solo quando la salute è bassa.
+    /// </summary>
+    private const double FoodWeight = 0.5;
+
+    /// <summary>
+    /// La soglia di salute sotto la quale il serpente inizia a cercare attivamente cibo.
+    /// </summary>
+    private const int HealthThreshold = 40;
+
+    // --- Campi e Costruttore ---
+
+    private readonly WarGrid Grid;
+    private readonly WarSnake Me;
+    private readonly Enemies Enemies;
+    private readonly ReadOnlySpan<Coordinate> _conversionsMap;
+    private readonly ReadOnlySpan<double> _positionalScores;
+    private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+
+
+    public Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<double> positionalScores)
+    {
+        Grid = grid;
+        Me = me;
+        Enemies = enemies;
+        _conversionsMap = conversionsMap;
+        _positionalScores = positionalScores;
+    }
 
     public double Evaluate()
     {
@@ -22,37 +65,27 @@ public ref struct Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnl
 
         var head = Me.Head;
         var health = Me.Health;
-        var food = Grid.Food.GetRawData;
-        var headCoord = _conversionsMap[head];
         var score = 0.0;
+        
+        // --- 1. EURISTICA DELLO SPAZIO (Flood Fill) ---
+        var walls = Grid.Snakes;
+        if (!Me.WillGrow) // Assumendo che WarSnake esponga questa informazione
+        {
+            walls.Unset(Me.Tail);
+        }
+        var mySpace = FloodFill(head, walls);
+        score += SpaceWeight * mySpace;
 
-        // --- 2. EURISTICA POSIZIONALE (Statica, dalla LUT) ---
-        // Fornisce una "spinta" strategica a lungo termine, favorendo il centro
-        // e penalizzando la vicinanza ai bordi.
+        // --- 2. EURISTICA POSIZIONALE (Statica) ---
         score += _positionalScores[head];
 
-        // --- 3. EURISTICA DEL CIBO (Dinamica) ---
-        // Calcola l'urgenza di mangiare in base alla salute e alla distanza dal cibo più vicino.
-        score += HeuristicWeights.FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
-
-        // --- 4. EURISTICA DELLO SPAZIO/MOBILITÀ (Dinamica) ---
-        // La componente principale: calcola l'area sicura raggiungibile da ora (flood fill).
-        // Questo è il nostro indicatore di libertà di movimento a medio termine.
-        // var safeSpace = EstimateSafeSpaceBitset(head, HeuristicWeights.SafeSpaceNodeBudget, in Grid);
-        // score += HeuristicWeights.SpaceWeight * safeSpace;
-
-        // // --- 5. EURISTICA ANTI-TRAPPOLA (Dinamica, Visione a Breve Termine) ---
-        // // Riconosce il pericolo imminente. Se dalla nostra posizione attuale abbiamo
-        // // una sola via di fuga, siamo quasi in trappola e dobbiamo penalizzare pesantemente questo stato.
-        // var immediateMoves = Grid.GetLegalMoves(head);
-        //
-        // // BitOperations.IsPow2 è un modo velocissimo per controllare se c'è un solo bit a '1'.
-        // // Aggiungiamo un controllo sulla lunghezza per non penalizzare i primissimi turni di gioco.
-        // if (BitOperations.IsPow2(immediateMoves) && Me.Length > 3)
-        // {
-        //     // Applica una penalità pesante e fissa per le situazioni disperate.
-        //     score += HeuristicWeights.TrapPenaltyValue;
-        // }
+        // --- 3. EURISTICA DEL CIBO (CONDIZIONALE) ---
+        // Cerca il cibo SOLO se la vita è sotto la soglia.
+        if (health >= HealthThreshold) return score;
+        
+        var food = Grid.Food.GetRawData;
+        var headCoord = _conversionsMap[head];
+        score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
 
         return score;
     }
@@ -104,65 +137,77 @@ private static double CalculateFoodIncentive(Coordinate head, int health, ReadOn
         // (n XOR mask) - mask
         return (n + mask) ^ mask;
     }
+    
+    /// <summary>
+/// Calcola il numero di caselle raggiungibili usando un algoritmo Flood Fill (Depth-First Search)
+/// ottimizzato per non allocare memoria sul heap.
+/// </summary>
+/// <param name="startNode">La coordinata 1D da cui iniziare il riempimento.</param>
+/// <param name="walls">Una Bitboard che rappresenta tutti gli ostacoli.</param>
+/// <returns>Il numero di caselle accessibili.</returns>
+[MethodImpl(MethodImplOptions.AggressiveInlining)]
+[SkipLocalsInit] // Ottimizzazione: dice al compilatore di non inizializzare a zero lo stack
+private int FloodFill(ushort startNode, Bitboard walls)
+{
+    if (walls.IsSet(startNode)) return 0;
 
-    // private static int EstimateSafeSpaceBitset(ushort start, int nodeBudget, in WarGrid grid)
-    // {
-    //  var area = grid.Geography.Area;
-    //     if (area <= 0) return 0;
-    //     var words = (area + 63) >> 6;
-    //     ulong[]? rentedVisited = null;
-    //     var visitedBits = words <= 16 ? stackalloc ulong[words] : (rentedVisited = ArrayPool<ulong>.Shared.Rent(words)).AsSpan(0, words);
-    //     visitedBits.Clear();
-    //
-    //     ushort[]? rentedQueue = null;
-    //     var qCap = Math.Min(area, Math.Max(nodeBudget, 16));
-    //     var queue = qCap <= 1024 ? stackalloc ushort[qCap] : (rentedQueue = ArrayPool<ushort>.Shared.Rent(qCap)).AsSpan(0, qCap);
-    //
-    //     int qHead = 0, qTail = 0, count = 0, visitedCount = 0;
-    //
-    //     static bool TryMarkVisited(Span<ulong> bits, int idx)
-    //     {
-    //         var word = idx >> 6;
-    //         var m = 1UL << (idx & 63);
-    //         if ((bits[word] & m) != 0) return false;
-    //         bits[word] |= m;
-    //         return true;
-    //     }
-    //
-    //     if (TryMarkVisited(visitedBits, start))
-    //     {
-    //         queue[qTail++] = start;
-    //         visitedCount = 1;
-    //     }
-    //
-    //     while (qHead != qTail && count < nodeBudget)
-    //     {
-    //         var pos = queue[qHead];
-    //         qHead = (qHead + 1) % qCap;
-    //         count++;
-    //         var moves = grid.GetLegalMoves(pos);
-    //         while (moves != 0)
-    //         {
-    //             var moveIndex = BitOperations.TrailingZeroCount(moves);
-    //             var currentMove = (byte)(1 << moveIndex);
-    //             var next = grid.GetNeighbor(pos, currentMove);
-    //             if (next != ushort.MaxValue && TryMarkVisited(visitedBits, next))
-    //             {
-    //                 visitedCount++;
-    //                 if ((qTail + 1) % qCap != qHead)
-    //                 {
-    //                     queue[qTail] = next;
-    //                     qTail = (qTail + 1) % qCap;
-    //                 }
-    //             }
-    //
-    //             moves &= (byte)~currentMove;
-    //         }
-    //     }
-    //
-    //     if (rentedVisited is not null) ArrayPool<ulong>.Shared.Return(rentedVisited);
-    //     if (rentedQueue is not null) ArrayPool<ushort>.Shared.Return(rentedQueue);
-    //
-    //     return visitedCount;
-    // }
+    // 1. Usiamo un array allocato sullo stack invece di una Queue sul heap.
+    //    La dimensione 256 è più che sufficiente per qualsiasi area contigua in Battlesnake.
+    Span<ushort> stack = stackalloc ushort[256];
+    
+    var visited = new Bitboard();
+    var count = 0;
+    var stackPointer = 0;
+
+    // Inizializza lo stack con il nodo di partenza
+    stack[stackPointer++] = startNode;
+    visited.Set(startNode);
+    count++;
+
+    // 2. Il ciclo continua finché ci sono nodi da visitare nello stack.
+    while (stackPointer > 0)
+    {
+        // "Pop" manuale dallo stack: più veloce di una chiamata a metodo.
+        var current = stack[--stackPointer];
+
+        // Esamina i 4 vicini
+        // NOTA: Per la massima performance, potresti avere un metodo in Grid
+        // che restituisce uno Span<ushort> di vicini per evitare di chiamare GetNeighbor 4 volte.
+        // Ma anche così è già molto veloce.
+        
+        var neighborUp = Grid.GetNeighbor(current, Moves.Up);
+        if (neighborUp != ushort.MaxValue && !walls.IsSet(neighborUp) && !visited.IsSet(neighborUp))
+        {
+            visited.Set(neighborUp);
+            count++;
+            stack[stackPointer++] = neighborUp; // "Push" manuale
+        }
+        
+        var neighborDown = Grid.GetNeighbor(current, Moves.Down);
+        if (neighborDown != ushort.MaxValue && !walls.IsSet(neighborDown) && !visited.IsSet(neighborDown))
+        {
+            visited.Set(neighborDown);
+            count++;
+            stack[stackPointer++] = neighborDown;
+        }
+
+        var neighborLeft = Grid.GetNeighbor(current, Moves.Left);
+        if (neighborLeft != ushort.MaxValue && !walls.IsSet(neighborLeft) && !visited.IsSet(neighborLeft))
+        {
+            visited.Set(neighborLeft);
+            count++;
+            stack[stackPointer++] = neighborLeft;
+        }
+
+        var neighborRight = Grid.GetNeighbor(current, Moves.Right);
+        if (neighborRight != ushort.MaxValue && !walls.IsSet(neighborRight) && !visited.IsSet(neighborRight))
+        {
+            visited.Set(neighborRight);
+            count++;
+            stack[stackPointer++] = neighborRight;
+        }
+    }
+    
+    return count;
+}
 }

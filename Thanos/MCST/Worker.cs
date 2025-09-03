@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Thanos.Common;
 using Thanos.Memory;
+using Thanos.PreWarm.Memory;
 using Thanos.War;
 
 namespace Thanos.MCST;
@@ -11,14 +12,20 @@ public sealed class Worker
     private readonly NodeMemoryPool _nodePool;
 
     private readonly SlotMemoryPool _slotPool;
+    private readonly Luts _luts;
 
     private int _nextId;
+    
+    private const double EXPLORATION_PARAMETER = 1.41; // Il classico C per UCT
+    private const double HEURISTIC_WEIGHT = 0.5;       // Peso per l'euristica in selezione
 
     // Il costruttore non ha bisogno di essere una expression body per chiarezza
-    public Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
+    public Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Luts luts)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
+        
+        _luts = luts;
 
         _nextId = 1;
     }
@@ -40,54 +47,74 @@ public sealed class Worker
         }
 
         // 3. SIMULATION: Esegui un rollout partendo dallo stato del nodo foglia.
-        var outcome = Simulate(leafIndex);
+        var outcome = Evaluate(leafIndex);
         
         // 4. BACKPROPAGATION: Propaga il risultato all'indietro.
         Backpropagate(leafIndex, outcome);
     }
 
-    private int Select(int rootIndex)
+        private int Select(int rootIndex)
     {
         var currentIndex = rootIndex;
-
         while (true)
         {
             ref var currentNode = ref _nodePool[currentIndex];
-
-            // Condizione di terminazione: siamo arrivati a una foglia o a un nodo terminale.
             if (currentNode.IsLeafNode || currentNode.IsTerminal) return currentIndex;
 
-            // 1. TROVA: il miglior figlio del nodo CORRENTE
+            // La chiamata non cambia, ma il comportamento del metodo chiamato sì.
             var candidateIndex = SelectBestChild(ref currentNode);
 
             if (candidateIndex == -1) throw new InvalidOperationException("SelectBestChild ha restituito -1 in un nodo non foglia.");
 
-            // 2. AGGIORNA: l'indice e lascia che il ciclo continui per scendere al livello successivo
             currentIndex = candidateIndex;
         }
     }
 
-    private int SelectBestChild(ref Node node, double explorationParameter = 1.41)
+    /// <summary>
+    /// Seleziona il figlio migliore usando una formula UCT potenziata dall'euristica.
+    /// </summary>
+    private int SelectBestChild(ref Node parentNode)
     {
         var bestScore = double.MinValue;
         var bestChildIndex = -1;
 
-        var logParentVisits = Math.Log(node.Visits);
+        // Se il nodo genitore è stato visitato, possiamo calcolare il termine di esplorazione.
+        // Se non è mai stato visitato (Visits=0), il log darebbe errore, ma questa condizione
+        // è già gestita dal fatto che un nodo con 0 visite non può avere figli visitati.
+        var logParentVisits = Math.Log(parentNode.Visits);
 
-        var childIndex = node.FirstChildIndex;
+        var childIndex = parentNode.FirstChildIndex;
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool[childIndex];
 
+            // Un figlio mai visitato ha sempre la priorità assoluta.
             if (childNode.Visits == 0) return childIndex;
 
+            // --- 1. Calcolo UCT Standard ---
             var exploitation = childNode.Wins / childNode.Visits;
-            var exploration = Math.Sqrt(logParentVisits / childNode.Visits);
-            var uctScore = exploitation + explorationParameter * exploration;
+            var exploration = EXPLORATION_PARAMETER * Math.Sqrt(logParentVisits / childNode.Visits);
+            var uctScore = exploitation + exploration;
 
-            if (uctScore > bestScore)
+            // --- 2. Aggiunta del Termine Euristico ---
+            // Otteniamo lo stato del figlio per poterlo valutare.
+            var childArena =  _slotPool[childIndex].Arena;
+            
+            // Creiamo e usiamo l'euristica per ottenere un punteggio "a priori".
+            var heuristics = new Heuristics(childArena.Grid, childArena.Me, childArena.Enemies, _luts.ConversionsMap, _luts.PositionalScores);
+            var heuristicScore = heuristics.Evaluate();
+            
+            // Normalizziamo il punteggio euristico con Tanh per mantenerlo in un range [-1, 1]
+            // ed evitare che domini completamente la formula UCT.
+            var normalizedHeuristic = Math.Tanh(heuristicScore / 100.0);
+
+            // --- 3. Calcolo del Punteggio Finale ---
+            // Il punteggio finale è una combinazione di UCT e della "sensazione" dell'euristica.
+            var finalScore = uctScore + HEURISTIC_WEIGHT * normalizedHeuristic;
+
+            if (finalScore > bestScore)
             {
-                bestScore = uctScore;
+                bestScore = finalScore;
                 bestChildIndex = childIndex;
             }
 
@@ -168,33 +195,22 @@ public sealed class Worker
         }
     }
     
-    private double Simulate(int leafIndex)
+    /// <summary>
+    /// Valuta un nodo foglia usando l'euristica. Sostituisce la simulazione casuale.
+    /// </summary>
+    private double Evaluate(int leafIndex) // <-- Metodo rinominato
     {
-        // 1. Ottieni lo stato di partenza (una delle tue "fotografie" originali)
-        var leafSlot = _slotPool[leafIndex];
+        // 1. Ottieni lo stato del nodo da valutare.
+        var arena = _slotPool[leafIndex].Arena;
 
-        // 2. Prendi una sandbox e copia la fotografia lì dentro per non rovinarla
-        var sandbox = _slotPool.GetSandBox(); 
-        sandbox.CloneFrom(in leafSlot);      
-        var arena = sandbox.Arena;
-    
-        // 3. Esegui il rollout sull'arena della sandbox
-        const int turnLimit = 100;
-        for (var i = 0; i < turnLimit; i++)
-        {
-            // La tua logica è corretta, ma possiamo semplificare i return
-            var outcome = arena.Outcome();
-            if (outcome != 0.0f) return outcome;
-        
-            var legalMovesMask = arena.GetLegalMoves();
-            if (legalMovesMask == 0) return -1.0; // Sconfitta
+        var outcome = arena.Outcome();
+        if (outcome != 0.0f) return outcome;
 
-            var move = RolloutMoveRandom(legalMovesMask);
-            arena.ApplySingleMove(move);
-        }
+        // 2. Crea l'oggetto Heuristics e valuta lo stato.
+        var heuristics = new Heuristics(arena.Grid, arena.Me, arena.Enemies, _luts.ConversionsMap, _luts.PositionalScores);
     
-        // Se il loop finisce, usiamo un'euristica basata sullo stato finale
-        return arena.Outcome(); // O una tua euristica, es: arena.Me.Length * 0.1
+        // 3. Il punteggio dell'euristica è il risultato.
+        return heuristics.Evaluate();
     }
 
     private static byte RolloutMoveRandom(byte legalMoves)
@@ -228,6 +244,6 @@ public sealed class Worker
             currentIndex = currentNode.ParentIndex;
         }
     }
-
+    
     public void Reset(int startId) => _nextId = startId;
 }

@@ -39,18 +39,18 @@ public sealed class BattleSnakeAgent : IDisposable
     public void Start(in Request request)
     {
         _lastChosenIndex = 0; // Resetta a inizio partita
-        _engine.Reset();
-
         var width = request.Board.Width;
-
+        
+        var luts = _lutProvider.Get(width);
+        _engine.Reset(luts);
+        
         var snakeIdMap = BuildIdMap(request);
 
         var neighbors = NeighborsBoardCache.Get(width);
 
         var context = new GameContext(width, snakeIdMap, neighbors);
-
-        var luts = _lutProvider.Get(width);
-        _slotPool.Set(in context, in luts);
+        
+        _slotPool.Set(in context);
     }
 
     public byte Move(in Request request)

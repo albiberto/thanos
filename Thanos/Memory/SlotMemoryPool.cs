@@ -13,7 +13,6 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     
     private readonly int _slotSize;
     private GameContext _context;
-    private Luts _luts;
 
     public SlotMemoryPool(in GameContext context, long maxTreeNodes, int sandboxCount)
     {
@@ -39,7 +38,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
             var startOffset = (long)index * _slotSize;
             var slotPointer = TreeMemoryBasePointer + startOffset;
             var slotSpan = new Span<byte>(slotPointer, _slotSize);
-            return new MemorySlot(slotSpan, ref _context, ref _luts);
+            return new MemorySlot(slotSpan, ref _context);
         }
     }
     
@@ -49,7 +48,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         var startOffset = (long)sandboxId * _slotSize;
         var slotPointer = SandboxMemoryBasePointer + startOffset;
         var slotSpan = new Span<byte>(slotPointer, _slotSize);
-        return new MemorySlot(slotSpan, ref _context, ref _luts);
+        return new MemorySlot(slotSpan, ref _context);
     }
 
     public void Dispose()
@@ -58,9 +57,5 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         NativeMemory.Free(SandboxMemoryBasePointer);
     }
 
-    public void Set(in GameContext context, in Luts luts)
-    {
-        _context = context;
-        _luts = luts;
-    }
+    public void Set(in GameContext context) => _context = context;
 }

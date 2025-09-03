@@ -8,12 +8,11 @@ using Thanos.War.Snake.Memory;
 
 namespace Thanos.Memory;
 
-public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context, ref Luts luts)
+public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext context)
 {
     private readonly Span<byte> _slotMemory = slotMemory;
 
     private readonly ref GameContext _context = ref context;
-    private readonly ref Luts _luts = ref luts;
 
     // =================================================================
     // Memory Helpers
@@ -40,7 +39,7 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
             var me = new WarSnake(new WarSnakeMemoryView(MySnakeMemory, in _context.Layout.WarSnake, 0));
             var enemies = new Enemies(EnemiesMemory, ref _context.Layout.WarSnake, _context.SnakesCount - 1);
 
-            return new WarArena(grid, me, enemies, _luts.ConversionsMap, _luts.PositionalScores);
+            return new WarArena(grid, me, enemies);
         }
     }
 
