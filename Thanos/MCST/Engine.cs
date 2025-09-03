@@ -6,15 +6,15 @@ using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
-public class MonteCarloEngine
+public class Engine
 {
     private readonly NodeMemoryPool _nodePool;
     private readonly SlotMemoryPool _slotPool;
     private Worker _worker;
 
-    public int _rootIndex;
+    private int _rootIndex;
 
-    public MonteCarloEngine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
+    public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;

@@ -10,7 +10,7 @@ namespace Thanos;
 
 public sealed class BattleSnakeAgent : IDisposable
 {
-    private readonly MonteCarloEngine _engine;
+    private readonly Engine _engine;
 
     private readonly LutProvider _lutProvider;
     private readonly NodeMemoryPool _nodePool;
@@ -26,7 +26,7 @@ public sealed class BattleSnakeAgent : IDisposable
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Instance, maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
         _slotPool = new SlotMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
-        _engine = new MonteCarloEngine(_slotPool, _nodePool);
+        _engine = new Engine(_slotPool, _nodePool);
     }
 
     public void Dispose()
