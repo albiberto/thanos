@@ -51,7 +51,7 @@ public class Engine
         var stopwatch = Stopwatch.StartNew();
         var counter = 0;
         // while (stopwatch.ElapsedMilliseconds < 450) // Limite di tempo per l'iterazione
-        while (counter < 20000)
+        while (counter < 500)
         {
             _worker.RunIteration(_rootIndex);
             counter++;

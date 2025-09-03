@@ -91,9 +91,6 @@ public readonly ref struct MemorySlot(Span<byte> slotMemory, ref GameContext con
             var index = snakeIdMap[snake.Id];
             var view = new WarSnakeMemoryView(memory, in memoryLayout, index);
 
-            ref var profile = ref view.GetProfile();
-            profile = new Profile(index);
-
             ref var health = ref view.GetHealth();
             health = new Health(snake.Health);
 

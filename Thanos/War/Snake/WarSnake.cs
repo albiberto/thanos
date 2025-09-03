@@ -6,7 +6,6 @@ namespace Thanos.War.Snake;
 public readonly ref struct WarSnake
 {
     // Private fields
-    private readonly ref Profile _profile;
     private readonly ref Health _health;
     private readonly ref Anatomy _anatomy;
 
@@ -14,7 +13,6 @@ public readonly ref struct WarSnake
 
     public WarSnake(WarSnakeMemoryView view)
     {
-        _profile = ref view.GetProfile();
         _health = ref view.GetHealth();
         _anatomy = ref view.GetAnatomy();
 
@@ -22,8 +20,6 @@ public readonly ref struct WarSnake
     }
 
     // Public API
-    public int Id => _profile.Id;
-
     public int Health => _health.HealthPoints;
     public ushort Head => _body[_anatomy.HeadIndex];
     public ushort Tail => _body[_anatomy.TailIndex];
