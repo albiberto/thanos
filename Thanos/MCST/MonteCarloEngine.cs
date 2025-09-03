@@ -87,7 +87,7 @@ public class MonteCarloEngine
         var realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
         ref var chosenNode = ref _nodePool[previousChosenNodeIndex];
 
-        if (chosenNode.StateHash != realStateHash)
+        if (chosenNode.Hash != realStateHash)
         {
             // Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
             Reset(); 

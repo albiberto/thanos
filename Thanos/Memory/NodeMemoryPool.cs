@@ -4,30 +4,24 @@ using Thanos.MCST.Memory;
 
 namespace Thanos.Memory;
 
-// La classe deve essere 'unsafe' per usare i puntatori
 public sealed unsafe class NodeMemoryPool : IDisposable
 {
     private readonly NodeMemoryLayout _layout;
+    private readonly int _maxNodes;
     
     private readonly byte* _basePointer;
-
-    private readonly int _slotSize;
-    private readonly int _maxNodes;
-    private readonly long _totalSize;
-
+    
     public NodeMemoryPool(in NodeMemoryLayout layout, int maxNodes)
     {
         _layout = layout;
-        _slotSize = layout.Size;
         _maxNodes = maxNodes;
         
-        _totalSize = (long)_layout.Size * maxNodes * 10;
+        var totalSize = (long)_layout.Size * maxNodes;
 
-        _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)_totalSize, 64);
-        NativeMemory.Clear(_basePointer, (nuint)_totalSize);
+        _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)totalSize, Constants.CacheLine);
+        NativeMemory.Clear(_basePointer, (nuint)totalSize);
         
-        Console.WriteLine($"[NodeMemoryPool] Allocated {(double)_totalSize / (1024 * 1024 * 1024):F3} GB for {_layout.Size}-byte nodes, max nodes: {_maxNodes}");
-        
+        Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {_layout.Size}-byte nodes, max nodes: {_maxNodes}");
     }
 
     public ref Node this[int index]
@@ -45,6 +39,9 @@ public sealed unsafe class NodeMemoryPool : IDisposable
             var memorySpan = new Span<byte>(nodePointer, _layout.Size);
             
             return ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(memorySpan));
+            // ALTERNATIVA: teoricamente più performante perchè evita la creazione dello span
+            // ma probabilmente il JIT traduce la versione con MemoryMarshal nello stesso codice macchina
+            // return ref Unsafe.AsRef<Node>(nodePointer);
         }
     }
 

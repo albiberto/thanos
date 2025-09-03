@@ -3,36 +3,37 @@ using Thanos.Memory;
 
 namespace Thanos.MCST;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Size = 32)]
 public struct Node
 {
-    public long StateHash;
-
-    // 28 byte (7 campi * 4 byte)
+    // Blocco 1: Dati "caldi" per selezione e valutazione (16 byte)
+    // Questi campi sono usati più di frequente durante l'attraversamento dell'albero.
+    public int Visits;
     public float Wins;
-    public int ParentIndex;
+    
     public int FirstChildIndex;
     public int NextSiblingIndex;
-    public int Visits;
-    public int Index;
-    public ushort GenerationId; // Aggiungiamo il campo per la sicurezza del pool circolare
 
-    // 2 byte (2 campi * 1 byte)
-    public byte MoveThatLedToThisNode;
-    public bool IsTerminal;
+    // Blocco 2: Dati di stato e struttura, RIORDINATI per allineamento (16 byte)
+    public long Hash;               // 8 byte -> Messo per primo, si allineerà perfettamente.
+    public int ParentIndex;         // 4 byte
+    public ushort Generation;       // 2 byte
+    public byte Move;               // 1 byte
+    public bool IsTerminal;         // 1 byte
 
-    public void Initialize(int parentIndex, byte move, long stateHash)
+    public void Initialize(int parentIndex, byte move, long hash)
     {
-        StateHash = stateHash;
-        Index = 0;
-
-        ParentIndex = parentIndex;
-        MoveThatLedToThisNode = move;
-
+        Visits = 0;
+        Wins = 0;
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
-        Wins = 0;
-        Visits = 0;
+
+        ParentIndex = parentIndex;
+        
+        Generation = 0;
+        Hash = hash;
+        
+        Move = move;
         IsTerminal = false;
     }
 
@@ -44,19 +45,13 @@ public struct Node
         Wins += result;
     }
 
-    /// <summary>
-    ///     Trova l'INDICE del figlio che è stato visitato più volte.
-    ///     Questo è il metodo più robusto per la decisione finale.
-    /// </summary>
     public int SelectMostVisitedChild(NodeMemoryPool pool)
     {
-        // Se questo nodo non ha figli, non c'è nulla da scegliere.
         if (IsLeafNode) return -1;
 
         var bestChildIndex = -1;
         var maxVisits = -1;
-
-        // Itera su tutti i figli
+        
         var currentChildIndex = FirstChildIndex;
         while (currentChildIndex != -1)
         {
@@ -66,12 +61,8 @@ public struct Node
                 maxVisits = childNode.Visits;
                 bestChildIndex = currentChildIndex;
             }
-
             currentChildIndex = childNode.NextSiblingIndex;
         }
-
         return bestChildIndex;
     }
-
-    public ChildEnumerator GetChildren(NodeMemoryPool pool) => new(FirstChildIndex, pool);
 }

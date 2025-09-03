@@ -23,7 +23,7 @@ public sealed class BattleSnakeAgent : IDisposable
         NeighborsBoardCache.Burn(Constants.MaxWidth);
         var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
 
-        _nodePool = new NodeMemoryPool(NodeMemoryLayout.Standard, maxNodes);
+        _nodePool = new NodeMemoryPool(NodeMemoryLayout.Instance, maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
         _slotPool = new SlotMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
         _engine = new MonteCarloEngine(_slotPool, _nodePool);
@@ -65,7 +65,7 @@ public sealed class BattleSnakeAgent : IDisposable
         {
             ref var chosenNode = ref _nodePool[bestIndex];
 
-            var move = chosenNode.MoveThatLedToThisNode;
+            var move = chosenNode.Move;
 
             _lastChosenIndex = bestIndex; // Salva la scelta per il prossimo turno
 
