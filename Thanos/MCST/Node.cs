@@ -21,7 +21,7 @@ public struct Node
     public byte Move;               // 1 byte
     public bool IsTerminal;         // 1 byte
 
-    public void Initialize(int parentIndex, byte move, long hash)
+    public void PlacementNew(int parentIndex, byte move, long hash)
     {
         Visits = 0;
         Wins = 0;

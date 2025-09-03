@@ -174,7 +174,7 @@ public sealed class Worker
 
             // --- b. Usa LO STESSO INDEX per preparare il nodo del figlio ---
             ref var childNode = ref _nodePool[childIndex];
-            childNode.Initialize(parentIndex, move, hash);
+            childNode.PlacementNew(parentIndex, move, hash);
 
             // --- LOG: CREAZIONE FIGLIO ---
             // Stampa ogni figlio appena viene creato.

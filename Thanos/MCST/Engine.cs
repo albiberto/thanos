@@ -36,7 +36,7 @@ public class Engine
             var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
 
             ref var rootNode = ref _nodePool[_rootIndex]; // Usa l'indice 0
-            rootNode.Initialize(-1, Moves.None, hash);
+            rootNode.PlacementNew(-1, Moves.None, hash);
         }
         else
         {
