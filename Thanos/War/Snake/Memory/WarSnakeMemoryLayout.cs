@@ -2,24 +2,10 @@
 
 namespace Thanos.War.Snake.Memory;
 
-public readonly unsafe struct WarSnakeMemoryLayout
+public readonly unsafe struct WarSnakeMemoryLayout(int bodyCapacity)
 {
-    public readonly int HealthSize;
-    public readonly int AnatomySize;
-    public readonly int BodySize;
+    public readonly int HeaderStride = (sizeof(Health) + sizeof(Anatomy)).AlignUp8();
 
-    public readonly int HeaderSize;
-
-    public readonly int Stride;
-
-    public WarSnakeMemoryLayout(int capacity)
-    {
-        HealthSize = sizeof(Health);
-        AnatomySize = sizeof(Anatomy);
-
-        HeaderSize = (HealthSize + AnatomySize).AlignUp();
-        BodySize = (sizeof(ushort) * capacity).AlignUp();
-
-        Stride = HeaderSize + BodySize;
-    }
+    public readonly int BodyCapacity = bodyCapacity;
+    public readonly int BodySize = sizeof(ushort) * bodyCapacity;
 }

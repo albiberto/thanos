@@ -1,45 +1,25 @@
-﻿namespace Thanos.War.Snake;
+﻿using System.Runtime.InteropServices;
 
-public struct Anatomy(int capacity, int length)
+namespace Thanos.War.Snake;
+
+[StructLayout(LayoutKind.Sequential)]
+public struct Anatomy
 {
-    public bool WillGrow { get; private set; }
-    
-    public int TailIndex { get; private set; }
-    public int Length { get; private set; } = length;
-    public int Capacity { get; } = capacity;
-    public int CapacityMask { get; } = capacity - 1;
+    public ushort TailIndex { get; private set; }
+    public ushort Length { get; private set; }
 
-    public bool IsFull => Length == Capacity;
-
-    public readonly int HeadIndex => (TailIndex + Length - 1) & CapacityMask;
-    public readonly int NextHeadIndex => (TailIndex + Length) & CapacityMask;
-
-    public void PopTail() => TailIndex = (TailIndex + 1) & CapacityMask;
-
-    public void IncrementLength()
+    public void PlacementNew(ushort startLength)
     {
-        if (Length < Capacity) Length++;
+        TailIndex = 0;
+        Length = startLength;
     }
     
-    public void UpdateAfterMove(bool hasEaten)
-    {
-        // PRIMA, gestiamo la crescita pendente dal turno precedente.
-        if (WillGrow)
-        {
-            Length++;       // La lunghezza aumenta.
-            WillGrow = false; // Abbiamo "usato" la crescita.
-            // La coda NON si muove (PopTail non viene chiamato).
-        }
-        else
-        {
-            // Se non dovevamo crescere, la coda si muove normalmente.
-            TailIndex = (TailIndex + 1) & CapacityMask;
-        }
+    // Metodo chiamato quando lo snake cresce
+    public void UpdateAfterGrow() => Length++;
 
-        // POI, se abbiamo mangiato ORA, impostiamo il flag per il PROSSIMO turno.
-        if (hasEaten)
-        {
-            WillGrow = true;
-        }
+    // Metodo chiamato quando lo snake si muove senza crescere
+    public void UpdateAfterMove(int capacity)
+    {
+        TailIndex = (ushort)((TailIndex + 1) & (capacity - 1));
     }
 }

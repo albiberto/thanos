@@ -5,44 +5,56 @@ namespace Thanos.War.Snake;
 
 public readonly ref struct WarSnake
 {
-    // Private fields
+    // Riferimenti diretti ai componenti in memoria
     private readonly ref Health _health;
     private readonly ref Anatomy _anatomy;
-
+    
     private readonly Span<ushort> _body;
+    
+    // Dati di configurazione
+    private readonly int _capacity;
+    private readonly int _capacityMask;
 
     public WarSnake(WarSnakeMemoryView view)
     {
-        _health = ref view.GetHealth();
-        _anatomy = ref view.GetAnatomy();
-
-        _body = view.GetBody();
+        _health = ref view.Health;
+        _anatomy = ref view.Anatomy;
+        _body = view.Body;
+        _capacity = view.BodyCapacity;
+        _capacityMask = _capacity - 1;
     }
 
-    // Public API
-    public int Health => _health.HealthPoints;
-    public ushort Head => _body[_anatomy.HeadIndex];
-    public ushort Tail => _body[_anatomy.TailIndex];
+    // API Pubblica
+    public int HP => _health.Points;
     public int Length => _anatomy.Length;
-    public bool Dead => _health.IsDead;
-    public bool WillGrow => _anatomy.WillGrow;
+    public bool IsDead => _health.IsDead;
+
+    public ushort Head => _body[(_anatomy.TailIndex + _anatomy.Length - 1) & _capacityMask];
+    public ushort Tail => _body[_anatomy.TailIndex];
+    private int NextHeadIndex => (_anatomy.TailIndex + _anatomy.Length) & _capacityMask;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [SkipLocalsInit]
-    public void Move(ushort newHead, bool hasEaten, int damage)
+    public void Move(ushort newHead, bool hasEaten, byte damage)
     {
+        // La logica di crescita viene decisa qui, a un livello più alto
+        var willGrow = hasEaten && _anatomy.Length < _capacity;
+
         if (hasEaten)
             _health.FullCure();
         else
             _health.Damage(damage);
 
+        // Se lo snake muore dopo aver subito danno, non si muove
         if (_health.IsDead) return;
 
-        // La testa si muove sempre
-        _body[_anatomy.NextHeadIndex] = newHead;
+        // La testa si muove sempre, scrivendo la nuova coordinata
+        _body[NextHeadIndex] = newHead;
 
-        // Tutta la logica di coda e lunghezza è ora delegata ad Anatomy.
-        _anatomy.UpdateAfterMove(hasEaten);
+        // L'anatomia viene aggiornata in base alla crescita
+        if (willGrow)
+            _anatomy.UpdateAfterGrow();
+        else
+            _anatomy.UpdateAfterMove(_capacity);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,30 +64,24 @@ public readonly ref struct WarSnake
     [SkipLocalsInit]
     public void GetSpans(out Span<ushort> first, out Span<ushort> second)
     {
-        var tailIndex = _anatomy.TailIndex;
-        var capacity = _anatomy.Capacity;
-        var capacityMask = _anatomy.CapacityMask;
-        var length = _anatomy.Length; // Legge la lunghezza da Anatomy
-
-        if (length == 0)
+        if (_anatomy.Length == 0)
         {
-            first = Span<ushort>.Empty;
-            second = Span<ushort>.Empty;
+            first = second = Span<ushort>.Empty;
             return;
         }
 
-        var headIndex = _anatomy.HeadIndex;
+        var headIndex = (_anatomy.TailIndex + _anatomy.Length - 1) & _capacityMask;
 
-        if (tailIndex <= headIndex)
+        if (_anatomy.TailIndex <= headIndex)
         {
-            first = _body.Slice(tailIndex, length);
+            first = _body.Slice(_anatomy.TailIndex, _anatomy.Length);
             second = Span<ushort>.Empty;
         }
         else
         {
-            var firstLength = capacity - tailIndex;
-            first = _body.Slice(tailIndex, firstLength);
-            second = _body[..(length - firstLength)];
+            var firstLength = _capacity - _anatomy.TailIndex;
+            first = _body.Slice(_anatomy.TailIndex, firstLength);
+            second = _body[..(headIndex + 1)];
         }
     }
 }

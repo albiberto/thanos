@@ -64,7 +64,7 @@ public readonly ref struct Heuristics
         if (Me.Dead) return float.NegativeInfinity;
 
         var head = Me.Head;
-        var health = Me.Health;
+        var health = Me.HP;
         var score = 0.0f;
         
         // --- 1. EURISTICA DELLO SPAZIO (Flood Fill) ---

@@ -28,7 +28,7 @@ public class HealthTests
         Assert.Multiple(() =>
         {
             Assert.That(health.IsDead, Is.EqualTo(expectedIsDead), "The IsDead status should be correct based on the initial HP.");
-            Assert.That(health.HealthPoints, Is.EqualTo(hp), "HealthPoints should correctly report the initial value.");
+            Assert.That(health.Points, Is.EqualTo(hp), "HealthPoints should correctly report the initial value.");
         });
     }
 
@@ -53,7 +53,7 @@ public class HealthTests
         Assert.Multiple(() =>
         {
             Assert.That(health.IsDead, Is.False, "Entity should be alive after a FullCure.");
-            Assert.That(health.HealthPoints, Is.EqualTo(100), "HealthPoints should be exactly 100 after FullCure.");
+            Assert.That(health.Points, Is.EqualTo(100), "HealthPoints should be exactly 100 after FullCure.");
         });
     }
 
@@ -74,7 +74,7 @@ public class HealthTests
         Assert.Multiple(() =>
         {
             Assert.That(health.IsDead, Is.EqualTo(expectedIsDead), "The IsDead status should reflect whether the damage was fatal.");
-            Assert.That(health.HealthPoints, Is.EqualTo(expectedHealth), "HealthPoints should be correctly reduced by the damage amount.");
+            Assert.That(health.Points, Is.EqualTo(expectedHealth), "HealthPoints should be correctly reduced by the damage amount.");
         });
     }
 
@@ -94,7 +94,7 @@ public class HealthTests
         Assert.Multiple(() =>
         {
             Assert.That(health.IsDead, Is.True, "Entity must be dead after Kill() is called.");
-            Assert.That(health.HealthPoints, Is.EqualTo(0), "HealthPoints should be exactly 0 after Kill().");
+            Assert.That(health.Points, Is.EqualTo(0), "HealthPoints should be exactly 0 after Kill().");
         });
     }
 }
