@@ -1,4 +1,5 @@
 ﻿using Thanos.Memory;
+using Thanos.Memory.Pools;
 using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
@@ -12,7 +13,7 @@ public class WarSnakeMoveTests
     {
         const int width = 11;
         var map = BuildIdMap();
-        var context = new GameContext(width, map, []);
+        var context = new GameContext(width, map);
 
         var lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
         var warPool = new SlotMemoryPool(context, 1000);

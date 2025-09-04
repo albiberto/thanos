@@ -10,32 +10,32 @@ namespace Thanos.War;
 public readonly ref struct Heuristics
 {
     // --- COSTANTI E PESI DELL'EURISTICA (Tutto in un unico posto) ---
-    
+
     /// <summary>
-    /// La penalità per trovarsi su una casella del bordo.
-    /// Deve essere un valore negativo forte per scoraggiare il serpente.
+    ///     La penalità per trovarsi su una casella del bordo.
+    ///     Deve essere un valore negativo forte per scoraggiare il serpente.
     /// </summary>
     public const float BorderPenaltyValue = -100.0f;
 
     /// <summary>
-    /// Il bonus massimo per trovarsi al centro esatto del tabellone.
-    /// Il bonus diminuisce allontanandosi dal centro.
+    ///     Il bonus massimo per trovarsi al centro esatto del tabellone.
+    ///     Il bonus diminuisce allontanandosi dal centro.
     /// </summary>
     public const float CenterBonusValue = 25.0f;
-    
+
     /// <summary>
-    /// Controlla l'importanza di avere più spazio a disposizione.
-    /// È il fattore più importante per la sopravvivenza.
+    ///     Controlla l'importanza di avere più spazio a disposizione.
+    ///     È il fattore più importante per la sopravvivenza.
     /// </summary>
     private const float SpaceWeight = 3.0f;
 
     /// <summary>
-    /// Controlla l'importanza del cibo. Viene usato solo quando la salute è bassa.
+    ///     Controlla l'importanza del cibo. Viene usato solo quando la salute è bassa.
     /// </summary>
     private const float FoodWeight = 0.5f;
 
     /// <summary>
-    /// La soglia di salute sotto la quale il serpente inizia a cercare attivamente cibo.
+    ///     La soglia di salute sotto la quale il serpente inizia a cercare attivamente cibo.
     /// </summary>
     private const int HealthThreshold = 40;
 
@@ -66,13 +66,11 @@ public readonly ref struct Heuristics
         var head = Me.Head;
         var health = Me.HP;
         var score = 0.0f;
-        
+
         // --- 1. EURISTICA DELLO SPAZIO (Flood Fill) ---
         var walls = Grid.Snakes;
         if (!Me.WillGrow) // Assumendo che WarSnake esponga questa informazione
-        {
             walls.Unset(Me.Tail);
-        }
         var mySpace = FloodFill(head, walls);
         score += SpaceWeight * mySpace;
 
@@ -82,7 +80,7 @@ public readonly ref struct Heuristics
         // --- 3. EURISTICA DEL CIBO (CONDIZIONALE) ---
         // Cerca il cibo SOLO se la vita è sotto la soglia.
         if (health >= HealthThreshold) return score;
-        
+
         var food = Grid.Food.GetRawData;
         var headCoord = _conversionsMap[head];
         score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
@@ -137,77 +135,77 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
         // (n XOR mask) - mask
         return (n + mask) ^ mask;
     }
-    
+
     /// <summary>
-/// Calcola il numero di caselle raggiungibili usando un algoritmo Flood Fill (Depth-First Search)
-/// ottimizzato per non allocare memoria sul heap.
-/// </summary>
-/// <param name="startNode">La coordinata 1D da cui iniziare il riempimento.</param>
-/// <param name="walls">Una Bitboard che rappresenta tutti gli ostacoli.</param>
-/// <returns>Il numero di caselle accessibili.</returns>
-[MethodImpl(MethodImplOptions.AggressiveInlining)]
-[SkipLocalsInit] // Ottimizzazione: dice al compilatore di non inizializzare a zero lo stack
-private int FloodFill(ushort startNode, Bitboard walls)
-{
-    if (walls.IsSet(startNode)) return 0;
-
-    // 1. Usiamo un array allocato sullo stack invece di una Queue sul heap.
-    //    La dimensione 256 è più che sufficiente per qualsiasi area contigua in Battlesnake.
-    Span<ushort> stack = stackalloc ushort[256];
-    
-    var visited = new Bitboard();
-    var count = 0;
-    var stackPointer = 0;
-
-    // Inizializza lo stack con il nodo di partenza
-    stack[stackPointer++] = startNode;
-    visited.Set(startNode);
-    count++;
-
-    // 2. Il ciclo continua finché ci sono nodi da visitare nello stack.
-    while (stackPointer > 0)
+    ///     Calcola il numero di caselle raggiungibili usando un algoritmo Flood Fill (Depth-First Search)
+    ///     ottimizzato per non allocare memoria sul heap.
+    /// </summary>
+    /// <param name="startNode">La coordinata 1D da cui iniziare il riempimento.</param>
+    /// <param name="walls">Una Bitboard che rappresenta tutti gli ostacoli.</param>
+    /// <returns>Il numero di caselle accessibili.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit] // Ottimizzazione: dice al compilatore di non inizializzare a zero lo stack
+    private int FloodFill(ushort startNode, Bitboard walls)
     {
-        // "Pop" manuale dallo stack: più veloce di una chiamata a metodo.
-        var current = stack[--stackPointer];
+        if (walls.IsSet(startNode)) return 0;
 
-        // Esamina i 4 vicini
-        // NOTA: Per la massima performance, potresti avere un metodo in Grid
-        // che restituisce uno Span<ushort> di vicini per evitare di chiamare GetNeighbor 4 volte.
-        // Ma anche così è già molto veloce.
-        
-        var neighborUp = Grid.GetNeighbor(current, Moves.Up);
-        if (neighborUp != ushort.MaxValue && !walls.IsSet(neighborUp) && !visited.IsSet(neighborUp))
+        // 1. Usiamo un array allocato sullo stack invece di una Queue sul heap.
+        //    La dimensione 256 è più che sufficiente per qualsiasi area contigua in Battlesnake.
+        Span<ushort> stack = stackalloc ushort[256];
+
+        var visited = new Bitboard();
+        var count = 0;
+        var stackPointer = 0;
+
+        // Inizializza lo stack con il nodo di partenza
+        stack[stackPointer++] = startNode;
+        visited.Set(startNode);
+        count++;
+
+        // 2. Il ciclo continua finché ci sono nodi da visitare nello stack.
+        while (stackPointer > 0)
         {
-            visited.Set(neighborUp);
-            count++;
-            stack[stackPointer++] = neighborUp; // "Push" manuale
-        }
-        
-        var neighborDown = Grid.GetNeighbor(current, Moves.Down);
-        if (neighborDown != ushort.MaxValue && !walls.IsSet(neighborDown) && !visited.IsSet(neighborDown))
-        {
-            visited.Set(neighborDown);
-            count++;
-            stack[stackPointer++] = neighborDown;
+            // "Pop" manuale dallo stack: più veloce di una chiamata a metodo.
+            var current = stack[--stackPointer];
+
+            // Esamina i 4 vicini
+            // NOTA: Per la massima performance, potresti avere un metodo in Grid
+            // che restituisce uno Span<ushort> di vicini per evitare di chiamare GetNeighbor 4 volte.
+            // Ma anche così è già molto veloce.
+
+            var neighborUp = Grid.GetNeighbor(current, Moves.Up);
+            if (neighborUp != ushort.MaxValue && !walls.IsSet(neighborUp) && !visited.IsSet(neighborUp))
+            {
+                visited.Set(neighborUp);
+                count++;
+                stack[stackPointer++] = neighborUp; // "Push" manuale
+            }
+
+            var neighborDown = Grid.GetNeighbor(current, Moves.Down);
+            if (neighborDown != ushort.MaxValue && !walls.IsSet(neighborDown) && !visited.IsSet(neighborDown))
+            {
+                visited.Set(neighborDown);
+                count++;
+                stack[stackPointer++] = neighborDown;
+            }
+
+            var neighborLeft = Grid.GetNeighbor(current, Moves.Left);
+            if (neighborLeft != ushort.MaxValue && !walls.IsSet(neighborLeft) && !visited.IsSet(neighborLeft))
+            {
+                visited.Set(neighborLeft);
+                count++;
+                stack[stackPointer++] = neighborLeft;
+            }
+
+            var neighborRight = Grid.GetNeighbor(current, Moves.Right);
+            if (neighborRight != ushort.MaxValue && !walls.IsSet(neighborRight) && !visited.IsSet(neighborRight))
+            {
+                visited.Set(neighborRight);
+                count++;
+                stack[stackPointer++] = neighborRight;
+            }
         }
 
-        var neighborLeft = Grid.GetNeighbor(current, Moves.Left);
-        if (neighborLeft != ushort.MaxValue && !walls.IsSet(neighborLeft) && !visited.IsSet(neighborLeft))
-        {
-            visited.Set(neighborLeft);
-            count++;
-            stack[stackPointer++] = neighborLeft;
-        }
-
-        var neighborRight = Grid.GetNeighbor(current, Moves.Right);
-        if (neighborRight != ushort.MaxValue && !walls.IsSet(neighborRight) && !visited.IsSet(neighborRight))
-        {
-            visited.Set(neighborRight);
-            count++;
-            stack[stackPointer++] = neighborRight;
-        }
+        return count;
     }
-    
-    return count;
-}
 }

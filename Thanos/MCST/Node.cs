@@ -1,5 +1,5 @@
 ﻿using System.Runtime.InteropServices;
-using Thanos.Memory;
+using Thanos.Memory.Pools;
 
 namespace Thanos.MCST;
 
@@ -10,16 +10,16 @@ public struct Node
     // Questi campi sono usati più di frequente durante l'attraversamento dell'albero.
     public int Visits;
     public float Wins;
-    
+
     public int FirstChildIndex;
     public int NextSiblingIndex;
 
     // Blocco 2: Dati di stato e struttura, RIORDINATI per allineamento (16 byte)
-    public long Hash;               // 8 byte -> Messo per primo, si allineerà perfettamente.
-    public int ParentIndex;         // 4 byte
-    public ushort Generation;       // 2 byte
-    public byte Move;               // 1 byte
-    public bool IsTerminal;         // 1 byte
+    public long Hash; // 8 byte -> Messo per primo, si allineerà perfettamente.
+    public int ParentIndex; // 4 byte
+    public ushort Generation; // 2 byte
+    public byte Move; // 1 byte
+    public bool IsTerminal; // 1 byte
 
     public void PlacementNew(int parentIndex, byte move, long hash)
     {
@@ -29,10 +29,10 @@ public struct Node
         NextSiblingIndex = -1;
 
         ParentIndex = parentIndex;
-        
+
         Generation = 0;
         Hash = hash;
-        
+
         Move = move;
         IsTerminal = false;
     }
@@ -51,7 +51,7 @@ public struct Node
 
         var bestChildIndex = -1;
         var maxVisits = -1;
-        
+
         var currentChildIndex = FirstChildIndex;
         while (currentChildIndex != -1)
         {
@@ -61,8 +61,10 @@ public struct Node
                 maxVisits = childNode.Visits;
                 bestChildIndex = currentChildIndex;
             }
+
             currentChildIndex = childNode.NextSiblingIndex;
         }
+
         return bestChildIndex;
     }
 }

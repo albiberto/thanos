@@ -1,31 +1,17 @@
-﻿using System.Numerics;
-using System.Runtime.InteropServices;
-using Thanos.War.Grid.Memory;
+﻿using System.Runtime.InteropServices;
+using Thanos.War.Memory.Views;
 using Thanos.War.Snake;
 
 namespace Thanos.War.Grid;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly ref struct WarGrid
+public readonly ref struct WarGrid(WarGridMemoryView view)
 {
-    public readonly ref Geography Geography;
+    public const int BitboardCount = 3; // Food, Hazards, Snakes
 
-    public readonly Bitboard Food;
-    public readonly Bitboard Hazards;
-    public readonly Bitboard Snakes;
-
-    private readonly ReadOnlySpan<ushort> _neighborsBoard;
-
-    public WarGrid(WarGridMemoryView view)
-    {
-        Geography = ref view.Geography;
-
-        Food = view.Food;
-        Hazards = view.Hazards;
-        Snakes = view.Snakes;
-
-        _neighborsBoard = view.NeighborsBoard;
-    }
+    public readonly Bitboard Food = view.Food;
+    public readonly Bitboard Hazards = view.Hazards;
+    public readonly Bitboard Snakes = view.Snakes;
 
     public bool IsSet(ushort position) => position == ushort.MaxValue || Snakes.IsSet(position);
     public bool IsUnset(ushort position) => position != ushort.MaxValue && Snakes.IsUnset(position);
@@ -33,8 +19,6 @@ public readonly ref struct WarGrid
     public bool IsFood(ushort position) => Food.IsSet(position);
 
     public bool IsHazard(ushort position) => Hazards.IsSet(position);
-
-    public ushort GetNeighbor(ushort position, byte move) => _neighborsBoard[position * 4 + BitOperations.TrailingZeroCount(move)];
 
     // Dentro WarGrid.cs
     public void SynchronizeSnakeOnGrid(WarSnake snake, ushort oldTail, bool hasEaten)

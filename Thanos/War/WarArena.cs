@@ -5,7 +5,7 @@ using Thanos.War.Snake;
 
 namespace Thanos.War;
 
-public readonly ref struct WarArena(WarGrid grid, WarSnake me, Enemies enemies)
+public readonly ref struct WarArena(WarGrid grid, WarSnakes snakes)
 {
     public readonly WarGrid Grid = grid;
     public readonly WarSnake Me = me;

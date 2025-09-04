@@ -2,6 +2,7 @@
 using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
+using Thanos.Memory.Pools;
 using Thanos.PreWarm;
 using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
@@ -48,7 +49,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
         var neighbors = NeighborsBoardCache.Get(width);
 
-        var context = new GameContext(width, snakeIdMap, neighbors);
+        var context = new GameContext(width, snakeIdMap);
         
         _slotPool.Set(in context);
     }

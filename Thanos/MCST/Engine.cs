@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using Thanos.Common;
-using Thanos.Memory;
+using Thanos.Memory.Pools;
 using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
@@ -10,9 +10,9 @@ public class Engine
 {
     private readonly NodeMemoryPool _nodePool;
     private readonly SlotMemoryPool _slotPool;
-    private Worker _worker;
 
     private int _rootIndex;
+    private Worker _worker;
 
     public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
@@ -29,10 +29,10 @@ public class Engine
         {
             // L'ID 0 è riservato per la radice.
             _worker.Reset(1); // Iniziamo ad allocare dal prossimo ID disponibile.
-            
+
             var rootSlot = _slotPool[_rootIndex]; // Usa l'indice 0
             rootSlot.InitializeFromRequest(in request);
-            
+
             var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
 
             ref var rootNode = ref _nodePool[_rootIndex]; // Usa l'indice 0
@@ -67,11 +67,8 @@ public class Engine
 
     public void Reset(in Luts? luts = null)
     {
-        if (luts.HasValue)
-        {
-            _worker = new Worker(_slotPool, _nodePool, luts.Value);
-        }
-        
+        if (luts.HasValue) _worker = new Worker(_slotPool, _nodePool, luts.Value);
+
         _rootIndex = 0;
         _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
     }
@@ -90,7 +87,7 @@ public class Engine
         if (chosenNode.Hash != realStateHash)
         {
             // Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
-            Reset(); 
+            Reset();
             return;
         }
 
@@ -98,7 +95,7 @@ public class Engine
         _rootIndex = previousChosenNodeIndex;
         ref var newRoot = ref _nodePool[_rootIndex];
         newRoot.ParentIndex = -1;
-        
+
         // Dobbiamo dire al worker da quale ID ripartire per le nuove allocazioni!
         // Questo richiede di trovare l'ID più alto nell'albero, un'operazione che possiamo aggiungere.
         // Per ora, lo lasciamo continuare a contare, ma questo andrà corretto.

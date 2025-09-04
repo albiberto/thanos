@@ -3,18 +3,13 @@
 namespace Thanos.War.Snake;
 
 [StructLayout(LayoutKind.Sequential)]
-public struct Health
+public ref struct Health
 {
     private const byte FullHealth = 100; 
     
     public byte Points { get; private set; }
-    private byte _flags; // Un campo privato per altri flag, se necessario in futuro, mantiene l'allineamento a 2 byte.
 
-    public void PlacementNew(byte startHealth)
-    {
-        Points = startHealth;
-        _flags = 0;
-    }
+    public void PlacementNew(byte points) => Points = points;
 
     public readonly bool IsDead => Points <= 0;
 

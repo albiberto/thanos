@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using Thanos.Common;
-using Thanos.Memory;
+using Thanos.Memory.Pools;
 using Thanos.PreWarm.Memory;
 using Thanos.War;
 
@@ -8,23 +8,22 @@ namespace Thanos.MCST;
 
 public sealed class Worker
 {
+    private const double EXPLORATION_PARAMETER = 1.41; // Il classico C per UCT
+    private const double HEURISTIC_WEIGHT = 0.5; // Peso per l'euristica in selezione
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+    private readonly Luts _luts;
     private readonly NodeMemoryPool _nodePool;
 
     private readonly SlotMemoryPool _slotPool;
-    private readonly Luts _luts;
 
     private int _nextId;
-    
-    private const double EXPLORATION_PARAMETER = 1.41; // Il classico C per UCT
-    private const double HEURISTIC_WEIGHT = 0.5;       // Peso per l'euristica in selezione
 
     // Il costruttore non ha bisogno di essere una expression body per chiarezza
     public Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Luts luts)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
-        
+
         _luts = luts;
 
         _nextId = 1;
@@ -39,21 +38,17 @@ public sealed class Worker
         ref var leafNode = ref _nodePool[leafIndex];
 
         // 2. EXPANSION: Se il nodo è nuovo e non terminale, crea i suoi figli.
-        if (leafNode is { IsLeafNode: true, IsTerminal: false })
-        {
-            Expand(leafIndex);
-            // Potremmo decidere di scendere in uno dei nuovi figli per la simulazione,
-            // ma per semplicità partiamo dalla foglia originale.
-        }
-
+        if (leafNode is { IsLeafNode: true, IsTerminal: false }) Expand(leafIndex);
+        // Potremmo decidere di scendere in uno dei nuovi figli per la simulazione,
+        // ma per semplicità partiamo dalla foglia originale.
         // 3. SIMULATION: Esegui un rollout partendo dallo stato del nodo foglia.
         var outcome = Evaluate(leafIndex);
-        
+
         // 4. BACKPROPAGATION: Propaga il risultato all'indietro.
         Backpropagate(leafIndex, outcome);
     }
 
-        private int Select(int rootIndex)
+    private int Select(int rootIndex)
     {
         var currentIndex = rootIndex;
         while (true)
@@ -71,7 +66,7 @@ public sealed class Worker
     }
 
     /// <summary>
-    /// Seleziona il figlio migliore usando una formula UCT potenziata dall'euristica.
+    ///     Seleziona il figlio migliore usando una formula UCT potenziata dall'euristica.
     /// </summary>
     private int SelectBestChild(ref Node parentNode)
     {
@@ -98,12 +93,12 @@ public sealed class Worker
 
             // --- 2. Aggiunta del Termine Euristico ---
             // Otteniamo lo stato del figlio per poterlo valutare.
-            var childArena =  _slotPool[childIndex].Arena;
-            
+            var childArena = _slotPool[childIndex].Arena;
+
             // Creiamo e usiamo l'euristica per ottenere un punteggio "a priori".
             var heuristics = new Heuristics(childArena.Grid, childArena.Me, childArena.Enemies, _luts.ConversionsMap, _luts.PositionalScores);
             var heuristicScore = heuristics.Evaluate();
-            
+
             // Normalizziamo il punteggio euristico con Tanh per mantenerlo in un range [-1, 1]
             // ed evitare che domini completamente la formula UCT.
             var normalizedHeuristic = Math.Tanh(heuristicScore / 100.0);
@@ -134,7 +129,7 @@ public sealed class Worker
         // --- LOG: INIZIO ESPANSIONE ---
         // Stampa il nodo che stiamo per espandere.
         // Console.WriteLine($"|-- Espansione Nodo {parentIndex}, Padre: {parentNode.ParentIndex} (raggiunto con mossa: {MoveToString(parentNode.MoveThatLedToThisNode)})");
-        
+
         // 2. CONTROLLI PRELIMINARI-
         if (parentArena.GameOver)
         {
@@ -144,11 +139,11 @@ public sealed class Worker
 
         // 3. CALCOLA LE MOSSE POSSIBILI
         var legalMoves = parentArena.GetLegalMoves();
-        
+
         // --- LOG: MOSSE VALIDE ---
         // Stampa le mosse che verranno usate per creare i figli.
         // Console.WriteLine($"|   |-- Mosse valide: {MovesToString(legalMoves)}");
-        
+
         if (legalMoves == 0)
         {
             parentNode.IsTerminal = true;
@@ -179,7 +174,7 @@ public sealed class Worker
             // --- LOG: CREAZIONE FIGLIO ---
             // Stampa ogni figlio appena viene creato.
             // Console.WriteLine($"|   |-- Creato figlio {childIndex} per la mossa {MoveToString(move)}");
-            
+
             // --- c. Collega il nuovo figlio all'albero ---
             if (lastChildIndex == -1)
             {
@@ -194,9 +189,9 @@ public sealed class Worker
             lastChildIndex = childIndex;
         }
     }
-    
+
     /// <summary>
-    /// Valuta un nodo foglia usando l'euristica. Sostituisce la simulazione casuale.
+    ///     Valuta un nodo foglia usando l'euristica. Sostituisce la simulazione casuale.
     /// </summary>
     private float Evaluate(int leafIndex) // <-- Metodo rinominato
     {
@@ -208,7 +203,7 @@ public sealed class Worker
 
         // 2. Crea l'oggetto Heuristics e valuta lo stato.
         var heuristics = new Heuristics(arena.Grid, arena.Me, arena.Enemies, _luts.ConversionsMap, _luts.PositionalScores);
-    
+
         // 3. Il punteggio dell'euristica è il risultato.
         return heuristics.Evaluate();
     }
@@ -244,6 +239,6 @@ public sealed class Worker
             currentIndex = currentNode.ParentIndex;
         }
     }
-    
+
     public void Reset(int startId) => _nextId = startId;
 }
