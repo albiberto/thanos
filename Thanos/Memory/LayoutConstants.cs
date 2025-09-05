@@ -1,4 +1,4 @@
-﻿namespace Thanos.Memory.Pools;
+﻿namespace Thanos.Memory;
 
 public static class LayoutConstants
 {

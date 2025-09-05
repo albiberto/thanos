@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using Thanos.Memory.Pools;
 using Thanos.War;
 
 namespace Thanos.Memory;
@@ -42,7 +41,6 @@ public sealed unsafe class SlotMemoryPool : IDisposable
             var hazardsBitboard = new Bitboard(hazardsBitboardMemory);
             var snakesSystem = new SnakesSystem(memory, _layout, _snakesCount);
                 
-            // D. Passa lo SnakesSystem all'Arena.
             return new Arena(snakesSystem, foodBitboard, hazardsBitboard, _neighbors);
         }
     }

@@ -2,7 +2,7 @@
 using Thanos.MCST;
 using Thanos.MCST.Memory;
 
-namespace Thanos.Memory.Pools;
+namespace Thanos.Memory;
 
 public sealed unsafe class NodeMemoryPool : IDisposable
 {
