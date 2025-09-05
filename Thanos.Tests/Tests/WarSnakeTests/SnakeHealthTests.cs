@@ -1,4 +1,4 @@
-﻿using Thanos.War.Snake;
+﻿using Thanos.War;
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
@@ -8,7 +8,7 @@ namespace Thanos.Tests.Tests.WarSnakeTests;
 ///     of methods that mutate the health value (Damage, FullCure, Kill).
 /// </summary>
 [TestFixture]
-public class HealthTests
+public class SnakeHealthTests
 {
     // =================================================================
     // State Verification Tests
@@ -22,7 +22,7 @@ public class HealthTests
     public void IsDead_Property_ShouldReturnCorrectStatus(int hp, bool expectedIsDead)
     {
         // Arrange & Act
-        var health = new Health(hp);
+        var health = new SnakeHealth(hp);
 
         // Assert
         Assert.Multiple(() =>
@@ -44,7 +44,7 @@ public class HealthTests
     public void FullCure_ShouldAlwaysRestoreHealthTo100(int initialHp)
     {
         // Arrange
-        var health = new Health(initialHp);
+        var health = new SnakeHealth(initialHp);
 
         // Act
         health.FullCure();
@@ -64,7 +64,7 @@ public class HealthTests
     public void Damage_ShouldUpdateStateCorrectly(int initialHp, int damageAmount, bool expectedIsDead)
     {
         // Arrange
-        var health = new Health(initialHp);
+        var health = new SnakeHealth(initialHp);
         var expectedHealth = initialHp - damageAmount;
 
         // Act
@@ -85,7 +85,7 @@ public class HealthTests
     public void Kill_ShouldSetHealthToZeroAndResultInDeath(int initialHp)
     {
         // Arrange
-        var health = new Health(initialHp);
+        var health = new SnakeHealth(initialHp);
 
         // Act
         health.Kill();

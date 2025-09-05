@@ -1,11 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
-using Thanos.War.Grid;
-using Thanos.War.Snake;
+using Thanos.PreWarm;
 
 namespace Thanos.War;
 
-public readonly ref struct WarArena(WarGrid grid, WarSnakes snakes)
+public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, ReadOnlySpan<ushort> neighbors)
 {
     public readonly WarGrid Grid = grid;
     public readonly WarSnake Me = me;

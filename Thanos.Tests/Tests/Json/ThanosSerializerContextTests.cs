@@ -107,7 +107,7 @@ public class ThanosSerializerContextTests
         });
     }
 
-    private static void AssertSnakesAreEqual(TestHealth expected, Snake actual, string context)
+    private static void AssertSnakesAreEqual(TestSnakeHealth expected, Snake actual, string context)
     {
         Assert.Multiple(() =>
         {

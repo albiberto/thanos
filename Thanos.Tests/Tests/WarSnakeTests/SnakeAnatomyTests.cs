@@ -1,4 +1,4 @@
-﻿using Thanos.War.Snake;
+﻿using Thanos.War;
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
@@ -7,7 +7,7 @@ namespace Thanos.Tests.Tests.WarSnakeTests;
 ///     across various buffer capacities and conditions.
 /// </summary>
 [TestFixtureSource(nameof(Capacities))]
-public class AnatomyTests(int capacity)
+public class SnakeAnatomyTests(int capacity)
 {
     /// <summary>
     ///     Provides a set of different capacities to run all tests against, ensuring robustness.
@@ -27,7 +27,7 @@ public class AnatomyTests(int capacity)
         var length = capacity / ratio;
 
         // Act
-        var anatomy = new Anatomy(capacity, length);
+        var anatomy = new SnakeAnatomy(capacity, length);
 
         // Assert
         Assert.Multiple(() =>
@@ -53,7 +53,7 @@ public class AnatomyTests(int capacity)
         var length = capacity;
 
         // Act
-        var anatomy = new Anatomy(capacity, length);
+        var anatomy = new SnakeAnatomy(capacity, length);
 
         // Assert
         Assert.Multiple(() =>
@@ -81,7 +81,7 @@ public class AnatomyTests(int capacity)
     {
         // Arrange
         var length = capacity / ratio;
-        var anatomy = new Anatomy(capacity, length);
+        var anatomy = new SnakeAnatomy(capacity, length);
 
         // Act
         anatomy.PopTail();
@@ -102,7 +102,7 @@ public class AnatomyTests(int capacity)
     public void PopTail_OnFullBuffer_ShouldCorrectlyShiftWindow()
     {
         // Arrange
-        var anatomy = new Anatomy(capacity, capacity);
+        var anatomy = new SnakeAnatomy(capacity, capacity);
 
         // Act
         anatomy.PopTail(); // Tail moves from 0 to 1
@@ -124,7 +124,7 @@ public class AnatomyTests(int capacity)
     public void PopTail_WhenCalledCapacityTimes_ShouldReturnToInitialState()
     {
         // Arrange
-        var anatomy = new Anatomy(capacity, capacity);
+        var anatomy = new SnakeAnatomy(capacity, capacity);
         var initialState = anatomy;
 
         // Act
@@ -149,7 +149,7 @@ public class AnatomyTests(int capacity)
     {
         // Arrange
         var length = capacity / 2;
-        var anatomy = new Anatomy(capacity, length);
+        var anatomy = new SnakeAnatomy(capacity, length);
 
         // Act
         anatomy.IncrementLength();
@@ -170,7 +170,7 @@ public class AnatomyTests(int capacity)
     public void IncrementLength_WhenAtCapacity_ShouldHaveNoEffect()
     {
         // Arrange
-        var anatomy = new Anatomy(capacity, capacity);
+        var anatomy = new SnakeAnatomy(capacity, capacity);
         var initialState = anatomy; // Struct copy for comparison
 
         // Act

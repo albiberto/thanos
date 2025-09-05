@@ -1,4 +1,4 @@
-﻿using Thanos.War.Grid;
+﻿using Thanos.War;
 
 namespace Thanos.Tests.Tests.WarGridTests;
 

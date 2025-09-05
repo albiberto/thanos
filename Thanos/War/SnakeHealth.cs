@@ -1,9 +1,9 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Thanos.War.Snake;
+namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct Health
+public ref struct SnakeHealth
 {
     private const byte FullHealth = 100; 
     

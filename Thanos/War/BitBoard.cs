@@ -1,8 +1,10 @@
-﻿namespace Thanos.War.Grid;
+﻿using System.Runtime.InteropServices;
 
-public readonly ref struct Bitboard(Span<ulong> bitboard)
+namespace Thanos.War;
+
+public readonly ref struct Bitboard(Span<byte> bitboard)
 {
-    private readonly Span<ulong> _bitboard = bitboard;
+    private readonly Span<ulong> _bitboard = MemoryMarshal.Cast<byte, ulong>(bitboard);
 
     public ReadOnlySpan<ulong> GetRawData => _bitboard;
 

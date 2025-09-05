@@ -4,7 +4,7 @@ namespace Thanos.Tests.Support.Model;
 
 // Questa classe ora è corretta, non servono modifiche.
 [method: JsonConstructor]
-public class TestRequest(TestGame game, int turn, TestBoard board, TestHealth you)
+public class TestRequest(TestGame game, int turn, TestBoard board, TestSnakeHealth you)
 {
     [JsonPropertyName("game")] public TestGame Game { get; } = game;
 
@@ -12,7 +12,7 @@ public class TestRequest(TestGame game, int turn, TestBoard board, TestHealth yo
 
     [JsonPropertyName("board")] public TestBoard Board { get; } = board;
 
-    [JsonPropertyName("you")] public TestHealth You { get; } = you;
+    [JsonPropertyName("you")] public TestSnakeHealth You { get; } = you;
 }
 
 [method: JsonConstructor]
@@ -84,7 +84,7 @@ public class TestCoordinate(uint x, uint y)
 }
 
 [method: JsonConstructor]
-public class TestBoard(uint height, uint width, TestCoordinate[] food, TestCoordinate[] hazards, TestHealth[] snakes)
+public class TestBoard(uint height, uint width, TestCoordinate[] food, TestCoordinate[] hazards, TestSnakeHealth[] snakes)
 {
     [JsonPropertyName("height")] public uint Height { get; } = height;
 
@@ -94,11 +94,11 @@ public class TestBoard(uint height, uint width, TestCoordinate[] food, TestCoord
 
     [JsonPropertyName("hazards")] public TestCoordinate[] Hazards { get; } = hazards;
 
-    [JsonPropertyName("snakes")] public TestHealth[] Snakes { get; } = snakes;
+    [JsonPropertyName("snakes")] public TestSnakeHealth[] Snakes { get; } = snakes;
 }
 
 [method: JsonConstructor]
-public class TestHealth(string id, string name, uint health, TestCoordinate[] body, string latency, TestCoordinate head, uint length, string shout, TestCustomizations customizations)
+public class TestSnakeHealth(string id, string name, uint health, TestCoordinate[] body, string latency, TestCoordinate head, uint length, string shout, TestCustomizations customizations)
 {
     [JsonPropertyName("id")] public string Id { get; } = id;
 

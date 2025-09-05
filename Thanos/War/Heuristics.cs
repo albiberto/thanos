@@ -2,8 +2,6 @@
 using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
-using Thanos.War.Grid;
-using Thanos.War.Snake;
 
 namespace Thanos.War;
 

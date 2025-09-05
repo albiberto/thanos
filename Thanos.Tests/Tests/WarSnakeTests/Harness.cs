@@ -1,4 +1,4 @@
-﻿using Thanos.War.Snake;
+﻿using Thanos.War;
 
 namespace Thanos.Tests.Tests.WarSnakeTests;
 
@@ -15,8 +15,8 @@ public static class Harness
     public static SnakeTestContext CreateTestContext(int capacity) =>
         new()
         {
-            Health = new Health(),
-            Anatomy = new Anatomy(),
+            SnakeHealth = new SnakeHealth(),
+            SnakeAnatomy = new SnakeAnatomy(),
             BodyBuffer = new ushort[capacity]
         };
 
@@ -25,8 +25,8 @@ public static class Harness
     /// </summary>
     public struct SnakeTestContext
     {
-        public Health Health;
-        public Anatomy Anatomy;
+        public SnakeHealth SnakeHealth;
+        public SnakeAnatomy SnakeAnatomy;
         public ushort[] BodyBuffer;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Thanos.Common;
+using Thanos.Memory;
 using Thanos.Memory.Pools;
 using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;

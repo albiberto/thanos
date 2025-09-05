@@ -1,21 +1,19 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.Memory;
 using Thanos.Memory.Pools;
-using Thanos.War.Grid;
 
-namespace Thanos.War.Snake;
+namespace Thanos.War;
 
 public readonly ref struct SnakesSystem
 {
-    private readonly Span<byte> _headersMemory;
-    private readonly Span<ulong> _bitboardsMemory;
+    private readonly Span<byte> _memory;
     
     private readonly ref readonly MemoryLayout _layout;
 
-    public SnakesSystem(Span<byte> headersMemory, Span<ulong> bitboardsMemory, in MemoryLayout layout, int count)
+    public SnakesSystem(Span<byte> memory, in MemoryLayout layout, int count)
     {
-        _headersMemory = headersMemory;
-        _bitboardsMemory = bitboardsMemory;
+        _memory = memory;
         
         _layout = ref layout;
         
@@ -31,18 +29,17 @@ public readonly ref struct SnakesSystem
 
     private WarSnake Build(int index)
     {
-        var headerOffset = index * _layout.HeaderStride;
-        var healthMemory = _headersMemory.Slice(headerOffset, _layout.HeaderStride);
-        var anatomyMemory = healthMemory[_layout.SizeOfHealth..];
-        
-        var health = Unsafe.As<byte, Health>(ref MemoryMarshal.GetReference(healthMemory));
-        var anatomy = Unsafe.As<byte, Anatomy>(ref MemoryMarshal.GetReference(anatomyMemory));
-        
-        var bitboardOffset = index * _layout.BitboardSize;
-        var bitboardMemory = _bitboardsMemory.Slice(bitboardOffset, _layout.BitboardSize);
+        var headerOffset = _layout.GetSnakeHeaderOffset(index);
+        var headerMemory = _memory.Slice(headerOffset, _layout.HeaderStride);
+            
+        ref var headerBaseRef = ref MemoryMarshal.GetReference(headerMemory);
+        ref var health = ref Unsafe.As<byte, SnakeHealth>(ref headerBaseRef);
+        ref var anatomy = ref Unsafe.As<byte, SnakeAnatomy>(ref Unsafe.Add(ref headerBaseRef, _layout.SizeOfHealth));
 
-        var bitboard = new Bitboard(bitboardMemory);
-        
+        var bitboardOffset = _layout.GetSnakeBitboardOffset(index);
+        var bitboardByteSpan = _memory.Slice(bitboardOffset, _layout.BitboardSize);
+        var bitboard = new Bitboard(bitboardByteSpan);
+            
         return new WarSnake(health, anatomy, bitboard);
     }
     

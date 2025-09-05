@@ -9,7 +9,7 @@ public static class ZobristHasher
     ///     Calcola l'hash partendo da un'Arena.
     ///     Questa versione è compatibile con l'implementazione del corpo come circular buffer.
     /// </summary>
-    public static long CalculateHash(in WarArena arena)
+    public static long CalculateHash(in Arena arena)
     {
         long hash = 0;
 
