@@ -1,111 +1,117 @@
-﻿using System.Runtime.CompilerServices;
-using Thanos.Common;
-using Thanos.PreWarm;
+﻿using Thanos.Common;
 
 namespace Thanos.War;
 
-public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, ReadOnlySpan<ushort> neighbors)
+/// <summary>
+/// Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
+/// </summary>
+public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte> hazards, Span<byte> allSnakes, ReadOnlySpan<ushort> neighbors, int area)
 {
-    public readonly WarGrid Grid = grid;
-    public readonly WarSnake Me = me;
-    public readonly Enemies Enemies = enemies;
+    private readonly SnakesSystem _system = system;
+    private readonly Grid _grid = new(area, food, hazards, allSnakes, neighbors);
 
-    public bool GameOver => Me.Dead;
+    private WarSnake Me => _system.Me;
+    public bool GameOver => Me.IsDead;
 
     public byte GetLegalMoves() => GetLegalMoves(Me.Head);
 
     public byte GetLegalMoves(ushort headPosition)
     {
-        // Step 1: Get all potential neighbor positions from the LUT.
-        var upPos = Grid.GetNeighbor(headPosition, Moves.Up);
-        var downPos = Grid.GetNeighbor(headPosition, Moves.Down);
-        var leftPos = Grid.GetNeighbor(headPosition, Moves.Left);
-        var rightPos = Grid.GetNeighbor(headPosition, Moves.Right);
+        byte legalMoves = 0;
 
-        // Step 2: Check each position and convert the boolean result to a byte (0 or 1).
-        var isUpValid = Grid.IsUnset(upPos);
-        var upValid = Unsafe.As<bool, byte>(ref isUpValid);
+        // I controlli ora usano la Grid in modo coerente
+        var upPos = _grid.GetNeighbor(headPosition, Moves.Up);
+        if (Grid.IsValid(upPos) && !_grid.IsOccupied(upPos)) legalMoves |= Moves.Up;
 
-        var isDownValid = Grid.IsUnset(downPos);
-        var downValid = Unsafe.As<bool, byte>(ref isDownValid);
+        var downPos = _grid.GetNeighbor(headPosition, Moves.Down);
+        if (Grid.IsValid(downPos) && !_grid.IsOccupied(downPos)) legalMoves |= Moves.Down;
 
-        var isLeftValid = Grid.IsUnset(leftPos);
-        var leftValid = Unsafe.As<bool, byte>(ref isLeftValid);
+        var leftPos = _grid.GetNeighbor(headPosition, Moves.Left);
+        if (Grid.IsValid(leftPos) && !_grid.IsOccupied(leftPos)) legalMoves |= Moves.Left;
 
-        var isRightValid = Grid.IsUnset(rightPos);
-        var rightValid = Unsafe.As<bool, byte>(ref isRightValid);
+        var rightPos = _grid.GetNeighbor(headPosition, Moves.Right);
+        if (Grid.IsValid(rightPos) && !_grid.IsOccupied(rightPos)) legalMoves |= Moves.Right;
 
-        // Step 3: Combine the results into a final bitmask.
-        return (byte)((upValid * Moves.Up) | (downValid * Moves.Down) | (leftValid * Moves.Left) | (rightValid * Moves.Right));
+        return legalMoves;
     }
-
-    /// <summary>
-    ///     Applica una singola mossa allo stato di gioco corrente, modificandolo.
-    /// </summary>
-    /// <summary>
-    ///     Applica una singola mossa allo stato di gioco corrente, modificandolo.
-    /// </summary>
-    public void ApplySingleMove(byte move, bool logging = false)
+    
+    public void ApplySingleMove(byte move)
     {
-        // Rimosso: var me = Me;
-        // Ora lavoriamo direttamente sul campo 'Me' della struct.
-        if (Me.Dead) return;
+        var me = Me;
+        if (me.IsDead) return;
 
-        var oldTail = Me.Tail;
-        var head = Me.Head;
+        var head = me.Head;
+        var oldTail = me.Tail;
 
-        // Rimosso: var grid = Grid;
-        // Ora lavoriamo direttamente sul campo 'Grid' della struct.
+        // --- 1. L'ARENA PRENDE LE DECISIONI ---
+        var newHead = _grid.GetNeighbor(head, move);
 
-        var newHead = Grid.GetNeighbor(head, move);
-        var hasEaten = Grid.IsFood(newHead);
-
-        if (newHead == ushort.MaxValue)
+        if (!Grid.IsValid(newHead))
         {
-            Me.Kill();
-            Grid.RemoveSnake(Me); // Usa direttamente 'Grid' e 'Me'
+            me.Kill();
+            _grid.RemoveSnakeBody(me);
             return;
         }
+        
+        var hasEaten = _grid.IsFood(newHead);
 
-        if (Grid.IsSet(newHead))
+        if (_grid.IsOccupied(newHead))
         {
-            // È una collisione fatale, A MENO CHE non stiamo andando sulla nostra coda
-            // e NON stiamo mangiando (se non mangiamo, la coda si sposterà).
             var isMovingOntoOwnVacatingTail = newHead == oldTail && !hasEaten;
-
             if (!isMovingOntoOwnVacatingTail)
             {
-                Me.Kill();
-                Grid.RemoveSnake(Me);
+                me.Kill();
+                _grid.RemoveSnakeBody(me);
                 return;
             }
         }
+        
+        var damage = _grid.IsHazard(newHead) ? 10 : 1;
+        var newTail = CalculateNewTailPosition(me, hasEaten); // Logica di gioco da implementare
+        
+        // --- 2. L'ARENA COMANDA AL CORPO (WARSNAKE) DI AGGIORNARSI ---
+        me.UpdateAfterMove(newHead, newTail, hasEaten, damage);
 
-        var damage = Grid.IsHazard(newHead) ? 10 : 1; // Danno base 1, 10 su hazard
-        Me.Move(newHead, hasEaten, damage); // Modifica direttamente lo stato di 'Me'
-
-        if (Me.Dead)
-        {
-            Grid.RemoveSnake(Me);
-            return;
-        }
-
-        // Modifica direttamente lo stato di 'Grid'
-        Grid.SynchronizeSnakeOnGrid(Me, oldTail, hasEaten);
-        if (hasEaten) Grid.RemoveFood(newHead);
+        // --- 3. L'ARENA COMANDA AL MONDO (GRID) DI AGGIORNARSI ---
+        _grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
+        if (hasEaten) _grid.RemoveFood(newHead);
     }
-
-    public float Outcome() => OutcomeSolo();
-
-    // if (Me.Dead) return -1.0f;
-    // return _liveSnakesCount <= 1 ? 1.0f : 0.0f;
-    private float OutcomeSolo()
+    
+    private ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
     {
-        if (Me.Dead) return -1.0f; // Sconfitta
+        // Se il serpente mangia, la coda non si muove.
+        if (ateFood) return snake.Tail;
+    
+        // Se il serpente è molto corto, la nuova coda è la testa.
+        if (snake.Length <= 2) return snake.Head;
 
-        var availableSquares = Grid.Geography.Area;
-        return Me.Length >= availableSquares
-            ? 1.0f // Vittoria: hai riempito la mappa! 
-            : 0.0f; // Partita in corso
+        var oldTail = snake.Tail;
+
+        // Controlla i 4 vicini della vecchia coda. Solo uno farà parte
+        // del corpo del serpente (il "penultimo" segmento). Quello è la nostra nuova coda.
+        var up = _grid.GetNeighbor(oldTail, Moves.Up);
+        if (Grid.IsValid(up) && snake.IsOnBody(up)) return up;
+
+        var down = _grid.GetNeighbor(oldTail, Moves.Down);
+        if (Grid.IsValid(down) && snake.IsOnBody(down)) return down;
+
+        var left = _grid.GetNeighbor(oldTail, Moves.Left);
+        if (Grid.IsValid(left) && snake.IsOnBody(left)) return left;
+
+        var right = _grid.GetNeighbor(oldTail, Moves.Right);
+        if (Grid.IsValid(right) && snake.IsOnBody(right)) return right;
+
+        // Fallback: non dovrebbe mai succedere in un gioco normale,
+        // ma per sicurezza restituiamo la vecchia coda.
+        return oldTail;
+    }
+    
+    public float Outcome()
+    {
+        if (Me.IsDead) return -1.0f;
+
+        return Me.Length >= _grid.Area 
+            ? 1.0f 
+            : 0.0f;
     }
 }

@@ -2,5 +2,5 @@
 
 public static class LayoutConstants
 {
-    public const int GlobalBitboardCount = 2;
+    public const int GlobalBitboardCount = 3;
 }

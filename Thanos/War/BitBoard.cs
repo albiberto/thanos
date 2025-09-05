@@ -6,7 +6,7 @@ public readonly ref struct Bitboard(Span<byte> bitboard)
 {
     private readonly Span<ulong> _bitboard = MemoryMarshal.Cast<byte, ulong>(bitboard);
 
-    public ReadOnlySpan<ulong> GetRawData => _bitboard;
+    public Span<ulong> Raw => _bitboard;
 
     public void Set(ushort position1D) => _bitboard[position1D >> 6] |= 1UL << (position1D & 63);
 
@@ -24,5 +24,11 @@ public readonly ref struct Bitboard(Span<byte> bitboard)
         var index = position1D >> 6;
         var mask = 1UL << (position1D & 63);
         return (_bitboard[index] & mask) == 0;
+    }
+    
+    public void Xor(Bitboard other)
+    {
+        var otherData = other.Raw;
+        for (var i = 0; i < Raw.Length; i++) Raw[i] ^= otherData[i];
     }
 }

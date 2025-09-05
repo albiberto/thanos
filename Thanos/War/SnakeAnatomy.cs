@@ -3,19 +3,47 @@
 namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct SnakeAnatomy(ushort initialLength)
+public struct WarSnakeHeader
 {
-    private bool _isPendingGrowth = false;
-
-    public ushort Length { get; private set; } = initialLength;
-
-    public void ScheduleGrowth() => _isPendingGrowth = true;
+    private const byte FullHealth = 100; 
     
+    public ushort Length;
+    public ushort Head;
+    public ushort Tail;
+
+    public byte Points;
+    private byte _isPendingGrowth;
+    
+    public readonly bool IsDead => Points <= 0;
+    public readonly bool IsGrowthPending => _isPendingGrowth == 1;
+    public void ScheduleGrowth() => _isPendingGrowth = 1;
+
     public void ProcessPendingGrowth()
     {
-        if (!_isPendingGrowth) return;
-        
+        if (_isPendingGrowth == 0) return;
+
         Length++;
-        _isPendingGrowth = false;
+        _isPendingGrowth = 0;
+    }
+
+    public void Damage(byte amount)
+    {
+        if (Points > amount)
+            Points -= amount;
+        else
+            Points = 0;
+    }
+
+    public void Kill() => Points = 0;
+
+    public void FullCure() => Points = FullHealth;
+
+    public void PlacementNew(ushort length, ushort head, ushort tail, byte points)
+    {
+        Length = length;
+        Head = head;
+        Tail = tail;
+        Points = points;
+        _isPendingGrowth = 0;
     }
 }

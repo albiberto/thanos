@@ -1,47 +1,61 @@
-﻿// Assumendo che Bitboard sia qui
+﻿namespace Thanos.War;
 
-namespace Thanos.War;
-
-public ref struct WarSnake(SnakeHealth snakeHealth, SnakeAnatomy snakeAnatomy, Bitboard bitboard)
+public ref struct WarSnake
 {
-    private SnakeHealth _snakeHealth = snakeHealth;
-    private SnakeAnatomy _snakeAnatomy = snakeAnatomy;
+    private ref WarSnakeHeader _header;
+    private readonly Bitboard _bitboard;
 
-    private readonly Bitboard _bitboard = bitboard;
-
-    public int HP => _snakeHealth.Points;
-    public bool IsDead => _snakeHealth.IsDead;
-    public ushort Length => _snakeAnatomy.Length;
-
-    public void Move(ushort newHeadPos, ushort oldTailPos, bool ateFood, byte damage)
+    public WarSnake(ref WarSnakeHeader header, Span<byte> memory)
     {
-        if (_snakeHealth.IsDead) return;
+        _header = ref header;
+        _bitboard = new Bitboard(memory);
+    }
 
-        // 1. Delega ad Anatomy il compito di processare la crescita
-        _snakeAnatomy.ProcessPendingGrowth();
+    // --- PROPRIETÀ DI STATO ---
+    public ushort Head => _header.Head;
+    public ushort Tail => _header.Tail;
+    public ushort Length => _header.Length;
+    public Bitboard Body => _bitboard; 
+    public int HP => _header.Points;
+    public bool IsDead => _header.IsDead;
 
-        // 2. Logica di movimento standard
-        _snakeHealth.Damage(damage);
-        if (_snakeHealth.IsDead) return;
+    // --- METODI DI COMANDO ---
 
-        // 3. Se mangia, delega ad Anatomy il compito di schedulare la crescita futura
+    /// <summary>
+    /// Metodo principale che esegue i comandi dell'Arena per aggiornare lo stato
+    /// del serpente dopo una mossa.
+    /// </summary>
+    public void UpdateAfterMove(ushort newHead, ushort newTail, bool ateFood, int damage)
+    {
+        if (IsDead) return;
+
+        // Salva la vecchia posizione della coda PRIMA di modificarla.
+        // Ci servirà per pulire il bitboard.
+        var oldTail = _header.Tail;
+
+        // 1. Aggiorna lo stato nell'Header (la "mente" del serpente)
+        _header.Head = newHead;
+        _header.ProcessPendingGrowth();
+        _header.Damage((byte)damage);
+
         if (ateFood)
         {
-            _snakeHealth.FullCure();
-            _snakeAnatomy.ScheduleGrowth();
+            _header.FullCure();
+            _header.ScheduleGrowth();
         }
-        
-        // 4. Aggiorna la posizione
-        _bitboard.Set(newHeadPos);
+        else // La coda si sposta solo se non abbiamo mangiato
+        {
+            _header.Tail = newTail;
+        }
+
+        // 2. Sincronizza il Bitboard (la "pelle" del serpente)
+        _bitboard.Set(newHead);
         if (!ateFood)
         {
-            _bitboard.Unset(oldTailPos);
+            _bitboard.Unset(oldTail);
         }
     }
 
-    public void TakeDamage(byte amount) => _snakeHealth.Damage(amount);
-
-    public void Kill() => _snakeHealth.Kill();
-
+    public void Kill() => _header.Kill();
     public bool IsOnBody(ushort position) => _bitboard.IsSet(position);
 }

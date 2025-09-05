@@ -5,8 +5,7 @@ namespace Thanos.Memory;
 
 public readonly unsafe struct MemoryLayout(int slotSize, int headerStride, int bitboardSize, int headersBaseOffset, int[] bitboardOffsets)
 {
-    public int SizeOfHealth => sizeof(SnakeHealth);
-    public int SizeOfAnatomy => sizeof(SnakeAnatomy);
+    public int SizeOfHeader => sizeof(WarSnakeHeader);
     
     public int SlotSize { get; } = slotSize;
     public int HeaderStride { get; } = headerStride;
@@ -17,6 +16,7 @@ public readonly unsafe struct MemoryLayout(int slotSize, int headerStride, int b
     
     public readonly int FoodBitboardOffset = bitboardOffsets[0];
     public readonly int HazardsBitboardOffset = bitboardOffsets[1];
+    public readonly int SnakesBitboardOffset = bitboardOffsets[2];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetSnakeBitboardOffset(int snakeIndex) => bitboardOffsets[LayoutConstants.GlobalBitboardCount + snakeIndex];

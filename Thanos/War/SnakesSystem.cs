@@ -28,18 +28,20 @@ public readonly ref struct SnakesSystem
 
     private WarSnake Build(int index)
     {
+        // 1. Trova l'Header del serpente.
         var headerOffset = _layout.GetSnakeHeaderOffset(index);
         var headerMemory = _memory.Slice(headerOffset, _layout.HeaderStride);
-            
+        
+        // 2. Ora otteniamo un singolo riferimento all'header completo.
         ref var headerBaseRef = ref MemoryMarshal.GetReference(headerMemory);
-        ref var health = ref Unsafe.As<byte, SnakeHealth>(ref headerBaseRef);
-        ref var anatomy = ref Unsafe.As<byte, SnakeAnatomy>(ref Unsafe.Add(ref headerBaseRef, _layout.SizeOfHealth));
+        ref var header = ref Unsafe.As<byte, WarSnakeHeader>(ref headerBaseRef);
 
+        // 3. Trova il Bitboard.
         var bitboardOffset = _layout.GetSnakeBitboardOffset(index);
         var bitboardByteSpan = _memory.Slice(bitboardOffset, _layout.BitboardSize);
-        var bitboard = new Bitboard(bitboardByteSpan);
             
-        return new WarSnake(health, anatomy, bitboard);
+        // 4. Il costruttore di WarSnake
+        return new WarSnake(ref header, bitboardByteSpan);
     }
     
     public ref struct Enumerator(SnakesSystem system, int start)
