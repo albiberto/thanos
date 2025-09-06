@@ -7,22 +7,21 @@ namespace Thanos.War;
 public readonly ref struct SnakesSystem
 {
     private readonly Span<byte> _memory;
-    
     private readonly ref readonly MemoryLayout _layout;
 
     public SnakesSystem(Span<byte> memory, in MemoryLayout layout, int count)
     {
         _memory = memory;
-        
         _layout = ref layout;
-        
+
         Count = count;
     }
 
     public int Count { get; }
 
+    public Span<byte> Raw => _memory;
+    
     public WarSnake Me => this[0];
-    public Enumerator Enemies => new(this, 1);
     
     public WarSnake this[int index] => Build(index);
 
@@ -42,21 +41,5 @@ public readonly ref struct SnakesSystem
             
         // 4. Il costruttore di WarSnake
         return new WarSnake(ref header, bitboardByteSpan);
-    }
-    
-    public ref struct Enumerator(SnakesSystem system, int start)
-    {
-        private readonly SnakesSystem _system = system;
-        private readonly int _count = system.Count;
-        
-        private int _index = start -1;
-
-        public bool MoveNext()
-        {
-            _index++;
-            return _index < _count;
-        }
-
-        public WarSnake Current => _system.Build(_index);
     }
 }

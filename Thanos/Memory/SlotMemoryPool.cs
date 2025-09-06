@@ -10,18 +10,18 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     private MemoryLayout _layout;
     private ushort[] _neighbors;
     private int _area;
-    private int _snakesCount;
+    private Dictionary<Guid, int> _map;
 
     private readonly void* _basePointer;
     
-    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, ushort[] neighbors, int area, int snakesCount)
+    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, ushort[] neighbors, int area, Dictionary<Guid, int> map)
     {
         _maxSlots = maxSlots;
         
         _layout = layout;
         _neighbors = neighbors;
         _area = area;
-        _snakesCount = snakesCount;
+        _map = map;
 
         var totalSize = layout.SlotSize * maxSlots;
         _basePointer = NativeMemory.AlignedAlloc((nuint)totalSize, 64);
@@ -40,17 +40,17 @@ public sealed unsafe class SlotMemoryPool : IDisposable
             var hazardsBitboardMemory = memory.Slice(_layout.HazardsBitboardOffset, _layout.BitboardSize);
             var snakesBitboardMemory = memory.Slice(_layout.SnakesBitboardOffset, _layout.BitboardSize);
 
-            var snakesSystem = new SnakesSystem(memory, _layout, _snakesCount);
+            var snakesSystem = new SnakesSystem(memory, _layout, _map.Count);
                 
-            return new Arena(snakesSystem, foodBitboardMemory, hazardsBitboardMemory, snakesBitboardMemory, _neighbors, _area);
+            return new Arena(snakesSystem, foodBitboardMemory, hazardsBitboardMemory, snakesBitboardMemory, _neighbors, _map, _area);
         }
     }
 
-    public void Set(in MemoryLayout layout, ushort[] neighbors, int area, int snakesCount)
+    public void Set(in MemoryLayout layout, ushort[] neighbors, int area, Dictionary<Guid, int> map)
     {
         _layout = layout;
         _neighbors = neighbors;
-        _snakesCount = snakesCount;
+        _map = map;
         _area = area;
     }
 

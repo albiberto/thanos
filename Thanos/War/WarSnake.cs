@@ -10,6 +10,20 @@ public ref struct WarSnake
         _header = ref header;
         _bitboard = new Bitboard(memory);
     }
+    
+    public void Initialize(byte points, ReadOnlySpan<ushort> body)
+    {
+        var length = (ushort)body.Length;
+        var head = body[0];
+        var tail = body[^1]; // ^1 significa "ultimo elemento"
+    
+        // Aggiorna lo stato persistente nell'header
+        _header.PlacementNew(length, head, tail, points);
+    
+        // Disegna il corpo del serpente nel suo bitboard individuale
+        _bitboard.Clear();
+        foreach (var segment in body) _bitboard.Set(segment);
+    }
 
     // --- PROPRIETÀ DI STATO ---
     public ushort Head => _header.Head;

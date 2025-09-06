@@ -2,11 +2,13 @@
 
 namespace Thanos.War;
 
-public readonly ref struct Bitboard(Span<byte> bitboard)
+public readonly ref struct Bitboard(Span<byte> memory)
 {
-    private readonly Span<ulong> _bitboard = MemoryMarshal.Cast<byte, ulong>(bitboard);
+    private readonly Span<ulong> _bitboard = MemoryMarshal.Cast<byte, ulong>(memory);
 
     public Span<ulong> Raw => _bitboard;
+
+    public void Clear() => _bitboard.Clear();
 
     public void Set(ushort position1D) => _bitboard[position1D >> 6] |= 1UL << (position1D & 63);
 
@@ -30,5 +32,11 @@ public readonly ref struct Bitboard(Span<byte> bitboard)
     {
         var otherData = other.Raw;
         for (var i = 0; i < Raw.Length; i++) Raw[i] ^= otherData[i];
+    }
+    
+    public void Or(in Bitboard other)
+    {
+        var otherData = other.Raw;
+        for (var i = 0; i < Raw.Length; i++) Raw[i] |= otherData[i];
     }
 }

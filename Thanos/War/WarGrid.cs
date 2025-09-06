@@ -11,37 +11,37 @@ public readonly ref struct Grid(int area, Span<byte> food, Span<byte> hazards, S
 {
     public  int Area { get; } = area;
     
-    private readonly Bitboard _food = new(food);
-    private readonly Bitboard _hazards = new(hazards);
-    private readonly Bitboard _allSnakesBitboard = new(allSnakes);
+    public readonly Bitboard Food = new(food);
+    public readonly Bitboard Hazards = new(hazards);
+    public readonly Bitboard Snakes = new(allSnakes);
     private readonly ReadOnlySpan<ushort> _neighbors = neighbors;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort GetNeighbor(ushort position, byte move) => _neighbors[position * 4 + move.NumberOfTrailingZeros()];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsOccupied(ushort position) => _allSnakesBitboard.IsSet(position);
+    public bool IsOccupied(ushort position) => Snakes.IsSet(position);
     
     // Metodo statico perché non dipende dallo stato interno della Grid (è una regola universale)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsValid(ushort position) => position != ushort.MaxValue;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsFood(ushort position) => _food.IsSet(position);
+    public bool IsFood(ushort position) => Food.IsSet(position);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool IsHazard(ushort position) => _hazards.IsSet(position);
+    public bool IsHazard(ushort position) => Hazards.IsSet(position);
 
-    public void RemoveFood(ushort position) => _food.Unset(position);
+    public void RemoveFood(ushort position) => Food.Unset(position);
     
-    public void RemoveSnakeBody(WarSnake snake) => _allSnakesBitboard.Xor(snake.Body);
+    public void RemoveSnakeBody(WarSnake snake) => Snakes.Xor(snake.Body);
 
     /// <summary>
     /// Aggiorna il bitboard combinato in modo incrementale.
     /// </summary>
     public void UpdateSnakePosition(ushort oldTail, ushort newHead, bool ateFood)
     {
-        _allSnakesBitboard.Set(newHead);
-        if (!ateFood) _allSnakesBitboard.Unset(oldTail);
+        Snakes.Set(newHead);
+        if (!ateFood) Snakes.Unset(oldTail);
     }
 }

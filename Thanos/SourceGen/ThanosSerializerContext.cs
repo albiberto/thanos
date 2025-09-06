@@ -126,15 +126,15 @@ public readonly struct Squad(bool allowBodyCollisions, bool sharedElimination, b
 }
 
 [method: JsonConstructor]
-public readonly struct Board(int height, int width, Coordinate[] food, Coordinate[] hazards, Snake[] snakes)
+public readonly struct Board(int height, int width, ushort[] food, ushort[] hazards, Snake[] snakes)
 {
     [JsonPropertyName("height")] public int Height { get; } = height;
 
     [JsonPropertyName("width")] public int Width { get; } = width;
 
-    [JsonPropertyName("food")] public Coordinate[] Food { get; } = food;
+    [JsonPropertyName("food")] public ushort[] Food { get; } = food;
 
-    [JsonPropertyName("hazards")] public Coordinate[] Hazards { get; } = hazards;
+    [JsonPropertyName("hazards")] public ushort[] Hazards { get; } = hazards;
 
     [JsonPropertyName("snakes")] public Snake[] Snakes { get; } = snakes;
 
@@ -152,15 +152,15 @@ public readonly struct Coordinate(int x, int y)
 }
 
 [method: JsonConstructor]
-public readonly struct Snake(string id, string name, byte health, Coordinate[] body, string latency, Coordinate head, ushort length, string shout)
+public readonly struct Snake(Guid id, string name, byte health, ushort[] body, string latency, Coordinate head, ushort length, string shout)
 {
-    [JsonPropertyName("id")] public string Id { get; } = id;
+    [JsonPropertyName("id")] public Guid Id { get; } = id;
 
     [JsonPropertyName("name")] public string Name { get; } = name;
 
     [JsonPropertyName("health")] public byte Health { get; } = health;
 
-    [JsonPropertyName("body")] public Coordinate[] Body { get; } = body;
+    [JsonPropertyName("body")] public ushort[] Body { get; } = body;
 
     [JsonPropertyName("latency")] public string Latency { get; } = latency;
 

@@ -81,16 +81,16 @@ public sealed class BattleSnakeAgent : IDisposable
     {
     }
 
-    private static Dictionary<string, int> BuildIdMap(Request request)
+    private static Dictionary<Guid, int> BuildIdMap(Request request)
     {
         var myId = request.You.Id;
 
-        var snakeIdMap = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase)
+        var snakeIdMap = new Dictionary<Guid, int>
         {
             [myId] = 0
         };
 
-        foreach (var snake in request.Board.Snakes.Where(s => !string.Equals(s.Id, myId, StringComparison.InvariantCultureIgnoreCase))) snakeIdMap[snake.Id] = snakeIdMap.Count;
+        foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) snakeIdMap[snake.Id] = snakeIdMap.Count;
 
         return snakeIdMap;
     }

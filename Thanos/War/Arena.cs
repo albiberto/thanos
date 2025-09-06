@@ -1,14 +1,66 @@
 ﻿using Thanos.Common;
+using Thanos.SourceGen;
 
 namespace Thanos.War;
 
 /// <summary>
-/// Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
+///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
 /// </summary>
-public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte> hazards, Span<byte> allSnakes, ReadOnlySpan<ushort> neighbors, int area)
+public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte> hazards, Span<byte> allSnakes, ReadOnlySpan<ushort> neighbors, Dictionary<Guid, int> map, int area)
 {
     private readonly SnakesSystem _system = system;
     private readonly Grid _grid = new(area, food, hazards, allSnakes, neighbors);
+
+    /// <summary>
+    ///     Inizializza lo stato dell'arena (usando "Placement New")
+    ///     basandosi su una richiesta di configurazione di gioco.
+    /// </summary>
+    public void InitializeFromRequest(in Request request)
+    {
+        // --- FASE 1: Pulizia Totale dello Stato ---
+        _grid.Food.Clear();
+        _grid.Hazards.Clear();
+        _grid.Snakes.Clear(); // Pulisce il bitboard combinato
+
+        // Uccide tutti i serpenti per creare una "tabula rasa".
+        // Questo gestisce correttamente i serpenti che sono morti nel turno precedente.
+        for (var i = 0; i < _system.Count; i++) _system[i].Kill();
+
+        var board = request.Board;
+
+        // --- FASE 2: Inizializzazione e Sincronizzazione in un Unico Passaggio ---
+
+        // Posiziona "Me"
+        if (map.TryGetValue(request.You.Id, out var meIndex))
+        {
+            var me = _system[meIndex];
+            me.Initialize(request.You.Health, request.You.Body);
+        
+            _grid.Snakes.Or(me.Body);
+        }
+
+        // Posiziona gli avversari
+        foreach (var enemyData in board.Snakes)
+        {
+            if (enemyData.Id == request.You.Id || !map.TryGetValue(enemyData.Id, out var enemyIndex)) continue;
+            
+            var enemy = _system[enemyIndex];
+            enemy.Initialize(enemyData.Health, enemyData.Body);
+
+            _grid.Snakes.Or(enemy.Body);
+        }
+
+        // --- FASE 3: Posizionamento di Cibo e Ostacoli ---
+        // Questa parte rimane invariata.
+        foreach (var foodPosition in board.Food) _grid.Food.Set(foodPosition);
+        foreach (var hazardPosition in board.Hazards) _grid.Hazards.Set(hazardPosition);
+    }
+
+    /// <summary>
+    ///     Clona lo stato di un'altra Arena in questa istanza.
+    ///     Operazione estremamente veloce basata su una copia di memoria.
+    /// </summary>
+    public void CloneFrom(in Arena source) => source._system.Raw.CopyTo(_system.Raw);
 
     private WarSnake Me => _system.Me;
     public bool GameOver => Me.IsDead;
@@ -34,7 +86,7 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
 
         return legalMoves;
     }
-    
+
     public void ApplySingleMove(byte move)
     {
         var me = Me;
@@ -52,7 +104,7 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
             _grid.RemoveSnakeBody(me);
             return;
         }
-        
+
         var hasEaten = _grid.IsFood(newHead);
 
         if (_grid.IsOccupied(newHead))
@@ -65,10 +117,10 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
                 return;
             }
         }
-        
+
         var damage = _grid.IsHazard(newHead) ? 10 : 1;
         var newTail = CalculateNewTailPosition(me, hasEaten); // Logica di gioco da implementare
-        
+
         // --- 2. L'ARENA COMANDA AL CORPO (WARSNAKE) DI AGGIORNARSI ---
         me.UpdateAfterMove(newHead, newTail, hasEaten, damage);
 
@@ -76,12 +128,12 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         _grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
         if (hasEaten) _grid.RemoveFood(newHead);
     }
-    
+
     private ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
     {
         // Se il serpente mangia, la coda non si muove.
         if (ateFood) return snake.Tail;
-    
+
         // Se il serpente è molto corto, la nuova coda è la testa.
         if (snake.Length <= 2) return snake.Head;
 
@@ -105,13 +157,13 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         // ma per sicurezza restituiamo la vecchia coda.
         return oldTail;
     }
-    
+
     public float Outcome()
     {
         if (Me.IsDead) return -1.0f;
 
-        return Me.Length >= _grid.Area 
-            ? 1.0f 
+        return Me.Length >= _grid.Area
+            ? 1.0f
             : 0.0f;
     }
 }

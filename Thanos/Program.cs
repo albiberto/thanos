@@ -1,67 +1,98 @@
 using System.Text.Json;
-using Thanos;
+using Microsoft.IO;
 using Thanos.Common;
 using Thanos.SourceGen;
 
-// --- Setup iniziale del server web ---
-var builder = WebApplication.CreateBuilder(args);
+namespace Thanos;
 
-var app = builder.Build();
-
-var agent = new BattleSnakeAgent();
-app.Lifetime.ApplicationStopping.Register(() => agent.Dispose());
-
-app.MapGet("/", () => new
+public static class Program
 {
-    apiversion = "1",
-    author = "Thanos",
-    color = "#8B0000",
-    head = "safe",
-    tail = "round-bum"
-});
+    private static readonly RecyclableMemoryStreamManager StreamManager = new();
 
-app.MapPost("/start", async context =>
-{
-    var request = await ReadAsync(context);
-
-    // Console.WriteLine($"[START] New game started: {JsonSerializer.Serialize(request)}");
-    agent.Start(request!.Value);
-});
-
-app.MapPost("/move", async context =>
-{
-    var request = await ReadAsync(context);
-    // Console.WriteLine($"[MOVE] New game started: {JsonSerializer.Serialize(request)}");
-
-    var result = agent.Move(request!.Value);
-
-    context.Response.ContentType = "application/json";
-    var move = ToApiMove(result);
-    // Console.WriteLine($"[MOVE] Chosen move: {move}");
-    await context.Response.WriteAsJsonAsync(new { move = ToApiMove(result) });
-});
-
-app.MapPost("/end", async context =>
-{
-    var request = await ReadAsync(context);
-    agent.End(request!.Value);
-});
-
-app.Run();
-return;
-
-static async Task<Request?> ReadAsync(HttpContext context) =>
-    await JsonSerializer.DeserializeAsync(
-        context.Request.Body,
-        ThanosSerializerContext.Default.Request,
-        context.RequestAborted);
-
-static string ToApiMove(byte move) =>
-    move switch
+    public static void Main(string[] args)
     {
-        Moves.Up => "up",
-        Moves.Down => "down",
-        Moves.Left => "left",
-        Moves.Right => "right",
-        _ => "left" // Fallback
-    };
+        var builder = WebApplication.CreateBuilder(args);
+        var app = builder.Build();
+
+        //  --- L'agent viene creato e gestito qui ---
+        var agent = new BattleSnakeAgent();
+        app.Lifetime.ApplicationStopping.Register(() => agent.Dispose());
+
+        // --- Endpoint dell'API ---
+
+        app.MapGet("/", () => new
+        {
+            apiversion = "1",
+            author = "Thanos",
+            color = "#8B0000",
+            head = "safe",
+            tail = "round-bum"
+        });
+
+        app.MapPost("/start", async context =>
+        {
+            var request = await ReadRequestAsync(context);
+            agent.Start(request);
+        });
+
+        app.MapPost("/move", async context =>
+        {
+            var request = await ReadRequestAsync(context);
+            var result = agent.Move(request);
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { move = ToApiMove(result) });
+        });
+
+        app.MapPost("/end", async context =>
+        {
+            var request = await ReadRequestAsync(context);
+            agent.End(request);
+        });
+
+        app.Run();
+    }
+
+    /// <summary>
+    ///     Legge e deserializza la richiesta HTTP usando il pool di stream e i convertitori custom.
+    /// </summary>
+    private static async Task<Request> ReadRequestAsync(HttpContext context)
+    {
+        // OTTIMIZZAZIONE: Usa uno stream riciclato dal pool invece di allocarne uno nuovo.
+        await using var memoryStream = StreamManager.GetStream();
+        await context.Request.Body.CopyToAsync(memoryStream, context.RequestAborted);
+        memoryStream.Position = 0;
+
+        // FASE 1: Estrai la larghezza
+        using var jsonDoc = await JsonDocument.ParseAsync(memoryStream, cancellationToken: context.RequestAborted);
+        var width = jsonDoc.RootElement.GetProperty("board").GetProperty("width").GetInt32();
+
+        memoryStream.Position = 0;
+
+        // FASE 2: Deserializza con i convertitori
+        var arrayConverter = new CoordinateArrayToUshortArrayConverter(width);
+        var singleConverter = new CoordinateToUshortConverter(width);
+
+        var options = new JsonSerializerOptions { Converters = { arrayConverter, singleConverter } };
+        var contextWithOptions = new ThanosSerializerContext(options);
+
+        var request = await JsonSerializer.DeserializeAsync(
+            memoryStream,
+            contextWithOptions.Request,
+            context.RequestAborted);
+
+        return request!;
+    }
+
+    /// <summary>
+    ///     Converte la mossa da byte a stringa per la risposta API.
+    /// </summary>
+    private static string ToApiMove(byte move) =>
+        move switch
+        {
+            Moves.Up => "up",
+            Moves.Down => "down",
+            Moves.Left => "left",
+            Moves.Right => "right",
+            _ => "up" // Un fallback sicuro
+        };
+}
