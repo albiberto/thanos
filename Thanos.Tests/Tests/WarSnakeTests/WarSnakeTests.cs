@@ -42,7 +42,6 @@ public class WarSnakeMoveTests
         // 1. Definiamo il nostro serpente ("you")
         var you = new Snake(
             "me",
-            "Thanos-Test",
             100,
             [
                 new Coordinate(5, 5), // Head
@@ -50,11 +49,7 @@ public class WarSnakeMoveTests
                 new Coordinate(5, 3),
                 new Coordinate(5, 2),
                 new Coordinate(5, 1) // Tail
-            ],
-            "123",
-            new Coordinate(5, 5),
-            5,
-            "I am inevitable."
+            ]
         );
 
         // 2. Definiamo il tabellone di gioco
@@ -70,9 +65,7 @@ public class WarSnakeMoveTests
         );
 
         // 3. Definiamo le regole e i metadati della partita
-        var game = new Game(
-            Guid.NewGuid(),
-            new Ruleset(
+        var game = new Game(new Ruleset(
                 new RulesetSettings(
                     15,
                     1,
@@ -82,8 +75,7 @@ public class WarSnakeMoveTests
                 )
             ),
             "standard",
-            "custom",
-            500
+            "custom"
         );
 
         // 4. Assembliamo l'oggetto Request finale

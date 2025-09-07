@@ -55,49 +55,36 @@ public static class Program
     /// <summary>
     ///     Legge e deserializza la richiesta HTTP usando il pool di stream e i convertitori custom.
     /// </summary>
-    private static async Task<Request> ReadRequestAsync(HttpContext context)
+    private static async Task<Request> ReadRequestAsync(HttpContext httpContext)
     {
-        // Permette di leggere lo stream del body più volte
-        context.Request.EnableBuffering();
         
-        // Legge l'intero body della richiesta come una stringa
-        using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
-        var jsonString = await reader.ReadToEndAsync();
-        
-        // --- STAMPA IL JSON GREZZO A CONSOLE ---
-        Console.WriteLine("--- RAW /start JSON RECEIVED ---");
-        Console.WriteLine(jsonString);
+        // Usa uno stream riciclato dal pool invece di allocarne uno nuovo.
+        await using var stream = StreamManager.GetStream();
+        await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
+        stream.Position = 0;
+
+        using var reader = new StreamReader(stream, leaveOpen: true);
+        var json = await reader.ReadToEndAsync();
+        Console.WriteLine("--- RAW JSON RECEIVED ---");
+        Console.WriteLine(json);
         Console.WriteLine("------------------------------");
         
-        // // Riporta lo stream all'inizio per permettere la normale deserializzazione
-        context.Request.Body.Position = 0;
-    
-        // Usa l'override che accetta lo Stream, il JsonTypeInfo dal source generator
-        // e un CancellationToken per gestire l'annullamento della richiesta.
-
+        stream.Position = 0;
         
-        // OTTIMIZZAZIONE: Usa uno stream riciclato dal pool invece di allocarne uno nuovo.
-        await using var memoryStream = StreamManager.GetStream();
-        await context.Request.Body.CopyToAsync(memoryStream, context.RequestAborted);
-        memoryStream.Position = 0;
-
         // FASE 1: Estrai la larghezza
-        using var jsonDoc = await JsonDocument.ParseAsync(memoryStream, cancellationToken: context.RequestAborted);
-        var width = jsonDoc.RootElement.GetProperty("board").GetProperty("width").GetInt32();
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: httpContext.RequestAborted);
+        var width = document.RootElement.GetProperty("board").GetProperty("width").GetInt32();
 
-        memoryStream.Position = 0;
+        stream.Position = 0;
 
         // FASE 2: Deserializza con i convertitori
         var arrayConverter = new CoordinateArrayToUshortArrayConverter(width);
         var singleConverter = new CoordinateToUshortConverter(width);
 
         var options = new JsonSerializerOptions { Converters = { arrayConverter, singleConverter } };
-        var contextWithOptions = new ThanosSerializerContext(options);
+        var serializerContext = new ThanosSerializerContext(options);
 
-        var request = await JsonSerializer.DeserializeAsync(
-            memoryStream,
-            contextWithOptions.Request,
-            context.RequestAborted);
+        var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
 
         return request!;
     }

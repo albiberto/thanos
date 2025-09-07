@@ -48,7 +48,7 @@ public class ThanosSerializerContextTests
         Assert.Multiple(() =>
         {
             Assert.That(expected.Id, Is.EqualTo(actual.Id), "Game.Id should match.");
-            Assert.That(expected.Map, Is.EqualTo(actual.gameMap).IgnoreCase, "Game.Map should match.");
+            Assert.That(expected.Map, Is.EqualTo(actual.map).IgnoreCase, "Game.Map should match.");
             Assert.That(expected.Source, Is.EqualTo(actual.Source).IgnoreCase, "Game.Source should match.");
             Assert.That(expected.Timeout, Is.EqualTo(actual.Timeout), "Game.Timeout should match.");
 
