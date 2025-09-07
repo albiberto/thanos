@@ -5,7 +5,7 @@ using Thanos.SourceGen;
 
 namespace Thanos.War;
 
-public readonly ref struct Heuristics
+public readonly ref struct Heuristics(in Arena arena, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
 {
     // --- COSTANTI E PESI DELL'EURISTICA (Tutto in un unico posto) ---
 
@@ -37,51 +37,46 @@ public readonly ref struct Heuristics
     /// </summary>
     private const int HealthThreshold = 40;
 
-    // --- Campi e Costruttore ---
-
-    private readonly WarGrid Grid;
-    private readonly WarSnake Me;
-    private readonly Enemies Enemies;
-    private readonly ReadOnlySpan<Coordinate> _conversionsMap;
-    private readonly ReadOnlySpan<float> _positionalScores;
+    private readonly Arena _arena = arena;
+    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
+    private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
+    
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-
-
-    public Heuristics(WarGrid grid, WarSnake me, Enemies enemies, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
-    {
-        Grid = grid;
-        Me = me;
-        Enemies = enemies;
-        _conversionsMap = conversionsMap;
-        _positionalScores = positionalScores;
-    }
-
+    
     public float Evaluate()
     {
-        // 1. Condizione Terminale: Se siamo morti, questo è lo scenario peggiore in assoluto.
-        if (Me.Dead) return float.NegativeInfinity;
+        var me = _arena.System.Me;
+        if (me.IsDead) return float.NegativeInfinity;
 
-        var head = Me.Head;
-        var health = Me.HP;
+        var head = me.Head;
+        var health = me.HP;
         var score = 0.0f;
 
         // --- 1. EURISTICA DELLO SPAZIO (Flood Fill) ---
-        var walls = Grid.Snakes;
-        if (!Me.WillGrow) // Assumendo che WarSnake esponga questa informazione
-            walls.Unset(Me.Tail);
-        var mySpace = FloodFill(head, walls);
-        score += SpaceWeight * mySpace;
+        var walls = _arena.Grid.Snakes;
+
+        Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
+        
+        walls.Raw.CopyTo(wallsMemoryCopy);
+        var simulatedWalls = new Bitboard(wallsMemoryCopy);
+
+        if (!me.WillGrow)
+        {
+            simulatedWalls.Unset(me.Tail);
+        }
+        var mySpace = FloodFill(head, simulatedWalls);
+
 
         // --- 2. EURISTICA POSIZIONALE (Statica) ---
         score += _positionalScores[head];
 
         // --- 3. EURISTICA DEL CIBO (CONDIZIONALE) ---
-        // Cerca il cibo SOLO se la vita è sotto la soglia.
         if (health >= HealthThreshold) return score;
 
-        var food = Grid.Food.GetRawData;
+        // FIX: Accediamo al bitboard del cibo tramite _arena.Grid
+        var foodBitboard = _arena.Grid.Food.Memory;
         var headCoord = _conversionsMap[head];
-        score += FoodWeight * CalculateFoodIncentive(headCoord, health, food, _conversionsMap);
+        score += FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
 
         return score;
     }
@@ -146,56 +141,56 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
     private int FloodFill(ushort startNode, Bitboard walls)
     {
         if (walls.IsSet(startNode)) return 0;
-
+    
         // 1. Usiamo un array allocato sullo stack invece di una Queue sul heap.
         //    La dimensione 256 è più che sufficiente per qualsiasi area contigua in Battlesnake.
         Span<ushort> stack = stackalloc ushort[256];
-
+    
         var visited = new Bitboard();
         var count = 0;
         var stackPointer = 0;
-
+    
         // Inizializza lo stack con il nodo di partenza
         stack[stackPointer++] = startNode;
         visited.Set(startNode);
         count++;
-
+    
         // 2. Il ciclo continua finché ci sono nodi da visitare nello stack.
         while (stackPointer > 0)
         {
             // "Pop" manuale dallo stack: più veloce di una chiamata a metodo.
             var current = stack[--stackPointer];
-
+    
             // Esamina i 4 vicini
             // NOTA: Per la massima performance, potresti avere un metodo in Grid
             // che restituisce uno Span<ushort> di vicini per evitare di chiamare GetNeighbor 4 volte.
             // Ma anche così è già molto veloce.
-
-            var neighborUp = Grid.GetNeighbor(current, Moves.Up);
+    
+            var neighborUp = _arena.Grid.GetNeighbor(current, Moves.Up);
             if (neighborUp != ushort.MaxValue && !walls.IsSet(neighborUp) && !visited.IsSet(neighborUp))
             {
                 visited.Set(neighborUp);
                 count++;
                 stack[stackPointer++] = neighborUp; // "Push" manuale
             }
-
-            var neighborDown = Grid.GetNeighbor(current, Moves.Down);
+    
+            var neighborDown = _arena.Grid.GetNeighbor(current, Moves.Down);
             if (neighborDown != ushort.MaxValue && !walls.IsSet(neighborDown) && !visited.IsSet(neighborDown))
             {
                 visited.Set(neighborDown);
                 count++;
                 stack[stackPointer++] = neighborDown;
             }
-
-            var neighborLeft = Grid.GetNeighbor(current, Moves.Left);
+    
+            var neighborLeft = _arena.Grid.GetNeighbor(current, Moves.Left);
             if (neighborLeft != ushort.MaxValue && !walls.IsSet(neighborLeft) && !visited.IsSet(neighborLeft))
             {
                 visited.Set(neighborLeft);
                 count++;
                 stack[stackPointer++] = neighborLeft;
             }
-
-            var neighborRight = Grid.GetNeighbor(current, Moves.Right);
+    
+            var neighborRight = _arena.Grid.GetNeighbor(current, Moves.Right);
             if (neighborRight != ushort.MaxValue && !walls.IsSet(neighborRight) && !visited.IsSet(neighborRight))
             {
                 visited.Set(neighborRight);
@@ -203,7 +198,7 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 stack[stackPointer++] = neighborRight;
             }
         }
-
+    
         return count;
     }
 }

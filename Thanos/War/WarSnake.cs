@@ -32,6 +32,7 @@ public ref struct WarSnake
     public Bitboard Body => _bitboard; 
     public int HP => _header.Points;
     public bool IsDead => _header.IsDead;
+    public bool WillGrow => _header.IsGrowthPending;
 
     // --- METODI DI COMANDO ---
 

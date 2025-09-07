@@ -8,8 +8,8 @@ namespace Thanos.War;
 /// </summary>
 public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte> hazards, Span<byte> allSnakes, ReadOnlySpan<ushort> neighbors, Dictionary<Guid, int> map, int area)
 {
-    private readonly SnakesSystem _system = system;
-    private readonly Grid _grid = new(area, food, hazards, allSnakes, neighbors);
+    public readonly SnakesSystem System = system;
+    public readonly Grid Grid = new(area, food, hazards, allSnakes, neighbors);
 
     /// <summary>
     ///     Inizializza lo stato dell'arena (usando "Placement New")
@@ -18,13 +18,13 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
     public void InitializeFromRequest(in Request request)
     {
         // --- FASE 1: Pulizia Totale dello Stato ---
-        _grid.Food.Clear();
-        _grid.Hazards.Clear();
-        _grid.Snakes.Clear(); // Pulisce il bitboard combinato
+        Grid.Food.Clear();
+        Grid.Hazards.Clear();
+        Grid.Snakes.Clear(); // Pulisce il bitboard combinato
 
         // Uccide tutti i serpenti per creare una "tabula rasa".
         // Questo gestisce correttamente i serpenti che sono morti nel turno precedente.
-        for (var i = 0; i < _system.Count; i++) _system[i].Kill();
+        for (var i = 0; i < System.Count; i++) System[i].Kill();
 
         var board = request.Board;
 
@@ -33,10 +33,10 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         // Posiziona "Me"
         if (map.TryGetValue(request.You.Id, out var meIndex))
         {
-            var me = _system[meIndex];
+            var me = System[meIndex];
             me.Initialize(request.You.Health, request.You.Body);
         
-            _grid.Snakes.Or(me.Body);
+            Grid.Snakes.Or(me.Body);
         }
 
         // Posiziona gli avversari
@@ -44,26 +44,25 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         {
             if (enemyData.Id == request.You.Id || !map.TryGetValue(enemyData.Id, out var enemyIndex)) continue;
             
-            var enemy = _system[enemyIndex];
+            var enemy = System[enemyIndex];
             enemy.Initialize(enemyData.Health, enemyData.Body);
 
-            _grid.Snakes.Or(enemy.Body);
+            Grid.Snakes.Or(enemy.Body);
         }
 
         // --- FASE 3: Posizionamento di Cibo e Ostacoli ---
         // Questa parte rimane invariata.
-        foreach (var foodPosition in board.Food) _grid.Food.Set(foodPosition);
-        foreach (var hazardPosition in board.Hazards) _grid.Hazards.Set(hazardPosition);
+        foreach (var foodPosition in board.Food) Grid.Food.Set(foodPosition);
+        foreach (var hazardPosition in board.Hazards) Grid.Hazards.Set(hazardPosition);
     }
 
     /// <summary>
     ///     Clona lo stato di un'altra Arena in questa istanza.
     ///     Operazione estremamente veloce basata su una copia di memoria.
     /// </summary>
-    public void CloneFrom(in Arena source) => source._system.Raw.CopyTo(_system.Raw);
+    public void CloneFrom(in Arena source) => source.System.Raw.CopyTo(System.Raw);
 
-    private WarSnake Me => _system.Me;
-    public bool GameOver => Me.IsDead;
+    private WarSnake Me => System.Me;
 
     public byte GetLegalMoves() => GetLegalMoves(Me.Head);
 
@@ -72,17 +71,17 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         byte legalMoves = 0;
 
         // I controlli ora usano la Grid in modo coerente
-        var upPos = _grid.GetNeighbor(headPosition, Moves.Up);
-        if (Grid.IsValid(upPos) && !_grid.IsOccupied(upPos)) legalMoves |= Moves.Up;
+        var upPos = Grid.GetNeighbor(headPosition, Moves.Up);
+        if (Grid.IsValid(upPos) && !Grid.IsOccupied(upPos)) legalMoves |= Moves.Up;
 
-        var downPos = _grid.GetNeighbor(headPosition, Moves.Down);
-        if (Grid.IsValid(downPos) && !_grid.IsOccupied(downPos)) legalMoves |= Moves.Down;
+        var downPos = Grid.GetNeighbor(headPosition, Moves.Down);
+        if (Grid.IsValid(downPos) && !Grid.IsOccupied(downPos)) legalMoves |= Moves.Down;
 
-        var leftPos = _grid.GetNeighbor(headPosition, Moves.Left);
-        if (Grid.IsValid(leftPos) && !_grid.IsOccupied(leftPos)) legalMoves |= Moves.Left;
+        var leftPos = Grid.GetNeighbor(headPosition, Moves.Left);
+        if (Grid.IsValid(leftPos) && !Grid.IsOccupied(leftPos)) legalMoves |= Moves.Left;
 
-        var rightPos = _grid.GetNeighbor(headPosition, Moves.Right);
-        if (Grid.IsValid(rightPos) && !_grid.IsOccupied(rightPos)) legalMoves |= Moves.Right;
+        var rightPos = Grid.GetNeighbor(headPosition, Moves.Right);
+        if (Grid.IsValid(rightPos) && !Grid.IsOccupied(rightPos)) legalMoves |= Moves.Right;
 
         return legalMoves;
     }
@@ -96,37 +95,37 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         var oldTail = me.Tail;
 
         // --- 1. L'ARENA PRENDE LE DECISIONI ---
-        var newHead = _grid.GetNeighbor(head, move);
+        var newHead = Grid.GetNeighbor(head, move);
 
         if (!Grid.IsValid(newHead))
         {
             me.Kill();
-            _grid.RemoveSnakeBody(me);
+            Grid.RemoveSnakeBody(me);
             return;
         }
 
-        var hasEaten = _grid.IsFood(newHead);
+        var hasEaten = Grid.IsFood(newHead);
 
-        if (_grid.IsOccupied(newHead))
+        if (Grid.IsOccupied(newHead))
         {
             var isMovingOntoOwnVacatingTail = newHead == oldTail && !hasEaten;
             if (!isMovingOntoOwnVacatingTail)
             {
                 me.Kill();
-                _grid.RemoveSnakeBody(me);
+                Grid.RemoveSnakeBody(me);
                 return;
             }
         }
 
-        var damage = _grid.IsHazard(newHead) ? 10 : 1;
+        var damage = Grid.IsHazard(newHead) ? 10 : 1;
         var newTail = CalculateNewTailPosition(me, hasEaten); // Logica di gioco da implementare
 
         // --- 2. L'ARENA COMANDA AL CORPO (WARSNAKE) DI AGGIORNARSI ---
         me.UpdateAfterMove(newHead, newTail, hasEaten, damage);
 
         // --- 3. L'ARENA COMANDA AL MONDO (GRID) DI AGGIORNARSI ---
-        _grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
-        if (hasEaten) _grid.RemoveFood(newHead);
+        Grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
+        if (hasEaten) Grid.RemoveFood(newHead);
     }
 
     private ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
@@ -141,16 +140,16 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
 
         // Controlla i 4 vicini della vecchia coda. Solo uno farà parte
         // del corpo del serpente (il "penultimo" segmento). Quello è la nostra nuova coda.
-        var up = _grid.GetNeighbor(oldTail, Moves.Up);
+        var up = Grid.GetNeighbor(oldTail, Moves.Up);
         if (Grid.IsValid(up) && snake.IsOnBody(up)) return up;
 
-        var down = _grid.GetNeighbor(oldTail, Moves.Down);
+        var down = Grid.GetNeighbor(oldTail, Moves.Down);
         if (Grid.IsValid(down) && snake.IsOnBody(down)) return down;
 
-        var left = _grid.GetNeighbor(oldTail, Moves.Left);
+        var left = Grid.GetNeighbor(oldTail, Moves.Left);
         if (Grid.IsValid(left) && snake.IsOnBody(left)) return left;
 
-        var right = _grid.GetNeighbor(oldTail, Moves.Right);
+        var right = Grid.GetNeighbor(oldTail, Moves.Right);
         if (Grid.IsValid(right) && snake.IsOnBody(right)) return right;
 
         // Fallback: non dovrebbe mai succedere in un gioco normale,
@@ -162,7 +161,7 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
     {
         if (Me.IsDead) return -1.0f;
 
-        return Me.Length >= _grid.Area
+        return Me.Length >= Grid.Area
             ? 1.0f
             : 0.0f;
     }

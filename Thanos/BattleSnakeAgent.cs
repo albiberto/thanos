@@ -21,11 +21,13 @@ public sealed class BattleSnakeAgent : IDisposable
     public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
     {
         NeighborsBoardCache.Burn(Constants.MaxWidth);
-        var neighborsLenght = NeighborsBoardCache.Get(Constants.MaxWidth).Length;
+        var neighbors = NeighborsBoardCache.Get(Constants.MaxWidth);
 
+        var layout = new MemoryLayoutBuilder(Constants.MaxArea, Constants.MaxSnakesCount).Build();
+        
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Instance, maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
-        _slotPool = new SlotMemoryPool(GameContext.Worst(neighborsLenght), maxNodes);
+        _slotPool = new SlotMemoryPool(Constants.MaxNodes, layout, neighbors, Constants.MaxArea, new Dictionary<Guid, int>());
         _engine = new Engine(_slotPool, _nodePool);
     }
 
@@ -40,17 +42,16 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         _lastChosenIndex = 0; // Resetta a inizio partita
         var width = request.Board.Width;
+        var area = request.Board.Area;
         
         var luts = _lutProvider.Get(width);
         _engine.Reset(luts);
         
         var snakeIdMap = BuildIdMap(request);
-
         var neighbors = NeighborsBoardCache.Get(width);
-
-        var context = new GameContext(width, snakeIdMap);
+        var layout = new MemoryLayoutBuilder(Constants.MaxArea, Constants.MaxSnakesCount).Build();
         
-        _slotPool.Set(in context);
+        _slotPool.Set(layout, neighbors, area, snakeIdMap);
     }
 
     public byte Move(in Request request)

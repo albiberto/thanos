@@ -3,36 +3,21 @@ using Thanos.War;
 
 namespace Thanos.Memory;
 
-public unsafe class MemoryLayoutBuilder
+public unsafe class MemoryLayoutBuilder(int area, int snakeCount)
 {
-    private int _area;
-    private int _snakeCount;
-
-    public MemoryLayoutBuilder WithGridArea(int area)
-    {
-        _area = area;
-        return this;
-    }
-
-    public MemoryLayoutBuilder WithSnakeCount(int snakeCount)
-    {
-        _snakeCount = snakeCount;
-        return this;
-    }
-
     public MemoryLayout Build()
     {
         // 1. Calcolo Blocco Headers (invariato)
         var headerStride = sizeof(WarSnakeHeader);
-        var headersTotalSize = (headerStride * _snakeCount).AlignUp64();
+        var headersTotalSize = (headerStride * snakeCount).AlignUp64();
         var headersBaseOffset = 0;
 
         // 2. Calcolo Blocco Bitboards (con il nuovo ordine)
-        var ulongsNeeded = (_area + 63) / 64;
+        var ulongsNeeded = (area + 63) / 64;
         var bitboardSize = ulongsNeeded * sizeof(ulong);
 
         // Il numero totale di bitboard non cambia
-        var totalBitboards = LayoutConstants.GlobalBitboardCount + _snakeCount + 1; // +1 per AllSnakes
+        var totalBitboards = LayoutConstants.GlobalBitboardCount + snakeCount + 1; // +1 per AllSnakes
         var bitboardOffsets = new int[totalBitboards];
 
         var bitboardsBaseOffset = headersTotalSize;
@@ -59,7 +44,7 @@ public unsafe class MemoryLayoutBuilder
         bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // AllSnakesBitboard
 
         // B. Poi tutti i bitboard dei singoli serpenti
-        for (var i = 0; i < _snakeCount; i++) bitboardOffsets[offsetIndex++] = AddBitboardOffset();
+        for (var i = 0; i < snakeCount; i++) bitboardOffsets[offsetIndex++] = AddBitboardOffset();
 
         var bitboardsTotalSize = currentInternalOffset;
 

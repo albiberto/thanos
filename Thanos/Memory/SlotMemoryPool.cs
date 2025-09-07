@@ -27,7 +27,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         _basePointer = NativeMemory.AlignedAlloc((nuint)totalSize, 64);
     }
     
-    public Arena this[uint index]
+    public Arena this[int index]
     {
         get
         {

@@ -30,10 +30,10 @@ public class Engine
             // L'ID 0 è riservato per la radice.
             _worker.Reset(1); // Iniziamo ad allocare dal prossimo ID disponibile.
 
-            var rootSlot = _slotPool[_rootIndex]; // Usa l'indice 0
-            rootSlot.InitializeFromRequest(in request);
+            var rootArena = _slotPool[_rootIndex]; // Usa l'indice 0
+            rootArena.InitializeFromRequest(in request);
 
-            var hash = ZobristHasher.CalculateHash(rootSlot.Arena);
+            var hash = ZobristHasher.CalculateHash(rootArena);
 
             ref var rootNode = ref _nodePool[_rootIndex]; // Usa l'indice 0
             rootNode.PlacementNew(-1, Moves.None, hash);
