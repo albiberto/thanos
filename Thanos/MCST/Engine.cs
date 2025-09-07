@@ -73,31 +73,31 @@ public class Engine
         _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
     }
 
-    public void PrepareNextTurn(int previousChosenNodeIndex, in Request newTurnRequest, Dictionary<string, int> snakeIdMap)
-    {
-        if (previousChosenNodeIndex == 0)
-        {
-            Reset();
-            return;
-        }
-
-        var realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
-        ref var chosenNode = ref _nodePool[previousChosenNodeIndex];
-
-        if (chosenNode.Hash != realStateHash)
-        {
-            // Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
-            Reset();
-            return;
-        }
-
-        // Console.WriteLine($"[MCE] Cache HIT! Riutilizzo dell'albero dalla radice {previousChosenNodeIndex}.");
-        _rootIndex = previousChosenNodeIndex;
-        ref var newRoot = ref _nodePool[_rootIndex];
-        newRoot.ParentIndex = -1;
-
-        // Dobbiamo dire al worker da quale ID ripartire per le nuove allocazioni!
-        // Questo richiede di trovare l'ID più alto nell'albero, un'operazione che possiamo aggiungere.
-        // Per ora, lo lasciamo continuare a contare, ma questo andrà corretto.
-    }
+    // public void PrepareNextTurn(int previousChosenNodeIndex, in Request newTurnRequest, Dictionary<string, int> snakeIdMap)
+    // {
+    //     if (previousChosenNodeIndex == 0)
+    //     {
+    //         Reset();
+    //         return;
+    //     }
+    //
+    //     var realStateHash = ZobristHasher.CalculateHash(in newTurnRequest, snakeIdMap);
+    //     ref var chosenNode = ref _nodePool[previousChosenNodeIndex];
+    //
+    //     if (chosenNode.Hash != realStateHash)
+    //     {
+    //         // Console.WriteLine("[MCE] Cache MISS! Hash non corrispondenti. Reset dell'albero.");
+    //         Reset();
+    //         return;
+    //     }
+    //
+    //     // Console.WriteLine($"[MCE] Cache HIT! Riutilizzo dell'albero dalla radice {previousChosenNodeIndex}.");
+    //     _rootIndex = previousChosenNodeIndex;
+    //     ref var newRoot = ref _nodePool[_rootIndex];
+    //     newRoot.ParentIndex = -1;
+    //
+    //     // Dobbiamo dire al worker da quale ID ripartire per le nuove allocazioni!
+    //     // Questo richiede di trovare l'ID più alto nell'albero, un'operazione che possiamo aggiungere.
+    //     // Per ora, lo lasciamo continuare a contare, ma questo andrà corretto.
+    // }
 }

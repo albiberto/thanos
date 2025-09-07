@@ -57,6 +57,25 @@ public static class Program
     /// </summary>
     private static async Task<Request> ReadRequestAsync(HttpContext context)
     {
+        // Permette di leggere lo stream del body più volte
+        context.Request.EnableBuffering();
+        
+        // Legge l'intero body della richiesta come una stringa
+        using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+        var jsonString = await reader.ReadToEndAsync();
+        
+        // --- STAMPA IL JSON GREZZO A CONSOLE ---
+        Console.WriteLine("--- RAW /start JSON RECEIVED ---");
+        Console.WriteLine(jsonString);
+        Console.WriteLine("------------------------------");
+        
+        // // Riporta lo stream all'inizio per permettere la normale deserializzazione
+        context.Request.Body.Position = 0;
+    
+        // Usa l'override che accetta lo Stream, il JsonTypeInfo dal source generator
+        // e un CancellationToken per gestire l'annullamento della richiesta.
+
+        
         // OTTIMIZZAZIONE: Usa uno stream riciclato dal pool invece di allocarne uno nuovo.
         await using var memoryStream = StreamManager.GetStream();
         await context.Request.Body.CopyToAsync(memoryStream, context.RequestAborted);
