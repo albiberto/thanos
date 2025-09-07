@@ -23,7 +23,7 @@ public sealed class BattleSnakeAgent : IDisposable
         NeighborsBoardCache.Burn(Constants.MaxWidth);
         var neighbors = NeighborsBoardCache.Get(Constants.MaxWidth);
 
-        var layout = new MemoryLayoutBuilder(Constants.MaxArea, Constants.MaxSnakesCount).Build();
+        var layout = new MemoryLayoutBuilder(11*11, 4).Build();
         
         _nodePool = new NodeMemoryPool(NodeMemoryLayout.Instance, maxNodes);
         _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);

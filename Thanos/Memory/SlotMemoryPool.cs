@@ -25,6 +25,8 @@ public sealed unsafe class SlotMemoryPool : IDisposable
 
         var totalSize = layout.SlotSize * maxSlots;
         _basePointer = NativeMemory.AlignedAlloc((nuint)totalSize, 64);
+        
+        Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {_layout.SlotSize}-byte nodes, max nodes: {_maxSlots}");
     }
     
     public Arena this[int index]

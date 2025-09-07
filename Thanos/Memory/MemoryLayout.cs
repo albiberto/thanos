@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Thanos.Common;
 using Thanos.War;
 
 namespace Thanos.Memory;
@@ -7,7 +8,7 @@ public readonly unsafe struct MemoryLayout(int slotSize, int headerStride, int b
 {
     public int SizeOfHeader => sizeof(WarSnakeHeader);
     
-    public int SlotSize { get; } = slotSize;
+    public int SlotSize { get; } = slotSize.AlignUp64();
     public int HeaderStride { get; } = headerStride;
     public int BitboardSize { get; } = bitboardSize;
 
