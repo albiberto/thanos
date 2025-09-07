@@ -17,41 +17,31 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
     /// </summary>
     public void InitializeFromRequest(in Request request)
     {
-        // --- FASE 1: Pulizia Totale dello Stato ---
         Grid.Food.Clear();
         Grid.Hazards.Clear();
-        Grid.Snakes.Clear(); // Pulisce il bitboard combinato
+        Grid.Snakes.Clear(); 
 
-        // Uccide tutti i serpenti per creare una "tabula rasa".
-        // Questo gestisce correttamente i serpenti che sono morti nel turno precedente.
         for (var i = 0; i < System.Count; i++) System[i].Kill();
 
         var board = request.Board;
 
-        // --- FASE 2: Inizializzazione e Sincronizzazione in un Unico Passaggio ---
-
-        // Posiziona "Me"
-        if (map.TryGetValue(request.You.Id, out var meIndex))
+        // --- FASE 2: Inizializzazione di TUTTI i Serpenti in un Unico Ciclo ---
+        foreach (var snakeData in board.Snakes)
         {
-            var me = System[meIndex];
-            me.Initialize(request.You.Health, request.You.Body);
+            // Se il serpente non è mappato, lo saltiamo.
+            var snakeIndex = map[snakeData.Id]; 
         
-            Grid.Snakes.Or(me.Body);
-        }
+            // Prendiamo l'istanza del serpente dal nostro sistema
+            var snake = System[snakeIndex];
 
-        // Posiziona gli avversari
-        foreach (var enemyData in board.Snakes)
-        {
-            if (enemyData.Id == request.You.Id || !map.TryGetValue(enemyData.Id, out var enemyIndex)) continue;
-            
-            var enemy = System[enemyIndex];
-            enemy.Initialize(enemyData.Health, enemyData.Body);
+            // Lo inizializziamo con i dati aggiornati dal server
+            snake.Initialize(snakeData.Health, snakeData.Body);
 
-            Grid.Snakes.Or(enemy.Body);
+            // Aggiorniamo la griglia generale con la sua posizione
+            Grid.Snakes.Or(snake.Body);
         }
 
         // --- FASE 3: Posizionamento di Cibo e Ostacoli ---
-        // Questa parte rimane invariata.
         foreach (var foodPosition in board.Food) Grid.Food.Set(foodPosition);
         foreach (var hazardPosition in board.Hazards) Grid.Hazards.Set(hazardPosition);
     }
