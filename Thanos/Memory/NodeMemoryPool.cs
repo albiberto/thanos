@@ -8,14 +8,14 @@ public sealed unsafe class NodeMemoryPool : IDisposable
 {
     private readonly byte* _basePointer;
     private readonly NodeMemoryLayout _layout;
-    private readonly int _maxNodes;
+    private readonly uint _maxNodes;
 
-    public NodeMemoryPool(in NodeMemoryLayout layout, int maxNodes)
+    public NodeMemoryPool(uint maxNodes, in NodeMemoryLayout layout)
     {
         _layout = layout;
         _maxNodes = maxNodes;
 
-        var totalSize = (long)_layout.Size * maxNodes;
+        var totalSize = _layout.Size * maxNodes;
 
         _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)totalSize, Constants.CacheLine);
         NativeMemory.Clear(_basePointer, (nuint)totalSize);

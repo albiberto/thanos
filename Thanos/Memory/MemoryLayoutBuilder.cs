@@ -5,6 +5,8 @@ namespace Thanos.Memory;
 
 public unsafe class MemoryLayoutBuilder(int area, int snakeCount)
 {
+    public static MemoryLayout Worst => new MemoryLayoutBuilder(Constants.Large, Constants.MaxSnakesCount).Build();
+
     public MemoryLayout Build()
     {
         // 1. Calcolo Blocco Headers (invariato)

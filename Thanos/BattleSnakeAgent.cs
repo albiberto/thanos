@@ -18,40 +18,28 @@ public sealed class BattleSnakeAgent : IDisposable
 
     private int _lastChosenIndex;
 
-    public BattleSnakeAgent(int maxNodes = Constants.MaxNodes)
+    public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
-        NeighborsBoardCache.Burn(Constants.MaxWidth);
-        var neighbors = NeighborsBoardCache.Get(Constants.MaxWidth);
-
-        var layout = new MemoryLayoutBuilder(11*11, 4).Build();
+        _lutProvider = LutProvider.Instance;
         
-        _nodePool = new NodeMemoryPool(NodeMemoryLayout.Instance, maxNodes);
-        _lutProvider = new LutProvider(Constants.MaxWidth, Constants.MaxArea);
-        _slotPool = new SlotMemoryPool(Constants.MaxNodes, layout, neighbors, Constants.MaxArea, new Dictionary<Guid, int>());
-        _engine = new Engine(_slotPool, _nodePool);
-    }
+        _nodePool = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
+        _slotPool = new SlotMemoryPool(maxNodes, MemoryLayoutBuilder.Worst);
 
-    public void Dispose()
-    {
-        _lutProvider.Dispose();
-        _slotPool.Dispose();
-        _nodePool.Dispose();
+        _engine = new Engine(_slotPool, _nodePool);
     }
 
     public void Start(in Request request)
     {
-        _lastChosenIndex = 0; // Resetta a inizio partita
+        _lastChosenIndex = 0;
         var width = request.Board.Width;
         var area = request.Board.Area;
         
-        var luts = _lutProvider.Get(width);
-        _engine.Reset(luts);
+        var luts = _lutProvider[area];
+        var map = BuildIdMap(in request);
         
-        var snakeIdMap = BuildIdMap(request);
-        var neighbors = NeighborsBoardCache.Get(width);
-        var layout = new MemoryLayoutBuilder(Constants.MaxArea, Constants.MaxSnakesCount).Build();
+        var layout = new MemoryLayoutBuilder(area, map.Count).Build();
         
-        _slotPool.Set(layout, neighbors, area, snakeIdMap);
+        _slotPool.Set(in layout, luts, map, area);
     }
 
     public byte Move(in Request request)
@@ -82,7 +70,7 @@ public sealed class BattleSnakeAgent : IDisposable
     {
     }
 
-    private static Dictionary<Guid, int> BuildIdMap(Request request)
+    private static Dictionary<Guid, int> BuildIdMap(in Request request)
     {
         var myId = request.You.Id;
 
@@ -94,5 +82,12 @@ public sealed class BattleSnakeAgent : IDisposable
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) snakeIdMap[snake.Id] = snakeIdMap.Count;
 
         return snakeIdMap;
+    }
+    
+    public void Dispose()
+    {
+        _lutProvider.Dispose();
+        _slotPool.Dispose();
+        _nodePool.Dispose();
     }
 }

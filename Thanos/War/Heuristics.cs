@@ -5,10 +5,8 @@ using Thanos.SourceGen;
 
 namespace Thanos.War;
 
-public readonly ref struct Heuristics(in Arena arena, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
+public static class HeuristicsConstants
 {
-    // --- COSTANTI E PESI DELL'EURISTICA (Tutto in un unico posto) ---
-
     /// <summary>
     ///     La penalità per trovarsi su una casella del bordo.
     ///     Deve essere un valore negativo forte per scoraggiare il serpente.
@@ -25,27 +23,41 @@ public readonly ref struct Heuristics(in Arena arena, ReadOnlySpan<Coordinate> c
     ///     Controlla l'importanza di avere più spazio a disposizione.
     ///     È il fattore più importante per la sopravvivenza.
     /// </summary>
-    private const float SpaceWeight = 3.0f;
+    public const float SpaceWeight = 3.0f;
 
     /// <summary>
     ///     Controlla l'importanza del cibo. Viene usato solo quando la salute è bassa.
     /// </summary>
-    private const float FoodWeight = 0.5f;
+    public const float FoodWeight = 0.5f;
 
     /// <summary>
     ///     La soglia di salute sotto la quale il serpente inizia a cercare attivamente cibo.
     /// </summary>
-    private const int HealthThreshold = 40;
+    public const int HealthThreshold = 40;
+}
 
-    private readonly Arena _arena = arena;
+public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
+{
+    private readonly SnakesSystem _system = system;
+    private readonly Grid _grid = grid;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
     
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
     
+    public float Outcome()
+    {
+        var me = _system.Me;
+        if (me.IsDead) return -1.0f;
+
+        return me.Length >= _grid.Area
+            ? 1.0f
+            : 0.0f;
+    }
+    
     public float Evaluate()
     {
-        var me = _arena.System.Me;
+        var me = _system.Me;
         if (me.IsDead) return float.NegativeInfinity;
 
         var head = me.Head;
@@ -53,7 +65,7 @@ public readonly ref struct Heuristics(in Arena arena, ReadOnlySpan<Coordinate> c
         var score = 0.0f;
 
         // --- 1. EURISTICA DELLO SPAZIO (Flood Fill) ---
-        var walls = _arena.Grid.Snakes;
+        var walls = _grid.Snakes;
 
         Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
         
@@ -71,12 +83,12 @@ public readonly ref struct Heuristics(in Arena arena, ReadOnlySpan<Coordinate> c
         score += _positionalScores[head];
 
         // --- 3. EURISTICA DEL CIBO (CONDIZIONALE) ---
-        if (health >= HealthThreshold) return score;
+        if (health >= HeuristicsConstants.HealthThreshold) return score;
 
         // FIX: Accediamo al bitboard del cibo tramite _arena.Grid
-        var foodBitboard = _arena.Grid.Food.Memory;
+        var foodBitboard = _grid.Food.Memory;
         var headCoord = _conversionsMap[head];
-        score += FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
+        score += HeuristicsConstants.FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
 
         return score;
     }
@@ -166,7 +178,7 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
             // che restituisce uno Span<ushort> di vicini per evitare di chiamare GetNeighbor 4 volte.
             // Ma anche così è già molto veloce.
     
-            var neighborUp = _arena.Grid.GetNeighbor(current, Moves.Up);
+            var neighborUp = _grid.GetNeighbor(current, Moves.Up);
             if (neighborUp != ushort.MaxValue && !walls.IsSet(neighborUp) && !visited.IsSet(neighborUp))
             {
                 visited.Set(neighborUp);
@@ -174,7 +186,7 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 stack[stackPointer++] = neighborUp; // "Push" manuale
             }
     
-            var neighborDown = _arena.Grid.GetNeighbor(current, Moves.Down);
+            var neighborDown = _grid.GetNeighbor(current, Moves.Down);
             if (neighborDown != ushort.MaxValue && !walls.IsSet(neighborDown) && !visited.IsSet(neighborDown))
             {
                 visited.Set(neighborDown);
@@ -182,7 +194,7 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 stack[stackPointer++] = neighborDown;
             }
     
-            var neighborLeft = _arena.Grid.GetNeighbor(current, Moves.Left);
+            var neighborLeft = _grid.GetNeighbor(current, Moves.Left);
             if (neighborLeft != ushort.MaxValue && !walls.IsSet(neighborLeft) && !visited.IsSet(neighborLeft))
             {
                 visited.Set(neighborLeft);
@@ -190,13 +202,13 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 stack[stackPointer++] = neighborLeft;
             }
     
-            var neighborRight = _arena.Grid.GetNeighbor(current, Moves.Right);
-            if (neighborRight != ushort.MaxValue && !walls.IsSet(neighborRight) && !visited.IsSet(neighborRight))
-            {
-                visited.Set(neighborRight);
-                count++;
-                stack[stackPointer++] = neighborRight;
-            }
+            var neighborRight = _grid.GetNeighbor(current, Moves.Right);
+            
+            if (neighborRight == ushort.MaxValue || walls.IsSet(neighborRight) || visited.IsSet(neighborRight)) continue;
+            
+            visited.Set(neighborRight);
+            count++;
+            stack[stackPointer++] = neighborRight;
         }
     
         return count;

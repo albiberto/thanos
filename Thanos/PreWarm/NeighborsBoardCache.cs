@@ -1,43 +1,28 @@
-﻿using System.Collections.Concurrent;
-
-namespace Thanos.PreWarm;
+﻿namespace Thanos.PreWarm;
 
 public static class NeighborsBoardCache
 {
-    private static readonly ConcurrentDictionary<int, ushort[]> _cache = [];
-
     /// <summary>
-    ///     Gets a MoveLookupTable for the specified square grid size.
+    /// Popola una Span con la LUT dei vicini per una data larghezza.
+    /// Scrive direttamente nella memoria fornita, senza allocazioni.
     /// </summary>
-    public static ushort[] Get(int width) => _cache[width];
-
-    public static void Burn(int maxWidth)
+    public static void Build(int area, int width, Span<ushort> neighbors)
     {
-        Parallel.ForEach(Enumerable.Range(1, maxWidth), width => { _cache[width] = Build(width).ToArray(); });
-    }
-
-    // The LUT stores 4 neighbors (U,D,L,R) for each of the 'area' squares.
-    private static ushort[] Build(int width)
-    {
-        var area = width * width;
-        var neighbors = new ushort[area * 4];
+        if (neighbors.Length != area * 4)
+            throw new ArgumentException("La dimensione della Span non è corretta.", nameof(neighbors));
 
         for (ushort pos = 0; pos < area; pos++)
         {
             var offset = pos * 4;
 
+            // UP
             neighbors[offset + 0] = pos >= area - width ? ushort.MaxValue : (ushort)(pos + width);
-
-            // Pre-calculate DOWN
+            // DOWN
             neighbors[offset + 1] = pos < width ? ushort.MaxValue : (ushort)(pos - width);
-
-            // Pre-calculate LEFT
+            // LEFT
             neighbors[offset + 2] = pos % width == 0 ? ushort.MaxValue : (ushort)(pos - 1);
-
-            // Pre-calculate RIGHT
+            // RIGHT
             neighbors[offset + 3] = (pos + 1) % width == 0 ? ushort.MaxValue : (ushort)(pos + 1);
         }
-
-        return neighbors;
     }
 }

@@ -12,13 +12,13 @@ public class Engine
     private readonly SlotMemoryPool _slotPool;
 
     private int _rootIndex;
-    private Worker _worker;
+    private readonly Worker _worker;
 
     public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
-        _worker = new Worker(_slotPool, _nodePool, new Luts());
+        _worker = new Worker(_slotPool, _nodePool);
     }
 
     public int FindBestMove(in Request request)
@@ -30,7 +30,7 @@ public class Engine
             // L'ID 0 è riservato per la radice.
             _worker.Reset(1); // Iniziamo ad allocare dal prossimo ID disponibile.
 
-            var rootArena = _slotPool[_rootIndex]; // Usa l'indice 0
+            var rootArena = _slotPool.GetArena(_rootIndex); // Usa l'indice 0
             rootArena.InitializeFromRequest(in request);
 
             var hash = ZobristHasher.CalculateHash(rootArena);
@@ -43,7 +43,7 @@ public class Engine
             // Se siamo qui, PrepareNextTurn ha funzionato!
             // La radice è già impostata. Dobbiamo solo aggiornare il suo stato
             // con i dati reali della richiesta, perché quello attuale è simulato.
-            var rootSlot = _slotPool[_rootIndex];
+            var rootSlot = _slotPool.GetArena(_rootIndex);
             rootSlot.InitializeFromRequest(in request);
             // Non ricalcoliamo l'hash qui, ci fidiamo di quello verificato in PrepareNextTurn
         }
@@ -65,10 +65,8 @@ public class Engine
         return bestChildIndex;
     }
 
-    public void Reset(in Luts? luts = null)
+    public void Reset()
     {
-        if (luts.HasValue) _worker = new Worker(_slotPool, _nodePool, luts.Value);
-
         _rootIndex = 0;
         _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
     }

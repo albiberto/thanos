@@ -6,10 +6,10 @@ namespace Thanos.War;
 /// <summary>
 ///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
 /// </summary>
-public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte> hazards, Span<byte> allSnakes, ReadOnlySpan<ushort> neighbors, Dictionary<Guid, int> map, int area)
+public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid, int> map)
 {
     public readonly SnakesSystem System = system;
-    public readonly Grid Grid = new(area, food, hazards, allSnakes, neighbors);
+    public Grid Grid { get; } = grid;
 
     /// <summary>
     ///     Inizializza lo stato dell'arena (usando "Placement New")
@@ -145,14 +145,5 @@ public readonly ref struct Arena(SnakesSystem system, Span<byte> food, Span<byte
         // Fallback: non dovrebbe mai succedere in un gioco normale,
         // ma per sicurezza restituiamo la vecchia coda.
         return oldTail;
-    }
-
-    public float Outcome()
-    {
-        if (Me.IsDead) return -1.0f;
-
-        return Me.Length >= Grid.Area
-            ? 1.0f
-            : 0.0f;
     }
 }

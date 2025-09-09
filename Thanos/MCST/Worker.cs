@@ -5,7 +5,7 @@ using Thanos.War;
 
 namespace Thanos.MCST;
 
-public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Luts luts)
+public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 {
     private const double EXPLORATION_PARAMETER = 1.41; // Il classico C per UCT
     private const double HEURISTIC_WEIGHT = 0.5; // Peso per l'euristica in selezione
@@ -80,10 +80,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Lut
 
             // --- 2. Aggiunta del Termine Euristico ---
             // Otteniamo lo stato del figlio per poterlo valutare.
-            var childArena = slotPool[childIndex];
-
-            // Creiamo e usiamo l'euristica per ottenere un punteggio "a priori".
-            var heuristics = new Heuristics(in childArena, luts.ConversionsMap, luts.PositionalScores);
+            var heuristics = slotPool.GetHeuristics(childIndex);
             var heuristicScore = heuristics.Evaluate();
 
             // Normalizziamo il punteggio euristico con Tanh per mantenerlo in un range [-1, 1]
@@ -110,7 +107,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Lut
     {
         // 1. PREPARA I DATI DEL NODO PADRE
         ref var parentNode = ref _nodePool[parentIndex];
-        var parentArena = slotPool[parentIndex];
+        var parentArena = slotPool.GetArena(parentIndex);
 
         // --- LOG: INIZIO ESPANSIONE ---
         // Stampa il nodo che stiamo per espandere.
@@ -146,7 +143,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Lut
             var childIndex = AllocateNextId();
 
             // --- a. Usa INDEX per preparare lo stato del figlio ---
-            var childArena = slotPool[childIndex];
+            var childArena = slotPool.GetArena(childIndex);
             childArena.CloneFrom(in parentArena);
             childArena.ApplySingleMove(move);
 
@@ -180,17 +177,12 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool, Lut
     /// </summary>
     private float Evaluate(int leafIndex)
     {
-        // 1. Ottieni lo stato del nodo da valutare.
-        var arena = slotPool[leafIndex];
-
-        var outcome = arena.Outcome();
-        if (outcome != 0.0f) return outcome;
-
-        // 2. Crea l'oggetto Heuristics e valuta lo stato.
-        var heuristics = new Heuristics(in arena, luts.ConversionsMap, luts.PositionalScores);
-
-        // 3. Il punteggio dell'euristica è il risultato.
-        return heuristics.Evaluate();
+        var heuristics = slotPool.GetHeuristics(leafIndex);
+        var outcome = heuristics.Outcome();
+        
+        return outcome != 0.0f 
+            ? outcome 
+            : heuristics.Evaluate();
     }
 
     private void Backpropagate(int startNodeIndex, float rawScore)
