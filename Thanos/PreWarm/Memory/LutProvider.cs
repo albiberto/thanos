@@ -47,17 +47,14 @@ public sealed unsafe class LutProvider : IDisposable
             (Area: Constants.Large, Layout: _largeLayout, Offset: _largeOffset)
         };
 
-        // Usiamo un ciclo per evitare codice duplicato
         foreach (var (area, layout, offset) in layoutsToBuild)
         {
             var width = (int)Math.Sqrt(area);
+            var neighbors = new Span<ushort>(_basePointer + offset, area * 4); 
 
-            // Crea le Span che puntano alle sezioni corrette della memoria nativa
-            var neighbors = new Span<ushort>(_basePointer + offset, layout.NeighborsSize / sizeof(ushort));
-            var positionalScores = new Span<float>(_basePointer + offset + layout.NeighborsSize, layout.PositionalScoresSize / sizeof(float));
-            var conversionMap = new Span<Coordinate>(_basePointer + offset + layout.NeighborsSize + layout.PositionalScoresSize, layout.MapSize / sizeof(Coordinate));
+            var positionalScores = new Span<float>(_basePointer + offset + layout.NeighborsSize, area); 
+            var conversionMap = new Span<Coordinate>(_basePointer + offset + layout.NeighborsSize + layout.PositionalScoresSize, area);
 
-            // Chiama i metodi di build, che scriveranno direttamente nelle Span
             NeighborsBoardCache.Build(area, width, neighbors);
             PositionalScoreCache.Build(width, positionalScores);
             ConversionMapCache.Build(area, width, conversionMap);
