@@ -8,7 +8,7 @@ namespace Thanos.War;
 public static class HeuristicsConstants
 {
     // La sopravvivenza è la priorità. Un valore alto qui è corretto.
-    public const float SpaceWeight = 5.5f;
+    public const float SpaceWeight = 10.5f;
 
     // NUOVO: Un piccolo bonus per ogni punto salute. Controbilancia la perdita di "urgenza".
     public const float HealthWeight = 0.5f;
@@ -54,6 +54,24 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
     
         var health = me.HP;
         var score = 0.0f;
+        
+        // --- PENALITÀ DINAMICA PER TRAPPOLE ---
+        var openExits = 0;
+        var currentWalls = _grid.Snakes; 
+        foreach (var move in AllMovesArray)
+        {
+            var neighbor = _grid.GetNeighbor(head, move);
+            if (Grid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
+        }
+        switch (openExits)
+        {
+            case <= 1:
+                score -= 750.0f;
+                break;
+            case 2:
+                score -= 200.0f;
+                break;
+        }
 
         // --- NUOVA EURISTICA: PREMIO PER LA SALUTE ---
         // Ricompensa direttamente lo stato di essere sani.
@@ -68,20 +86,20 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
         var mySpace = FloodFill(head, simulatedWalls);
         score += mySpace * HeuristicsConstants.SpaceWeight;
 
-        // --- EURISTICA POSIZIONALE (Statica) ---
-        // QUESTA RIGA MANCAVA NEL TUO CODICE PRECEDENTE. È IMPORTANTE REINSERIRLA.
-        score += _positionalScores[head];
-
-        // --- PENALITÀ DINAMICA PER TRAPPOLE ---
-        int openExits = 0;
-        var currentWalls = _grid.Snakes; 
-        foreach (var move in AllMovesArray)
-        {
-            var neighbor = _grid.GetNeighbor(head, move);
-            if (Grid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
-        }
-        if (openExits <= 1) score -= 750.0f; 
-        else if (openExits == 2) score -= 200.0f;
+        // // --- EURISTICA POSIZIONALE (Statica) ---
+        // // QUESTA RIGA MANCAVA NEL TUO CODICE PRECEDENTE. È IMPORTANTE REINSERIRLA.
+        // score += _positionalScores[head];
+        //
+        // // --- PENALITÀ DINAMICA PER TRAPPOLE ---
+        // int openExits = 0;
+        // var currentWalls = _grid.Snakes; 
+        // foreach (var move in AllMovesArray)
+        // {
+        //     var neighbor = _grid.GetNeighbor(head, move);
+        //     if (Grid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
+        // }
+        // if (openExits <= 1) score -= 750.0f; 
+        // else if (openExits == 2) score -= 200.0f;
 
         // --- EURISTICA DEL CIBO ---
         var foodBitboard = _grid.Food.Memory;
