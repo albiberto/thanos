@@ -52,6 +52,7 @@ public sealed class BattleSnakeAgent : IDisposable
         // 2. All'inizio del turno, prova ad aggiornare la radice dell'albero
         // _engine.PrepareNextTurn(_lastChosenIndex, in request, BuildIdMap(request));
 
+        _engine.Reset();
         // 3. Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
         var bestIndex = _engine.FindBestMove(in request);
 
