@@ -27,13 +27,13 @@ public readonly ref struct Bitboard(Span<byte> memory)
         var mask = 1UL << (position1D & 63);
         return (Memory[index] & mask) == 0;
     }
-    
+
     public void Xor(Bitboard other)
     {
         var otherData = other.Memory;
         for (var i = 0; i < Memory.Length; i++) Memory[i] ^= otherData[i];
     }
-    
+
     public void Or(in Bitboard other)
     {
         var otherData = other.Memory;

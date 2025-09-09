@@ -5,15 +5,15 @@ namespace Thanos.War;
 [StructLayout(LayoutKind.Sequential)]
 public struct WarSnakeHeader
 {
-    private const byte FullHealth = 100; 
-    
+    private const byte FullHealth = 100;
+
     public ushort Length;
     public ushort Head;
     public ushort Tail;
 
     public byte Points;
     private byte _isPendingGrowth;
-    
+
     public readonly bool IsDead => Points <= 0;
     public readonly bool IsGrowthPending => _isPendingGrowth == 1;
     public void ScheduleGrowth() => _isPendingGrowth = 1;

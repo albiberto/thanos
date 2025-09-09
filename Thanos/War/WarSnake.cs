@@ -10,16 +10,16 @@ public ref struct WarSnake
         _header = ref header;
         _bitboard = new Bitboard(memory);
     }
-    
+
     public void Initialize(byte points, ReadOnlySpan<ushort> body)
     {
         var length = (ushort)body.Length;
         var head = body[0];
         var tail = body[^1]; // ^1 significa "ultimo elemento"
-    
+
         // Aggiorna lo stato persistente nell'header
         _header.PlacementNew(length, head, tail, points);
-    
+
         // Disegna il corpo del serpente nel suo bitboard individuale
         _bitboard.Clear();
         foreach (var segment in body) _bitboard.Set(segment);
@@ -29,7 +29,7 @@ public ref struct WarSnake
     public ushort Head => _header.Head;
     public ushort Tail => _header.Tail;
     public ushort Length => _header.Length;
-    public Bitboard Body => _bitboard; 
+    public Bitboard Body => _bitboard;
     public int HP => _header.Points;
     public bool IsDead => _header.IsDead;
     public bool WillGrow => _header.IsGrowthPending;
@@ -37,8 +37,8 @@ public ref struct WarSnake
     // --- METODI DI COMANDO ---
 
     /// <summary>
-    /// Metodo principale che esegue i comandi dell'Arena per aggiornare lo stato
-    /// del serpente dopo una mossa.
+    ///     Metodo principale che esegue i comandi dell'Arena per aggiornare lo stato
+    ///     del serpente dopo una mossa.
     /// </summary>
     public void UpdateAfterMove(ushort newHead, ushort newTail, bool ateFood, int damage)
     {
@@ -65,10 +65,7 @@ public ref struct WarSnake
 
         // 2. Sincronizza il Bitboard (la "pelle" del serpente)
         _bitboard.Set(newHead);
-        if (!ateFood)
-        {
-            _bitboard.Unset(oldTail);
-        }
+        if (!ateFood) _bitboard.Unset(oldTail);
     }
 
     public void Kill() => _header.Kill();

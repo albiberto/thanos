@@ -57,7 +57,6 @@ public static class Program
     /// </summary>
     private static async Task<Request> ReadRequestAsync(HttpContext httpContext)
     {
-        
         // Usa uno stream riciclato dal pool invece di allocarne uno nuovo.
         await using var stream = StreamManager.GetStream();
         await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
@@ -68,9 +67,9 @@ public static class Program
         Console.WriteLine("--- RAW JSON RECEIVED ---");
         Console.WriteLine(json);
         Console.WriteLine("------------------------------");
-        
+
         stream.Position = 0;
-        
+
         // FASE 1: Estrai la larghezza
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: httpContext.RequestAborted);
         var width = document.RootElement.GetProperty("board").GetProperty("width").GetInt32();

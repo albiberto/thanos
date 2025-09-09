@@ -45,7 +45,7 @@ public readonly struct Game(Ruleset ruleset, string map, string source)
     [JsonPropertyName("ruleset")] public Ruleset Ruleset { get; } = ruleset;
     [JsonPropertyName("map")] public string map { get; } = map;
     [JsonPropertyName("source")] public string Source { get; } = source;
-    
+
     // [JsonPropertyName("id")] public Guid Id { get; } = id;
     // [JsonPropertyName("timeout")] public int Timeout { get; } = timeout;
 }
@@ -54,7 +54,7 @@ public readonly struct Game(Ruleset ruleset, string map, string source)
 public readonly struct Ruleset(RulesetSettings settings)
 {
     [JsonPropertyName("settings")] public RulesetSettings Settings { get; } = settings;
-    
+
     // [JsonPropertyName("name")] public string Name { get; } = name;
     // [JsonPropertyName("version")] public string Version { get; } = version;
 }
@@ -64,7 +64,10 @@ public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int
 {
     [JsonPropertyName("foodSpawnChance")] public int FoodSpawnChance { get; } = foodSpawnChance;
     [JsonPropertyName("minimumFood")] public int MinimumFood { get; } = minimumFood;
-    [JsonPropertyName("hazardDamagePerTurn")] public int HazardDamagePerTurn { get; } = hazardDamagePerTurn;
+
+    [JsonPropertyName("hazardDamagePerTurn")]
+    public int HazardDamagePerTurn { get; } = hazardDamagePerTurn;
+
     [JsonPropertyName("royale")] public Royale? Royale { get; } = royale;
     [JsonPropertyName("squad")] public Squad? Squad { get; } = squad;
 }
@@ -72,14 +75,19 @@ public readonly struct RulesetSettings(int foodSpawnChance, int minimumFood, int
 [method: JsonConstructor]
 public readonly struct Royale(int shrinkEveryNTurns)
 {
-    [JsonPropertyName("shrinkEveryNTurns")] public int ShrinkEveryNTurns { get; } = shrinkEveryNTurns;
+    [JsonPropertyName("shrinkEveryNTurns")]
+    public int ShrinkEveryNTurns { get; } = shrinkEveryNTurns;
 }
 
 [method: JsonConstructor]
 public readonly struct Squad(bool allowBodyCollisions, bool sharedElimination, bool sharedHealth, bool sharedLength)
 {
-    [JsonPropertyName("allowBodyCollisions")] public bool AllowBodyCollisions { get; } = allowBodyCollisions;
-    [JsonPropertyName("sharedElimination")] public bool SharedElimination { get; } = sharedElimination;
+    [JsonPropertyName("allowBodyCollisions")]
+    public bool AllowBodyCollisions { get; } = allowBodyCollisions;
+
+    [JsonPropertyName("sharedElimination")]
+    public bool SharedElimination { get; } = sharedElimination;
+
     [JsonPropertyName("sharedHealth")] public bool SharedHealth { get; } = sharedHealth;
     [JsonPropertyName("sharedLength")] public bool SharedLength { get; } = sharedLength;
 }
@@ -110,7 +118,7 @@ public readonly struct Snake(Guid id, byte health, ushort[] body)
     [JsonPropertyName("id")] public Guid Id { get; } = id;
     [JsonPropertyName("health")] public byte Health { get; } = health;
     [JsonPropertyName("body")] public ushort[] Body { get; } = body;
-    
+
     // [JsonPropertyName("name")] public string Name { get; } = name;
     // [JsonPropertyName("latency")] public string Latency { get; } = latency;
     // [JsonPropertyName("head")] public ushort Head { get; } = head;

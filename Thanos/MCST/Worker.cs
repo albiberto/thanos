@@ -1,7 +1,5 @@
 ﻿using Thanos.Common;
 using Thanos.Memory;
-using Thanos.PreWarm.Memory;
-using Thanos.War;
 
 namespace Thanos.MCST;
 
@@ -179,9 +177,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         var heuristics = slotPool.GetHeuristics(leafIndex);
         var outcome = heuristics.Outcome();
-        
-        return outcome != 0.0f 
-            ? outcome 
+
+        return outcome != 0.0f
+            ? outcome
             : heuristics.Evaluate();
     }
 

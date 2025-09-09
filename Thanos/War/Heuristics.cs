@@ -42,9 +42,9 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
     private readonly Grid _grid = grid;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
-    
+
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-    
+
     public float Outcome()
     {
         var me = _system.Me;
@@ -54,7 +54,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
             ? 1.0f
             : 0.0f;
     }
-    
+
     public float Evaluate()
     {
         var me = _system.Me;
@@ -68,14 +68,11 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
         var walls = _grid.Snakes;
 
         Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
-        
+
         walls.Raw.CopyTo(wallsMemoryCopy);
         var simulatedWalls = new Bitboard(wallsMemoryCopy);
 
-        if (!me.WillGrow)
-        {
-            simulatedWalls.Unset(me.Tail);
-        }
+        if (!me.WillGrow) simulatedWalls.Unset(me.Tail);
         var mySpace = FloodFill(head, simulatedWalls);
 
 
@@ -153,31 +150,31 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
     private int FloodFill(ushort startNode, Bitboard walls)
     {
         if (walls.IsSet(startNode)) return 0;
-    
+
         // 1. Usiamo un array allocato sullo stack invece di una Queue sul heap.
         //    La dimensione 256 è più che sufficiente per qualsiasi area contigua in Battlesnake.
         Span<ushort> stack = stackalloc ushort[256];
-    
+
         var visited = new Bitboard();
         var count = 0;
         var stackPointer = 0;
-    
+
         // Inizializza lo stack con il nodo di partenza
         stack[stackPointer++] = startNode;
         visited.Set(startNode);
         count++;
-    
+
         // 2. Il ciclo continua finché ci sono nodi da visitare nello stack.
         while (stackPointer > 0)
         {
             // "Pop" manuale dallo stack: più veloce di una chiamata a metodo.
             var current = stack[--stackPointer];
-    
+
             // Esamina i 4 vicini
             // NOTA: Per la massima performance, potresti avere un metodo in Grid
             // che restituisce uno Span<ushort> di vicini per evitare di chiamare GetNeighbor 4 volte.
             // Ma anche così è già molto veloce.
-    
+
             var neighborUp = _grid.GetNeighbor(current, Moves.Up);
             if (neighborUp != ushort.MaxValue && !walls.IsSet(neighborUp) && !visited.IsSet(neighborUp))
             {
@@ -185,7 +182,7 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 count++;
                 stack[stackPointer++] = neighborUp; // "Push" manuale
             }
-    
+
             var neighborDown = _grid.GetNeighbor(current, Moves.Down);
             if (neighborDown != ushort.MaxValue && !walls.IsSet(neighborDown) && !visited.IsSet(neighborDown))
             {
@@ -193,7 +190,7 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 count++;
                 stack[stackPointer++] = neighborDown;
             }
-    
+
             var neighborLeft = _grid.GetNeighbor(current, Moves.Left);
             if (neighborLeft != ushort.MaxValue && !walls.IsSet(neighborLeft) && !visited.IsSet(neighborLeft))
             {
@@ -201,16 +198,16 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
                 count++;
                 stack[stackPointer++] = neighborLeft;
             }
-    
+
             var neighborRight = _grid.GetNeighbor(current, Moves.Right);
-            
+
             if (neighborRight == ushort.MaxValue || walls.IsSet(neighborRight) || visited.IsSet(neighborRight)) continue;
-            
+
             visited.Set(neighborRight);
             count++;
             stack[stackPointer++] = neighborRight;
         }
-    
+
         return count;
     }
 }

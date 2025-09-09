@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using Thanos.Common;
 using Thanos.Memory;
-using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos.MCST;
@@ -10,9 +9,9 @@ public class Engine
 {
     private readonly NodeMemoryPool _nodePool;
     private readonly SlotMemoryPool _slotPool;
+    private readonly Worker _worker;
 
     private int _rootIndex;
-    private readonly Worker _worker;
 
     public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {

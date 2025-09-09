@@ -19,7 +19,7 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
     {
         Grid.Food.Clear();
         Grid.Hazards.Clear();
-        Grid.Snakes.Clear(); 
+        Grid.Snakes.Clear();
 
         for (var i = 0; i < System.Count; i++) System[i].Kill();
 
@@ -29,8 +29,8 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
         foreach (var snakeData in board.Snakes)
         {
             // Se il serpente non è mappato, lo saltiamo.
-            var snakeIndex = map[snakeData.Id]; 
-        
+            var snakeIndex = map[snakeData.Id];
+
             // Prendiamo l'istanza del serpente dal nostro sistema
             var snake = System[snakeIndex];
 

@@ -48,9 +48,10 @@ public static class ZobristHasher
                 chunk &= ~(1UL << bitIndex);
             }
         }
+
         return currentHash;
     }
-    
+
     // Metodo helper per il CIBO
     private static long HashFoodBitboard(long currentHash, ReadOnlySpan<ulong> bitboard)
     {
@@ -66,6 +67,7 @@ public static class ZobristHasher
                 chunk &= ~(1UL << bitIndex);
             }
         }
+
         return currentHash;
     }
 
@@ -84,6 +86,7 @@ public static class ZobristHasher
                 chunk &= ~(1UL << bitIndex);
             }
         }
+
         return currentHash;
     }
 }

@@ -1,8 +1,6 @@
-﻿using Thanos.Common;
-using Thanos.MCST;
+﻿using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
-using Thanos.PreWarm;
 using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 
@@ -21,11 +19,18 @@ public sealed class BattleSnakeAgent : IDisposable
     public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
         _lutProvider = LutProvider.Instance;
-        
+
         _nodePool = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
         _slotPool = new SlotMemoryPool(maxNodes, MemoryLayoutBuilder.Worst);
 
         _engine = new Engine(_slotPool, _nodePool);
+    }
+
+    public void Dispose()
+    {
+        _lutProvider.Dispose();
+        _slotPool.Dispose();
+        _nodePool.Dispose();
     }
 
     public void Start(in Request request)
@@ -33,12 +38,12 @@ public sealed class BattleSnakeAgent : IDisposable
         _lastChosenIndex = 0;
         var width = request.Board.Width;
         var area = request.Board.Area;
-        
+
         var luts = _lutProvider[area];
         var map = BuildIdMap(in request);
-        
+
         var layout = new MemoryLayoutBuilder(area, map.Count).Build();
-        
+
         _slotPool.Set(in layout, luts, map, area);
     }
 
@@ -82,12 +87,5 @@ public sealed class BattleSnakeAgent : IDisposable
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) snakeIdMap[snake.Id] = snakeIdMap.Count;
 
         return snakeIdMap;
-    }
-    
-    public void Dispose()
-    {
-        _lutProvider.Dispose();
-        _slotPool.Dispose();
-        _nodePool.Dispose();
     }
 }
