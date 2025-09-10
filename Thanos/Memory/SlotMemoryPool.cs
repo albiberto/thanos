@@ -34,11 +34,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     public Arena GetArena(int index)
     {
         BuildViews(index, out var system, out var food, out var hazards, out var snakes, out var neighbors);
-
-        food.Clear();
-        hazards.Clear();
-        // snakes.Clear();
-        
+       
         return new Arena(system, food, hazards, snakes, neighbors, _map);
     }
 
