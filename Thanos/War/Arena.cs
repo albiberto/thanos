@@ -1,4 +1,5 @@
-﻿using Thanos.Common;
+﻿using System.Runtime.CompilerServices;
+using Thanos.Common;
 using Thanos.SourceGen;
 
 namespace Thanos.War;
@@ -159,5 +160,56 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         // Fallback: non dovrebbe mai succedere in un gioco normale,
         // ma per sicurezza restituiamo la vecchia coda.
         return oldTail;
+    }
+    
+    /// <summary>
+    /// Simula lo spawn casuale del cibo usando l'istanza statica e thread-safe Random.Shared.
+    /// </summary>
+    public void SimulateRandomFoodSpawn(int foodSpawnChance, int minimumFood)
+    {
+        // 1. Conta il cibo attuale
+        var currentFoodCount = Food.PopCount();
+
+        // 2. Soddisfa la regola del "minimumFood"
+        var foodToSpawn = minimumFood - currentFoodCount;
+        for (var i = 0; i < foodToSpawn; i++)
+        {
+            var spawnLocation = GetRandomEmptySquare();
+            if (NeighborsGrid.IsValid(spawnLocation))
+            {
+                Food.Set(spawnLocation);
+            }
+        }
+
+        // 3. Tenta la fortuna con "foodSpawnChance"
+        // NOTA: La chiamata ora usa Random.Shared
+        if (Random.Shared.Next(0, 100) < foodSpawnChance)
+        {
+            var spawnLocation = GetRandomEmptySquare();
+            if (NeighborsGrid.IsValid(spawnLocation))
+            {
+                Food.Set(spawnLocation);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Trova una coordinata 1D casuale sulla mappa che non sia occupata da un serpente.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private ushort GetRandomEmptySquare()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            // NOTA: La chiamata ora usa Random.Shared
+            var potentialSpot = (ushort)Random.Shared.Next(0, _neighborsGrid.Area);
+            
+            if (Snakes.IsUnset(potentialSpot))
+            {
+                return potentialSpot;
+            }
+        }
+        
+        return ushort.MaxValue;
     }
 }

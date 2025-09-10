@@ -1,5 +1,6 @@
 ﻿using Thanos.Common;
 using Thanos.Memory;
+using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
@@ -11,6 +12,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
     private int _nextId = 1;
     private NodeMemoryPool _nodePool = nodePool;
+    private RulesetSettings _settings;
 
     // Il costruttore non ha bisogno di essere una expression body per chiarezza
 
@@ -144,6 +146,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             var childArena = slotPool.GetArena(childIndex);
             childArena.CloneFrom(in parentArena);
             childArena.ApplySingleMove(move);
+            
+            childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood);
 
             var hash = ZobristHasher.CalculateHash(in childArena);
 
@@ -197,5 +201,14 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
     }
 
-    public void Reset(int startId) => _nextId = startId;
+    public void Reset(int startId)
+    {
+        _nextId = startId;
+    }
+    
+    public void Reset(int startId, RulesetSettings settings)
+    {
+        _nextId = startId;
+        _settings = settings;
+    }
 }

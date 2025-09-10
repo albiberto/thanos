@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace Thanos.War;
 
@@ -38,5 +39,13 @@ public readonly ref struct Bitboard(Span<byte> memory)
     {
         var otherData = other.Memory;
         for (var i = 0; i < Memory.Length; i++) Memory[i] |= otherData[i];
+    }
+    
+    public int PopCount()
+    {
+        var count = 0;
+        foreach (var chunk in this.Memory) count += BitOperations.PopCount(chunk);
+        
+        return count;
     }
 }

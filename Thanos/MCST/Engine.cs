@@ -27,7 +27,7 @@ public class Engine
         if (_rootIndex == 0)
         {
             // L'ID 0 è riservato per la radice.
-            _worker.Reset(1); // Iniziamo ad allocare dal prossimo ID disponibile.
+            _worker.Reset(1, request.Game.Ruleset.Settings); // Iniziamo ad allocare dal prossimo ID disponibile.
 
             var rootArena = _slotPool.GetArena(_rootIndex); // Usa l'indice 0
             rootArena.InitializeFromRequest(in request);
