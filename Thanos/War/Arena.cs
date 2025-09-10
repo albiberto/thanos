@@ -6,10 +6,15 @@ namespace Thanos.War;
 /// <summary>
 ///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
 /// </summary>
-public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid, int> map)
+public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, Dictionary<Guid, int> map)
 {
     public readonly SnakesSystem System = system;
-    public Grid Grid { get; } = grid;
+    
+    public readonly Bitboard Food = food;
+    public readonly Bitboard Hazards = hazards;
+    public readonly Bitboard Snakes = snakes;
+    
+    private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
 
     /// <summary>
     ///     Inizializza lo stato dell'arena (usando "Placement New")
@@ -17,9 +22,9 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
     /// </summary>
     public void InitializeFromRequest(in Request request)
     {
-        Grid.Food.Clear();
-        Grid.Hazards.Clear();
-        Grid.Snakes.Clear();
+        Food.Clear();
+        Hazards.Clear();
+        Snakes.Clear();
 
         for (var i = 0; i < System.Count; i++) System[i].Kill();
 
@@ -38,12 +43,12 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
             snake.Initialize(snakeData.Health, snakeData.Body);
 
             // Aggiorniamo la griglia generale con la sua posizione
-            Grid.Snakes.Or(snake.Body);
+            Snakes.Or(snake.Body);
         }
 
         // --- FASE 3: Posizionamento di Cibo e Ostacoli ---
-        foreach (var foodPosition in board.Food) Grid.Food.Set(foodPosition);
-        foreach (var hazardPosition in board.Hazards) Grid.Hazards.Set(hazardPosition);
+        foreach (var foodPosition in board.Food) Food.Set(foodPosition);
+        foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
     }
 
     /// <summary>
@@ -61,17 +66,17 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
         byte legalMoves = 0;
 
         // I controlli ora usano la Grid in modo coerente
-        var upPos = Grid.GetNeighbor(headPosition, Moves.Up);
-        if (Grid.IsValid(upPos) && !Grid.IsOccupied(upPos)) legalMoves |= Moves.Up;
+        var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
+        if (NeighborsGrid.IsValid(upPos) && !Snakes.IsSet(upPos)) legalMoves |= Moves.Up;
 
-        var downPos = Grid.GetNeighbor(headPosition, Moves.Down);
-        if (Grid.IsValid(downPos) && !Grid.IsOccupied(downPos)) legalMoves |= Moves.Down;
+        var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
+        if (NeighborsGrid.IsValid(downPos) && !Snakes.IsSet(downPos)) legalMoves |= Moves.Down;
 
-        var leftPos = Grid.GetNeighbor(headPosition, Moves.Left);
-        if (Grid.IsValid(leftPos) && !Grid.IsOccupied(leftPos)) legalMoves |= Moves.Left;
+        var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
+        if (NeighborsGrid.IsValid(leftPos) && !Snakes.IsSet(leftPos)) legalMoves |= Moves.Left;
 
-        var rightPos = Grid.GetNeighbor(headPosition, Moves.Right);
-        if (Grid.IsValid(rightPos) && !Grid.IsOccupied(rightPos)) legalMoves |= Moves.Right;
+        var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
+        if (NeighborsGrid.IsValid(rightPos) && !Snakes.IsSet(rightPos)) legalMoves |= Moves.Right;
 
         return legalMoves;
     }
@@ -85,37 +90,46 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
         var oldTail = me.Tail;
 
         // --- 1. L'ARENA PRENDE LE DECISIONI ---
-        var newHead = Grid.GetNeighbor(head, move);
+        var newHead = _neighborsGrid.Get(head, move);
 
-        if (!Grid.IsValid(newHead))
+        if (!NeighborsGrid.IsValid(newHead))
         {
             me.Kill();
-            Grid.RemoveSnakeBody(me);
+            Snakes.Xor(me.Body);
             return;
         }
 
-        var hasEaten = Grid.IsFood(newHead);
+        var hasEaten = Food.IsSet(newHead);
 
-        if (Grid.IsOccupied(newHead))
+        if (Snakes.IsSet(newHead))
         {
             var isMovingOntoOwnVacatingTail = newHead == oldTail && !hasEaten;
             if (!isMovingOntoOwnVacatingTail)
             {
                 me.Kill();
-                Grid.RemoveSnakeBody(me);
+                Snakes.Xor(me.Body);
                 return;
             }
         }
 
-        var damage = Grid.IsHazard(newHead) ? 10 : 1;
+        var damage = Hazards.IsSet(newHead) ? 10 : 1;
         var newTail = CalculateNewTailPosition(me, hasEaten); // Logica di gioco da implementare
 
         // --- 2. L'ARENA COMANDA AL CORPO (WARSNAKE) DI AGGIORNARSI ---
         me.UpdateAfterMove(newHead, newTail, hasEaten, damage);
 
         // --- 3. L'ARENA COMANDA AL MONDO (GRID) DI AGGIORNARSI ---
-        Grid.UpdateSnakePosition(oldTail, newHead, hasEaten);
-        if (hasEaten) Grid.RemoveFood(newHead);
+        Snakes.Set(newHead);
+
+        switch (hasEaten)
+        {
+            case false:
+                Snakes.Unset(oldTail);
+                break;
+            case true:
+                Food.Unset(newHead);
+                break;
+        }
     }
 
     private ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
@@ -130,17 +144,17 @@ public readonly ref struct Arena(SnakesSystem system, Grid grid, Dictionary<Guid
 
         // Controlla i 4 vicini della vecchia coda. Solo uno farà parte
         // del corpo del serpente (il "penultimo" segmento). Quello è la nostra nuova coda.
-        var up = Grid.GetNeighbor(oldTail, Moves.Up);
-        if (Grid.IsValid(up) && snake.IsOnBody(up)) return up;
+        var up = _neighborsGrid.Get(oldTail, Moves.Up);
+        if (NeighborsGrid.IsValid(up) && snake.IsOnBody(up)) return up;
 
-        var down = Grid.GetNeighbor(oldTail, Moves.Down);
-        if (Grid.IsValid(down) && snake.IsOnBody(down)) return down;
+        var down = _neighborsGrid.Get(oldTail, Moves.Down);
+        if (NeighborsGrid.IsValid(down) && snake.IsOnBody(down)) return down;
 
-        var left = Grid.GetNeighbor(oldTail, Moves.Left);
-        if (Grid.IsValid(left) && snake.IsOnBody(left)) return left;
+        var left = _neighborsGrid.Get(oldTail, Moves.Left);
+        if (NeighborsGrid.IsValid(left) && snake.IsOnBody(left)) return left;
 
-        var right = Grid.GetNeighbor(oldTail, Moves.Right);
-        if (Grid.IsValid(right) && snake.IsOnBody(right)) return right;
+        var right = _neighborsGrid.Get(oldTail, Moves.Right);
+        if (NeighborsGrid.IsValid(right) && snake.IsOnBody(right)) return right;
 
         // Fallback: non dovrebbe mai succedere in un gioco normale,
         // ma per sicurezza restituiamo la vecchia coda.

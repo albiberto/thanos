@@ -8,7 +8,7 @@ public static class ZobristHasher
     public static long CalculateHash(in Arena arena)
     {
         long hash = 0;
-        var grid = arena.Grid;
+        // var grid = arena.Grid;
 
         // --- 1. Hashing dei Serpenti ---
         for (var i = 0; i < arena.System.Count; i++)
@@ -22,11 +22,11 @@ public static class ZobristHasher
         }
 
         // --- 2. Hashing del Cibo ---
-        var foodBitboard = grid.Food.Memory;
+        var foodBitboard = arena.Food.Memory;
         hash = HashFoodBitboard(hash, foodBitboard);
-
+        
         // --- 3. Hashing degli Ostacoli ---
-        var hazardBitboard = grid.Hazards.Memory;
+        var hazardBitboard = arena.Hazards.Memory;
         // FIX 2: Chiamiamo il nuovo metodo helper per gli ostacoli
         hash = HashHazardBitboard(hash, hazardBitboard);
 

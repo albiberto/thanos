@@ -33,22 +33,26 @@ public sealed unsafe class SlotMemoryPool : IDisposable
 
     public Arena GetArena(int index)
     {
-        BuildViews(index, out var system, out var grid);
+        BuildViews(index, out var system, out var food, out var hazards, out var snakes, out var neighbors);
 
-        return new Arena(system, grid, _map);
+        food.Clear();
+        hazards.Clear();
+        // snakes.Clear();
+        
+        return new Arena(system, food, hazards, snakes, neighbors, _map);
     }
 
     public Heuristics GetHeuristics(int index)
     {
-        BuildViews(index, out var system, out var grid);
+        BuildViews(index, out var system, out var food, out var hazards, out var snakes, out var neighbors);
 
         var positionalScoresMemory = new ReadOnlySpan<float>(_lutPointers.PositionalScoresPtr, _lutPointers.PositionalScoresLength);
         var conversionsMapMemory = new ReadOnlySpan<Coordinate>(_lutPointers.ConversionsMapPtr, _lutPointers.ConversionsMapLength);
 
-        return new Heuristics(system, grid, conversionsMapMemory, positionalScoresMemory);
+        return new Heuristics(system, food, hazards, snakes, neighbors, conversionsMapMemory, positionalScoresMemory);
     }
 
-    private void BuildViews(int index, out SnakesSystem system, out Grid grid)
+    private void BuildViews(int index, out SnakesSystem system, out Bitboard food, out Bitboard hazards, out Bitboard snakes, out NeighborsGrid neighbors)
     {
         if (index >= _maxSlots) throw new IndexOutOfRangeException("Accesso illegale allo SlotMemoryPool. Richiesto indice " + index + ", ma la capacità massima è " + _maxSlots + ".");
 
@@ -62,7 +66,12 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         var snakesBitboardMemory = memory.Slice(_layout.SnakesBitboardOffset, _layout.BitboardSize);
         var neighborsMemory = new ReadOnlySpan<ushort>(_lutPointers.NeighborsPtr, _lutPointers.NeighborsLength);
 
-        grid = new Grid(_area, foodBitboardMemory, hazardsBitboardMemory, snakesBitboardMemory, neighborsMemory);
+        food = new Bitboard(foodBitboardMemory);
+        hazards = new Bitboard(hazardsBitboardMemory);
+        snakes = new Bitboard(snakesBitboardMemory);
+        neighbors = new NeighborsGrid(_area, neighborsMemory);
+        
+        // grid = new Grid(_area, foodBitboardMemory, hazardsBitboardMemory, snakesBitboardMemory, neighborsMemory);
     }
 
     public void Set(in MemoryLayout layout, LutPointers lutPointers, Dictionary<Guid, int> map, int area)

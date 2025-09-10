@@ -25,10 +25,16 @@ public static class HeuristicsConstants
     // public const int HealthThreshold = 55;
 }
 
-public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
+public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
 {
     private readonly SnakesSystem _system = system;
-    private readonly Grid _grid = grid;
+    
+    private readonly Bitboard _food = food;
+    private readonly Bitboard _hazards = hazards;
+    private readonly Bitboard _snakes = snakes;
+    
+    private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
+    
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
 
@@ -39,7 +45,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
         var me = _system.Me;
         if (me.IsDead) return -1.0f;
 
-        return me.Length >= _grid.Area
+        return me.Length >= _neighborsGrid.Area
             ? 1.0f
             : 0.0f;
     }
@@ -57,11 +63,11 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
         
         // --- PENALITÀ DINAMICA PER TRAPPOLE ---
         var openExits = 0;
-        var currentWalls = _grid.Snakes; 
+        var currentWalls = _snakes; 
         foreach (var move in AllMovesArray)
         {
-            var neighbor = _grid.GetNeighbor(head, move);
-            if (Grid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
+            var neighbor = _neighborsGrid.Get(head, move);
+            if (NeighborsGrid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
         }
         switch (openExits)
         {
@@ -78,7 +84,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
         score += health * HeuristicsConstants.HealthWeight;
 
         // --- EURISTICA DELLO SPAZIO (Flood Fill) ---
-        var walls = _grid.Snakes;
+        var walls = _snakes;
         Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
         walls.Raw.CopyTo(wallsMemoryCopy);
         var simulatedWalls = new Bitboard(wallsMemoryCopy);
@@ -102,7 +108,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Grid grid, ReadOnlySp
         // else if (openExits == 2) score -= 200.0f;
 
         // --- EURISTICA DEL CIBO ---
-        var foodBitboard = _grid.Food.Memory;
+        var foodBitboard = _food.Memory;
         var headCoord = _conversionsMap[head];
         score += HeuristicsConstants.FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
 
@@ -215,13 +221,13 @@ private int FloodFill(ushort startNode, in Bitboard walls)
         // Usa l'array statico già presente nella struct Heuristics.
         foreach (var move in AllMovesArray)
         {
-            var neighbor = _grid.GetNeighbor(current, move);
+            var neighbor = _neighborsGrid.Get(current, move);
 
             // Condizione unica e pulita per scartare un vicino:
             // - Se non è valido (fuori mappa, ushort.MaxValue)
             // - Se è un muro (un altro serpente)
             // - Se lo abbiamo già visitato
-            if (!Grid.IsValid(neighbor) || walls.IsSet(neighbor) || visited.IsSet(neighbor))
+            if (!NeighborsGrid.IsValid(neighbor) || walls.IsSet(neighbor) || visited.IsSet(neighbor))
             {
                 continue;
             }
