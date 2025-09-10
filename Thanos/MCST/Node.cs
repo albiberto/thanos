@@ -21,18 +21,28 @@ public struct Node
     public byte Move; // 1 byte
     public bool IsTerminal; // 1 byte
 
-    public void PlacementNew(int parentIndex, byte move, long hash)
+    public void PlacementRoot(int parentIndex, byte move, long hash)
     {
         Visits = 0;
         Wins = 0;
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
-
         ParentIndex = parentIndex;
-
-        Generation = 0;
+        Generation = 0; // Fissa la generazione a 0 per la radice
         Hash = hash;
+        Move = move;
+        IsTerminal = false;
+    }
 
+    public void PlacementNew(int parentIndex, byte move, long hash, ushort parentGeneration)
+    {
+        Visits = 0;
+        Wins = 0;
+        FirstChildIndex = -1;
+        NextSiblingIndex = -1;
+        ParentIndex = parentIndex;
+        Generation = (ushort)(parentGeneration + 1); // Calcola la generazione del figlio
+        Hash = hash;
         Move = move;
         IsTerminal = false;
     }

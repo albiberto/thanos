@@ -16,8 +16,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
     // Il costruttore non ha bisogno di essere una expression body per chiarezza
 
-    private int AllocateNextId() => _nextId++;
-
     public void RunIteration(int rootIndex)
     {
         // 1. SELECTION: Trova un nodo foglia da cui partire.
@@ -109,6 +107,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         ref var parentNode = ref _nodePool[parentIndex];
         var parentArena = slotPool.GetArena(parentIndex);
 
+        
+        var parentGeneration = parentNode.Generation;
+        
         // --- LOG: INIZIO ESPANSIONE ---
         // Stampa il nodo che stiamo per espandere.
         // Console.WriteLine($"|-- Espansione Nodo {parentIndex}, Padre: {parentNode.ParentIndex} (raggiunto con mossa: {MoveToString(parentNode.MoveThatLedToThisNode)})");
@@ -140,7 +141,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             if ((legalMoves & move) == 0) continue;
 
             // --- Alloca un INDEX unificato per il nuovo figlio ---
-            var childIndex = AllocateNextId();
+            var childIndex = ++_nextId;
 
             // --- a. Usa INDEX per preparare lo stato del figlio ---
             var childArena = slotPool.GetArena(childIndex);
@@ -153,7 +154,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
             // --- b. Usa LO STESSO INDEX per preparare il nodo del figlio ---
             ref var childNode = ref _nodePool[childIndex];
-            childNode.PlacementNew(parentIndex, move, hash);
+            childNode.PlacementNew(parentIndex, move, hash, parentGeneration);
 
             // --- LOG: CREAZIONE FIGLIO ---
             // Stampa ogni figlio appena viene creato.
@@ -200,6 +201,36 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             currentIndex = currentNode.ParentIndex;
         }
     }
+    
+       /// <summary>
+        ///    Calcola il massimo ID di nodo allocato nell'albero a partire dalla radice specificata.
+        ///    Questo è necessario per riprendere l'allocazione senza sovrascrivere nodi esistenti.
+        /// </summary>
+        public int GetMaxId(int rootIndex)
+        {
+            if (rootIndex == 0) return 0; // O un valore di default che non causi problemi.
+    
+            var maxId = rootIndex;
+            var queue = new Queue<int>();
+            queue.Enqueue(rootIndex);
+    
+            while (queue.Count > 0)
+            {
+                var currentIndex = queue.Dequeue();
+                maxId = Math.Max(maxId, currentIndex);
+    
+                ref var currentNode = ref _nodePool[currentIndex];
+    
+                // Aggiungi i figli alla coda
+                var childIndex = currentNode.FirstChildIndex;
+                while (childIndex != -1)
+                {
+                    queue.Enqueue(childIndex);
+                    childIndex = _nodePool[childIndex].NextSiblingIndex;
+                }
+            }
+            return maxId;
+        }
 
     public void Reset(int startId)
     {

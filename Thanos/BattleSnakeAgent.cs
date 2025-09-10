@@ -1,4 +1,5 @@
-﻿using Thanos.MCST;
+﻿using Thanos.Common;
+using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
 using Thanos.PreWarm.Memory;
@@ -15,6 +16,7 @@ public sealed class BattleSnakeAgent : IDisposable
     private readonly SlotMemoryPool _slotPool;
 
     private int _lastChosenIndex;
+    private Dictionary<Guid, int> _snakeIdMap = new();
 
     public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
@@ -36,40 +38,59 @@ public sealed class BattleSnakeAgent : IDisposable
     public void Start(in Request request)
     {
         _lastChosenIndex = 0;
+        
         var width = request.Board.Width;
         var area = request.Board.Area;
 
         var luts = _lutProvider[area];
-        var map = BuildIdMap(in request);
+        _snakeIdMap = BuildIdMap(in request);
 
-        var layout = new MemoryLayoutBuilder(area, map.Count).Build();
+        var layout = new MemoryLayoutBuilder(area, _snakeIdMap.Count).Build();
 
-        _slotPool.Set(in layout, luts, map, area);
+        _slotPool.Set(in layout, luts, _snakeIdMap, area);
     }
 
     public byte Move(in Request request)
     {
-        // 2. All'inizio del turno, prova ad aggiornare la radice dell'albero
-        // _engine.PrepareNextTurn(_lastChosenIndex, in request, BuildIdMap(request));
+        // Calcola l'hash dello stato di gioco reale.
+        // Viene usato uno slot temporaneo (0) solo per l'hash, non per l'albero.
+        var realBoardArena = _slotPool.GetArena(0); 
+        realBoardArena.InitializeFromRequest(in request);
+        
+        // Per un hashing stabile, utilizza la mappa degli ID dei serpenti.
+        var realHash = ZobristHasher.CalculateHash(in realBoardArena);
+        
+        // 1. Tenta di riutilizzare l'albero del turno precedente.
+        // Il metodo PrepareNextTurn dell'Engine si occuperà di trovare il nodo corretto
+        // nell'albero basato sull'hash o di resettare se non lo trova.
+        var isTreeReused = _engine.PrepareNextTurn(_lastChosenIndex, realHash);
 
-        _engine.Reset();
-        // 3. Ora lancia la ricerca dalla radice corretta (o una nuova se c'è stato un reset)
+        // Usa il valore di ritorno per il log di debug
+        Console.WriteLine(isTreeReused 
+            ? "[MCTS] Cache HIT! Albero riutilizzato per il turno corrente." 
+            : "[MCTS] Cache MISS! Albero resettato.");
+
+
+        // 2. Lancia la ricerca MCTS dalla radice corretta (quella riutilizzata o una nuova).
         var bestIndex = _engine.FindBestMove(in request);
-
-        if (bestIndex != -1)
+    
+        // Gestisce il caso in cui nessuna mossa valida è stata trovata.
+        if (bestIndex == -1)
         {
-            ref var chosenNode = ref _nodePool[bestIndex];
-
-            var move = chosenNode.Move;
-
-            _lastChosenIndex = bestIndex; // Salva la scelta per il prossimo turno
-
-            // Log e return
-            return move;
+            // Questo è un fallback critico. Se l'MCTS non ha trovato un nodo valido
+            // (es. perché tutte le mosse portano a morte istantanea),
+            // è necessario restituire una mossa di emergenza.
+            throw new InvalidOperationException("Nessuna mossa valida trovata dall'MCTS.");
         }
-
-        // Fallback
-        throw new InvalidOperationException("No valid move found");
+    
+        // 3. Salva l'indice del nodo scelto per poterlo riutilizzare nel prossimo turno.
+        _lastChosenIndex = bestIndex; 
+    
+        // 4. Recupera la mossa dal nodo migliore e la restituisce.
+        ref var chosenNode = ref _nodePool[bestIndex];
+        var move = chosenNode.Move;
+        
+        return move;
     }
 
     public void End(in Request _)
