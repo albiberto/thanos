@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Thanos.MCST;
 using Thanos.MCST.Memory;
 
@@ -35,12 +36,8 @@ public sealed unsafe class NodeMemoryPool : IDisposable
             // --- 2. CALCOLO DEL PUNTATORE ---
             var startOffset = (long)index * _layout.Size;
             var nodePointer = _basePointer + startOffset;
-            var memorySpan = new Span<byte>(nodePointer, _layout.Size);
 
-            return ref MemoryMarshal.GetReference(MemoryMarshal.Cast<byte, Node>(memorySpan));
-            // ALTERNATIVA: teoricamente più performante perchè evita la creazione dello span
-            // ma probabilmente il JIT traduce la versione con MemoryMarshal nello stesso codice macchina
-            // return ref Unsafe.AsRef<Node>(nodePointer);
+            return ref Unsafe.AsRef<Node>(nodePointer);
         }
     }
 
