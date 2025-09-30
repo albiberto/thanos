@@ -43,11 +43,20 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     public float Outcome()
     {
         var me = _system.Me;
-        if (me.IsDead) return -1.0f;
+        if (me.IsDead) return -1.0f; // My snake is dead, this path is a loss.
 
-        return me.Length >= _neighborsGrid.Area
-            ? 1.0f
-            : 0.0f;
+        // Check if any other snakes are still alive.
+        for (int i = 1; i < _system.Count; i++)
+        {
+            if (!_system[i].IsDead)
+            {
+                return 0.0f; // There are still opponents, the game is not over.
+            }
+        }
+
+        // If we've reached here, all opponents are dead.
+        // We are the last snake standing, this is a victory.
+        return 1.0f; 
     }
 
     public float Evaluate()

@@ -82,58 +82,32 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         return legalMoves;
     }
 
-    public void ApplySingleMove(byte move)
+    public void ApplySingleMove(int snakeIndex, byte move, Dictionary<int, ushort> newHeads, Dictionary<int, byte> combinedMoves)
     {
-        var me = Me;
-        if (me.IsDead) return;
+        var snake = System[snakeIndex];
+        if (snake.IsDead) return;
 
-        var head = me.Head;
-        var oldTail = me.Tail;
+        // --- FASE 1: Aggiornamento della Testa e Rilevamento di Collisioni Iniziali ---
+        var newHead = _neighborsGrid.Get(snake.Head, move);
+        newHeads[snakeIndex] = newHead;
 
-        // --- 1. L'ARENA PRENDE LE DECISIONI ---
-        var newHead = _neighborsGrid.Get(head, move);
-
-        if (!NeighborsGrid.IsValid(newHead))
-        {
-            me.Kill();
-            Snakes.Xor(me.Body);
-            return;
-        }
+        // La logica di "uccisione immediata" ora viene gestita nel Worker.
+        // L'Arena si concentra sulla logica di gioco pura.
 
         var hasEaten = Food.IsSet(newHead);
 
-        if (Snakes.IsSet(newHead))
-        {
-            var isMovingOntoOwnVacatingTail = newHead == oldTail && !hasEaten;
-            if (!isMovingOntoOwnVacatingTail)
-            {
-                me.Kill();
-                Snakes.Xor(me.Body);
-                return;
-            }
-        }
-
         var damage = Hazards.IsSet(newHead) ? 10 : 1;
-        var newTail = CalculateNewTailPosition(me, hasEaten); // Logica di gioco da implementare
+        var newTail = CalculateNewTailPosition(snake, hasEaten);
 
-        // --- 2. L'ARENA COMANDA AL CORPO (WARSNAKE) DI AGGIORNARSI ---
-        me.UpdateAfterMove(newHead, newTail, hasEaten, damage);
-
-        // --- 3. L'ARENA COMANDA AL MONDO (GRID) DI AGGIORNARSI ---
-        Snakes.Set(newHead);
-
-        switch (hasEaten)
-        {
-            case false:
-                Snakes.Unset(oldTail);
-                break;
-            case true:
-                Food.Unset(newHead);
-                break;
-        }
+        // --- FASE 2: Aggiornamento dello Stato Interno del Serpente ---
+        // Questi aggiornamenti non influenzano la griglia generale fino alla fine del tick.
+        snake.UpdateAfterMove(newHead, newTail, hasEaten, damage);
+    
+        // Rimuoviamo il serpente dalla griglia principale in preparazione per il riposizionamento.
+        Snakes.Xor(snake.Body); 
     }
 
-    private ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
+    public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
     {
         // Se il serpente mangia, la coda non si muove.
         if (ateFood) return snake.Tail;
@@ -161,6 +135,16 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         // ma per sicurezza restituiamo la vecchia coda.
         return oldTail;
     }
+    
+    public ushort GetNewHeadPosition(ushort head, byte move)
+{
+    return _neighborsGrid.Get(head, move);
+}
+
+public bool IsValidPosition(ushort pos)
+{
+    return NeighborsGrid.IsValid(pos);
+}
     
     /// <summary>
     /// Simula lo spawn casuale del cibo usando l'istanza statica e thread-safe Random.Shared.
