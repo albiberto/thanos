@@ -66,9 +66,9 @@ public sealed class BattleSnakeAgent : IDisposable
         var isTreeReused = _engine.PrepareNextTurn(_lastChosenIndex, realHash);
 
         // Usa il valore di ritorno per il log di debug
-        Console.WriteLine(isTreeReused 
-            ? "[MCTS] Cache HIT! Albero riutilizzato per il turno corrente." 
-            : "[MCTS] Cache MISS! Albero resettato.");
+        // Console.WriteLine(isTreeReused 
+        //     ? "[MCTS] Cache HIT! Albero riutilizzato per il turno corrente." 
+        //     : "[MCTS] Cache MISS! Albero resettato.");
 
 
         // 2. Lancia la ricerca MCTS dalla radice corretta (quella riutilizzata o una nuova).
