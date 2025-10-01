@@ -26,7 +26,7 @@ namespace Thanos.SourceGen;
 ///     removing them eliminates these costs for a net gain in throughput and latency.
 ///     ===================================================================================
 /// </remarks>
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip, Converters = [typeof(JsonStringEnumConverter)])]
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip)]
 [JsonSerializable(typeof(Request))]
 public partial class ThanosSerializerContext : JsonSerializerContext;
 
