@@ -7,7 +7,7 @@ namespace Thanos.War;
 /// <summary>
 ///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
 /// </summary>
-public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, Dictionary<Guid, int> map)
+public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, Dictionary<string, int> map)
 {
     public readonly SnakesSystem System = system;
     

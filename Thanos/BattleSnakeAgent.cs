@@ -16,7 +16,7 @@ public sealed class BattleSnakeAgent : IDisposable
     private readonly SlotMemoryPool _slotPool;
 
     private int _lastChosenIndex;
-    private Dictionary<Guid, int> _snakeIdMap = new();
+    private Dictionary<string, int> _snakeIdMap = new();
 
     public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
@@ -97,11 +97,11 @@ public sealed class BattleSnakeAgent : IDisposable
     {
     }
 
-    private static Dictionary<Guid, int> BuildIdMap(in Request request)
+    private static Dictionary<string, int> BuildIdMap(in Request request)
     {
         var myId = request.You.Id;
 
-        var snakeIdMap = new Dictionary<Guid, int>
+        var snakeIdMap = new Dictionary<string, int>
         {
             [myId] = 0
         };

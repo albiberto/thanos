@@ -107,15 +107,15 @@ public readonly struct Board(int height, int width, ushort[] food, ushort[] haza
 }
 
 [method: JsonConstructor]
-public readonly struct You(Guid id)
+public readonly struct You(string id)
 {
-    [JsonPropertyName("id")] public Guid Id { get; } = id;
+    [JsonPropertyName("id")] public string Id { get; } = id;
 }
 
 [method: JsonConstructor]
-public readonly struct Snake(Guid id, byte health, ushort[] body)
+public readonly struct Snake(string id, byte health, ushort[] body)
 {
-    [JsonPropertyName("id")] public Guid Id { get; } = id;
+    [JsonPropertyName("id")] public string Id { get; } = id;
     [JsonPropertyName("health")] public byte Health { get; } = health;
     [JsonPropertyName("body")] public ushort[] Body { get; } = body;
 

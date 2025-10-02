@@ -12,9 +12,9 @@ public sealed unsafe class SlotMemoryPool : IDisposable
 
     private MemoryLayout _layout;
     private LutPointers _lutPointers;
-    private Dictionary<Guid, int> _map;
+    private Dictionary<string, int> _map;
 
-    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, LutPointers? lutPointers = null, Dictionary<Guid, int>? map = null, int area = 0)
+    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, LutPointers? lutPointers = null, Dictionary<string, int>? map = null, int area = 0)
     {
         _maxSlots = maxSlots;
 
@@ -70,7 +70,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         // grid = new Grid(_area, foodBitboardMemory, hazardsBitboardMemory, snakesBitboardMemory, neighborsMemory);
     }
 
-    public void Set(in MemoryLayout layout, LutPointers lutPointers, Dictionary<Guid, int> map, int area)
+    public void Set(in MemoryLayout layout, LutPointers lutPointers, Dictionary<string, int> map, int area)
     {
         _layout = layout;
         _lutPointers = lutPointers;
