@@ -35,7 +35,7 @@ public class Engine
 
             ref var rootNode = ref _nodePool[1]; // Usa l'indice 0
             rootNode.PlacementRoot(-1, Moves.None, _rootHash);
-            
+
             _rootIndex = 1;
         }
         else
@@ -50,7 +50,7 @@ public class Engine
         var stopwatch = Stopwatch.StartNew();
         var counter = 0;
         while (stopwatch.ElapsedMilliseconds < 450) // Limite di tempo per l'iterazione
-        // while (counter < 10000)
+            // while (counter < 10000)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
@@ -71,54 +71,55 @@ public class Engine
     }
 
     /// <summary>
-        ///    Tenta di trovare un nodo nell'albero precedente che corrisponda allo stato attuale.
-        ///    Se lo trova, lo promuove a nuova radice; altrimenti, resetta l'albero.
-        /// </summary>
-        /// <returns>True se l'albero è stato riutilizzato, false se è stato resettato.</returns>
-        public bool PrepareNextTurn(int lastChosenIndex, long currentBoardHash)
+    ///    Tenta di trovare un nodo nell'albero precedente che corrisponda allo stato attuale.
+    ///    Se lo trova, lo promuove a nuova radice; altrimenti, resetta l'albero.
+    /// </summary>
+    /// <returns>True se l'albero è stato riutilizzato, false se è stato resettato.</returns>
+    public bool PrepareNextTurn(int lastChosenIndex, long currentBoardHash)
+    {
+        // Ora il metodo può operare correttamente sul nodo corretto
+        // se lastChosenIndex è un valore valido.
+
+        // Se non abbiamo una radice precedente, non possiamo riutilizzare nulla.
+        if (lastChosenIndex == 0) return false;
+
+        // Cerca un figlio della vecchia radice che abbia l'hash dello stato corrente.
+        var childIndex = _nodePool[_rootIndex].FirstChildIndex;
+        while (childIndex != -1)
         {
-            // Ora il metodo può operare correttamente sul nodo corretto
-            // se lastChosenIndex è un valore valido.
-    
-            // Se non abbiamo una radice precedente, non possiamo riutilizzare nulla.
-            if (lastChosenIndex == 0) return false;
-            
-            // Cerca un figlio della vecchia radice che abbia l'hash dello stato corrente.
-            var childIndex = _nodePool[_rootIndex].FirstChildIndex;
-            while (childIndex != -1)
+            ref var childNode = ref _nodePool[childIndex];
+            if (childNode.Hash == currentBoardHash)
             {
-                ref var childNode = ref _nodePool[childIndex];
-                if (childNode.Hash == currentBoardHash)
-                {
-                    // Trovato! Promuoviamo questo nodo a nuova radice.
-                    _rootIndex = childIndex;
-                    ref var newRoot = ref _nodePool[_rootIndex];
-                    
-                    // Rimuoviamo il genitore per segnalare che ora è la radice.
-                    newRoot.ParentIndex = -1;
-                    
-                        // Resetta esplicitamente la generazione a 0.
-                        // Questa è la modifica più importante per la logica di riutilizzo.
-                        newRoot.Generation = 0; 
-                    
-                    // Comunichiamo al worker il nuovo ID di partenza per le allocazioni.
-                    // Questa è la parte più complessa e richiede una scansione dell'albero per trovare il maxID.
-                    // Per un'implementazione semplice, puoi continuare a contare sequenzialmente,
-                    // accettando un po' di spreco di memoria. Un'opzione migliore è mantenere un conteggio
-                    // massimo o cercare l'ID più alto, ma questo rallenterebbe il turno.
-                    _worker.Reset(_worker.GetMaxId(_rootIndex) + 1);
-                    // _worker.Reset(_worker.GetNextId()); // Opzione più semplice (ma meno efficiente)
-                    
-                    // Aggiorniamo anche il nostro hash di radice per il prossimo controllo.
-                    _rootHash = currentBoardHash;
-                    
-                    return true;
-                }
-                childIndex = childNode.NextSiblingIndex;
+                // Trovato! Promuoviamo questo nodo a nuova radice.
+                _rootIndex = childIndex;
+                ref var newRoot = ref _nodePool[_rootIndex];
+
+                // Rimuoviamo il genitore per segnalare che ora è la radice.
+                newRoot.ParentIndex = -1;
+
+                // Resetta esplicitamente la generazione a 0.
+                // Questa è la modifica più importante per la logica di riutilizzo.
+                newRoot.Generation = 0;
+
+                // Comunichiamo al worker il nuovo ID di partenza per le allocazioni.
+                // Questa è la parte più complessa e richiede una scansione dell'albero per trovare il maxID.
+                // Per un'implementazione semplice, puoi continuare a contare sequenzialmente,
+                // accettando un po' di spreco di memoria. Un'opzione migliore è mantenere un conteggio
+                // massimo o cercare l'ID più alto, ma questo rallenterebbe il turno.
+                _worker.Reset(_worker.GetMaxId(_rootIndex) + 1);
+                // _worker.Reset(_worker.GetNextId()); // Opzione più semplice (ma meno efficiente)
+
+                // Aggiorniamo anche il nostro hash di radice per il prossimo controllo.
+                _rootHash = currentBoardHash;
+
+                return true;
             }
-            
-            // Hash non corrispondente o nodo non trovato, quindi resetta.
-            Reset();
-            return false;
+
+            childIndex = childNode.NextSiblingIndex;
         }
+
+        // Hash non corrispondente o nodo non trovato, quindi resetta.
+        Reset();
+        return false;
+    }
 }

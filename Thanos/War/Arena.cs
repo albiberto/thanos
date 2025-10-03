@@ -10,11 +10,11 @@ namespace Thanos.War;
 public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, Dictionary<string, int> map)
 {
     public readonly SnakesSystem System = system;
-    
+
     public readonly Bitboard Food = food;
     public readonly Bitboard Hazards = hazards;
     public readonly Bitboard Snakes = snakes;
-    
+
     private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
 
     /// <summary>
@@ -102,9 +102,9 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         // --- FASE 2: Aggiornamento dello Stato Interno del Serpente ---
         // Questi aggiornamenti non influenzano la griglia generale fino alla fine del tick.
         snake.UpdateAfterMove(newHead, newTail, hasEaten, damage);
-    
+
         // Rimuoviamo il serpente dalla griglia principale in preparazione per il riposizionamento.
-        Snakes.Xor(snake.Body); 
+        Snakes.Xor(snake.Body);
     }
 
     public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
@@ -135,17 +135,11 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         // ma per sicurezza restituiamo la vecchia coda.
         return oldTail;
     }
-    
-    public ushort GetNewHeadPosition(ushort head, byte move)
-{
-    return _neighborsGrid.Get(head, move);
-}
 
-public bool IsValidPosition(ushort pos)
-{
-    return NeighborsGrid.IsValid(pos);
-}
-    
+    public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
+
+    public bool IsValidPosition(ushort pos) => NeighborsGrid.IsValid(pos);
+
     /// <summary>
     /// Simula lo spawn casuale del cibo usando l'istanza statica e thread-safe Random.Shared.
     /// </summary>
@@ -159,10 +153,7 @@ public bool IsValidPosition(ushort pos)
         for (var i = 0; i < foodToSpawn; i++)
         {
             var spawnLocation = GetRandomEmptySquare();
-            if (NeighborsGrid.IsValid(spawnLocation))
-            {
-                Food.Set(spawnLocation);
-            }
+            if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
 
         // 3. Tenta la fortuna con "foodSpawnChance"
@@ -170,10 +161,7 @@ public bool IsValidPosition(ushort pos)
         if (Random.Shared.Next(0, 100) < foodSpawnChance)
         {
             var spawnLocation = GetRandomEmptySquare();
-            if (NeighborsGrid.IsValid(spawnLocation))
-            {
-                Food.Set(spawnLocation);
-            }
+            if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
     }
 
@@ -185,15 +173,11 @@ public bool IsValidPosition(ushort pos)
     {
         for (var i = 0; i < 20; i++)
         {
-            // NOTA: La chiamata ora usa Random.Shared
             var potentialSpot = (ushort)Random.Shared.Next(0, _neighborsGrid.Area);
-            
-            if (Snakes.IsUnset(potentialSpot))
-            {
-                return potentialSpot;
-            }
+
+            if (Snakes.IsUnset(potentialSpot)) return potentialSpot;
         }
-        
+
         return ushort.MaxValue;
     }
 }

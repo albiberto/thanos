@@ -7,34 +7,25 @@ namespace Thanos.War;
 
 public static class HeuristicsConstants
 {
-    // La sopravvivenza è la priorità. Un valore alto qui è corretto.
     public const float SpaceWeight = 10.5f;
 
-    // NUOVO: Un piccolo bonus per ogni punto salute. Controbilancia la perdita di "urgenza".
     public const float HealthWeight = 0.5f;
-
-    // Ora che premiamo direttamente la salute, il peso del cibo può essere molto più basso.
-    // Agisce come un incentivo, non come un comando assoluto.
     public const float FoodWeight = 0.6f;
-    
-    // Il resto rimane valido per il controllo tattico
+
     public const float CenterBonusValue = 15.0f;
     public const float BorderPenaltyValue = -100.0f;
-    
-    // Questa costante non è più usata nella logica "sempre attiva"
-    // public const int HealthThreshold = 55;
 }
 
 public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
 {
     private readonly SnakesSystem _system = system;
-    
+
     private readonly Bitboard _food = food;
     private readonly Bitboard _hazards = hazards;
     private readonly Bitboard _snakes = snakes;
-    
+
     private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
-    
+
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
     private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
 
@@ -43,20 +34,13 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     public float Outcome()
     {
         var me = _system.Me;
-        if (me.IsDead) return -1.0f; // My snake is dead, this path is a loss.
+        if (me.IsDead) return -1.0f;
 
-        // Check if any other snakes are still alive.
-        for (int i = 1; i < _system.Count; i++)
-        {
+        for (var i = 1; i < _system.Count; i++)
             if (!_system[i].IsDead)
-            {
-                return 0.0f; // There are still opponents, the game is not over.
-            }
-        }
+                return 0.0f;
 
-        // If we've reached here, all opponents are dead.
-        // We are the last snake standing, this is a victory.
-        return 1.0f; 
+        return 1.0f;
     }
 
     public float Evaluate()
@@ -66,18 +50,19 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
         var head = me.Head;
         if (head >= _positionalScores.Length) return float.NegativeInfinity;
-    
+
         var health = me.HP;
         var score = 0.0f;
-        
+
         // --- PENALITÀ DINAMICA PER TRAPPOLE ---
         var openExits = 0;
-        var currentWalls = _snakes; 
+        var currentWalls = _snakes;
         foreach (var move in AllMovesArray)
         {
             var neighbor = _neighborsGrid.Get(head, move);
             if (NeighborsGrid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
         }
+
         switch (openExits)
         {
             case <= 1:
@@ -124,12 +109,11 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         return score;
     }
 
-// --- Euristiche di Supporto ---
-/// <summary>
-///     Calcola l'incentivo al cibo trovando la distanza minima in modo super-performante
-///     usando la LUT per le coordinate.
-/// </summary>
-private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
+    /// <summary>
+    ///     Calcola l'incentivo al cibo trovando la distanza minima in modo super-performante
+    ///     usando la LUT per le coordinate.
+    /// </summary>
+    private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
     {
         var distance = int.MaxValue;
 
@@ -164,17 +148,15 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
         // A 100 HP, l'urgenza è 1. A 10 HP, l'urgenza è 91.
         // Scala in modo molto più naturale e prevedibile.
         // Usiamo 101 per evitare divisioni per zero se la salute fosse 101.
-        var urgency = 101.0f - health; 
-    
+        var urgency = 101.0f - health;
+
         return urgency / distance;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Abs(int n)
     {
-        // Maschera con tutti i bit a 1 se n è negativo, 0 se positivo
         var mask = n >> 31;
-        // (n XOR mask) - mask
         return (n + mask) ^ mask;
     }
 
@@ -186,68 +168,60 @@ private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnl
     /// <param name="walls">Una Bitboard che rappresenta tutti gli ostacoli.</param>
     /// <returns>Il numero di caselle accessibili.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [SkipLocalsInit] // Ottimizzazione: dice al compilatore di non inizializzare a zero lo stack
-private int FloodFill(ushort startNode, in Bitboard walls)
-{
-    // Uscita anticipata: se partiamo da un muro, lo spazio è zero.
-    if (walls.IsSet(startNode))
+    [SkipLocalsInit]
+    private int FloodFill(ushort startNode, in Bitboard walls)
     {
-        return 0;
-    }
+        // Uscita anticipata: se partiamo da un muro, lo spazio è zero.
+        if (walls.IsSet(startNode)) return 0;
 
-    // --- Allocazione della memoria di lavoro esclusivamente sullo STACK ---
+        // Definiamo una dimensione massima sicura per le strutture dati. 256 copre fino a 16x16.
+        const int MaxStackSize = 256;
+        const int BitboardMemorySize = MaxStackSize / 8; // 32 byte per 256 bit
 
-    // Definiamo una dimensione massima sicura per le strutture dati. 256 copre fino a 16x16.
-    const int MaxStackSize = 256;
-    const int BitboardMemorySize = MaxStackSize / 8; // 32 byte per 256 bit
+        // Stack per l'algoritmo Depth-First Search.
+        Span<ushort> stack = stackalloc ushort[MaxStackSize];
 
-    // Stack per l'algoritmo Depth-First Search.
-    Span<ushort> stack = stackalloc ushort[MaxStackSize];
+        // Memoria per la bitboard che tiene traccia delle caselle già visitate.
+        Span<byte> visitedMemory = stackalloc byte[BitboardMemorySize];
+        visitedMemory.Clear(); // FONDAMENTALE: azzera la memoria per evitare "false visite".
 
-    // Memoria per la bitboard che tiene traccia delle caselle già visitate.
-    Span<byte> visitedMemory = stackalloc byte[BitboardMemorySize];
-    visitedMemory.Clear(); // FONDAMENTALE: azzera la memoria per evitare "false visite".
+        // Creiamo la bitboard "visited" come una vista sulla memoria appena allocata.
+        var visited = new Bitboard(visitedMemory);
 
-    // Creiamo la bitboard "visited" come una vista sulla memoria appena allocata.
-    var visited = new Bitboard(visitedMemory);
+        // --- Inizializzazione dell'algoritmo ---
 
-    // --- Inizializzazione dell'algoritmo ---
-    
-    stack[0] = startNode;
-    int stackPointer = 1; // Punta al prossimo slot libero
-    
-    visited.Set(startNode);
-    int count = 1;
+        stack[0] = startNode;
+        var stackPointer = 1; // Punta al prossimo slot libero
 
-    // --- Ciclo principale della ricerca ---
+        visited.Set(startNode);
+        var count = 1;
 
-    while (stackPointer > 0)
-    {
-        // "Pop" manuale del nodo corrente dallo stack.
-        var current = stack[--stackPointer];
+        // --- Ciclo principale della ricerca ---
 
-        // Itera sulle 4 possibili mosse invece di scrivere codice ripetuto.
-        // Usa l'array statico già presente nella struct Heuristics.
-        foreach (var move in AllMovesArray)
+        while (stackPointer > 0)
         {
-            var neighbor = _neighborsGrid.Get(current, move);
+            // "Pop" manuale del nodo corrente dallo stack.
+            var current = stack[--stackPointer];
 
-            // Condizione unica e pulita per scartare un vicino:
-            // - Se non è valido (fuori mappa, ushort.MaxValue)
-            // - Se è un muro (un altro serpente)
-            // - Se lo abbiamo già visitato
-            if (!NeighborsGrid.IsValid(neighbor) || walls.IsSet(neighbor) || visited.IsSet(neighbor))
+            // Itera sulle 4 possibili mosse invece di scrivere codice ripetuto.
+            // Usa l'array statico già presente nella struct Heuristics.
+            foreach (var move in AllMovesArray)
             {
-                continue;
+                var neighbor = _neighborsGrid.Get(current, move);
+
+                // Condizione unica e pulita per scartare un vicino:
+                // - Se non è valido (fuori mappa, ushort.MaxValue)
+                // - Se è un muro (un altro serpente)
+                // - Se lo abbiamo già visitato
+                if (!NeighborsGrid.IsValid(neighbor) || walls.IsSet(neighbor) || visited.IsSet(neighbor)) continue;
+
+                // Se il vicino è valido, lo visitiamo e lo aggiungiamo allo stack.
+                visited.Set(neighbor);
+                stack[stackPointer++] = neighbor; // "Push"
+                count++;
             }
-
-            // Se il vicino è valido, lo visitiamo e lo aggiungiamo allo stack.
-            visited.Set(neighbor);
-            stack[stackPointer++] = neighbor; // "Push"
-            count++;
         }
-    }
 
-    return count;
-}
+        return count;
+    }
 }
