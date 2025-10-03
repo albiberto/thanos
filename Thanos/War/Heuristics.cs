@@ -51,30 +51,16 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         var head = me.Head;
         if (head >= _positionalScores.Length) return float.NegativeInfinity;
 
+        var myLength = me.Length;
         var health = me.HP;
         var score = 0.0f;
 
-        // --- PENALITÀ DINAMICA PER TRAPPOLE ---
-        var openExits = 0;
-        var currentWalls = _snakes;
-        foreach (var move in AllMovesArray)
-        {
-            var neighbor = _neighborsGrid.Get(head, move);
-            if (NeighborsGrid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
-        }
+        score -= Head2HeadCollision(myLength, head);
 
-        switch (openExits)
-        {
-            case <= 1:
-                score -= 750.0f;
-                break;
-            case 2:
-                score -= 200.0f;
-                break;
-        }
+        // --- PENALITÀ DINAMICA PER TRAPPOLE ---
+        score -= PenalityTrap(head);
 
         // --- NUOVA EURISTICA: PREMIO PER LA SALUTE ---
-        // Ricompensa direttamente lo stato di essere sani.
         score += health * HeuristicsConstants.HealthWeight;
 
         // --- EURISTICA DELLO SPAZIO (Flood Fill) ---
@@ -86,27 +72,54 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         var mySpace = FloodFill(head, simulatedWalls);
         score += mySpace * HeuristicsConstants.SpaceWeight;
 
-        // // --- EURISTICA POSIZIONALE (Statica) ---
-        // // QUESTA RIGA MANCAVA NEL TUO CODICE PRECEDENTE. È IMPORTANTE REINSERIRLA.
-        // score += _positionalScores[head];
-        //
-        // // --- PENALITÀ DINAMICA PER TRAPPOLE ---
-        // int openExits = 0;
-        // var currentWalls = _grid.Snakes; 
-        // foreach (var move in AllMovesArray)
-        // {
-        //     var neighbor = _grid.GetNeighbor(head, move);
-        //     if (Grid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
-        // }
-        // if (openExits <= 1) score -= 750.0f; 
-        // else if (openExits == 2) score -= 200.0f;
-
         // --- EURISTICA DEL CIBO ---
         var foodBitboard = _food.Memory;
         var headCoord = _conversionsMap[head];
         score += HeuristicsConstants.FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
 
         return score;
+    }
+
+    private float PenalityTrap(ushort head)
+    {
+        var openExits = 0;
+        var currentWalls = _snakes;
+        foreach (var move in AllMovesArray)
+        {
+            var neighbor = _neighborsGrid.Get(head, move);
+            if (NeighborsGrid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
+        }
+
+        return openExits switch
+        {
+            <= 1 => 750.0f,
+            2 => 200.0f,
+            _ => 0
+        };
+    }
+
+    private float Head2HeadCollision(ushort myLength, ushort head)
+    {
+        for (var i = 1; i < _system.Count; i++)
+        {
+            var enemy = _system[i];
+
+            // Ignora i serpenti morti o più corti di noi (non possono vincere uno scontro diretto).
+            if (enemy.IsDead || enemy.Length < myLength) continue;
+
+            var enemyHead = enemy.Head;
+
+            // Controlla le 4 caselle adiacenti alla nostra testa.
+            if (_neighborsGrid.Get(head, Moves.Up) == enemyHead ||
+                _neighborsGrid.Get(head, Moves.Down) == enemyHead ||
+                _neighborsGrid.Get(head, Moves.Left) == enemyHead ||
+                _neighborsGrid.Get(head, Moves.Right) == enemyHead)
+                // Applica una penalità schiacciante. Questo rende la mossa
+                // che porta a questa situazione estremamente indesiderabile.
+                return 25000.0f;
+        }
+
+        return 0.0f;
     }
 
     /// <summary>
