@@ -19,4 +19,13 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="publish\web.config" />
+      <_ContentIncludedByDefault Remove="publish\appsettings.json" />
+      <_ContentIncludedByDefault Remove="publish\Http\payload.json" />
+      <_ContentIncludedByDefault Remove="publish\Thanos.deps.json" />
+      <_ContentIncludedByDefault Remove="publish\Thanos.runtimeconfig.json" />
+      <_ContentIncludedByDefault Remove="publish\Thanos.staticwebassets.endpoints.json" />
+    </ItemGroup>
+
 </Project>
