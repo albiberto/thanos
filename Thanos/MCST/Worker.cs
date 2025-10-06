@@ -112,8 +112,16 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
         foreach (var move in safeMoves)
         {
+            // FIX: Aggiungi questo controllo per prevenire la corruzione della memoria
+            if (_nextId >= Constants.MaxNodes - 1)
+            {
+                Console.WriteLine("[MCTS] Limite massimo di nodi raggiunto, interrompendo l'espansione.");
+                break; 
+            }
+
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
+        
             childArena.CloneFrom(in parentArena);
 
             // Applica la mossa del singolo giocatore e aggiorna lo stato.
