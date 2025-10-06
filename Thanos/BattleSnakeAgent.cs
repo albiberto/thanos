@@ -37,10 +37,13 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void Start(in Request request)
     {
+        Console.WriteLine("\n================ NEW GAME STARTING ================");
         _lastChosenIndex = 0;
         
         var width = request.Board.Width;
         var area = request.Board.Area;
+        Console.WriteLine($"[Agent.Start] Game started on a {width}x{request.Board.Height} board (Area: {area}).");
+
 
         var luts = _lutProvider[area];
         _snakeIdMap = BuildIdMap(in request);
@@ -52,6 +55,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public byte Move(in Request request)
     {
+        Console.WriteLine($"\n--- Turn {request.Turn} ---");
         // Calcola l'hash dello stato di gioco reale.
         // Viene usato uno slot temporaneo (0) solo per l'hash, non per l'albero.
         var realBoardArena = _slotPool.GetArena(0); 
@@ -59,31 +63,28 @@ public sealed class BattleSnakeAgent : IDisposable
         
         // Per un hashing stabile, utilizza la mappa degli ID dei serpenti.
         var realHash = ZobristHasher.CalculateHash(in realBoardArena);
+        Console.WriteLine($"[Agent.Move] Current board hash: {realHash}");
         
         // 1. Tenta di riutilizzare l'albero del turno precedente.
-        // Il metodo PrepareNextTurn dell'Engine si occuperà di trovare il nodo corretto
-        // nell'albero basato sull'hash o di resettare se non lo trova.
         var isTreeReused = _engine.PrepareNextTurn(_lastChosenIndex, realHash);
 
-        // Usa il valore di ritorno per il log di debug
+        // LOGGING: Usa il log già presente in Engine, ma se vuoi puoi decommentarlo anche qui
         // Console.WriteLine(isTreeReused 
-        //     ? "[MCTS] Cache HIT! Albero riutilizzato per il turno corrente." 
-        //     : "[MCTS] Cache MISS! Albero resettato.");
+        //     ? "[Agent.Move] MCTS tree successfully reused." 
+        //     : "[Agent.Move] MCTS tree could not be reused.");
 
 
-        // 2. Lancia la ricerca MCTS dalla radice corretta (quella riutilizzata o una nuova).
+        // 2. Lancia la ricerca MCTS dalla radice corretta.
         var bestIndex = _engine.FindBestMove(in request);
     
         // Gestisce il caso in cui nessuna mossa valida è stata trovata.
         if (bestIndex == -1)
         {
-            // Questo è un fallback critico. Se l'MCTS non ha trovato un nodo valido
-            // (es. perché tutte le mosse portano a morte istantanea),
-            // è necessario restituire una mossa di emergenza.
+            Console.WriteLine("[Agent.Move] CRITICAL: Engine returned no valid moves. Throwing exception.");
             throw new InvalidOperationException("Nessuna mossa valida trovata dall'MCTS.");
         }
     
-        // 3. Salva l'indice del nodo scelto per poterlo riutilizzare nel prossimo turno.
+        // 3. Salva l'indice del nodo scelto per il prossimo turno.
         _lastChosenIndex = bestIndex; 
     
         // 4. Recupera la mossa dal nodo migliore e la restituisce.
@@ -93,8 +94,9 @@ public sealed class BattleSnakeAgent : IDisposable
         return move;
     }
 
-    public void End(in Request _)
+    public void End(in Request request)
     {
+         Console.WriteLine($"================ GAME ENDED AT TURN {request.Turn} ================\n");
     }
 
     private static Dictionary<string, int> BuildIdMap(in Request request)
@@ -107,6 +109,13 @@ public sealed class BattleSnakeAgent : IDisposable
         };
 
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) snakeIdMap[snake.Id] = snakeIdMap.Count;
+
+        // LOGGING
+        Console.WriteLine("[Agent.BuildIdMap] Snake ID to Index mapping created:");
+        foreach(var entry in snakeIdMap)
+        {
+            Console.WriteLine($"  -> ID: {entry.Key} => Index: {entry.Value}");
+        }
 
         return snakeIdMap;
     }

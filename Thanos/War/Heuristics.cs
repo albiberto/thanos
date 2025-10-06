@@ -54,6 +54,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         var myLength = me.Length;
         var health = me.HP;
         var score = 0.0f;
+        
+        score += _positionalScores[head];
 
         score -= Head2HeadCollision(myLength, head);
 

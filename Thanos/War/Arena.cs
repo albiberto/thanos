@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
+using System.Text; // Aggiunto per StringBuilder
 
 namespace Thanos.War;
 
@@ -25,22 +26,17 @@ public readonly ref struct Arena(
     private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
 
-    /// <summary>
-    /// NUOVO: Proprietà per accedere comodamente al giocatore di turno,
-    /// il cui stato è memorizzato in SnakesSystem.
-    /// </summary>
     public int PlayerToMoveIndex
     {
         get => System.PlayerToMoveIndex;
         set => System.PlayerToMoveIndex = value;
     }
 
-    /// <summary>
-    ///     Inizializza lo stato dell'arena (usando "Placement New")
-    ///     basandosi su una richiesta di configurazione di gioco.
-    /// </summary>
     public void InitializeFromRequest(in Request request)
     {
+        // LOGGING: Annuncia l'inizializzazione
+        Console.WriteLine($"[Arena] Initializing from request for turn {request.Turn}. Snakes: {request.Board.Snakes.Length}, Food: {request.Board.Food.Length}.");
+
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
@@ -51,32 +47,28 @@ public readonly ref struct Arena(
 
         foreach (var snakeData in board.Snakes)
         {
-            var snakeIndex = map[snakeData.Id];
-            var snake = System[snakeIndex];
-            snake.Initialize(snakeData.Health, snakeData.Body);
-            Snakes.Or(snake.Body);
+            if (map.TryGetValue(snakeData.Id, out var snakeIndex))
+            {
+                var snake = System[snakeIndex];
+                snake.Initialize(snakeData.Health, snakeData.Body);
+                Snakes.Or(snake.Body);
+            }
         }
 
         foreach (var foodPosition in board.Food) Food.Set(foodPosition);
         foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
         
-        // NUOVA AGGIUNTA: Imposta il turno iniziale al nostro serpente (ID 0).
         this.PlayerToMoveIndex = 0;
     }
 
-    /// <summary>
-    ///     MODIFICATO: Clona l'INTERO stato di un'altra Arena in questa istanza.
-    ///     Questa operazione è fondamentale per il corretto funzionamento dell'MCTS.
-    /// </summary>
     public void CloneFrom(in Arena source)
     {
-        // 1. Copia lo stato grezzo dei serpenti e l'indice del giocatore
+        // LOGGING: Annuncia la clonazione
+        Console.WriteLine("[Arena] Cloning state from another Arena.");
+        
         source.System.Raw.CopyTo(System.Raw);
         this.PlayerToMoveIndex = source.PlayerToMoveIndex;
 
-        // 2. Copia lo stato della scacchiera (Bitboards)
-        // Assumendo che esista un metodo CopyTo per le Bitboard.
-        // Se sono struct, un'assegnazione diretta (es. this.Food = source.Food) potrebbe funzionare.
         source.Food.CopyTo(this.Food);
         source.Hazards.CopyTo(this.Hazards);
         source.Snakes.CopyTo(this.Snakes);
@@ -89,12 +81,26 @@ public readonly ref struct Arena(
         byte legalMoves = 0;
         var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
         if (NeighborsGrid.IsValid(upPos) && !Snakes.IsSet(upPos)) legalMoves |= Moves.Up;
+        
         var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
         if (NeighborsGrid.IsValid(downPos) && !Snakes.IsSet(downPos)) legalMoves |= Moves.Down;
+        
         var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
         if (NeighborsGrid.IsValid(leftPos) && !Snakes.IsSet(leftPos)) legalMoves |= Moves.Left;
+        
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
         if (NeighborsGrid.IsValid(rightPos) && !Snakes.IsSet(rightPos)) legalMoves |= Moves.Right;
+
+        // LOGGING: Mostra le mosse legali calcolate
+        var logBuilder = new StringBuilder();
+        logBuilder.Append($"[GetLegalMoves] Head at {headPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
+        if ((legalMoves & Moves.Up) != 0) logBuilder.Append("Up ");
+        if ((legalMoves & Moves.Down) != 0) logBuilder.Append("Down ");
+        if ((legalMoves & Moves.Left) != 0) logBuilder.Append("Left ");
+        if ((legalMoves & Moves.Right) != 0) logBuilder.Append("Right ");
+        logBuilder.Append(")");
+        Console.WriteLine(logBuilder.ToString());
+        
         return legalMoves;
     }
 
@@ -159,11 +165,9 @@ public readonly ref struct Arena(
     
     public int ManhattanDistance(ushort pos1, ushort pos2)
     {
-        // Ottieni le coordinate 2D precalcolate dalla mappa.
         ref readonly var coord1 = ref _conversionsMap[pos1];
         ref readonly var coord2 = ref _conversionsMap[pos2];
 
-        // Calcola e restituisci la distanza.
         return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
     }
 }

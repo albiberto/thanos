@@ -2,6 +2,7 @@
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
+using System.Text; // Aggiunto per StringBuilder
 
 namespace Thanos.MCST;
 
@@ -26,6 +27,7 @@ public class Engine
         // Se _rootIndex è 0, significa che siamo al primo turno o c'è stato un reset. Dobbiamo creare la radice da zero.
         if (_rootIndex == 0)
         {
+            Console.WriteLine("[Engine] Creating new MCTS tree from scratch.");
             _worker.Reset(1, request.Game.Ruleset.Settings);
 
             var rootArena = _slotPool.GetArena(1);
@@ -33,7 +35,7 @@ public class Engine
 
             _rootHash = ZobristHasher.CalculateHash(rootArena);
 
-            ref var rootNode = ref _nodePool[1]; // Usa l'indice 0
+            ref var rootNode = ref _nodePool[1]; // Usa l'indice 1 come radice
             rootNode.PlacementRoot(-1, Moves.None, _rootHash);
 
             _rootIndex = 1;
@@ -43,6 +45,7 @@ public class Engine
             // Se siamo qui, PrepareNextTurn ha funzionato!
             // La radice è già impostata. Dobbiamo solo aggiornare il suo stato
             // con i dati reali della richiesta, perché quello attuale è simulato.
+            Console.WriteLine($"[Engine] Updating root node {_rootIndex} with new board state.");
             var rootSlot = _slotPool.GetArena(_rootIndex);
             rootSlot.InitializeFromRequest(in request);
         }
@@ -50,40 +53,57 @@ public class Engine
         var stopwatch = Stopwatch.StartNew();
         var counter = 0;
         while (stopwatch.ElapsedMilliseconds < 450) // Limite di tempo per l'iterazione
-            // while (counter < 10000)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
         }
+        stopwatch.Stop();
 
-        Console.WriteLine($"[MCE] Iterazioni completate: {counter}");
+        Console.WriteLine($"[MCE] Iterations completed: {counter} in {stopwatch.ElapsedMilliseconds}ms.");
 
         ref var finalRootNode = ref _nodePool[_rootIndex];
-
         var bestChildIndex = finalRootNode.SelectMostVisitedChild(_nodePool);
+
+        // LOGGING: Mostra le statistiche dei figli della radice prima di decidere
+        if (bestChildIndex != -1)
+        {
+            var logBuilder = new StringBuilder();
+            logBuilder.AppendLine($"[Engine] Decision Analysis for Root Node {_rootIndex} (Total Visits: {finalRootNode.Visits}):");
+            var childIndex = finalRootNode.FirstChildIndex;
+            while(childIndex != -1)
+            {
+                ref var childNode = ref _nodePool[childIndex];
+                logBuilder.AppendLine($"  -> Move: {ToApiMove(childNode.Move),-5} | Visits: {childNode.Visits,-7} | Win Rate: {(childNode.Wins / childNode.Visits):P2}");
+                childIndex = childNode.NextSiblingIndex;
+            }
+            ref var bestNode = ref _nodePool[bestChildIndex];
+            logBuilder.AppendLine($"[Engine] Best Move Selected: {ToApiMove(bestNode.Move)} with {bestNode.Visits} visits.");
+            Console.WriteLine(logBuilder.ToString());
+        }
+        else
+        {
+            Console.WriteLine("[Engine] CRITICAL: No valid child found from root node.");
+        }
+
+
         return bestChildIndex;
     }
 
     private void Reset()
     {
+        Console.WriteLine("[Engine] Resetting MCTS tree.");
         _rootIndex = 0;
         _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
     }
 
-    /// <summary>
-    ///    Tenta di trovare un nodo nell'albero precedente che corrisponda allo stato attuale.
-    ///    Se lo trova, lo promuove a nuova radice; altrimenti, resetta l'albero.
-    /// </summary>
-    /// <returns>True se l'albero è stato riutilizzato, false se è stato resettato.</returns>
     public bool PrepareNextTurn(int lastChosenIndex, long currentBoardHash)
     {
-        // Ora il metodo può operare correttamente sul nodo corretto
-        // se lastChosenIndex è un valore valido.
+        if (lastChosenIndex == 0)
+        {
+             Console.WriteLine("[Engine] Cannot reuse tree, no previous move exists.");
+             return false;
+        }
 
-        // Se non abbiamo una radice precedente, non possiamo riutilizzare nulla.
-        if (lastChosenIndex == 0) return false;
-
-        // Cerca un figlio della vecchia radice che abbia l'hash dello stato corrente.
         var childIndex = _nodePool[_rootIndex].FirstChildIndex;
         while (childIndex != -1)
         {
@@ -91,35 +111,36 @@ public class Engine
             if (childNode.Hash == currentBoardHash)
             {
                 // Trovato! Promuoviamo questo nodo a nuova radice.
+                Console.WriteLine($"[Engine] Cache HIT! Reusing subtree from node {childIndex}. New root.");
                 _rootIndex = childIndex;
                 ref var newRoot = ref _nodePool[_rootIndex];
-
-                // Rimuoviamo il genitore per segnalare che ora è la radice.
                 newRoot.ParentIndex = -1;
-
-                // Resetta esplicitamente la generazione a 0.
-                // Questa è la modifica più importante per la logica di riutilizzo.
                 newRoot.Generation = 0;
+                
+                var maxId = _worker.GetMaxId(_rootIndex);
+                _worker.Reset(maxId + 1);
+                 Console.WriteLine($"[Engine] Worker reset to start allocating from ID {maxId + 1}.");
 
-                // Comunichiamo al worker il nuovo ID di partenza per le allocazioni.
-                // Questa è la parte più complessa e richiede una scansione dell'albero per trovare il maxID.
-                // Per un'implementazione semplice, puoi continuare a contare sequenzialmente,
-                // accettando un po' di spreco di memoria. Un'opzione migliore è mantenere un conteggio
-                // massimo o cercare l'ID più alto, ma questo rallenterebbe il turno.
-                _worker.Reset(_worker.GetMaxId(_rootIndex) + 1);
-                // _worker.Reset(_worker.GetNextId()); // Opzione più semplice (ma meno efficiente)
-
-                // Aggiorniamo anche il nostro hash di radice per il prossimo controllo.
                 _rootHash = currentBoardHash;
-
                 return true;
             }
 
             childIndex = childNode.NextSiblingIndex;
         }
 
-        // Hash non corrispondente o nodo non trovato, quindi resetta.
+        Console.WriteLine("[Engine] Cache MISS! No matching child node found. Resetting tree.");
         Reset();
         return false;
     }
+        
+    // Metodo helper per convertire la mossa in stringa per i log
+    private static string ToApiMove(byte move) =>
+        move switch
+        {
+            Moves.Up => "up",
+            Moves.Down => "down",
+            Moves.Left => "left",
+            Moves.Right => "right",
+            _ => "none"
+        };
 }
