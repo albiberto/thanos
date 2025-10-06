@@ -9,29 +9,31 @@ public unsafe class MemoryLayoutBuilder(int area, int snakeCount)
 
     public MemoryLayout Build()
     {
-        // 1. Calcolo Blocco Headers (invariato)
+        // NUOVO: Definiamo lo spazio necessario per il nostro dato globale all'inizio.
+        const int playerToMoveIndexSize = sizeof(int);
+
+        // 1. Calcolo Blocco Headers
         var headerStride = sizeof(WarSnakeHeader);
         var headersTotalSize = (headerStride * snakeCount).AlignUp64();
-        var headersBaseOffset = 0;
+        // MODIFICATO: L'offset di base degli header non è più 0.
+        // Inizia subito dopo lo spazio che abbiamo riservato.
+        var headersBaseOffset = playerToMoveIndexSize;
 
-        // 2. Calcolo Blocco Bitboards (con il nuovo ordine)
+        // 2. Calcolo Blocco Bitboards
         var ulongsNeeded = (area + 63) / 64;
         var bitboardSize = ulongsNeeded * sizeof(ulong);
 
-        // Il numero totale di bitboard non cambia
-        var totalBitboards = LayoutConstants.GlobalBitboardCount + snakeCount + 1; // +1 per AllSnakes
+        var totalBitboards = LayoutConstants.GlobalBitboardCount + snakeCount + 1;
         var bitboardOffsets = new int[totalBitboards];
 
-        var bitboardsBaseOffset = headersTotalSize;
+        // MODIFICATO: L'offset di base dei bitboard ora tiene conto
+        // sia dello spazio per l'indice che della dimensione totale degli header.
+        var bitboardsBaseOffset = headersBaseOffset + headersTotalSize;
         var currentInternalOffset = 0;
-        var offsetIndex = 0; // Usiamo un indice separato per riempire l'array
+        var offsetIndex = 0;
 
-        // --- NUOVO ORDINE DI CALCOLO ---
-
-        // Funzione helper per evitare ripetizioni
         int AddBitboardOffset()
         {
-            // La logica di allineamento alla cache line è corretta e rimane
             var startCacheLine = currentInternalOffset / Constants.CacheLine;
             var endCacheLine = (currentInternalOffset + bitboardSize - 1) / Constants.CacheLine;
             if (startCacheLine != endCacheLine) currentInternalOffset = currentInternalOffset.AlignUp64();
@@ -40,18 +42,17 @@ public unsafe class MemoryLayoutBuilder(int area, int snakeCount)
             return absoluteOffset;
         }
 
-        // A. Prima i bitboard globali
-        bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // FoodBitboard
-        bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // HazardsBitboard
-        bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // AllSnakesBitboard
+        bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // Food
+        bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // Hazards
+        bitboardOffsets[offsetIndex++] = AddBitboardOffset(); // AllSnakes
 
-        // B. Poi tutti i bitboard dei singoli serpenti
         for (var i = 0; i < snakeCount; i++) bitboardOffsets[offsetIndex++] = AddBitboardOffset();
 
         var bitboardsTotalSize = currentInternalOffset;
 
-        // 3. Assemblaggio Finale (invariato)
-        var slotSize = headersTotalSize + bitboardsTotalSize;
+        // 3. Assemblaggio Finale
+        // MODIFICATO: La dimensione totale dello slot ora include lo spazio per l'indice.
+        var slotSize = playerToMoveIndexSize + headersTotalSize + bitboardsTotalSize;
         return new MemoryLayout(slotSize, headerStride, bitboardSize, headersBaseOffset, bitboardOffsets);
     }
 }

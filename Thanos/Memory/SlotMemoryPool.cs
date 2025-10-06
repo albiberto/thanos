@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
 
@@ -34,8 +35,12 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     public Arena GetArena(int index)
     {
         BuildViews(index, out var system, out var food, out var hazards, out var snakes, out var neighbors);
-       
-        return new Arena(system, food, hazards, snakes, neighbors, _map);
+    
+        // NUOVO: Crea la vista sulla mappa di conversione, proprio come in GetHeuristics.
+        var conversionsMapMemory = new ReadOnlySpan<Coordinate>(_lutPointers.ConversionsMapPtr, _lutPointers.ConversionsMapLength);
+   
+        // MODIFICATO: Passa la mappa di conversione al costruttore di Arena.
+        return new Arena(system, food, hazards, snakes, neighbors, _map, conversionsMapMemory);
     }
 
     public Heuristics GetHeuristics(int index)

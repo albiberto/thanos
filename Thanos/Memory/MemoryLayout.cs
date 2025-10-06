@@ -6,6 +6,10 @@ namespace Thanos.Memory;
 
 public readonly unsafe struct MemoryLayout(int slotSize, int headerStride, int bitboardSize, int headersBaseOffset, int[] bitboardOffsets)
 {
+    // NUOVO: Costante pubblica per sapere sempre dove si trova il nostro dato.
+    // Il builder lo piazzerà sempre a offset 0.
+    public const int PlayerToMoveIndexOffset = 0;
+
     public int SizeOfHeader => sizeof(WarSnakeHeader);
 
     public int SlotSize { get; } = slotSize.AlignUp64();

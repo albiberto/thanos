@@ -6,7 +6,6 @@ namespace Thanos.War;
 public readonly ref struct Bitboard(Span<byte> memory)
 {
     public readonly Span<ulong> Memory = MemoryMarshal.Cast<byte, ulong>(memory);
-
     public readonly ReadOnlySpan<byte> Raw = memory;
 
     public void Clear() => Memory.Clear();
@@ -47,5 +46,15 @@ public readonly ref struct Bitboard(Span<byte> memory)
         foreach (var chunk in this.Memory) count += BitOperations.PopCount(chunk);
         
         return count;
+    }
+    
+    /// <summary>
+    /// NUOVO: Esegue una copia profonda dei dati da questa Bitboard a un'altra.
+    /// Fondamentale per la clonazione dello stato nell'MCTS.
+    /// </summary>
+    public void CopyTo(Bitboard destination)
+    {
+        // Usa il metodo ottimizzato di Span<T> per copiare il contenuto della memoria.
+        this.Memory.CopyTo(destination.Memory);
     }
 }

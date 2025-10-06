@@ -18,12 +18,31 @@ public readonly ref struct SnakesSystem
     }
 
     public int Count { get; }
-
     public Span<byte> Raw => _memory;
-
     public WarSnake Me => this[0];
-
     public WarSnake this[int index] => Build(index);
+
+    /// <summary>
+    /// NUOVO: Proprietà per leggere e scrivere l'indice del giocatore di turno.
+    /// Manipola direttamente i primi 4 byte della memoria grezza.
+    /// </summary>
+    public int PlayerToMoveIndex
+    {
+        get
+        {
+            // Prende un riferimento all'inizio della memoria (offset 0).
+            ref var memoryLocationRef = ref MemoryMarshal.GetReference(_memory);
+            // Interpreta i byte a partire da quella locazione come un intero e lo restituisce.
+            return Unsafe.As<byte, int>(ref memoryLocationRef);
+        }
+        set
+        {
+            // Prende un riferimento all'inizio della memoria (offset 0).
+            ref var memoryLocationRef = ref MemoryMarshal.GetReference(_memory);
+            // Scrive il valore intero in quella locazione di memoria.
+            Unsafe.As<byte, int>(ref memoryLocationRef) = value;
+        }
+    }
 
     private WarSnake Build(int index)
     {

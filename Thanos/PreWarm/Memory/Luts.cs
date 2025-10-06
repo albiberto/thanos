@@ -1,4 +1,6 @@
-﻿public readonly unsafe struct LutPointers(void* nPtr, int nLen, void* pPtr, int pLen, void* cPtr, int cLen)
+﻿namespace Thanos.PreWarm.Memory;
+
+public readonly unsafe struct LutPointers(void* nPtr, int nLen, void* pPtr, int pLen, void* cPtr, int cLen)
 {
     public readonly void* NeighborsPtr = nPtr;
     public readonly int NeighborsLength = nLen; // Lunghezza in numero di elementi, non in byte
