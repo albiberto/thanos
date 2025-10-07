@@ -24,7 +24,7 @@ public static class Program
         {
             apiversion = "1",
             author = "Thanos",
-            color = "#8B0000",
+            color = "#00BFFF",
             head = "safe",
             tail = "round-bum"
         });

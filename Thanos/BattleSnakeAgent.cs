@@ -96,6 +96,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void End(in Request request)
     {
+        _engine.Reset();
          Console.WriteLine($"================ GAME ENDED AT TURN {request.Turn} ================\n");
     }
 

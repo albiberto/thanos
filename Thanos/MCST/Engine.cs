@@ -89,7 +89,7 @@ public class Engine
         return bestChildIndex;
     }
 
-    private void Reset()
+    public void Reset()
     {
         Console.WriteLine("[Engine] Resetting MCTS tree.");
         _rootIndex = 0;
