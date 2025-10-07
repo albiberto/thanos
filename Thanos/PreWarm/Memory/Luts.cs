@@ -1,13 +1,13 @@
 ﻿namespace Thanos.PreWarm.Memory;
 
-public readonly unsafe struct LutPointers(void* nPtr, int nLen, void* pPtr, int pLen, void* cPtr, int cLen)
+public readonly unsafe struct LookupPointers(void* neighborsPtr, int neighborsLenght, void* positionalScoresPtr, int positionalScoresLenght, void* conversionMapPtr, int conversionMapLenght)
 {
-    public readonly void* NeighborsPtr = nPtr;
-    public readonly int NeighborsLength = nLen; // Lunghezza in numero di elementi, non in byte
+    public readonly void* NeighborsPtr = neighborsPtr;
+    public readonly int NeighborsLength = neighborsLenght;
 
-    public readonly void* PositionalScoresPtr = pPtr;
-    public readonly int PositionalScoresLength = pLen;
+    public readonly void* PositionalScoresPtr = positionalScoresPtr;
+    public readonly int PositionalScoresLength = positionalScoresLenght;
 
-    public readonly void* ConversionsMapPtr = cPtr;
-    public readonly int ConversionsMapLength = cLen;
+    public readonly void* ConversionsMapPtr = conversionMapPtr;
+    public readonly int ConversionsMapLength = conversionMapLenght;
 }

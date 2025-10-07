@@ -12,15 +12,15 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     private int _area;
 
     private MemoryLayout _layout;
-    private LutPointers _lutPointers;
+    private LookupPointers _lookupPointers;
     private Dictionary<string, int> _map;
 
-    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, LutPointers? lutPointers = null, Dictionary<string, int>? map = null, int area = 0)
+    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, LookupPointers? lutPointers = null, Dictionary<string, int>? map = null, int area = 0)
     {
         _maxSlots = maxSlots;
 
         _layout = layout;
-        _lutPointers = lutPointers ?? default;
+        _lookupPointers = lutPointers ?? default;
         _area = area;
         _map = map ?? [];
 
@@ -36,10 +36,8 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     {
         BuildViews(index, out var system, out var food, out var hazards, out var snakes, out var neighbors);
     
-        // NUOVO: Crea la vista sulla mappa di conversione, proprio come in GetHeuristics.
-        var conversionsMapMemory = new ReadOnlySpan<Coordinate>(_lutPointers.ConversionsMapPtr, _lutPointers.ConversionsMapLength);
+        var conversionsMapMemory = new ReadOnlySpan<Coordinate>(_lookupPointers.ConversionsMapPtr, _lookupPointers.ConversionsMapLength);
    
-        // MODIFICATO: Passa la mappa di conversione al costruttore di Arena.
         return new Arena(system, food, hazards, snakes, neighbors, _map, conversionsMapMemory);
     }
 
@@ -47,8 +45,8 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     {
         BuildViews(index, out var system, out var food, out var hazards, out var snakes, out var neighbors);
 
-        var positionalScoresMemory = new ReadOnlySpan<float>(_lutPointers.PositionalScoresPtr, _lutPointers.PositionalScoresLength);
-        var conversionsMapMemory = new ReadOnlySpan<Coordinate>(_lutPointers.ConversionsMapPtr, _lutPointers.ConversionsMapLength);
+        var positionalScoresMemory = new ReadOnlySpan<float>(_lookupPointers.PositionalScoresPtr, _lookupPointers.PositionalScoresLength);
+        var conversionsMapMemory = new ReadOnlySpan<Coordinate>(_lookupPointers.ConversionsMapPtr, _lookupPointers.ConversionsMapLength);
 
         return new Heuristics(system, food, hazards, snakes, neighbors, conversionsMapMemory, positionalScoresMemory);
     }
@@ -65,21 +63,19 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         var foodBitboardMemory = memory.Slice(_layout.FoodBitboardOffset, _layout.BitboardSize);
         var hazardsBitboardMemory = memory.Slice(_layout.HazardsBitboardOffset, _layout.BitboardSize);
         var snakesBitboardMemory = memory.Slice(_layout.SnakesBitboardOffset, _layout.BitboardSize);
-        var neighborsMemory = new ReadOnlySpan<ushort>(_lutPointers.NeighborsPtr, _lutPointers.NeighborsLength);
+        var neighborsMemory = new ReadOnlySpan<ushort>(_lookupPointers.NeighborsPtr, _lookupPointers.NeighborsLength);
 
         food = new Bitboard(foodBitboardMemory);
         hazards = new Bitboard(hazardsBitboardMemory);
         snakes = new Bitboard(snakesBitboardMemory);
         neighbors = new NeighborsGrid(_area, neighborsMemory);
-        
-        // grid = new Grid(_area, foodBitboardMemory, hazardsBitboardMemory, snakesBitboardMemory, neighborsMemory);
     }
 
-    public void Set(in MemoryLayout layout, LutPointers lutPointers, Dictionary<string, int> map, int area)
+    public void Set(int area, LookupPointers lookupPointers, Dictionary<string, int> map, in MemoryLayout layout)
     {
-        _layout = layout;
-        _lutPointers = lutPointers;
-        _map = map;
         _area = area;
+        _lookupPointers = lookupPointers;
+        _map = map;
+        _layout = layout;
     }
 }

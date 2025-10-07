@@ -96,12 +96,11 @@ public class Engine
         _worker.Reset(1); // Resetta il worker per iniziare ad allocare dal prossimo ID disponibile.
     }
 
-    public bool PrepareNextTurn(int lastChosenIndex, long currentBoardHash)
+    public void PrepareNextTurn(int lastChosenIndex, long currentBoardHash)
     {
         if (lastChosenIndex == 0)
         {
              Console.WriteLine("[Engine] Cannot reuse tree, no previous move exists.");
-             return false;
         }
 
         var childIndex = _nodePool[_rootIndex].FirstChildIndex;
@@ -122,7 +121,8 @@ public class Engine
                  Console.WriteLine($"[Engine] Worker reset to start allocating from ID {maxId + 1}.");
 
                 _rootHash = currentBoardHash;
-                return true;
+                Console.WriteLine("[Agent.Move] MCTS tree successfully reused.");
+                
             }
 
             childIndex = childNode.NextSiblingIndex;
@@ -130,7 +130,6 @@ public class Engine
 
         Console.WriteLine("[Engine] Cache MISS! No matching child node found. Resetting tree.");
         Reset();
-        return false;
     }
         
     // Metodo helper per convertire la mossa in stringa per i log

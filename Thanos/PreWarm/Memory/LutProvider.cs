@@ -66,9 +66,9 @@ public sealed unsafe class LutProvider : IDisposable
     /// <summary>
     ///     Indexer per ottenere le LUT corrette in base all'area della mappa.
     /// </summary>
-    public LutPointers this[int area] => area switch
+    public LookupPointers this[int area] => area switch
     {
-        Constants.Small => new LutPointers(
+        Constants.Small => new LookupPointers(
             _basePointer,
             _smallLayout.NeighborsSize / sizeof(ushort),
             _basePointer + _smallLayout.NeighborsSize,
@@ -77,7 +77,7 @@ public sealed unsafe class LutProvider : IDisposable
             _smallLayout.MapSize / sizeof(Coordinate)
         ),
 
-        Constants.Medium => new LutPointers(
+        Constants.Medium => new LookupPointers(
             _basePointer + _mediumOffset,
             _mediumLayout.NeighborsSize / sizeof(ushort),
             _basePointer + _mediumOffset + _mediumLayout.NeighborsSize,
@@ -86,7 +86,7 @@ public sealed unsafe class LutProvider : IDisposable
             _mediumLayout.MapSize / sizeof(Coordinate)
         ),
 
-        Constants.Large => new LutPointers(
+        Constants.Large => new LookupPointers(
             _basePointer + _largeOffset,
             _largeLayout.NeighborsSize / sizeof(ushort),
             _basePointer + _largeOffset + _largeLayout.NeighborsSize,
