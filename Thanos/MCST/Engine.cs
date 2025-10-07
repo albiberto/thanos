@@ -28,7 +28,7 @@ public class Engine
         if (_rootIndex == 0)
         {
             #if DEBUG
-                Console.WriteLine("[Engine] Creating new MCTS tree from scratch.");
+                Console.WriteLine("[Engine.FindBestMove] INFO: Creating new MCTS tree from scratch.");
             #endif
 
             _rootIndex = 1;
@@ -42,7 +42,7 @@ public class Engine
         {
             // In this case, we’re reusing an existing tree. Just update the root node’s state.
             #if DEBUG
-                Console.WriteLine($"[Engine] Updating state of reused root node {_rootIndex}.");
+                Console.WriteLine($"[Engine.FindBestMove] INFO: Updating state of reused root node {_rootIndex}.");
             #endif
             
             var rootArena = _slotPool.GetArena(_rootIndex);
@@ -72,7 +72,7 @@ public class Engine
         stopwatch.Stop();
         
         #if DEBUG
-            Console.WriteLine($"[MCE] Iterations completed: {counter} in {stopwatch.ElapsedMilliseconds}ms.");
+            Console.WriteLine($"[Engine.FindBestMove.RunIterations] INFO: Iterations completed: {counter} in {stopwatch.ElapsedMilliseconds}ms.");
         #endif
     }
 
@@ -82,7 +82,7 @@ public class Engine
         if (lastChosenIndex <= 0)
         {
             #if DEBUG
-                Console.WriteLine("[Engine] No previous move to reuse. Resetting tree.");
+                Console.WriteLine("[Engine.PrepareNextTurn] INFO: No previous move to reuse. Resetting tree.");
             #endif
             
             Reset();
@@ -95,14 +95,14 @@ public class Engine
         node.NewRoot();
         
         #if DEBUG
-            Console.WriteLine($"[Engine] Tree reused. Node {lastChosenIndex} is the new root. Worker reset to allocate from {maxId + 1}.");
+            Console.WriteLine($"[Engine.PrepareNextTurn] INFO: Tree reused. Node {lastChosenIndex} is the new root. Worker reset to allocate from {maxId + 1}.");
         #endif
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
-        Console.WriteLine("[Engine] Resetting MCTS tree.");
+        Console.WriteLine("[Engine.Reset] INFO: Resetting MCTS tree.");
         _rootIndex = 0;
         _worker.Reset(1);
     }

@@ -31,10 +31,10 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void Start(in Request request)
     {
-        Console.WriteLine("\n================ NEW GAME STARTING ================");
-        Console.WriteLine($"[Agent.Start] Game started on a {request.Board.Width}x{request.Board.Height} board (Area: {request.Board.Area}).");
+        Console.WriteLine();
+        Console.WriteLine("================ NEW GAME STARTING ================");
+        Console.WriteLine($"[Agent.Start] INFO: Game started on a {request.Board.Width}x{request.Board.Height} board (Area: {request.Board.Area}).");
         
-        _engine.Reset();
         _lastChosenIndex = 0;
 
         var area = request.Board.Area;
@@ -48,7 +48,7 @@ public sealed class BattleSnakeAgent : IDisposable
     public byte Move(in Request request)
     {
         #if DEBUG
-            Console.WriteLine($"\n--- Turn {request.Turn} ---");
+            Console.WriteLine($"[Agent.Move] INFO: Turn {request.Turn}");
         #endif
   
         _engine.PrepareNextTurn(_lastChosenIndex);
@@ -71,7 +71,7 @@ public sealed class BattleSnakeAgent : IDisposable
     
     public void End(in Request request)
     {
-         Console.WriteLine($"================ GAME ENDED AT TURN {request.Turn} ================\n");
+         Console.WriteLine($"================ GAME ENDED AT TURN {request.Turn} ================");
          Console.WriteLine();
     }
 
@@ -96,7 +96,7 @@ public sealed class BattleSnakeAgent : IDisposable
     private static void LogMap(Dictionary<string, int> map)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("[Agent.BuildIdMap] Snake ID to Index mapping created:");
+        sb.AppendLine("[Agent.BuildIdMap] INFO: Snake ID to Index mapping created:");
         foreach (var entry in map) sb.AppendLine($"  -> ID: {entry.Key} => Index: {entry.Value}");
         
         Console.WriteLine(sb.ToString());
