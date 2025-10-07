@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Thanos.Common;
 using Thanos.Memory;
 
 namespace Thanos.MCST;
@@ -21,16 +22,16 @@ public struct Node
     public byte Move; // 1 byte
     public bool IsTerminal; // 1 byte
 
-    public void PlacementRoot(int parentIndex, byte move, long hash)
+    public void PlacementRoot(long hash)
     {
         Visits = 0;
         Wins = 0;
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
-        ParentIndex = parentIndex;
-        Generation = 0; // Fissa la generazione a 0 per la radice
+        ParentIndex = -1;
+        Generation = 0;
         Hash = hash;
-        Move = move;
+        Move = Moves.None;
         IsTerminal = false;
     }
 
@@ -55,26 +56,9 @@ public struct Node
         Wins += result;
     }
 
-    public int SelectMostVisitedChild(NodeMemoryPool pool)
+    public void NewRoot()
     {
-        if (IsLeafNode) return -1;
-
-        var bestChildIndex = -1;
-        var maxVisits = -1;
-
-        var currentChildIndex = FirstChildIndex;
-        while (currentChildIndex != -1)
-        {
-            ref var childNode = ref pool[currentChildIndex];
-            if (childNode.Visits > maxVisits)
-            {
-                maxVisits = childNode.Visits;
-                bestChildIndex = currentChildIndex;
-            }
-
-            currentChildIndex = childNode.NextSiblingIndex;
-        }
-
-        return bestChildIndex;
+        ParentIndex = -1;
+        Generation = 0;
     }
 }

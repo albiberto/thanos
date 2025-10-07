@@ -272,27 +272,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             Moves.Right => "right",
             _ => "none"
         };
-    
-    public int GetMaxId(int rootIndex)
-    {
-        if (rootIndex == 0) return 0;
-        var maxId = rootIndex;
-        var queue = new Queue<int>();
-        queue.Enqueue(rootIndex);
-        while (queue.Count > 0)
-        {
-            var currentIndex = queue.Dequeue();
-            maxId = Math.Max(maxId, currentIndex);
-            ref var currentNode = ref _nodePool[currentIndex];
-            var childIndex = currentNode.FirstChildIndex;
-            while (childIndex != -1)
-            {
-                queue.Enqueue(childIndex);
-                childIndex = _nodePool[childIndex].NextSiblingIndex;
-            }
-        }
-        return maxId;
-    }
 
     public void Reset(int startId) => _nextId = startId;
     public void Reset(int startId, RulesetSettings settings)

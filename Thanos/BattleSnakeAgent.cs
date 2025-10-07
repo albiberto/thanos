@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Thanos.Common;
+using Thanos.Extensions;
 using Thanos.MCST;
 using Thanos.MCST.Memory;
 using Thanos.Memory;
@@ -50,8 +51,7 @@ public sealed class BattleSnakeAgent : IDisposable
             Console.WriteLine($"\n--- Turn {request.Turn} ---");
         #endif
   
-        var hash = CalculateRequestHash(request);
-        _engine.PrepareNextTurn(_lastChosenIndex, hash);
+        _engine.PrepareNextTurn(_lastChosenIndex);
         
         var bestIndex = _engine.FindBestMove(in request);
     
@@ -67,19 +67,6 @@ public sealed class BattleSnakeAgent : IDisposable
         var move = chosenNode.Move;
         
         return move;
-    }
-    
-    private long CalculateRequestHash(Request request)
-    {
-        var arena = _slotPool.GetArena(0); 
-        arena.InitializeFromRequest(in request);
-        var hash = ZobristHasher.CalculateHash(in arena);
-        
-        #if DEBUG
-            Console.WriteLine($"[Agent.Move] Request hash calculated: {hash}");
-        #endif
-        
-        return hash;
     }
     
     public void End(in Request request)
