@@ -18,7 +18,7 @@ public struct Node
     // Blocco 2: Dati di stato e struttura, RIORDINATI per allineamento (16 byte)
     public long Hash; // 8 byte -> Messo per primo, si allineerà perfettamente.
     public int ParentIndex; // 4 byte
-    public ushort Generation; // 2 byte
+    public byte PlayerIndex; // 2 byte
     public byte Move; // 1 byte
     public bool IsTerminal; // 1 byte
 
@@ -29,20 +29,20 @@ public struct Node
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
         ParentIndex = -1;
-        Generation = 0;
+        PlayerIndex = 0;
         Hash = hash;
         Move = Moves.None;
         IsTerminal = false;
     }
 
-    public void PlacementNew(int parentIndex, byte move, long hash, ushort parentGeneration)
+    public void PlacementNew(int parentIndex, byte move, long hash, byte playerIndex)
     {
         Visits = 0;
         Wins = 0;
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
         ParentIndex = parentIndex;
-        Generation = (ushort)(parentGeneration + 1); // Calcola la generazione del figlio
+        PlayerIndex = playerIndex;
         Hash = hash;
         Move = move;
         IsTerminal = false;
@@ -56,9 +56,5 @@ public struct Node
         Wins += result;
     }
 
-    public void NewRoot()
-    {
-        ParentIndex = -1;
-        Generation = 0;
-    }
+    public void NewRoot() => ParentIndex = -1;
 }

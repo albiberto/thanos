@@ -26,12 +26,6 @@ public readonly ref struct Arena(
     private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
 
-    public int PlayerToMoveIndex
-    {
-        get => System.PlayerToMoveIndex;
-        set => System.PlayerToMoveIndex = value;
-    }
-
     public void InitializeFromRequest(in Request request)
     {
         // LOGGING: Annuncia l'inizializzazione
@@ -57,8 +51,6 @@ public readonly ref struct Arena(
 
         foreach (var foodPosition in board.Food) Food.Set(foodPosition);
         foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
-        
-        this.PlayerToMoveIndex = 0;
     }
 
     public void CloneFrom(in Arena source)
@@ -67,7 +59,6 @@ public readonly ref struct Arena(
         Console.WriteLine("[Arena] Cloning state from another Arena.");
         
         source.System.Raw.CopyTo(System.Raw);
-        this.PlayerToMoveIndex = source.PlayerToMoveIndex;
 
         source.Food.CopyTo(this.Food);
         source.Hazards.CopyTo(this.Hazards);
@@ -91,15 +82,18 @@ public readonly ref struct Arena(
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
         if (NeighborsGrid.IsValid(rightPos) && !Snakes.IsSet(rightPos)) legalMoves |= Moves.Right;
 
-        // LOGGING: Mostra le mosse legali calcolate
-        var logBuilder = new StringBuilder();
-        logBuilder.Append($"[GetLegalMoves] Head at {headPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
-        if ((legalMoves & Moves.Up) != 0) logBuilder.Append("Up ");
-        if ((legalMoves & Moves.Down) != 0) logBuilder.Append("Down ");
-        if ((legalMoves & Moves.Left) != 0) logBuilder.Append("Left ");
-        if ((legalMoves & Moves.Right) != 0) logBuilder.Append("Right ");
-        logBuilder.Append(")");
-        Console.WriteLine(logBuilder.ToString());
+        #if DEBUG
+            var logBuilder = new StringBuilder();
+            logBuilder.Append($"[GetLegalMoves] Head at {headPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
+
+            if ((legalMoves & Moves.Up) != 0) logBuilder.Append("Up ");
+            if ((legalMoves & Moves.Down) != 0) logBuilder.Append("Down ");
+            if ((legalMoves & Moves.Left) != 0) logBuilder.Append("Left ");
+            if ((legalMoves & Moves.Right) != 0) logBuilder.Append("Right ");
+            logBuilder.Append(")");
+
+            Console.WriteLine(logBuilder.ToString());
+        #endif
         
         return legalMoves;
     }
@@ -134,7 +128,6 @@ public readonly ref struct Arena(
     }
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
-    public bool IsValidPosition(ushort pos) => NeighborsGrid.IsValid(pos);
 
     public void SimulateRandomFoodSpawn(int foodSpawnChance, int minimumFood)
     {

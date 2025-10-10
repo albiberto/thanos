@@ -1,4 +1,5 @@
-﻿using Thanos.Common;
+﻿using System.Runtime.CompilerServices;
+using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
@@ -15,7 +16,10 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     
     private readonly NodeMemoryPool _nodePool = nodePool;
     private readonly SlotMemoryPool _slotPool = slotPool;
+    
+    private static readonly byte[] AllMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RunIteration(int rootIndex)
     {
         var leafIndex = Select(rootIndex);
@@ -23,7 +27,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
         if (leafNode is { IsLeafNode: true, IsTerminal: false })
         {
-            Expand(leafIndex);
+            Expand(leafIndex, ref leafNode);
         }
 
         var outcome = Evaluate(leafIndex);
@@ -31,18 +35,21 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         Backpropagate(leafIndex, outcome);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Select(int rootIndex)
     {
         var currentIndex = rootIndex;
         while (true)
         {
             ref var currentNode = ref _nodePool[currentIndex];
+            
             if (currentNode.IsLeafNode || currentNode.IsTerminal)
             {
                 return currentIndex;
             }
 
             var candidateIndex = SelectBestChild(ref currentNode);
+            
             if (candidateIndex == -1)
             {
                 currentNode.IsTerminal = true;
@@ -53,16 +60,13 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int SelectBestChild(ref Node parentNode)
     {
         var bestScore = double.MinValue;
         var bestChildIndex = -1;
         
         var logParentVisits = Math.Log(parentNode.Visits);
-
-        // LOGGING: Prepara una stringa per il log delle decisioni
-        var logBuilder = new StringBuilder();
-        logBuilder.Append($"[SelectBestChild] ParentNode (Visits: {parentNode.Visits}):\n");
 
         var childIndex = parentNode.FirstChildIndex;
         while (childIndex != -1)
@@ -71,9 +75,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
             if (childNode.Visits == 0)
             {
-                // Un figlio mai visitato ha priorità assoluta.
-                 logBuilder.Append($"  -> Move '{ToApiMove(childNode.Move)}' (Unvisited) - SELECTING\n");
-                 Console.WriteLine(logBuilder.ToString()); // Stampa il log prima di uscire
                 return childIndex;
             }
 
@@ -81,8 +82,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             var exploration = EXPLORATION_PARAMETER * Math.Sqrt(logParentVisits / childNode.Visits);
             var uctScore = exploitation + exploration;
             
-            logBuilder.Append($"  -> Move '{ToApiMove(childNode.Move)}' | Wins: {childNode.Wins:F2}, Visits: {childNode.Visits}, Exploit: {exploitation:F3}, Explore: {exploration:F3}, UCT: {uctScore:F3}\n");
-
             if (uctScore > bestScore)
             {
                 bestScore = uctScore;
@@ -91,21 +90,17 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
             childIndex = childNode.NextSiblingIndex;
         }
-        
-        // Stampa il log solo se sono state valutate delle mosse (e non in ogni singola iterazione per non inondare la console)
-        // Puoi decommentarlo se vuoi un'analisi estremamente dettagliata
-        if(parentNode.Visits % 1000 == 0) Console.WriteLine(logBuilder.ToString());
 
         return bestChildIndex;
     }
 
-    private void Expand(int parentIndex)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Expand(int parentIndex, ref Node parentNode)
     {
-        ref var parentNode = ref _nodePool[parentIndex];
-        var parentArena = _slotPool.GetArena(parentIndex);
-
-        var playerIndex = parentArena.PlayerToMoveIndex;
-        var playerSnake = parentArena.System[playerIndex];
+        var playerIndex = parentNode.PlayerIndex;
+        
+        var playerArena = _slotPool.GetArena(parentIndex);
+        var playerSnake = playerArena.System[playerIndex];
 
         if (playerSnake.IsDead)
         {
@@ -113,37 +108,69 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             return;
         }
         
-        var safeMoves = GetAdvancedLegalMoves(in parentArena, playerIndex);
+        var safeMoves = GetLegalMoves(in playerArena, in playerSnake, playerIndex);
+        ExpandNode(parentIndex, safeMoves, ref parentNode, ref playerSnake, in playerArena);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static byte GetLegalMoves(in Arena arena, in WarSnake playerSnake, int playerSnakeIndex)
+    {
+        byte safeMoves = 0;
         
-        // LOGGING: Mostra quali mosse sono considerate sicure per l'espansione
-        if (safeMoves.Count > 0)
+        var potentialMoves = arena.GetLegalMoves(playerSnake.Head);
+    
+        foreach (var move in AllMoves)
         {
-             Console.WriteLine($"[Expand] Node {parentIndex} - Safe moves: {string.Join(", ", safeMoves.Select(ToApiMove))}");
+            if ((potentialMoves & move) == 0) continue;
+
+            var nextHead = arena.GetNewHeadPosition(playerSnake.Head, move);
+            var isSquareSafe = true;
+
+            for (var enemySnakeIndex = 0; enemySnakeIndex < arena.System.Count; enemySnakeIndex++)
+            {
+                if (enemySnakeIndex == playerSnakeIndex)
+                {
+                    continue;
+                }
+                
+                var enemySnake = arena.System[enemySnakeIndex];
+                if (enemySnake.IsDead || enemySnake.Length < playerSnake.Length || arena.ManhattanDistance(enemySnake.Head, nextHead) != 1) continue;
+                
+                isSquareSafe = false;
+                break;
+            }
+
+            if (isSquareSafe)
+            {
+                safeMoves |= move;
+            }
         }
 
-
+        return safeMoves;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ExpandNode(int parentIndex, byte safeMoves, ref Node parentNode, ref WarSnake snake, in Arena parentArena)
+    {
+        var playerIndex = parentNode.PlayerIndex;
         var lastChildIndex = -1;
 
-        foreach (var move in safeMoves)
+        foreach (var move in AllMoves)
         {
-            if (_nextId >= Constants.MaxNodes - 1)
-            {
-                Console.WriteLine("[MCTS] Limite massimo di nodi raggiunto, interrompendo l'espansione.");
-                break; 
-            }
+            if ((safeMoves & move) == 0) continue;
 
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
         
             childArena.CloneFrom(in parentArena);
 
-            ApplySingleMove(ref childArena, playerIndex, move);
+            ApplySingleMove(ref childArena, ref snake, move);
 
-            childArena.PlayerToMoveIndex = GetNextPlayerIndex(in childArena, playerIndex);
+            var nextPlayerIndex = GetNextPlayerIndex(in childArena, playerIndex);
 
             var hash = ZobristHasher.CalculateHash(in childArena);
             ref var childNode = ref _nodePool[childIndex];
-            childNode.PlacementNew(parentIndex, move, hash, parentNode.Generation);
+            childNode.PlacementNew(parentIndex, move, hash, nextPlayerIndex);
 
             if (lastChildIndex == -1)
             {
@@ -153,6 +180,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             {
                 _nodePool[lastChildIndex].NextSiblingIndex = childIndex;
             }
+            
             lastChildIndex = childIndex;
         }
 
@@ -161,60 +189,24 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             parentNode.IsTerminal = true;
         }
     }
-    
-    private List<byte> GetAdvancedLegalMoves(in Arena arena, int snakeIndex)
-    {
-        var safeMoves = new List<byte>();
-        var mySnake = arena.System[snakeIndex];
-        if (mySnake.IsDead) return safeMoves;
 
-        var potentialMoves = arena.GetLegalMoves(mySnake.Head);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static byte GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
+    {
+        var nextPlayerIndex = currentPlayerIndex;
         
-        foreach (var move in new[] { Moves.Up, Moves.Down, Moves.Left, Moves.Right })
-        {
-            if ((potentialMoves & move) == 0) continue;
-
-            var myNextHead = arena.GetNewHeadPosition(mySnake.Head, move);
-            var isSquareSafe = true;
-
-            for (var i = 0; i < arena.System.Count; i++)
-            {
-                if (i == snakeIndex) continue;
-                var enemySnake = arena.System[i];
-                if (enemySnake.IsDead || enemySnake.Length < mySnake.Length) continue;
-
-                var distance = arena.ManhattanDistance(enemySnake.Head, myNextHead);
-                if (distance == 1)
-                {
-                    isSquareSafe = false;
-                    break;
-                }
-            }
-
-            if (isSquareSafe)
-            {
-                safeMoves.Add(move);
-            }
-        }
-
-        return safeMoves;
-    }
-
-    private static int GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
-    {
-        var nextIndex = currentPlayerIndex;
         do
         {
-            nextIndex = (nextIndex + 1) % arena.System.Count;
+            nextPlayerIndex = (nextPlayerIndex + 1) % arena.System.Count;
         }
-        while (arena.System[nextIndex].IsDead && nextIndex != currentPlayerIndex);
+        while (arena.System[nextPlayerIndex].IsDead && nextPlayerIndex != currentPlayerIndex);
 
-        return nextIndex;
+        return (byte)nextPlayerIndex;
     }
 
-    private void ApplySingleMove(ref Arena arena, int snakeIndex, byte move)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ApplySingleMove(ref Arena arena, ref WarSnake snake, byte move)
     {
-        var snake = arena.System[snakeIndex];
         var newHead = arena.GetNewHeadPosition(snake.Head, move);
         
         var hasEaten = arena.Food.IsSet(newHead);
@@ -236,10 +228,10 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var outcome = heuristics.Outcome();
         var score = outcome != 0.0f ? outcome : heuristics.Evaluate();
         
-        // LOGGING: Stampa il punteggio dell'euristica per il nodo foglia
-        // Puoi decommentarlo per vedere il valore di ogni simulazione
-        Console.WriteLine($"[Evaluate] Node {leafIndex} - Heuristic score: {score:F2}");
-
+        #if DEBUG
+            Console.WriteLine($"[Evaluate] Node {leafIndex} - Heuristic score: {score:F2}");
+        #endif
+        
         return score;
     }
     
@@ -262,17 +254,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
     }
     
-    // Metodo helper per convertire la mossa in stringa per i log
-    private static string ToApiMove(byte move) =>
-        move switch
-        {
-            Moves.Up => "up",
-            Moves.Down => "down",
-            Moves.Left => "left",
-            Moves.Right => "right",
-            _ => "none"
-        };
-
     public void Reset(int startId) => _nextId = startId;
     public void Reset(int startId, RulesetSettings settings)
     {

@@ -23,29 +23,6 @@ public readonly ref struct SnakesSystem
     public WarSnake Me => this[0];
     public WarSnake this[int index] => Build(index);
 
-    /// <summary>
-    /// NUOVO: Proprietà per leggere e scrivere l'indice del giocatore di turno.
-    /// Manipola direttamente i primi 4 byte della memoria grezza.
-    /// </summary>
-    public int PlayerToMoveIndex
-    {
-        get
-        {
-            ref var memoryLocationRef = ref MemoryMarshal.GetReference(_memory);
-            var playerIndex = Unsafe.As<byte, int>(ref memoryLocationRef);
-            // LOGGING
-            Console.WriteLine($"[SnakesSystem] Getting PlayerToMoveIndex. Value: {playerIndex}");
-            return playerIndex;
-        }
-        set
-        {
-            // LOGGING
-            Console.WriteLine($"[SnakesSystem] Setting PlayerToMoveIndex to {value}.");
-            ref var memoryLocationRef = ref MemoryMarshal.GetReference(_memory);
-            Unsafe.As<byte, int>(ref memoryLocationRef) = value;
-        }
-    }
-
     private WarSnake Build(int index)
     {
         // LOGGING
