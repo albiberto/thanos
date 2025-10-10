@@ -235,21 +235,23 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         return score;
     }
     
-    private void Backpropagate(int startNodeIndex, float rawScore)
+    private void Backpropagate(int startNodeIndex, float outcome)
     {
         const float scalingFactor = 100.0f;
-        var normalizedResult = MathF.Tanh(rawScore / scalingFactor);
-        
+        var normalizedResult = MathF.Tanh(outcome / scalingFactor);
+    
         var scoreToPropagate = normalizedResult;
         var currentIndex = startNodeIndex;
 
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
-            currentNode.UpdateStats(scoreToPropagate);
-            
+        
+            var scoreForCurrentNode = currentNode.PlayerIndex == 0 ? scoreToPropagate : -scoreToPropagate;
+            currentNode.UpdateStats(scoreForCurrentNode);
+        
             scoreToPropagate *= -1;
-            
+        
             currentIndex = currentNode.ParentIndex;
         }
     }
