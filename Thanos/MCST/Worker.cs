@@ -109,7 +109,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
         
         var safeMoves = GetLegalMoves(in playerArena, in playerSnake, playerIndex);
-        ExpandNode(parentIndex, safeMoves, ref parentNode, ref playerSnake, in playerArena);
+        ExpandNode(parentIndex, safeMoves, ref parentNode, in playerArena);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -150,7 +150,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ExpandNode(int parentIndex, byte safeMoves, ref Node parentNode, ref WarSnake snake, in Arena parentArena)
+    private void ExpandNode(int parentIndex, byte safeMoves, ref Node parentNode, in Arena parentArena)
     {
         var playerIndex = parentNode.PlayerIndex;
         var lastChildIndex = -1;
@@ -164,7 +164,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         
             childArena.CloneFrom(in parentArena);
 
-            ApplySingleMove(ref childArena, ref snake, move);
+            var snakeToMove = childArena.System[playerIndex];
+            ApplySingleMove(ref childArena, ref snakeToMove, move);
 
             var nextPlayerIndex = GetNextPlayerIndex(in childArena, playerIndex);
 

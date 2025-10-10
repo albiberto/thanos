@@ -63,7 +63,7 @@ public class Engine
     {
         var stopwatch = Stopwatch.StartNew();
 
-        while (stopwatch.ElapsedMilliseconds < 450)
+        while (stopwatch.ElapsedMilliseconds < 10000000000)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
@@ -93,10 +93,6 @@ public class Engine
         
         ref var node = ref _nodePool[_rootIndex];
         node.NewRoot();
-        
-        #if DEBUG
-            Console.WriteLine($"[Engine.PrepareNextTurn] INFO: Tree reused. Node {lastChosenIndex} is the new root. Worker reset to allocate from {maxId + 1}.");
-        #endif
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
