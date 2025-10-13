@@ -3,7 +3,8 @@ using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
-using System.Text; // Aggiunto per StringBuilder
+using System.Text;
+using Thanos.Extensions; // Aggiunto per StringBuilder
 
 namespace Thanos.MCST;
 
@@ -214,9 +215,25 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var damage = arena.Hazards.IsSet(newHead) ? 10 : 1;
         var newTail = arena.CalculateNewTailPosition(snake, hasEaten);
         
+        #if DEBUG
+        Console.WriteLine("--- Stato Serpenti PRIMA dell'aggiornamento ---");
+        Console.WriteLine(arena.Snakes.ToGridString(11,11));
+        #endif
+        
         arena.Snakes.Xor(snake.Body);
+        
+        #if DEBUG
+        Console.WriteLine("--- Stato Serpenti DURANTE l'aggiornamento ---");
+        Console.WriteLine(arena.Snakes.ToGridString(11, 11));
+        #endif
+        
         snake.UpdateAfterMove(newHead, newTail, hasEaten, damage);
         arena.Snakes.Or(snake.Body);
+        
+        #if DEBUG
+        Console.WriteLine("--- Stato Serpenti DOPO l'aggiornamento ---");
+        Console.WriteLine(arena.Snakes.ToGridString(11,11));
+        #endif
         
         if (hasEaten) arena.Food.Unset(newHead);
         
@@ -239,20 +256,15 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private void Backpropagate(int startNodeIndex, float outcome)
     {
         const float scalingFactor = 100.0f;
-        var normalizedResult = MathF.Tanh(outcome / scalingFactor);
-    
-        var scoreToPropagate = normalizedResult;
-        var currentIndex = startNodeIndex;
+        var scoreToPropagate = MathF.Tanh(outcome / scalingFactor);
 
+        var currentIndex = startNodeIndex;
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
-        
-            var scoreForCurrentNode = currentNode.PlayerIndex == 0 ? scoreToPropagate : -scoreToPropagate;
-            currentNode.UpdateStats(scoreForCurrentNode);
-        
+            currentNode.UpdateStats(scoreToPropagate);
+
             scoreToPropagate *= -1;
-        
             currentIndex = currentNode.ParentIndex;
         }
     }

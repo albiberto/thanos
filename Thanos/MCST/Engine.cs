@@ -63,7 +63,8 @@ public class Engine
     {
         var stopwatch = Stopwatch.StartNew();
 
-        while (stopwatch.ElapsedMilliseconds < 10000000000)
+        // while (stopwatch.ElapsedMilliseconds < 10000000000)
+        while (counter < 1000)
         {
             _worker.RunIteration(_rootIndex);
             counter++;
