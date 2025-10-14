@@ -160,6 +160,10 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         {
             if ((safeMoves & move) == 0) continue;
 
+            #if DEBUG
+                Console.WriteLine($"[ExpandNode] Expanding move {move.ToApiMove().ToUpperInvariant()} for player {playerIndex} at node {parentIndex}");
+            #endif
+            
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
         
