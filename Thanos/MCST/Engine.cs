@@ -40,13 +40,15 @@ public class Engine
         }
         else
         {
-            // In this case, we’re reusing an existing tree. Just update the root node’s state.
             #if DEBUG
-                Console.WriteLine($"[Engine.FindBestMove] INFO: Updating state of reused root node {_rootIndex}.");
+            Console.WriteLine($"[Engine.FindBestMove] INFO: Updating state of reused root node {_rootIndex}.");
             #endif
-            
+    
             var rootArena = _slotPool.GetArena(_rootIndex);
             rootArena.InitializeFromRequest(in request);
+
+            ref var rootNode = ref _nodePool[_rootIndex];
+            rootNode.ClearChildren();
         }
 
         RunIterations();
@@ -64,7 +66,7 @@ public class Engine
         var stopwatch = Stopwatch.StartNew();
 
         // while (stopwatch.ElapsedMilliseconds < 10000000000)
-        while (counter < 1000)
+        while (counter < 50)
         {
             _worker.RunIteration(_rootIndex);
             counter++;

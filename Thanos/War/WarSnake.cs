@@ -1,4 +1,6 @@
-﻿namespace Thanos.War;
+﻿using Thanos.Extensions;
+
+namespace Thanos.War;
 
 public ref struct WarSnake
 {
@@ -44,28 +46,47 @@ public ref struct WarSnake
     {
         if (IsDead) return;
 
-        // Salva la vecchia posizione della coda PRIMA di modificarla.
-        // Ci servirà per pulire il bitboard.
         var oldTail = _header.Tail;
 
-        // 1. Aggiorna lo stato nell'Header (la "mente" del serpente)
         _header.Head = newHead;
-        _header.ProcessPendingGrowth();
         _header.Damage((byte)damage);
+
+        #if DEBUG
+        Console.WriteLine("============================================================================================================================");
+        Console.WriteLine("==== SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE  ====");
+        Console.WriteLine("============================================================================================================================");
+        
+        Console.WriteLine("--- Stato Serpente PRIMA ---" );
+        Console.WriteLine(_bitboard.ToGridString(11, 11));
+        #endif
+        
+        _bitboard.Set(newHead);
+        
+        #if DEBUG
+        Console.WriteLine("--- Stato Serpente DOPO ---" );
+        Console.WriteLine(_bitboard.ToGridString(11, 11));
+        #endif
 
         if (ateFood)
         {
             _header.FullCure();
-            _header.ScheduleGrowth();
+            _header.Length++; // Aumenta la lunghezza ufficiale IMMEDIATAMENTE
         }
-        else // La coda si sposta solo se non abbiamo mangiato
+        
+        if (_bitboard.PopCount() > _header.Length)
         {
-            _header.Tail = newTail;
+            _bitboard.Unset(oldTail);
+            _header.Tail = newTail; // Aggiorna la coda solo quando si muove
         }
-
-        // 2. Sincronizza il Bitboard (la "pelle" del serpente)
-        _bitboard.Set(newHead);
-        if (!ateFood) _bitboard.Unset(oldTail);
+        
+        #if DEBUG
+        Console.WriteLine("--- Stato Serpente FINE ---" );
+        Console.WriteLine(_bitboard.ToGridString(11, 11));
+        
+        Console.WriteLine("===========================================================================================================================");
+        Console.WriteLine("==== SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE ====");
+        Console.WriteLine("===========================================================================================================================");
+        #endif
     }
 
     public void Kill() => _header.Kill();
