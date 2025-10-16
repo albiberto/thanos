@@ -17,12 +17,10 @@ public ref struct WarSnake
     {
         var length = (ushort)body.Length;
         var head = body[0];
-        var tail = body[^1]; // ^1 significa "ultimo elemento"
-
-        // Aggiorna lo stato persistente nell'header
+        var tail = body[^1];
+        
         _header.PlacementNew(length, head, tail, points);
 
-        // Disegna il corpo del serpente nel suo bitboard individuale
         _bitboard.Clear();
         foreach (var segment in body) _bitboard.Set(segment);
     }
@@ -35,13 +33,7 @@ public ref struct WarSnake
     public int HP => _header.Points;
     public bool IsDead => _header.IsDead;
     public bool WillGrow => _header.IsGrowthPending;
-
-    // --- METODI DI COMANDO ---
-
-    /// <summary>
-    ///     Metodo principale che esegue i comandi dell'Arena per aggiornare lo stato
-    ///     del serpente dopo una mossa.
-    /// </summary>
+    
     public void UpdateAfterMove(ushort newHead, ushort newTail, bool ateFood, int damage)
     {
         if (IsDead) return;
@@ -70,13 +62,13 @@ public ref struct WarSnake
         if (ateFood)
         {
             _header.FullCure();
-            _header.Length++; // Aumenta la lunghezza ufficiale IMMEDIATAMENTE
+            _header.ScheduleGrowth();
         }
         
         if (_bitboard.PopCount() > _header.Length)
         {
             _bitboard.Unset(oldTail);
-            _header.Tail = newTail; // Aggiorna la coda solo quando si muove
+            _header.Tail = newTail;
         }
         
         #if DEBUG
