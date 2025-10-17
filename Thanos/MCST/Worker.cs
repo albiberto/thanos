@@ -228,37 +228,31 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         return (byte)nextPlayerIndex;
     }
 
+// *** METODO CHIAVE AGGIORNATO ***
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ApplySingleMove(ref Arena arena, ref WarSnake snake, byte move)
+    private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move)
     {
         var newHead = arena.GetNewHeadPosition(snake.Head, move);
         
         var hasEaten = arena.Food.IsSet(newHead);
-        var damage = arena.Hazards.IsSet(newHead) ? 10 : 1;
-        var newTail = arena.CalculateNewTailPosition(snake, hasEaten);
-        
-        #if DEBUG
-        Console.WriteLine("--- Stato Serpenti PRIMA dell'aggiornamento ---");
-        Console.WriteLine(arena.Snakes.ToGridString(11,11));
-        #endif
-        
+        var damage = arena.Hazards.IsSet(newHead) ? _settings.HazardDamagePerTurn : 1;
+
+        // 1. Rimuovi il corpo del serpente corrente dalla bitboard globale
         arena.Snakes.Xor(snake.Body);
         
-        #if DEBUG
-        Console.WriteLine("--- Stato Serpenti DURANTE l'aggiornamento ---");
-        Console.WriteLine(arena.Snakes.ToGridString(11, 11));
-        #endif
+        // 2. Aggiorna lo stato interno del serpente (posizione e bitboard)
+        //    Questa chiamata ora gestisce la coda e la crescita internamente.
+        snake.UpdateAfterMove(newHead, hasEaten, damage);
         
-        snake.UpdateAfterMove(newHead, newTail, hasEaten, damage);
+        // 3. Aggiungi il nuovo corpo del serpente alla bitboard globale
         arena.Snakes.Or(snake.Body);
         
-        #if DEBUG
-        Console.WriteLine("--- Stato Serpenti DOPO l'aggiornamento ---");
-        Console.WriteLine(arena.Snakes.ToGridString(11,11));
-        #endif
+        if (hasEaten)
+        {
+            arena.Food.Unset(newHead);
+        }
         
-        if (hasEaten) arena.Food.Unset(newHead);
-        
+        // La logica per lo spawn del cibo rimane, ma potrebbe essere semplificata in futuro
         arena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood);
     }
     

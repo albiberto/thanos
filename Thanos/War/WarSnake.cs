@@ -1,86 +1,103 @@
-﻿using Thanos.Extensions;
+﻿using System.Runtime.CompilerServices;
+using Thanos.SourceGen;
 
 namespace Thanos.War;
 
-public ref struct WarSnake
+public readonly ref struct WarSnake
 {
-    private ref WarSnakeHeader _header;
-    private readonly Bitboard _bitboard;
+    private readonly ref WarSnakeHeader _header;
+    private readonly Bitboard _bodyBitboard;
+    private readonly Span<ushort> _bodyParts;
+    private readonly int _capacity;
 
-    public WarSnake(ref WarSnakeHeader header, Span<byte> memory)
+    public WarSnake(ref WarSnakeHeader header, Span<byte> bodyBitboardMemory, Span<ushort> bodyParts, int capacity)
     {
         _header = ref header;
-        _bitboard = new Bitboard(memory);
+        _bodyBitboard = new Bitboard(bodyBitboardMemory);
+        _bodyParts = bodyParts;
+        _capacity = capacity;
     }
 
-    public void Initialize(byte points, ReadOnlySpan<ushort> body)
+    public void Initialize(in Snake snakeData)
     {
-        var length = (ushort)body.Length;
-        var head = body[0];
-        var tail = body[^1];
+        _header.HP = snakeData.Health;
+        _bodyBitboard.Clear();
+        _header.HeadIndex = 0;
+        _header.TailIndex = 0;
         
-        _header.PlacementNew(length, head, tail, points);
-
-        _bitboard.Clear();
-        foreach (var segment in body) _bitboard.Set(segment);
+        // Inizializza il buffer e la bitboard partendo dalla coda
+        for (int i = snakeData.Body.Length - 1; i >= 0; i--)
+        {
+            var part = snakeData.Body[i];
+            AddHead(part);
+            _bodyBitboard.Set(part);
+        }
     }
 
     // --- PROPRIETÀ DI STATO ---
     public ushort Head => _header.Head;
-    public ushort Tail => _header.Tail;
-    public ushort Length => _header.Length;
-    public Bitboard Body => _bitboard;
-    public int HP => _header.Points;
-    public bool IsDead => _header.IsDead;
-    public bool WillGrow => _header.IsGrowthPending;
-    
-    public void UpdateAfterMove(ushort newHead, ushort newTail, bool ateFood, int damage)
+    public ushort Tail => _bodyParts[_header.TailIndex]; // La coda è il primo elemento nel buffer
+    public int Length => (_header.HeadIndex - _header.TailIndex + _capacity) % _capacity;
+    public Bitboard Body => _bodyBitboard;
+    public int HP => _header.HP;
+    public bool IsDead => _header.HP <= 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void AddHead(ushort newHeadPos)
+    {
+        _bodyParts[_header.HeadIndex] = newHeadPos;
+        _header.HeadIndex = (_header.HeadIndex + 1) % _capacity;
+        _header.Head = newHeadPos;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private ushort RemoveTail()
+    {
+        ushort oldTailPos = _bodyParts[_header.TailIndex];
+        _header.TailIndex = (_header.TailIndex + 1) % _capacity;
+        return oldTailPos;
+    }
+
+    public void UpdateAfterMove(ushort newHead, bool ateFood, int damage)
     {
         if (IsDead) return;
 
-        var oldTail = _header.Tail;
+        // Aggiungi la nuova testa
+        AddHead(newHead);
+        _bodyBitboard.Set(newHead);
 
-        _header.Head = newHead;
-        _header.Damage((byte)damage);
-
-        #if DEBUG
-        Console.WriteLine("============================================================================================================================");
-        Console.WriteLine("==== SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE  ====");
-        Console.WriteLine("============================================================================================================================");
-        
-        Console.WriteLine("--- Stato Serpente PRIMA ---" );
-        Console.WriteLine(_bitboard.ToGridString(11, 11));
-        #endif
-        
-        _bitboard.Set(newHead);
-        
-        #if DEBUG
-        Console.WriteLine("--- Stato Serpente DOPO ---" );
-        Console.WriteLine(_bitboard.ToGridString(11, 11));
-        #endif
-
+        // Gestione della coda e della crescita
         if (ateFood)
         {
             _header.FullCure();
-            _header.ScheduleGrowth();
+            // Non rimuoviamo la coda, facendo crescere il serpente di 1.
         }
-        
-        if (_bitboard.PopCount() > _header.Length)
+        else
         {
-            _bitboard.Unset(oldTail);
-            _header.Tail = newTail;
+            // Rimuovi la vecchia coda dal buffer e dalla bitboard
+            ushort oldTailPos = RemoveTail();
+            
+            // Controlla se la posizione della vecchia coda è ancora occupata
+            // da un'altra parte del corpo prima di cancellare il bit.
+            bool isPosStillOccupied = false;
+            for (int i = _header.TailIndex; i != _header.HeadIndex; i = (i + 1) % _capacity)
+            {
+                if (_bodyParts[i] == oldTailPos)
+                {
+                    isPosStillOccupied = true;
+                    break;
+                }
+            }
+            
+            if (!isPosStillOccupied)
+            {
+                _bodyBitboard.Unset(oldTailPos);
+            }
         }
         
-        #if DEBUG
-        Console.WriteLine("--- Stato Serpente FINE ---" );
-        Console.WriteLine(_bitboard.ToGridString(11, 11));
-        
-        Console.WriteLine("===========================================================================================================================");
-        Console.WriteLine("==== SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE SNAKE ====");
-        Console.WriteLine("===========================================================================================================================");
-        #endif
+        _header.Damage((byte)damage);
     }
 
     public void Kill() => _header.Kill();
-    public bool IsOnBody(ushort position) => _bitboard.IsSet(position);
+    public bool IsOnBody(ushort position) => _bodyBitboard.IsSet(position);
 }

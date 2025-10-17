@@ -44,7 +44,7 @@ public readonly ref struct Arena(
             if (map.TryGetValue(snakeData.Id, out var snakeIndex))
             {
                 var snake = System[snakeIndex];
-                snake.Initialize(snakeData.Health, snakeData.Body);
+                snake.Initialize(snakeData);
                 Snakes.Or(snake.Body);
             }
         }

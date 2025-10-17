@@ -1,4 +1,6 @@
-﻿using System.Runtime.InteropServices;
+﻿// Thanos/War/WarSnakeHeader.cs
+
+using System.Runtime.InteropServices;
 
 namespace Thanos.War;
 
@@ -7,43 +9,45 @@ public struct WarSnakeHeader
 {
     private const byte FullHealth = 100;
 
-    public ushort Length;
     public ushort Head;
-    public ushort Tail;
+    public byte HP;
+    private byte _isPendingGrowth; // Manteniamo questo per gestire la crescita nel turno successivo
 
-    public byte Points;
-    private byte _isPendingGrowth;
+    // Indici per il buffer circolare
+    public int HeadIndex;
+    public int TailIndex;
 
-    public readonly bool IsDead => Points <= 0;
+    public readonly bool IsDead => HP <= 0;
     public readonly bool IsGrowthPending => _isPendingGrowth == 1;
+    
     public void ScheduleGrowth() => _isPendingGrowth = 1;
 
-    public void ProcessPendingGrowth()
+    // Questo metodo verrà chiamato all'inizio della mossa del serpente
+    public void ProcessPendingGrowth(ref ushort length)
     {
         if (_isPendingGrowth == 0) return;
-
-        Length++;
+        length++;
         _isPendingGrowth = 0;
     }
 
     public void Damage(byte amount)
     {
-        if (Points > amount)
-            Points -= amount;
+        if (HP > amount)
+            HP -= amount;
         else
-            Points = 0;
+            HP = 0;
     }
 
-    public void Kill() => Points = 0;
+    public void Kill() => HP = 0;
+    public void FullCure() => HP = FullHealth;
 
-    public void FullCure() => Points = FullHealth;
-
-    public void PlacementNew(ushort length, ushort head, ushort tail, byte points)
+    public void PlacementNew(ushort head, byte points, ushort length)
     {
-        Length = length;
         Head = head;
-        Tail = tail;
-        Points = points;
+        HP = points;
+        // La lunghezza non viene più scritta qui direttamente, ma gestita dal buffer
         _isPendingGrowth = 0;
+        HeadIndex = 0;
+        TailIndex = 0;
     }
 }
