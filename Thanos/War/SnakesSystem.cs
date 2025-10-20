@@ -9,9 +9,9 @@ namespace Thanos.War;
 public readonly ref struct SnakesSystem
 {
     private readonly Span<byte> _memory;
-    private readonly ref readonly MemoryLayout _layout;
+    private readonly ref readonly PoolMemoryLayout _layout;
 
-    public SnakesSystem(Span<byte> memory, in MemoryLayout layout, int count)
+    public SnakesSystem(Span<byte> memory, in PoolMemoryLayout layout, int count)
     {
         _memory = memory;
         _layout = ref layout;

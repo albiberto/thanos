@@ -7,20 +7,15 @@ namespace Thanos.MCST;
 [StructLayout(LayoutKind.Sequential, Size = 32)]
 public struct Node
 {
-    // Blocco 1: Dati "caldi" per selezione e valutazione (16 byte)
-    // Questi campi sono usati più di frequente durante l'attraversamento dell'albero.
     public int Visits;
     public float Wins;
-
     public int FirstChildIndex;
     public int NextSiblingIndex;
-
-    // Blocco 2: Dati di stato e struttura, RIORDINATI per allineamento (16 byte)
-    public long Hash; // 8 byte -> Messo per primo, si allineerà perfettamente.
-    public int ParentIndex; // 4 byte
-    public byte PlayerIndex; // 2 byte
-    public byte Move; // 1 byte
-    public bool IsTerminal; // 1 byte
+    public long Hash;
+    public int ParentIndex;
+    public byte PlayerIndex;
+    public byte Move;
+    public bool IsTerminal;
 
     public void PlacementRoot(long hash)
     {

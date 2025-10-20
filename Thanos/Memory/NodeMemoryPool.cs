@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.MCST;
-using Thanos.MCST.Memory;
 
 namespace Thanos.Memory;
 
@@ -28,12 +27,8 @@ public sealed unsafe class NodeMemoryPool : IDisposable
     {
         get
         {
-            // --- 1. PROTEZIONE DELLA MEMORIA ---
             if (index >= _maxNodes) throw new OutOfMemoryException($"Accesso illegale allo SlotMemoryPool. Richiesto indice {index}, ma la capacità massima è {_maxNodes}.");
 
-            // Console.WriteLine($"[NodeMemoryPool] Allocated {(double)(_slotSize * index) / (1024 * 1024):F3} MB for {_slotSize}-byte slots, current node: {index}, max nodes: {_maxNodes}");
-
-            // --- 2. CALCOLO DEL PUNTATORE ---
             var startOffset = (long)index * _layout.Size;
             var nodePointer = _basePointer + startOffset;
 

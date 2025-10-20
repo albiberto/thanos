@@ -11,11 +11,11 @@ public sealed unsafe class SlotMemoryPool : IDisposable
     private readonly uint _maxSlots;
     private int _area;
 
-    private MemoryLayout _layout;
+    private PoolMemoryLayout _layout;
     private LookupPointers _lookupPointers;
     private Dictionary<string, int> _map;
 
-    public SlotMemoryPool(uint maxSlots, in MemoryLayout layout, LookupPointers? lutPointers = null, Dictionary<string, int>? map = null, int area = 0)
+    public SlotMemoryPool(uint maxSlots, in PoolMemoryLayout layout, LookupPointers? lutPointers = null, Dictionary<string, int>? map = null, int area = 0)
     {
         _maxSlots = maxSlots;
 
@@ -71,7 +71,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         neighbors = new NeighborsGrid(_area, neighborsMemory);
     }
 
-    public void Set(int area, LookupPointers lookupPointers, Dictionary<string, int> map, in MemoryLayout layout)
+    public void Set(int area, LookupPointers lookupPointers, Dictionary<string, int> map, in PoolMemoryLayout layout)
     {
         _area = area;
         _lookupPointers = lookupPointers;

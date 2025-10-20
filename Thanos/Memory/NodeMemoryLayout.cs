@@ -1,4 +1,6 @@
-﻿namespace Thanos.MCST.Memory;
+﻿using Thanos.MCST;
+
+namespace Thanos.Memory;
 
 public unsafe struct NodeMemoryLayout()
 {

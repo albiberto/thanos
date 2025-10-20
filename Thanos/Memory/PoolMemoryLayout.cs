@@ -1,6 +1,6 @@
 ﻿namespace Thanos.Memory;
 
-public class MemoryLayout(
+public class PoolMemoryLayout(
     int slotSize,
     int headerStride,
     int bitboardSize,
@@ -20,7 +20,6 @@ public class MemoryLayout(
     public readonly int CircularBufferStride = circularBufferStride;
     public readonly int Capacity = capacity;
 
-    // SCORCIATOIE RIPRISTINATE: Leggono dall'array di offset
     public int FoodBitboardOffset => BitboardOffsets[0];
     public int HazardsBitboardOffset => BitboardOffsets[1];
     public int SnakesBitboardOffset => BitboardOffsets[2];

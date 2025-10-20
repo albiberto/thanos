@@ -2,7 +2,6 @@
 using Thanos.Common;
 using Thanos.Extensions;
 using Thanos.MCST;
-using Thanos.MCST.Memory;
 using Thanos.Memory;
 using Thanos.PreWarm.Memory;
 using Thanos.SourceGen;
