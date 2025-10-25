@@ -1,7 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
-using System.Text; // Aggiunto per StringBuilder
+using System.Text;
+using Thanos.War.Structures; // Aggiunto per StringBuilder
 
 namespace Thanos.War;
 

@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
+using Thanos.War.Structures;
 
 namespace Thanos.War;
 

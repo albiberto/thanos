@@ -12,6 +12,7 @@ public static class Constants
     public const int Small = 7 * 7;
 
     public const int MaxSnakesCount = 8;
+    public const int GlobalBitboardsCount = 3;
     public const uint MaxSnakeBodyCapacity = 256;
     public static readonly int[] Areas = [Small, Medium, Large];
 }

@@ -1,12 +1,12 @@
 ﻿using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace Thanos.War;
+namespace Thanos.War.Structures;
 
-public readonly ref struct Bitboard(Span<byte> memory)
+public readonly ref struct Bitboard(Span<byte> raw)
 {
-    public readonly Span<ulong> Memory = MemoryMarshal.Cast<byte, ulong>(memory);
-    public readonly ReadOnlySpan<byte> Raw = memory;
+    public readonly ReadOnlySpan<byte> Raw = raw;
+    public readonly Span<ulong> Memory = MemoryMarshal.Cast<byte, ulong>(raw);
 
     public void Clear() => Memory.Clear();
 
@@ -14,7 +14,6 @@ public readonly ref struct Bitboard(Span<byte> memory)
 
     public void Unset(ushort position1D) => Memory[position1D >> 6] &= ~(1UL << (position1D & 63));
     
-
     public bool IsSet(ushort position1D)
     {
         var index = position1D >> 6;
@@ -48,7 +47,7 @@ public readonly ref struct Bitboard(Span<byte> memory)
     public int PopCount()
     {
         var count = 0;
-        foreach (var chunk in this.Memory) count += BitOperations.PopCount(chunk);
+        foreach (var chunk in Memory) count += BitOperations.PopCount(chunk);
 
         return count;
     }

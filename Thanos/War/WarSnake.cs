@@ -1,103 +1,71 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.SourceGen;
+using Thanos.War.Structures;
 
 namespace Thanos.War;
 
-public readonly ref struct WarSnake
+public ref struct WarSnake(WarSnakeLife life, Bitboard bitboard, CircularQueue queue)
 {
-    private readonly ref WarSnakeHeader _header;
-    private readonly Bitboard _bodyBitboard;
-    private readonly Span<ushort> _bodyParts;
-    private readonly int _capacity;
-
-    public WarSnake(ref WarSnakeHeader header, Span<byte> bodyBitboardMemory, Span<ushort> bodyParts, int capacity)
-    {
-        _header = ref header;
-        _bodyBitboard = new Bitboard(bodyBitboardMemory);
-        _bodyParts = bodyParts;
-        _capacity = capacity;
-    }
+    private WarSnakeLife _life = life;
+    
+    private readonly Bitboard _bitboard = bitboard;
+    private CircularQueue _queue = queue;
 
     public void Initialize(in Snake snakeData)
     {
-        _header.HP = snakeData.Health;
-        _bodyBitboard.Clear();
-        _header.HeadIndex = 0;
-        _header.TailIndex = 0;
+        _life.HP = snakeData.Health;
+        _life.ConsumePendingGrowth(); 
         
-        // Inizializza il buffer e la bitboard partendo dalla coda
-        for (int i = snakeData.Body.Length - 1; i >= 0; i--)
+        for (var i = snakeData.Body.Length - 1; i >= 0; i--)
         {
             var part = snakeData.Body[i];
-            AddHead(part);
-            _bodyBitboard.Set(part);
+            _queue.Enqueue(part); 
+            _bitboard.Set(part);
         }
     }
 
-    // --- PROPRIETÀ DI STATO ---
-    public ushort Head => _header.Head;
-    public ushort Tail => _bodyParts[_header.TailIndex]; // La coda è il primo elemento nel buffer
-    public int Length => (_header.HeadIndex - _header.TailIndex + _capacity) % _capacity;
-    public Bitboard Body => _bodyBitboard;
-    public int HP => _header.HP;
-    public bool IsDead => _header.HP <= 0;
+    // --- PROPRIETÀ E ACCESSORI ---
+    public ushort Head => _queue.PeekHead;
+    public ushort Tail => _queue.PeekTail; 
+    public int Length => _queue.Length; 
+    public Bitboard Body => _bitboard;
+    public int HP => _life.HP;
+    public bool IsDead => _life.IsDead;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void AddHead(ushort newHeadPos)
-    {
-        _bodyParts[_header.HeadIndex] = newHeadPos;
-        _header.HeadIndex = (_header.HeadIndex + 1) % _capacity;
-        _header.Head = newHeadPos;
-    }
+    private ushort RemoveTail() => _queue.Dequeue();
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ushort RemoveTail()
-    {
-        ushort oldTailPos = _bodyParts[_header.TailIndex];
-        _header.TailIndex = (_header.TailIndex + 1) % _capacity;
-        return oldTailPos;
-    }
-
+    // Il resto della logica di UpdateAfterMove era corretto
     public void UpdateAfterMove(ushort newHead, bool ateFood, int damage)
     {
         if (IsDead) return;
+        
+        if (!_life.IsGrowthPending && !ateFood)
+        {
+            var oldTailPos = RemoveTail(); 
+            _bitboard.Unset(oldTailPos);
+        }
+        
+        _queue.Enqueue(newHead);
+        _bitboard.Set(newHead);
 
-        // Aggiungi la nuova testa
-        AddHead(newHead);
-        _bodyBitboard.Set(newHead);
-
-        // Gestione della coda e della crescita
         if (ateFood)
         {
-            _header.FullCure();
-            // Non rimuoviamo la coda, facendo crescere il serpente di 1.
+            _life.FullCure();
+            _life.ScheduleGrowth();
         }
         else
         {
-            // Rimuovi la vecchia coda dal buffer e dalla bitboard
-            ushort oldTailPos = RemoveTail();
-            
-            // Controlla se la posizione della vecchia coda è ancora occupata
-            // da un'altra parte del corpo prima di cancellare il bit.
-            bool isPosStillOccupied = false;
-            for (int i = _header.TailIndex; i != _header.HeadIndex; i = (i + 1) % _capacity)
-            {
-                if (_bodyParts[i] == oldTailPos)
-                {
-                    isPosStillOccupied = true;
-                    break;
-                }
-            }
-            
-            if (!isPosStillOccupied)
-            {
-                _bodyBitboard.Unset(oldTailPos);
-            }
+            _life.Damage((byte)damage); 
         }
-        
-        _header.Damage((byte)damage);
     }
 
-    public void Kill() => _header.Kill();
-    public bool IsOnBody(ushort position) => _bodyBitboard.IsSet(position);
+    public void Kill() => _life.Kill();
+    public bool IsOnBody(ushort position) => _bitboard.IsSet(position);
+    
+    public void GetSpans(out CircularQueue queue, out Bitboard bitboard)
+    {
+        queue = _queue; 
+        bitboard = _bitboard;
+    }
 }
