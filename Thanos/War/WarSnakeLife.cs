@@ -8,11 +8,15 @@ public ref struct WarSnakeLife
 {
     private const byte FullHealth = 100;
 
-    public byte HP;
     private byte _isPendingGrowth;
+
+    public byte HP { get; private set; }
 
     public readonly bool IsDead => HP <= 0;
     public readonly bool IsGrowthPending => _isPendingGrowth != 0;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetHP(byte hp) => HP = hp;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Damage(byte amount)

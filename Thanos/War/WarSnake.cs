@@ -13,8 +13,7 @@ public ref struct WarSnake(WarSnakeLife life, Bitboard bitboard, CircularQueue q
 
     public void Initialize(in Snake snakeData)
     {
-        _life.HP = snakeData.Health;
-        _life.ConsumePendingGrowth(); 
+        _life.SetHP(snakeData.Health);
         
         for (var i = snakeData.Body.Length - 1; i >= 0; i--)
         {
@@ -35,7 +34,6 @@ public ref struct WarSnake(WarSnakeLife life, Bitboard bitboard, CircularQueue q
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ushort RemoveTail() => _queue.Dequeue();
 
-    // Il resto della logica di UpdateAfterMove era corretto
     public void UpdateAfterMove(ushort newHead, bool ateFood, int damage)
     {
         if (IsDead) return;
@@ -62,10 +60,4 @@ public ref struct WarSnake(WarSnakeLife life, Bitboard bitboard, CircularQueue q
 
     public void Kill() => _life.Kill();
     public bool IsOnBody(ushort position) => _bitboard.IsSet(position);
-    
-    public void GetSpans(out CircularQueue queue, out Bitboard bitboard)
-    {
-        queue = _queue; 
-        bitboard = _bitboard;
-    }
 }

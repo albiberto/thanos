@@ -4,32 +4,32 @@ using System.Runtime.InteropServices;
 namespace Thanos.War.Structures;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct WarSnakeAnatomy
+public ref struct CircularQueueState
 {
     public byte Length { get; private set; }
     public ushort HeadIndex { get; private set; }
     public ushort TailIndex { get; private set; }
-    public ushort CapacityMask { get; private set; }
-    
+    public ushort WrapMask { get; private set; }
+
     public void Initialize(ushort capacity)
     {
-        CapacityMask = (ushort)(capacity - 1);
+        WrapMask = (ushort)(capacity - 1);
         Length = 0;
         HeadIndex = 0;
         TailIndex = 0;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void IncrementHead()
+    public void AdvanceHead()
     {
-        HeadIndex = (ushort)((HeadIndex + 1) & CapacityMask);
+        HeadIndex = (ushort)((HeadIndex + 1) & WrapMask);
         Length++;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void IncrementTail()
+    public void AdvanceTail()
     {
-        TailIndex = (ushort)((TailIndex + 1) & CapacityMask);
+        TailIndex = (ushort)((TailIndex + 1) & WrapMask);
         Length--;
     }
 }

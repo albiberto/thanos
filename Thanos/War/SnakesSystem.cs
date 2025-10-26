@@ -38,7 +38,7 @@ public readonly ref struct SnakesSystem
         
         // 3. Ottieni i riferimenti ai dati di STATO (usando Unsafe.As)
         ref var life = ref Unsafe.As<byte, WarSnakeLife>(ref MemoryMarshal.GetReference(lifeSpan));
-        ref var anatomy = ref Unsafe.As<byte, WarSnakeAnatomy>(ref MemoryMarshal.GetReference(anatomySpan));
+        ref var anatomy = ref Unsafe.As<byte, CircularQueueState>(ref MemoryMarshal.GetReference(anatomySpan));
         anatomy.Initialize(_capacity);
         
         // 5. Costruisci l'orchestratore WarSnake passando tutti i pezzi

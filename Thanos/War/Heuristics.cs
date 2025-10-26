@@ -88,7 +88,7 @@ public readonly ref struct Heuristics
 
         // --- EURISTICA DEL CIBO ---
         // CORREZIONE: La Bitboard non espone più 'Memory', usiamo la proprietà 'Raw'
-        var foodBitboard = _food.Memory;
+        var foodBitboard = _food.Buffer;
         var headCoord = _conversionsMap[head];
         score += HeuristicsConstants.FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
 

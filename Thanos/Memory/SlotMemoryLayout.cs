@@ -2,7 +2,6 @@
 using Thanos.Common;
 using Thanos.War;
 using Thanos.War.Structures;
-using WarSnakeAnatomy = Thanos.War.Structures.WarSnakeAnatomy;
 
 namespace Thanos.Memory;
 
@@ -26,7 +25,7 @@ public class SlotMemoryLayout
         // 1. CALCOLA DIMENSIONI COMPONENTI
         WarSnakeLifeSize = Unsafe.SizeOf<WarSnakeLife>();               //      4 bytes
         BitboardSize = sizeof(ulong) * ((area + 63) / 64);              //  +  16 bytes
-        CircularQueueStateSize = Unsafe.SizeOf<WarSnakeAnatomy>();   //  +   6 bytes
+        CircularQueueStateSize = Unsafe.SizeOf<CircularQueueState>();   //  +   6 bytes
         QueueBufferSize = sizeof(ushort) * capacity;                    //  + 256 bytes
                                                                         //  -----------
                                                                         //  = 282 bytes (Dati)

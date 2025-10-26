@@ -3,31 +3,31 @@ using System.Runtime.InteropServices;
 
 namespace Thanos.War.Structures;
 
-public ref struct CircularQueue(Span<byte> raw, WarSnakeAnatomy anatomy)
+public ref struct CircularQueue(Span<byte> raw, CircularQueueState state)
 {
     public Span<byte> Raw { get; } = raw;
-    private readonly Span<ushort> _memory = MemoryMarshal.Cast<byte, ushort>(raw);
-    
-    private WarSnakeAnatomy _anatomy = anatomy;
+    private Span<ushort> Buffer { get; } = MemoryMarshal.Cast<byte, ushort>(raw);
 
-    public ushort PeekHead => _memory[(_anatomy.HeadIndex - 1) & _anatomy.CapacityMask];
-    public ushort PeekTail => _memory[_anatomy.TailIndex];
-    public readonly int Length => _anatomy.Length;
+    private CircularQueueState _state = state;
+
+    public ushort PeekHead => Buffer[(_state.HeadIndex - 1) & _state.WrapMask];
+    public ushort PeekTail => Buffer[_state.TailIndex];
+    public readonly int Length => _state.Length;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Enqueue(ushort value)
     {
-        _memory[_anatomy.HeadIndex] = value;
-        _anatomy.IncrementHead();
+        Buffer[_state.HeadIndex] = value;
+        _state.AdvanceHead();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort Dequeue()
     {
-        var value = _memory[_anatomy.TailIndex];
+        var value = Buffer[_state.TailIndex];
 
-        _anatomy.IncrementTail();
-        
+        _state.AdvanceTail();
+
         return value;
     }
 }

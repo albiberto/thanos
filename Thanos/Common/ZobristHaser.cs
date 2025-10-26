@@ -14,14 +14,14 @@ public static class ZobristHasher
             var snake = arena.System[i];
             if (snake.IsDead) continue;
 
-            var snakeBodyBitboard = snake.Body.Memory;
+            var snakeBodyBitboard = snake.Body.Buffer;
             hash = HashSnakeBitboard(hash, snakeBodyBitboard, i);
         }
 
-        var foodBitboard = arena.Food.Memory;
+        var foodBitboard = arena.Food.Buffer;
         hash = HashFoodBitboard(hash, foodBitboard);
     
-        var hazardBitboard = arena.Hazards.Memory;
+        var hazardBitboard = arena.Hazards.Buffer;
         hash = HashHazardBitboard(hash, hazardBitboard);
 
         return hash;
