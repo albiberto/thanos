@@ -11,13 +11,6 @@ public static class Program
 
     public static void Main(string[] args)
     {
-        var fileWriter = new StreamWriter("log.txt", append: true)
-        {
-            AutoFlush = true
-        };
-        Console.SetOut(fileWriter);
-        Console.SetError(fileWriter);
-        
         var builder = WebApplication.CreateBuilder(args);
         var app = builder.Build();
 
