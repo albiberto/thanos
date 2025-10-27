@@ -51,7 +51,7 @@ public class Engine
             rootNode.ClearChildren();
         }
 
-        RunIterations();
+        RunIterations(request.Board.Area);
         
         #if DEBUG
             return _nodePool.SelectMostVisitedChildWithLogging(_rootIndex);
@@ -61,14 +61,14 @@ public class Engine
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RunIterations(int counter = 0)
+    private void RunIterations(int area, int counter = 0)
     {
         var stopwatch = Stopwatch.StartNew();
 
         // while (stopwatch.ElapsedMilliseconds < 10000000000)
         while (counter < 50)
         {
-            _worker.RunIteration(_rootIndex);
+            _worker.RunIteration(area, _rootIndex);
             counter++;
         }
         

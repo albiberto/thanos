@@ -2,6 +2,7 @@
 using Thanos.Common;
 using Thanos.SourceGen;
 using System.Text;
+using Thanos.PreWarm;
 using Thanos.War.Structures; // Aggiunto per StringBuilder
 
 namespace Thanos.War;
@@ -14,8 +15,8 @@ public readonly ref struct Arena(
     Bitboard food, 
     Bitboard hazards, 
     Bitboard snakes, 
-    NeighborsGrid neighborsGrid, 
     Dictionary<string, int> map,
+    NeighborsGrid neighborsGrid, 
     ReadOnlySpan<Coordinate> conversionsMap)
 {
     public readonly SnakesSystem System = system;
@@ -56,14 +57,11 @@ public readonly ref struct Arena(
 
     public void CloneFrom(in Arena source)
     {
-        // LOGGING: Annuncia la clonazione
-        Console.WriteLine("[Arena] Cloning state from another Arena.");
-        
         source.System.Raw.CopyTo(System.Raw);
 
-        source.Food.CopyTo(this.Food);
-        source.Hazards.CopyTo(this.Hazards);
-        source.Snakes.CopyTo(this.Snakes);
+        source.Food.CopyTo(Food);
+        source.Hazards.CopyTo(Hazards);
+        source.Snakes.CopyTo(Snakes);
     }
     
     private WarSnake Me => System.Me;
@@ -201,28 +199,28 @@ public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
 
-    public void SimulateRandomFoodSpawn(int foodSpawnChance, int minimumFood)
+    public void SimulateRandomFoodSpawn(int foodSpawnChance, int minimumFood, int area)
     {
         var currentFoodCount = Food.PopCount();
         var foodToSpawn = minimumFood - currentFoodCount;
         for (var i = 0; i < foodToSpawn; i++)
         {
-            var spawnLocation = GetRandomEmptySquare();
+            var spawnLocation = GetRandomEmptySquare(area);
             if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
         if (Random.Shared.Next(0, 100) < foodSpawnChance)
         {
-            var spawnLocation = GetRandomEmptySquare();
+            var spawnLocation = GetRandomEmptySquare(area);
             if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ushort GetRandomEmptySquare()
+    private ushort GetRandomEmptySquare(int area)
     {
         for (var i = 0; i < 20; i++)
         {
-            var potentialSpot = (ushort)Random.Shared.Next(0, _neighborsGrid.Area);
+            var potentialSpot = (ushort)Random.Shared.Next(0, area);
             if (Snakes.IsUnset(potentialSpot)) return potentialSpot;
         }
         return ushort.MaxValue;

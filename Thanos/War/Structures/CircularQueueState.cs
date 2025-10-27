@@ -4,14 +4,14 @@ using System.Runtime.InteropServices;
 namespace Thanos.War.Structures;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct CircularQueueState
+public struct CircularQueueState
 {
     public byte Length { get; private set; }
     public ushort HeadIndex { get; private set; }
     public ushort TailIndex { get; private set; }
     public ushort WrapMask { get; private set; }
 
-    public void Initialize(ushort capacity)
+    public void PlacementNew(ushort capacity)
     {
         WrapMask = (ushort)(capacity - 1);
         Length = 0;

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace Thanos.War;
 
 [StructLayout(LayoutKind.Sequential)]
-public ref struct WarSnakeLife
+public struct WarSnakeLife
 {
     private const byte FullHealth = 100;
 

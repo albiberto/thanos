@@ -2,15 +2,14 @@
 
 namespace Thanos.PreWarm;
 
-public static class PositionalScoreCache
+public static class PositionalScoreBuilder
 {
     public static void Build(int width, Span<float> scores)
     {
-        var area = width * width;
         var centerX = width / 2f;
         var centerY = width / 2f;
 
-        for (ushort pos = 0; pos < area; pos++)
+        for (ushort pos = 0; pos < scores.Length; pos++)
         {
             var x = pos % width;
             var y = pos / width;

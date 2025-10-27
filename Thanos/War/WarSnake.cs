@@ -4,9 +4,9 @@ using Thanos.War.Structures;
 
 namespace Thanos.War;
 
-public ref struct WarSnake(WarSnakeLife life, Bitboard bitboard, CircularQueue queue)
+public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQueue queue)
 {
-    private WarSnakeLife _life = life;
+    private ref WarSnakeLife _life = ref life;
     
     private readonly Bitboard _bitboard = bitboard;
     private CircularQueue _queue = queue;

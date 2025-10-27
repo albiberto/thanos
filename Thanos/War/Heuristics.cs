@@ -3,6 +3,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Common;
+using Thanos.PreWarm;
 using Thanos.SourceGen;
 using Thanos.War.Structures;
 

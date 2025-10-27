@@ -21,14 +21,14 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private static readonly byte[] AllMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void RunIteration(int rootIndex)
+    public void RunIteration(int area, int rootIndex)
     {
         var leafIndex = Select(rootIndex);
         ref var leafNode = ref _nodePool[leafIndex];
 
         if (leafNode is { IsLeafNode: true, IsTerminal: false })
         {
-            Expand(leafIndex, ref leafNode);
+            Expand(leafIndex, ref leafNode, area);
         }
 
         var outcome = Evaluate(leafIndex);
@@ -96,7 +96,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Expand(int parentIndex, ref Node parentNode)
+    private void Expand(int parentIndex, ref Node parentNode, int area)
     {
         var playerIndex = parentNode.PlayerIndex;
         
@@ -113,7 +113,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         
         Console.WriteLine($"[Expand] Player {playerIndex} has {safeMoves} safe moves.");
         
-        ExpandNode(parentIndex, safeMoves, ref parentNode, in playerArena);
+        ExpandNode(parentIndex, safeMoves, ref parentNode, in playerArena, area);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,7 +166,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ExpandNode(int parentIndex, byte safeMoves, ref Node parentNode, in Arena parentArena)
+    private void ExpandNode(int parentIndex, byte safeMoves, ref Node parentNode, in Arena parentArena, int area)
     {
         var playerIndex = parentNode.PlayerIndex;
         var lastChildIndex = -1;
@@ -188,7 +188,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             childArena.CloneFrom(in parentArena);
 
             var snakeToMove = childArena.System[playerIndex];
-            ApplySingleMove(ref childArena, ref snakeToMove, move);
+            ApplySingleMove(in childArena, ref snakeToMove, move, area);
 
             var nextPlayerIndex = GetNextPlayerIndex(in childArena, playerIndex);
 
@@ -230,7 +230,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
 // *** METODO CHIAVE AGGIORNATO ***
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move)
+    private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move, int area)
     {
         var newHead = arena.GetNewHeadPosition(snake.Head, move);
         
@@ -253,7 +253,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
         
         // La logica per lo spawn del cibo rimane, ma potrebbe essere semplificata in futuro
-        arena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood);
+        arena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
     }
     
     private float Evaluate(int leafIndex)
