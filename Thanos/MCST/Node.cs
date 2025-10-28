@@ -52,6 +52,4 @@ public struct Node
     }
 
     public void NewRoot() => ParentIndex = -1;
-    
-    public void ClearChildren() => FirstChildIndex = -1;
 }

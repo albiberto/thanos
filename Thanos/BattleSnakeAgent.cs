@@ -30,21 +30,20 @@ public sealed class BattleSnakeAgent : IDisposable
         var map = BuildSnakeMap(in request);
 
         _slotPool.Set(map);
+        _engine.Reset();
     }
 
     public byte Move(in Request request)
     {
-        _engine.PrepareNextTurn(_lastChosenIndex);
-        
-        var bestIndex = _engine.FindBestMove(in request);
-    
+        var bestIndex = _engine.FindBestMove(in request, _lastChosenIndex);
+
         if (bestIndex == -1) return Moves.None;
-    
+
         _lastChosenIndex = bestIndex; 
-    
+
         ref var chosenNode = ref _nodePool[_lastChosenIndex];
         var move = chosenNode.Move;
-        
+    
         return move;
     }
     
