@@ -11,13 +11,7 @@ public struct CircularQueueState
     public ushort TailIndex { get; private set; }
     public ushort WrapMask { get; private set; }
 
-    public void PlacementNew(ushort capacity)
-    {
-        WrapMask = (ushort)(capacity - 1);
-        Length = 0;
-        HeadIndex = 0;
-        TailIndex = 0;
-    }
+    public void PlacementNew(ushort capacity) => WrapMask = (ushort)(capacity - 1);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AdvanceHead()

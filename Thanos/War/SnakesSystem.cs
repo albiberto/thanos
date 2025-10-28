@@ -29,10 +29,7 @@ public ref struct SnakesSystem(Span<byte> raw, in SlotMemoryLayout layout, int c
         ref var state = ref Unsafe.As<byte, CircularQueueState>(ref MemoryMarshal.GetReference(anatomySpan));
         state.PlacementNew(_layout.Capacity);
         
-        bitboardSpan.Clear();
         var bitboard = new Bitboard(bitboardSpan);
-        
-        queueSpan.Clear();
         var queue = new CircularQueue(queueSpan, ref state);
 
         return new WarSnake(ref life, bitboard, queue);

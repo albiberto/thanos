@@ -20,7 +20,6 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         _layout = layout;
         _slotSize = _layout.SlotSize;
         
-        // Rimuovi 'Constants.MaxSnakesCount'
         var memorySize = (nuint)_slotSize * maxSlots * Constants.MaxSnakesCount; 
         _basePointer = NativeMemory.AlignedAlloc(memorySize, 64);
 
