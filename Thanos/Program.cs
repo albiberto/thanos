@@ -14,16 +14,13 @@ public static class Program
         var builder = WebApplication.CreateBuilder(args);
         var app = builder.Build();
 
-        //  --- L'agent viene creato e gestito qui ---
         var agent = new BattleSnakeAgent();
         app.Lifetime.ApplicationStopping.Register(() => agent.Dispose());
-
-        // --- Endpoint dell'API ---
-
+        
         app.MapGet("/", () => new
         {
             apiversion = "1",
-            author = "Thanos",
+            author = "albiberto",
             color = "#65BF70",
             head = "safe",
             tail = "round-bum"
