@@ -11,13 +11,14 @@ public sealed class BattleSnakeAgent : IDisposable
 
     private readonly NodeMemoryPool _nodePool;
     private readonly SlotMemoryPool _slotPool;
+    private readonly LookupsMemoryPool _lookupsMemoryPool = new(LookupsMemoryLayout.Medium);
 
     private int _lastChosenIndex;
 
     public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
         _nodePool = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
-        _slotPool = new SlotMemoryPool(maxNodes, new LookupsMemoryPool(LookupsMemoryLayout.Medium), SlotMemoryLayout.Worst);
+        _slotPool = new SlotMemoryPool(maxNodes, _lookupsMemoryPool, SlotMemoryLayout.Worst);
 
         _engine = new Engine(_slotPool, _nodePool);
     }
@@ -26,7 +27,14 @@ public sealed class BattleSnakeAgent : IDisposable
     {
         _lastChosenIndex = 0;
 
-        var map = BuildSnakeMap(in request);
+        var myId = request.You.Id;
+
+        var map = new Dictionary<string, int>
+        {
+            [myId] = 0
+        };
+
+        foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
 
         _slotPool.Set(map);
         _engine.Reset();
@@ -48,20 +56,6 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void End(in Request request)
     {
-    }
-
-    private static Dictionary<string, int> BuildSnakeMap(in Request request)
-    {
-        var myId = request.You.Id;
-
-        var map = new Dictionary<string, int>
-        {
-            [myId] = 0
-        };
-
-        foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
-
-        return map;
     }
 
     public void Dispose()
