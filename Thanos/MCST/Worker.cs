@@ -125,7 +125,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         Console.WriteLine($"[GetLegalMoves] Player {playerSnakeIndex} evaluating legal moves from head position {playerSnake.Head}.");
         #endif
         
-        var potentialMoves = arena.GetLegalMoves(playerSnake.Head);
+        var potentialMoves = arena.GetLegalMoves(playerSnake.Head, playerSnake.Tail);
 
         #if  DEBUG
         Console.WriteLine($"[GetLegalMoves] Player {playerSnakeIndex} potential moves bitmap: {Convert.ToString(potentialMoves, 2).PadLeft(4, '0')} (");

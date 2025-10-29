@@ -30,9 +30,10 @@ public readonly ref struct Arena(
 
     public void InitializeFromRequest(in Request request)
     {
-        // LOGGING: Annuncia l'inizializzazione
+        #if DEBUG
         Console.WriteLine($"[Arena] Initializing from request for turn {request.Turn}. Snakes: {request.Board.Snakes.Length}, Food: {request.Board.Food.Length}.");
-
+        #endif
+        
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
@@ -64,26 +65,35 @@ public readonly ref struct Arena(
         source.Snakes.CopyTo(Snakes);
     }
     
-    private WarSnake Me => System.Me;
-    
-    public byte GetLegalMoves(ushort headPosition)
+    public byte GetLegalMoves(ushort headPosition, ushort tailPosition)
     {
         byte legalMoves = 0;
+        
+        // Controlla ogni mossa (Up, Down, Left, Right)
+        // UP
         var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
-        if (NeighborsGrid.IsValid(upPos) && !Snakes.IsSet(upPos)) legalMoves |= Moves.Up;
+        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition)) 
+            legalMoves |= Moves.Up;
         
+        // DOWN
         var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
-        if (NeighborsGrid.IsValid(downPos) && !Snakes.IsSet(downPos)) legalMoves |= Moves.Down;
+        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition)) 
+            legalMoves |= Moves.Down;
         
+        // LEFT
         var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
-        if (NeighborsGrid.IsValid(leftPos) && !Snakes.IsSet(leftPos)) legalMoves |= Moves.Left;
+        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition)) 
+            legalMoves |= Moves.Left;
         
+        // RIGHT
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
-        if (NeighborsGrid.IsValid(rightPos) && !Snakes.IsSet(rightPos)) legalMoves |= Moves.Right;
+        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition)) 
+            legalMoves |= Moves.Right;
 
         #if DEBUG
             var logBuilder = new StringBuilder();
-            logBuilder.Append($"[GetLegalMoves] Head at {headPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
+            // AGGIORNATO: Aggiunto il log per la coda
+            logBuilder.Append($"[GetLegalMoves] Head at {headPosition}, Tail at {tailPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
 
             if ((legalMoves & Moves.Up) != 0) logBuilder.Append("Up ");
             if ((legalMoves & Moves.Down) != 0) logBuilder.Append("Down ");
@@ -97,105 +107,26 @@ public readonly ref struct Arena(
         return legalMoves;
     }
 
-public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
-{
-    // --- BLOCCO DI LOGGING DETTAGLIATO ---
-    var log = new StringBuilder();
-    log.AppendLine("==================================================================");
-    log.AppendLine($"[CalculateNewTailPosition] Inizio calcolo per serpente con Head:{snake.Head}, Tail:{snake.Tail}, Length:{snake.Length}");
-    log.AppendLine($" -> Bit a 1 nel corpo (segmenti fisici): {snake.Body.PopCount()}");
-
-    if (ateFood)
+    // AGGIUNGI QUESTO NUOVO METODO HELPER (privato)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsSquareLegal(ushort position, ushort tailPosition)
     {
-        log.AppendLine(" -> DECISIONE: Serpente ha mangiato. La coda non si muove.");
-        log.AppendLine($" -> RITORNO: Vecchia coda ({snake.Tail})");
-        log.AppendLine("==================================================================");
-        Console.WriteLine(log.ToString());
-        return snake.Tail;
-    }
+        bool isBody = Snakes.IsSet(position);
+        
+        // Caso 1: La casella è libera (non è corpo). È legale.
+        if (!isBody) return true;
 
-    if (snake.Length <= 2)
-    {
-        log.AppendLine(" -> DECISIONE: Serpente corto (<=2). La nuova coda sarà la vecchia testa.");
-        log.AppendLine($" -> RITORNO: Vecchia testa ({snake.Head})");
-        log.AppendLine("==================================================================");
-        Console.WriteLine(log.ToString());
-        return snake.Head;
-    }
-
-    var oldTail = snake.Tail;
-    log.AppendLine($" -> La vecchia coda si trova in posizione: {oldTail}");
-
-    // UP
-    var up = _neighborsGrid.Get(oldTail, Moves.Up);
-    if (NeighborsGrid.IsValid(up))
-    {
-        log.Append($"   -> Controllo SU ({up}): È parte del corpo? {snake.IsOnBody(up)}");
-        if (snake.IsOnBody(up))
+        // Caso 2: La casella è corpo, ma è la nostra coda.
+        if (position == tailPosition)
         {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {up}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return up;
+            // È legale SOLO SE non c'è cibo sulla coda
+            // (perché se ci fosse, mangeremmo e la coda non si muoverebbe).
+            return !Food.IsSet(position);
         }
-        log.AppendLine();
+        
+        // Caso 3: La casella è corpo e non è la nostra coda. Non è legale.
+        return false;
     }
-
-    // DOWN
-    var down = _neighborsGrid.Get(oldTail, Moves.Down);
-    if (NeighborsGrid.IsValid(down))
-    {
-        log.Append($"   -> Controllo GIÙ ({down}): È parte del corpo? {snake.IsOnBody(down)}");
-        if (snake.IsOnBody(down))
-        {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {down}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return down;
-        }
-        log.AppendLine();
-    }
-
-    // LEFT
-    var left = _neighborsGrid.Get(oldTail, Moves.Left);
-    if (NeighborsGrid.IsValid(left))
-    {
-        log.Append($"   -> Controllo SINISTRA ({left}): È parte del corpo? {snake.IsOnBody(left)}");
-        if (snake.IsOnBody(left))
-        {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {left}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return left;
-        }
-        log.AppendLine();
-    }
-
-    // RIGHT
-    var right = _neighborsGrid.Get(oldTail, Moves.Right);
-    if (NeighborsGrid.IsValid(right))
-    {
-        log.Append($"   -> Controllo DESTRA ({right}): È parte del corpo? {snake.IsOnBody(right)}");
-        if (snake.IsOnBody(right))
-        {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {right}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return right;
-        }
-        log.AppendLine();
-    }
-
-    log.AppendLine(" -> ERRORE LOGICO: Nessun segmento del corpo adiacente alla coda trovato.");
-    log.AppendLine($" -> RITORNO (fallback): Vecchia coda ({oldTail})");
-    log.AppendLine("==================================================================");
-    Console.WriteLine(log.ToString());
-    return oldTail;
-}
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
 
