@@ -33,10 +33,6 @@ public class Engine
 
             if (_rootIndex > 0)
             {
-                #if DEBUG
-                Console.WriteLine($"[Engine.FindBestMove] INFO: Riutilizzo albero riuscito. Nuova radice: {_rootIndex}.");
-                #endif
-                
                 // Imposta il nodo trovato come nuova radice
                 ref var newRootNode = ref _nodePool[_rootIndex];
                 newRootNode.NewRoot(); // Imposta ParentIndex = -1
@@ -57,14 +53,6 @@ public class Engine
         // sia un fallimento nel riutilizzo dell'albero (_rootIndex == 0)
         if (_rootIndex == 0)
         {
-            #if DEBUG
-                if (previousMoveIndex > 0) {
-                    Console.WriteLine("[Engine.FindBestMove] INFO: Riutilizzo albero fallito. Creazione nuovo albero.");
-                } else {
-                    Console.WriteLine("[Engine.FindBestMove] INFO: Creazione nuovo albero MCTS da zero.");
-                }
-            #endif
-
             _rootIndex = 1; // Usa lo slot 1 come radice
             _worker.Reset(_rootIndex, request.Game.Ruleset.Settings);
 
@@ -84,11 +72,7 @@ public class Engine
         RunIterations(request.Board.Area);
         
         // --- 4. SELEZIONE MOSSA ---
-        #if DEBUG
-            var bestChildIndex = _nodePool.SelectMostVisitedChildWithLogging(_rootIndex);
-        #else
-            var bestChildIndex = _nodePool.SelectMostVisitedChild(_rootIndex);
-        #endif
+        var bestChildIndex = _nodePool.SelectMostVisitedChild(_rootIndex);
 
         // Restituisce l'indice del nodo della *nostra* mossa migliore
         return bestChildIndex;
@@ -145,16 +129,11 @@ public class Engine
         }
         
         stopwatch.Stop();
-        
-        #if DEBUG
-            Console.WriteLine($"[Engine.FindBestMove.RunIterations] INFO: Iterations completed: {counter} in {stopwatch.ElapsedMilliseconds}ms.");
-        #endif
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
-        Console.WriteLine("[Engine.Reset] INFO: Resettando l'albero MCTS.");
         _rootIndex = 0;
         _worker.Reset(1);
     }

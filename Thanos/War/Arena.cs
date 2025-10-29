@@ -30,10 +30,6 @@ public readonly ref struct Arena(
 
     public void InitializeFromRequest(in Request request)
     {
-        #if DEBUG
-        Console.WriteLine($"[Arena] Initializing from request for turn {request.Turn}. Snakes: {request.Board.Snakes.Length}, Food: {request.Board.Food.Length}.");
-        #endif
-        
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
@@ -89,20 +85,6 @@ public readonly ref struct Arena(
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
         if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition)) 
             legalMoves |= Moves.Right;
-
-        #if DEBUG
-            var logBuilder = new StringBuilder();
-            // AGGIORNATO: Aggiunto il log per la coda
-            logBuilder.Append($"[GetLegalMoves] Head at {headPosition}, Tail at {tailPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
-
-            if ((legalMoves & Moves.Up) != 0) logBuilder.Append("Up ");
-            if ((legalMoves & Moves.Down) != 0) logBuilder.Append("Down ");
-            if ((legalMoves & Moves.Left) != 0) logBuilder.Append("Left ");
-            if ((legalMoves & Moves.Right) != 0) logBuilder.Append("Right ");
-            logBuilder.Append(")");
-
-            Console.WriteLine(logBuilder.ToString());
-        #endif
         
         return legalMoves;
     }

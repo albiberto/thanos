@@ -13,10 +13,6 @@ public static class SlotPoolExtensions
 
         var hash = ZobristHasher.CalculateHash(in arena);
         
-        #if DEBUG
-            Console.WriteLine($"[SlotPoolExtensions] Request hash computed from slot index {index}: {hash}");
-        #endif
-        
         return hash;
     }
 }

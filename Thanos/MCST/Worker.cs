@@ -111,8 +111,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         
         var safeMoves = GetLegalMoves(in playerArena, in playerSnake, playerIndex);
         
-        Console.WriteLine($"[Expand] Player {playerIndex} has {safeMoves} safe moves.");
-        
         ExpandNode(parentIndex, safeMoves, ref parentNode, in playerArena, area);
     }
 
@@ -120,16 +118,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private static byte GetLegalMoves(in Arena arena, in WarSnake playerSnake, int playerSnakeIndex)
     {
         byte safeMoves = 0;
-
-        #if  DEBUG
-        Console.WriteLine($"[GetLegalMoves] Player {playerSnakeIndex} evaluating legal moves from head position {playerSnake.Head}.");
-        #endif
         
         var potentialMoves = arena.GetLegalMoves(playerSnake.Head, playerSnake.Tail);
-
-        #if  DEBUG
-        Console.WriteLine($"[GetLegalMoves] Player {playerSnakeIndex} potential moves bitmap: {Convert.ToString(potentialMoves, 2).PadLeft(4, '0')} (");
-        #endif
     
         foreach (var move in AllMoves)
         {
@@ -157,10 +147,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 safeMoves |= move;
             }
         }
-
-        #if  DEBUG
-        Console.WriteLine($"[GetLegalMoves] Player {playerSnakeIndex} safe moves bitmap: {Convert.ToString(potentialMoves, 2).PadLeft(4, '0')} (");
-        #endif
         
         return safeMoves;
     }
@@ -175,13 +161,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         {
             if ((safeMoves & move) == 0) continue;
 
-            #if DEBUG
-                Console.WriteLine("============================================================================================================================");
-                Console.WriteLine("===== EXPAND  EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND EXPAND =====");
-                Console.WriteLine("============================================================================================================================");
-                Console.WriteLine($"[ExpandNode] Expanding move {move.ToApiMove().ToUpperInvariant()} for player {playerIndex} at node {parentIndex}");
-            #endif
-            
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
         
@@ -261,10 +240,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var heuristics = _slotPool.GetHeuristics(leafIndex);
         var outcome = heuristics.Outcome();
         var score = outcome != 0.0f ? outcome : heuristics.Evaluate();
-        
-        #if DEBUG
-            Console.WriteLine($"[Evaluate] Node {leafIndex} - Heuristic score: {score:F2}");
-        #endif
         
         return score;
     }
