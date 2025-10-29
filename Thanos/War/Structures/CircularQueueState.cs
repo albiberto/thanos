@@ -26,4 +26,12 @@ public struct CircularQueueState
         TailIndex = (ushort)((TailIndex + 1) & WrapMask);
         Length--;
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset()
+    {
+        Length = 0;
+        HeadIndex = 0;
+        TailIndex = 0;
+    }
 }

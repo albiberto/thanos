@@ -32,5 +32,9 @@ public ref struct CircularQueue(Span<byte> raw, ref CircularQueueState state)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear() => Raw.Clear();
+    public void Clear()
+    {
+        Raw.Clear();
+        _state.Reset();
+    }
 }
