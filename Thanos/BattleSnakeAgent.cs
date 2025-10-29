@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Thanos.Common;
+﻿using Thanos.Common;
 using Thanos.MCST;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -39,15 +38,17 @@ public sealed class BattleSnakeAgent : IDisposable
 
         if (bestIndex == -1) return Moves.None;
 
-        _lastChosenIndex = bestIndex; 
+        _lastChosenIndex = bestIndex;
 
         ref var chosenNode = ref _nodePool[_lastChosenIndex];
         var move = chosenNode.Move;
-    
+
         return move;
     }
-    
-    public void End(in Request request) { }
+
+    public void End(in Request request)
+    {
+    }
 
     private static Dictionary<string, int> BuildSnakeMap(in Request request)
     {
@@ -59,10 +60,10 @@ public sealed class BattleSnakeAgent : IDisposable
         };
 
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
-        
+
         return map;
     }
-    
+
     public void Dispose()
     {
         _slotPool.Dispose();

@@ -12,7 +12,7 @@ public static class SlotPoolExtensions
         arena.InitializeFromRequest(in request);
 
         var hash = ZobristHasher.CalculateHash(in arena);
-        
+
         return hash;
     }
 }

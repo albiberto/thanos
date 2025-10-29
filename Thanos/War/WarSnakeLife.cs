@@ -14,7 +14,7 @@ public struct WarSnakeLife
 
     public readonly bool IsDead => HP <= 0;
     public readonly bool IsGrowthPending => _isPendingGrowth != 0;
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetHP(byte hp) => HP = hp;
 

@@ -13,7 +13,7 @@ public readonly ref struct Bitboard(Span<byte> raw)
     public void Set(ushort position1D) => Buffer[position1D >> 6] |= 1UL << (position1D & 63);
 
     public void Unset(ushort position1D) => Buffer[position1D >> 6] &= ~(1UL << (position1D & 63));
-    
+
     public bool IsSet(ushort position1D)
     {
         var index = position1D >> 6;
@@ -43,7 +43,7 @@ public readonly ref struct Bitboard(Span<byte> raw)
         var otherData = other.Buffer;
         for (var i = 0; i < Buffer.Length; i++) Buffer[i] |= otherData[i];
     }
-    
+
     public int PopCount()
     {
         var count = 0;
@@ -51,6 +51,6 @@ public readonly ref struct Bitboard(Span<byte> raw)
 
         return count;
     }
-    
+
     public void CopyTo(Bitboard destination) => Buffer.CopyTo(destination.Buffer);
 }

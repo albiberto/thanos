@@ -62,11 +62,11 @@ public static class Program
         await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
         stream.Position = 0;
 
-         using var reader = new StreamReader(stream, leaveOpen: true);
-         var json = await reader.ReadToEndAsync();
-         Console.WriteLine("--- RAW JSON RECEIVED ---");
-         Console.WriteLine(json);
-         Console.WriteLine("------------------------------");
+        using var reader = new StreamReader(stream, leaveOpen: true);
+        var json = await reader.ReadToEndAsync();
+        Console.WriteLine("--- RAW JSON RECEIVED ---");
+        Console.WriteLine(json);
+        Console.WriteLine("------------------------------");
 
         stream.Position = 0;
 

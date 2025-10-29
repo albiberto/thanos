@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using Thanos.Memory;
 using Thanos.SourceGen;
-using Thanos.Extensions; 
+using Thanos.Extensions;
 
 namespace Thanos.MCST;
 
@@ -36,7 +36,7 @@ public class Engine
                 // Imposta il nodo trovato come nuova radice
                 ref var newRootNode = ref _nodePool[_rootIndex];
                 newRootNode.NewRoot(); // Imposta ParentIndex = -1
-                
+
                 // Sincronizza lo stato dell'arena di questo nodo con il request attuale
                 // (es. per aggiornare cibo, salute, ecc.)
                 var rootArena = _slotPool.GetArena(_rootIndex);
@@ -47,7 +47,7 @@ public class Engine
         {
             _rootIndex = 0; // Forza un reset se non c'è una mossa precedente
         }
-        
+
         // --- 2. CREAZIONE NUOVO ALBERO (se _rootIndex è 0) ---
         // Questo blocco ora gestisce sia l'inizio di una partita (previousMoveIndex == 0)
         // sia un fallimento nel riutilizzo dell'albero (_rootIndex == 0)
@@ -60,7 +60,7 @@ public class Engine
             var hash = _slotPool.CalculateHash(_rootIndex, in request);
             ref var rootNode = ref _nodePool[_rootIndex];
             rootNode.PlacementRoot(hash);
-            
+
             // INIZIALIZZA anche l'arena per la nuova radice
             var rootArena = _slotPool.GetArena(_rootIndex);
             rootArena.InitializeFromRequest(in request);
@@ -70,7 +70,7 @@ public class Engine
         // _rootIndex è ora impostato correttamente sul nodo che rappresenta
         // lo stato attuale, ed è il *nostro* turno (Player 0).
         RunIterations(request.Board.Area);
-        
+
         // --- 4. SELEZIONE MOSSA ---
         var bestChildIndex = _nodePool.SelectMostVisitedChild(_rootIndex);
 
@@ -88,26 +88,21 @@ public class Engine
         //    I suoi figli rappresentano le possibili risposte dell'avversario
         //    simulate durante il Turno 8.
         ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
-        if (myLastMoveNode.IsLeafNode)
-        {
-            return 0; // L'avversario non è stato simulato, resetta.
-        }
+        if (myLastMoveNode.IsLeafNode) return 0; // L'avversario non è stato simulato, resetta.
 
         // 3. Itera attraverso i figli (le mosse simulate dell'avversario).
         var childIndex = myLastMoveNode.FirstChildIndex;
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool[childIndex];
-            
+
             // 4. Confronta l'hash del nodo figlio con l'hash dello stato attuale.
             if (childNode.Hash == currentHash)
-            {
                 // TROVATO! Questo figlio rappresenta la mossa che l'avversario
                 // ha effettivamente fatto. Diventerà la nostra nuova radice.
                 // (es. Node 1200, che ha PlayerIndex = 0)
                 return childIndex;
-            }
-            
+
             childIndex = childNode.NextSiblingIndex;
         }
 
@@ -115,19 +110,19 @@ public class Engine
         //    esplorato, o c'è un problema di hash. Resettiamo l'albero.
         return 0;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RunIterations(int area, int counter = 0)
     {
         var stopwatch = Stopwatch.StartNew();
 
         while (stopwatch.ElapsedMilliseconds < 450)
-        // while (counter < 50)
+            // while (counter < 50)
         {
             _worker.RunIteration(area, _rootIndex);
             counter++;
         }
-        
+
         stopwatch.Stop();
     }
 

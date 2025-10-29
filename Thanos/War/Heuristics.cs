@@ -47,10 +47,8 @@ public readonly ref struct Heuristics
         if (me.IsDead) return -1.0f;
 
         for (var i = 1; i < _system.Count; i++)
-        {
             if (!_system[i].IsDead)
                 return 0.0f;
-        }
 
         return 1.0f;
     }
@@ -67,7 +65,7 @@ public readonly ref struct Heuristics
         // CORREZIONE: La proprietà era HP, ora è Health
         var health = me.HP;
         var score = 0.0f;
-        
+
         score += _positionalScores[head];
         score -= Head2HeadCollision(myLength, head);
         score -= PenalityTrap(head);
@@ -78,12 +76,12 @@ public readonly ref struct Heuristics
         Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
         walls.Raw.CopyTo(wallsMemoryCopy);
         var simulatedWalls = new Bitboard(wallsMemoryCopy);
-        
+
         // CORREZIONE: La proprietà 'WillGrow' non esiste più.
         // Assumiamo lo scenario più comune in cui il serpente non mangia e quindi la coda si sposta,
         // liberando una casella. Questo è fondamentale per non sottostimare lo spazio disponibile.
         simulatedWalls.Unset(me.Tail);
-        
+
         var mySpace = FloodFill(head, simulatedWalls);
         score += mySpace * HeuristicsConstants.SpaceWeight;
 
@@ -126,10 +124,9 @@ public readonly ref struct Heuristics
                 _neighborsGrid.Get(head, Moves.Down) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Left) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Right) == enemyHead)
-            {
                 return 25000.0f;
-            }
         }
+
         return 0.0f;
     }
 
@@ -159,9 +156,9 @@ public readonly ref struct Heuristics
             }
         }
 
-    EndLoop:
+        EndLoop:
         if (distance is >= int.MaxValue or 0) return 0.0f;
-        
+
         var urgency = 101.0f - health;
         return urgency / distance;
     }
@@ -178,10 +175,10 @@ public readonly ref struct Heuristics
     private int FloodFill(ushort startNode, in Bitboard walls)
     {
         if (walls.IsSet(startNode)) return 0;
-        
+
         const int MaxStackSize = 256;
         Span<ushort> stack = stackalloc ushort[MaxStackSize];
-        
+
         Span<byte> visitedMemory = stackalloc byte[MaxStackSize / 8];
         visitedMemory.Clear();
         var visited = new Bitboard(visitedMemory);

@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
-using System.Text;
 using Thanos.PreWarm;
 using Thanos.War.Structures; // Aggiunto per StringBuilder
 
@@ -11,12 +10,12 @@ namespace Thanos.War;
 ///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
 /// </summary>
 public readonly ref struct Arena(
-    SnakesSystem system, 
-    Bitboard food, 
-    Bitboard hazards, 
-    Bitboard snakes, 
+    SnakesSystem system,
+    Bitboard food,
+    Bitboard hazards,
+    Bitboard snakes,
     Dictionary<string, int> map,
-    NeighborsGrid neighborsGrid, 
+    NeighborsGrid neighborsGrid,
     ReadOnlySpan<Coordinate> conversionsMap)
 {
     public readonly SnakesSystem System = system;
@@ -39,14 +38,12 @@ public readonly ref struct Arena(
         var board = request.Board;
 
         foreach (var snakeData in board.Snakes)
-        {
             if (map.TryGetValue(snakeData.Id, out var snakeIndex))
             {
                 var snake = System[snakeIndex];
                 snake.Initialize(snakeData);
                 Snakes.Or(snake.Body);
             }
-        }
 
         foreach (var foodPosition in board.Food) Food.Set(foodPosition);
         foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
@@ -60,32 +57,32 @@ public readonly ref struct Arena(
         source.Hazards.CopyTo(Hazards);
         source.Snakes.CopyTo(Snakes);
     }
-    
+
     public byte GetLegalMoves(ushort headPosition, ushort tailPosition)
     {
         byte legalMoves = 0;
-        
+
         // Controlla ogni mossa (Up, Down, Left, Right)
         // UP
         var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
-        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition)) 
+        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition))
             legalMoves |= Moves.Up;
-        
+
         // DOWN
         var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
-        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition)) 
+        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition))
             legalMoves |= Moves.Down;
-        
+
         // LEFT
         var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
-        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition)) 
+        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition))
             legalMoves |= Moves.Left;
-        
+
         // RIGHT
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
-        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition)) 
+        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition))
             legalMoves |= Moves.Right;
-        
+
         return legalMoves;
     }
 
@@ -93,19 +90,17 @@ public readonly ref struct Arena(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsSquareLegal(ushort position, ushort tailPosition)
     {
-        bool isBody = Snakes.IsSet(position);
-        
+        var isBody = Snakes.IsSet(position);
+
         // Caso 1: La casella è libera (non è corpo). È legale.
         if (!isBody) return true;
 
         // Caso 2: La casella è corpo, ma è la nostra coda.
         if (position == tailPosition)
-        {
             // È legale SOLO SE non c'è cibo sulla coda
             // (perché se ci fosse, mangeremmo e la coda non si muoverebbe).
             return !Food.IsSet(position);
-        }
-        
+
         // Caso 3: La casella è corpo e non è la nostra coda. Non è legale.
         return false;
     }
@@ -121,6 +116,7 @@ public readonly ref struct Arena(
             var spawnLocation = GetRandomEmptySquare(area);
             if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
+
         if (Random.Shared.Next(0, 100) < foodSpawnChance)
         {
             var spawnLocation = GetRandomEmptySquare(area);
@@ -136,9 +132,10 @@ public readonly ref struct Arena(
             var potentialSpot = (ushort)Random.Shared.Next(0, area);
             if (Snakes.IsUnset(potentialSpot)) return potentialSpot;
         }
+
         return ushort.MaxValue;
     }
-    
+
     public int ManhattanDistance(ushort pos1, ushort pos2)
     {
         ref readonly var coord1 = ref _conversionsMap[pos1];

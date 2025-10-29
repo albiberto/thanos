@@ -20,7 +20,7 @@ public static class ZobristHasher
 
         var foodBitboard = arena.Food.Buffer;
         hash = HashFoodBitboard(hash, foodBitboard);
-    
+
         var hazardBitboard = arena.Hazards.Buffer;
         hash = HashHazardBitboard(hash, hazardBitboard);
 
@@ -62,7 +62,7 @@ public static class ZobristHasher
 
         return currentHash;
     }
-    
+
     private static long HashHazardBitboard(long currentHash, ReadOnlySpan<ulong> bitboard)
     {
         for (var i = 0; i < bitboard.Length; i++)
