@@ -92,7 +92,6 @@ public static class BattleSnakeApiExtensions
         var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
         return request!;
     }
-
 #else
     private static async Task<Request> ReadRequestAsync(this HttpContext httpContext)
     {

@@ -35,6 +35,10 @@ public sealed class BattleSnakeAgent : IDisposable
         };
 
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
+        
+        #if DEBUG
+        Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join("\n ", map.Select(kv => $"Snake-{kv.Key}: {kv.Value}"))}");
+        #endif
 
         _slotPool.Set(map);
         _engine.Reset();
