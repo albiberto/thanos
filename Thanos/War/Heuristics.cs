@@ -14,32 +14,22 @@ public static class HeuristicsConstants
     public const float SpaceWeight = 10.5f;
     public const float HealthWeight = 0.5f;
     public const float FoodWeight = 0.6f;
+    public const float TailWeight = 0.5f; // <-- NUOVA COSTANTE
     public const float CenterBonusValue = 15.0f;
     public const float BorderPenaltyValue = -100.0f;
 }
 
-public readonly ref struct Heuristics
+public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
 {
-    private readonly SnakesSystem _system;
-    private readonly Bitboard _food;
-    private readonly Bitboard _hazards;
-    private readonly Bitboard _snakes;
-    private readonly NeighborsGrid _neighborsGrid;
-    private readonly ReadOnlySpan<Coordinate> _conversionsMap;
-    private readonly ReadOnlySpan<float> _positionalScores;
+    private readonly SnakesSystem _system = system;
+    private readonly Bitboard _food = food;
+    private readonly Bitboard _hazards = hazards;
+    private readonly Bitboard _snakes = snakes;
+    private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
+    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
+    private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
 
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-
-    public Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
-    {
-        _system = system;
-        _food = food;
-        _hazards = hazards;
-        _snakes = snakes;
-        _neighborsGrid = neighborsGrid;
-        _conversionsMap = conversionsMap;
-        _positionalScores = positionalScores;
-    }
 
     public float Outcome()
     {
@@ -53,46 +43,161 @@ public readonly ref struct Heuristics
         return 1.0f;
     }
 
+    /// <summary>
+    /// Metodo principale rifattorizzato. Ora orchestra le chiamate ai metodi privati.
+    /// </summary>
     public float Evaluate()
     {
         var me = _system.Me;
         if (me.IsDead) return float.NegativeInfinity;
 
         var head = me.Head;
-        if (head >= _positionalScores.Length) return float.NegativeInfinity;
+        int area = _positionalScores.Length; 
+        if (head >= area) return float.NegativeInfinity;
 
         var myLength = me.Length;
-        // CORREZIONE: La proprietà era HP, ora è Health
         var health = me.HP;
         var score = 0.0f;
 
-        score += _positionalScores[head];
-        score -= Head2HeadCollision(myLength, head);
-        score -= PenalityTrap(head);
-        score += health * HeuristicsConstants.HealthWeight;
+        // --- 1. Euristiche "Statiche" (Stato attuale) ---
+        score += EvaluatePositionalScore(head);
+        score += EvaluateHealth(health);
+        score += EvaluateCollisionsAndTraps(head, myLength);
+        score += EvaluateTailDistance(me.Head, me.Tail); // <-- NUOVA EURISTICA
 
-        // --- EURISTICA DELLO SPAZIO (Flood Fill) ---
-        var walls = _snakes;
-        Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
-        walls.Raw.CopyTo(wallsMemoryCopy);
+        // --- 2. Euristiche "Simulate" (Stato futuro) ---
+        
+        // Creiamo una copia dei muri per simulare il movimento della coda
+        Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
+        _snakes.Raw.CopyTo(wallsMemoryCopy);
         var simulatedWalls = new Bitboard(wallsMemoryCopy);
+        simulatedWalls.Unset(me.Tail); 
 
-        // CORREZIONE: La proprietà 'WillGrow' non esiste più.
-        // Assumiamo lo scenario più comune in cui il serpente non mangia e quindi la coda si sposta,
-        // liberando una casella. Questo è fondamentale per non sottostimare lo spazio disponibile.
-        simulatedWalls.Unset(me.Tail);
-
-        var mySpace = FloodFill(head, simulatedWalls);
-        score += mySpace * HeuristicsConstants.SpaceWeight;
-
-        // --- EURISTICA DEL CIBO ---
-        // CORREZIONE: La Bitboard non espone più 'Memory', usiamo la proprietà 'Raw'
-        var foodBitboard = _food.Buffer;
-        var headCoord = _conversionsMap[head];
-        score += HeuristicsConstants.FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
+        // Calcola spazio (Voronoi) E cibo conteso in un unico passaggio
+        score += EvaluateTerritoryAndFood(area, in simulatedWalls, myLength, health);
 
         return score;
     }
+
+    // --- METODI EURISTICI PRIVATI ---
+
+    /// <summary>
+    /// 1. EURISTICA: Valuta il bonus/malus per la posizione sulla scacchiera.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluatePositionalScore(ushort head)
+    {
+        return _positionalScores[head];
+    }
+    
+    /// <summary>
+    /// 2. EURISTICA: Valuta la nostra salute attuale.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluateHealth(int health)
+    {
+        return health * HeuristicsConstants.HealthWeight;
+    }
+
+    /// <summary>
+    /// 3. EURISTICA: Applica penalità per trappole e potenziali collisioni H2H.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluateCollisionsAndTraps(ushort head, int myLength)
+    {
+        return -Head2HeadCollision(myLength, head) - PenalityTrap(head);
+    }
+    
+    /// <summary>
+    /// 4. EURISTICA: Incentiva l'aumento della distanza tra testa e coda ("srotolamento").
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluateTailDistance(ushort head, ushort tail)
+    {
+        int distance = ManhattanDistance(head, tail);
+        return distance * HeuristicsConstants.TailWeight;
+    }
+
+    /// <summary>
+    /// 5. EURISTICA (UNIFICATA): Calcola il territorio Voronoi (spazio) E il punteggio del cibo conteso.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
+    private float EvaluateTerritoryAndFood(int area, in Bitboard walls, int myLength, int myHealth)
+    {
+        Span<ushort> queue = stackalloc ushort[512]; 
+        int queueHead = 0;
+        int queueTail = 0;
+
+        Span<int> owners = stackalloc int[area];
+        owners.Fill(-1);
+
+        for (int i = 0; i < _system.Count; i++)
+        {
+            var snake = _system[i];
+            if (snake.IsDead) continue;
+            ushort head = snake.Head;
+            if(head >= area) continue; 
+            owners[head] = i; 
+            queue[queueTail++] = head;
+        }
+
+        while (queueHead < queueTail)
+        {
+            ushort currentPos = queue[queueHead++];
+            int currentOwner = owners[currentPos];
+
+            foreach (var move in AllMovesArray)
+            {
+                ushort neighborPos = _neighborsGrid.Get(currentPos, move);
+                if (NeighborsGrid.IsValid(neighborPos) && 
+                    !walls.IsSet(neighborPos) &&  
+                    owners[neighborPos] == -1)
+                {
+                    owners[neighborPos] = currentOwner;
+                    if (queueTail < queue.Length) 
+                    {
+                        queue[queueTail++] = neighborPos;
+                    }
+                }
+            }
+        }
+
+        int mySpace = 0;
+        int enemySpace = 0; 
+        float foodScore = 0.0f;
+        
+        var foodUrgency = (101.0f - myHealth) * HeuristicsConstants.FoodWeight;
+        var foodBitboard = _food.Buffer; 
+
+        for (int i = 0; i < area; i++)
+        {
+            int owner = owners[i];
+            
+            if (owner == 0) mySpace++;
+            else if (owner > 0) enemySpace++;
+            
+            if (_food.IsSet((ushort)i))
+            {
+                if (owner == 0)
+                {
+                    foodScore += foodUrgency; // Bonus
+                }
+                else if (owner > 0)
+                {
+                    if (_system[owner].Length >= myLength)
+                    {
+                        foodScore -= foodUrgency; // Penalità
+                    }
+                }
+            }
+        }
+        
+        float spaceScore = (mySpace - enemySpace) * HeuristicsConstants.SpaceWeight;
+        return spaceScore + foodScore;
+    }
+
+    // --- METODI HELPER ---
 
     private float PenalityTrap(ushort head)
     {
@@ -129,78 +234,25 @@ public readonly ref struct Heuristics
 
         return 0.0f;
     }
-
-    private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
+    
+    /// <summary>
+    /// Helper per la distanza di Manhattan, necessario per 'EvaluateTailDistance'.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int ManhattanDistance(ushort pos1, ushort pos2)
     {
-        var distance = int.MaxValue;
-
-        for (var i = 0; i < food.Length; i++)
-        {
-            var chunk = food[i];
-            if (chunk == 0) continue;
-
-            while (chunk != 0)
-            {
-                var bitIndex = BitOperations.TrailingZeroCount(chunk);
-                var pos1D = (ushort)((i << 6) + bitIndex);
-
-                var foodCoords = map[pos1D];
-                var d = Abs(head.X - foodCoords.X) + Abs(head.Y - foodCoords.Y);
-                if (d < distance)
-                {
-                    distance = d;
-                    if (distance == 1) goto EndLoop;
-                }
-
-                chunk &= ~(1UL << bitIndex);
-            }
-        }
-
-        EndLoop:
-        if (distance is >= int.MaxValue or 0) return 0.0f;
-
-        var urgency = 101.0f - health;
-        return urgency / distance;
+        ref readonly var coord1 = ref _conversionsMap[pos1];
+        ref readonly var coord2 = ref _conversionsMap[pos2];
+        return Abs(coord1.X - coord2.X) + Abs(coord1.Y - coord2.Y);
     }
 
+    /// <summary>
+    /// Helper per il valore assoluto, necessario per 'ManhattanDistance'.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Abs(int n)
     {
         var mask = n >> 31;
         return (n + mask) ^ mask;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [SkipLocalsInit]
-    private int FloodFill(ushort startNode, in Bitboard walls)
-    {
-        if (walls.IsSet(startNode)) return 0;
-
-        const int MaxStackSize = 256;
-        Span<ushort> stack = stackalloc ushort[MaxStackSize];
-
-        Span<byte> visitedMemory = stackalloc byte[MaxStackSize / 8];
-        visitedMemory.Clear();
-        var visited = new Bitboard(visitedMemory);
-
-        stack[0] = startNode;
-        var stackPointer = 1;
-        visited.Set(startNode);
-        var count = 1;
-
-        while (stackPointer > 0)
-        {
-            var current = stack[--stackPointer];
-            foreach (var move in AllMovesArray)
-            {
-                var neighbor = _neighborsGrid.Get(current, move);
-                if (!NeighborsGrid.IsValid(neighbor) || walls.IsSet(neighbor) || visited.IsSet(neighbor)) continue;
-                visited.Set(neighbor);
-                stack[stackPointer++] = neighbor;
-                count++;
-            }
-        }
-
-        return count;
     }
 }
