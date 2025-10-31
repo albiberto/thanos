@@ -50,5 +50,15 @@ public struct Node
         Wins += result;
     }
 
-    public void NewRoot() => ParentIndex = -1;
+    public void NewRoot()
+    {
+        ParentIndex = -1;
+        // --- FIX ---
+        // Quando un nodo diventa la nuova radice, i suoi figli
+        // della simulazione precedente non sono più validi.
+        // Dobbiamo azzerarli per forzare una nuova espansione
+        // basata sul nuovo stato reale.
+        FirstChildIndex = -1;
+        // --- FINE FIX ---
+    }
 }
