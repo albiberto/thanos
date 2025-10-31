@@ -59,21 +59,21 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         var health = me.HP;
         var score = 0.0f;
 
-        // --- 1. Euristiche "Statiche" (Stato attuale) ---
-        score += EvaluatePositionalScore(head);
-        score += EvaluateHealth(health);
-        score += EvaluateCollisionsAndTraps(head, myLength);
-        score += EvaluateTailDistance(me.Head, me.Tail); // <-- NUOVA EURISTICA
-
-        // --- 2. Euristiche "Simulate" (Stato futuro) ---
-        
-        // Creiamo una copia dei muri per simulare il movimento della coda
+        // --- 1. MURI SIMULATI ---
+        // Creiamo i muri UNA SOLA VOLTA e li passiamo a tutte le euristiche
         Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
         _snakes.Raw.CopyTo(wallsMemoryCopy);
         var simulatedWalls = new Bitboard(wallsMemoryCopy);
-        simulatedWalls.Unset(me.Tail); 
+        simulatedWalls.Unset(me.Tail); // Simuliamo che la nostra coda si liberi
 
-        // Calcola spazio (Voronoi) E cibo conteso in un unico passaggio
+        // --- 2. Euristiche "Statiche" (Stato attuale) ---
+        score += EvaluatePositionalScore(head);
+        score += EvaluateHealth(health);
+        score += EvaluateTailDistance(me.Head, me.Tail);
+
+        // --- 3. Euristiche "Predittive" (Stato futuro) ---
+        // Passiamo i muri simulati a entrambe
+        score += EvaluateCollisionsAndTraps(head, myLength, in simulatedWalls);
         score += EvaluateTerritoryAndFood(area, in simulatedWalls, myLength, health);
 
         return score;
@@ -81,18 +81,12 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
     // --- METODI EURISTICI PRIVATI ---
 
-    /// <summary>
-    /// 1. EURISTICA: Valuta il bonus/malus per la posizione sulla scacchiera.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluatePositionalScore(ushort head)
     {
         return _positionalScores[head];
     }
     
-    /// <summary>
-    /// 2. EURISTICA: Valuta la nostra salute attuale.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateHealth(int health)
     {
@@ -100,17 +94,15 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     }
 
     /// <summary>
-    /// 3. EURISTICA: Applica penalità per trappole e potenziali collisioni H2H.
+    /// MODIFICATO: Ora riceve i muri simulati
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateCollisionsAndTraps(ushort head, int myLength)
+    private float EvaluateCollisionsAndTraps(ushort head, int myLength, in Bitboard simulatedWalls)
     {
-        return -Head2HeadCollision(myLength, head) - PenalityTrap(head);
+        // Passiamo i muri simulati anche a queste euristiche per coerenza
+        return -Head2HeadCollision(myLength, head) - PenalityTrap(head, in simulatedWalls);
     }
     
-    /// <summary>
-    /// 4. EURISTICA: Incentiva l'aumento della distanza tra testa e coda ("srotolamento").
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateTailDistance(ushort head, ushort tail)
     {
@@ -118,9 +110,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         return distance * HeuristicsConstants.TailWeight;
     }
 
-    /// <summary>
-    /// 5. EURISTICA (UNIFICATA): Calcola il territorio Voronoi (spazio) E il punteggio del cibo conteso.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
     private float EvaluateTerritoryAndFood(int area, in Bitboard walls, int myLength, int myHealth)
@@ -151,7 +140,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             {
                 ushort neighborPos = _neighborsGrid.Get(currentPos, move);
                 if (NeighborsGrid.IsValid(neighborPos) && 
-                    !walls.IsSet(neighborPos) &&  
+                    !walls.IsSet(neighborPos) &&  // <-- CORRETTO: usa i muri passati
                     owners[neighborPos] == -1)
                 {
                     owners[neighborPos] = currentOwner;
@@ -181,13 +170,13 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             {
                 if (owner == 0)
                 {
-                    foodScore += foodUrgency; // Bonus
+                    foodScore += foodUrgency; 
                 }
                 else if (owner > 0)
                 {
                     if (_system[owner].Length >= myLength)
                     {
-                        foodScore -= foodUrgency; // Penalità
+                        foodScore -= foodUrgency; 
                     }
                 }
             }
@@ -199,26 +188,34 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
     // --- METODI HELPER ---
 
-    private float PenalityTrap(ushort head)
+    /// <summary>
+    /// MODIFICATO: Ora riceve i muri simulati (invece di usare _snakes)
+    /// </summary>
+    private float PenalityTrap(ushort head, in Bitboard simulatedWalls)
     {
         var openExits = 0;
-        var currentWalls = _snakes;
+        // var currentWalls = _snakes; // <-- VECCHIO
+        
         foreach (var move in AllMovesArray)
         {
             var neighbor = _neighborsGrid.Get(head, move);
-            if (NeighborsGrid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
+            
+            // CORREZIONE: Controlla i muri simulati
+            if (NeighborsGrid.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor)) 
+                openExits++;
         }
 
         return openExits switch
         {
-            <= 1 => 750.0f,
-            2 => 200.0f,
-            _ => 0
+            <= 1 => 750.0f, // Con 0 o 1 uscita, è una trappola
+            2 => 200.0f,    // Con 2 uscite, è rischioso
+            _ => 0          // 3 o 4 uscite, è sicuro
         };
     }
 
     private float Head2HeadCollision(int myLength, ushort head)
     {
+        // Quest'euristica controlla solo le teste nemiche, non ha bisogno dei muri
         for (var i = 1; i < _system.Count; i++)
         {
             var enemy = _system[i];
@@ -235,9 +232,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         return 0.0f;
     }
     
-    /// <summary>
-    /// Helper per la distanza di Manhattan, necessario per 'EvaluateTailDistance'.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ManhattanDistance(ushort pos1, ushort pos2)
     {
@@ -246,9 +240,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         return Abs(coord1.X - coord2.X) + Abs(coord1.Y - coord2.Y);
     }
 
-    /// <summary>
-    /// Helper per il valore assoluto, necessario per 'ManhattanDistance'.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Abs(int n)
     {
