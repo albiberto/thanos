@@ -59,6 +59,10 @@ public class Engine
 
         RunIterations(request.Board.Area);
 
+#if DEBUG
+        LogFullTreeState();
+#endif
+
         return _nodePool.SelectMostVisitedChild(_rootIndex);
     }
 
@@ -73,36 +77,10 @@ public class Engine
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool[childIndex];
-            
-            #if DEBUG
-            Console.WriteLine($"[Engine] Checking Child Index: {childIndex}");
-            Console.WriteLine($"[Engine] Node: {JsonSerializer.Serialize(childNode)}");
-            var arena = _slotPool.GetArena(childIndex);
-            
-            Console.WriteLine($"[Engine] Arena State for Child Index {childIndex}:");
-            Console.WriteLine($"{arena.Snakes.ToGridString(11, 11)}");
 
-            var system = arena.System;
-            var totalSnakes = system.Count;
-            
-            for(var i = 0; i < totalSnakes; i++)
-            {
-                var snake = system[i];
-                Console.WriteLine($"[Engine] Snake {i}");
-                Console.WriteLine($"    Head: {snake.Head}");
-                Console.WriteLine($"    Tail: {snake.Tail}");
-                Console.WriteLine($"    Length: {snake.Length}");
-                Console.WriteLine($"    Health: {snake.HP}");
-                Console.WriteLine($"    IsDead: {snake.IsDead}");
-                Console.WriteLine($"    Body Bitboard: {snake.Body.ToGridString(11, 11)}");
-                Console.WriteLine($"    CircularBuffer: {string.Join(" -> ", snake._queue.Buffer.ToArray())}");
-                Console.WriteLine($"    Head: {snake._queue.PeekHead}");
-                Console.WriteLine($"    Tail: {snake._queue.PeekHead}");
-                Console.WriteLine($"    HeadIndex: {snake._queue._state.HeadIndex}");
-                Console.WriteLine($"    TailIndex: {snake._queue._state.TailIndex}");
-                
-            }
-            #endif
+#if DEBUG
+            Console.WriteLine($"[Engine] Comparing Child Node Hash: {childNode.Hash} with Current Hash: {currentHash}");
+#endif
 
             if (childNode.Hash == currentHash) return childIndex;
 
@@ -123,9 +101,9 @@ public class Engine
             _worker.RunIteration(area, _rootIndex);
             counter++;
         }
-        
+
         stopwatch.Stop();
-        
+
         Console.WriteLine($"[Engine] Completed {counter} iterations in {stopwatch.ElapsedMilliseconds} ms.");
     }
 
@@ -134,5 +112,90 @@ public class Engine
     {
         _rootIndex = 0;
         _worker.Reset(1);
+    }
+
+    /// <summary>
+    /// Esegue il dump di tutti i nodi nell'albero di ricerca ATTIVO
+    /// partendo dal nodo root attuale.
+    /// </summary>
+    public void LogFullTreeState()
+    {
+#if DEBUG
+        Console.WriteLine($"[Engine] --- INIZIO LOG COMPLETO ALBERO (Partendo da root: {_rootIndex}) ---");
+
+        // Avvia la visita ricorsiva dall'indice della root attuale
+        LogNodeRecursive(_rootIndex);
+
+        Console.WriteLine($"[Engine] --- FINE LOG COMPLETO ALBERO ---");
+#endif
+    }
+
+    /// <summary>
+    /// Metodo helper ricorsivo per visitare e loggare un nodo e tutti i suoi discendenti.
+    /// </summary>
+    private void LogNodeRecursive(int nodeIndex)
+    {
+#if DEBUG
+        // Caso base: se l'indice non è valido (es. fine lista fratelli), fermati.
+        if (nodeIndex == -1) return;
+
+        // 1. Logga il nodo corrente
+        Console.WriteLine($"--- [Stato Nodo {nodeIndex}] ---");
+        Log(nodeIndex); // Chiama il tuo metodo di log esistente
+        Console.WriteLine($"-------------------------");
+
+        // 2. Ottieni il riferimento al nodo per trovare i suoi figli
+        ref var node = ref _nodePool[nodeIndex];
+
+        // 3. Itera su tutti i figli (usando la lista linkata FirstChild/NextSibling)
+        var childIndex = node.FirstChildIndex;
+        while (childIndex != -1)
+        {
+            // 4. Chiamata ricorsiva per ogni figlio
+            LogNodeRecursive(childIndex);
+
+            // 5. Passa al prossimo fratello
+            ref var childNode = ref _nodePool[childIndex];
+            childIndex = childNode.NextSiblingIndex;
+        }
+#endif
+    }
+
+
+    private void Log(int childIndex)
+    {
+#if DEBUG
+        // --- CORREZIONE BUG ---
+        // La variabile deve essere 'childNodeRef' come l'hai dichiarata,
+        // o rinominiamo la variabile in 'childNode' per coerenza.
+        ref var childNode = ref _nodePool[childIndex]; // Rinominata per coerenza
+
+        Console.WriteLine($"[Engine] Checking Child Index: {childIndex}");
+        Console.WriteLine($"[Engine] Node: {JsonSerializer.Serialize(childNode)}"); // Ora 'childNode' è corretta
+        var arena = _slotPool.GetArena(childIndex);
+
+        Console.WriteLine($"[Engine] Arena State for Child Index {childIndex}:");
+        Console.WriteLine($"{arena.Snakes.ToGridString(11, 11)}");
+
+        var system = arena.System;
+        var totalSnakes = system.Count;
+
+        for (var i = 0; i < totalSnakes; i++)
+        {
+            var snake = system[i];
+            Console.WriteLine($"[Engine] Snake {i}");
+            Console.WriteLine($"    Head: {snake.Head}");
+            Console.WriteLine($"    Tail: {snake.Tail}");
+            Console.WriteLine($"    Length: {snake.Length}");
+            Console.WriteLine($"    Health: {snake.HP}");
+            Console.WriteLine($"    IsDead: {snake.IsDead}");
+            Console.WriteLine($"    Body Bitboard: {snake.Body.ToGridString(11, 11)}");
+            Console.WriteLine($"    CircularBuffer: {string.Join(" -> ", snake._queue.Buffer.ToArray())}");
+            Console.WriteLine($"    Head: {snake._queue.PeekHead}");
+            Console.WriteLine($"    Tail: {snake._queue.PeekTail}");
+            Console.WriteLine($"    HeadIndex: {snake._queue._state.HeadIndex}");
+            Console.WriteLine($"    TailIndex: {snake._queue._state.TailIndex}");
+        }
+#endif
     }
 }

@@ -39,8 +39,10 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public void UpdateAfterMove(ushort newHead, bool ateFood, int damage)
     {
         if (IsDead) return;
+        
+        var wasGrowing = _life.ConsumePendingGrowth();
 
-        if (!_life.IsGrowthPending && !ateFood)
+        if (!wasGrowing && !ateFood)
         {
             var oldTailPos = RemoveTail();
             _bitboard.Unset(oldTailPos);

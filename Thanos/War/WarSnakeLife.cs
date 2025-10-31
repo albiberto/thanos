@@ -16,7 +16,11 @@ public struct WarSnakeLife
     public readonly bool IsGrowthPending => _isPendingGrowth != 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetHP(byte hp) => HP = hp;
+    public void SetHP(byte hp)
+    {
+        HP = hp;
+        _isPendingGrowth = 0;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Damage(byte amount)

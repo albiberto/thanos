@@ -86,23 +86,12 @@ public readonly ref struct Arena(
         return legalMoves;
     }
 
-    // AGGIUNGI QUESTO NUOVO METODO HELPER (privato)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsSquareLegal(ushort position, ushort tailPosition)
     {
         var isBody = Snakes.IsSet(position);
 
-        // Caso 1: La casella è libera (non è corpo). È legale.
-        if (!isBody) return true;
-
-        // Caso 2: La casella è corpo, ma è la nostra coda.
-        if (position == tailPosition)
-            // È legale SOLO SE non c'è cibo sulla coda
-            // (perché se ci fosse, mangeremmo e la coda non si muoverebbe).
-            return !Food.IsSet(position);
-
-        // Caso 3: La casella è corpo e non è la nostra coda. Non è legale.
-        return false;
+        return !isBody;
     }
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
