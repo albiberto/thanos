@@ -91,7 +91,7 @@ public readonly ref struct Arena(
     {
         var isBody = Snakes.IsSet(position);
 
-        return !isBody;
+        return !isBody || position == tailPosition;
     }
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
