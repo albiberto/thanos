@@ -14,7 +14,7 @@ public static class HeuristicsConstants
     public const float SpaceWeight = 10.5f;
     public const float HealthWeight = 0.5f;
     public const float FoodWeight = 0.6f;
-    public const float TailWeight = 0.5f; // <-- NUOVA COSTANTE
+    public const float TailWeight = 0.5f;
     public const float CenterBonusValue = 15.0f;
     public const float BorderPenaltyValue = -100.0f;
 }

@@ -62,15 +62,26 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var bestChildIndex = -1;
 
         var logParentVisits = Math.Log(parentNode.Visits);
+        
+        // Determina se stiamo scegliendo per noi (0) o per un nemico (!= 0)
+        var isMyTurn = parentNode.PlayerIndex == 0;
 
         var childIndex = parentNode.FirstChildIndex;
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool[childIndex];
 
-            if (childNode.Visits == 0) return childIndex;
+            if (childNode.Visits == 0) return childIndex; // Nodo non esplorato, priorità (UCB)
 
-            var exploitation = childNode.Wins / childNode.Visits;
+            // 1. Calcola l'exploitation score dal *nostro* punto di vista (Player 0)
+            var rawExploitation = childNode.Wins / childNode.Visits;
+
+            // 2. CORREZIONE NEGAMAX: Inverti la prospettiva se è il turno del nemico
+            // Se è il nostro turno, massimizziamo.
+            // Se è il turno del nemico, lui massimizzerà il *suo* punteggio,
+            // che equivale a *minimizzare* il nostro.
+            var exploitation = isMyTurn ? rawExploitation : -rawExploitation;
+
             var exploration = EXPLORATION_PARAMETER * Math.Sqrt(logParentVisits / childNode.Visits);
             var uctScore = exploitation + exploration;
 
@@ -234,7 +245,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             ref var currentNode = ref _nodePool[currentIndex];
             currentNode.UpdateStats(scoreToPropagate);
 
-            scoreToPropagate *= -1; // Inversione NegaMax standard per il genitore
+            scoreToPropagate *= -1; 
             currentIndex = currentNode.ParentIndex;
         }
     }
