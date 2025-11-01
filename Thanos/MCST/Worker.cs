@@ -224,12 +224,17 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var scoreToPropagate = MathF.Tanh(outcome / scalingFactor);
 
         var currentIndex = startNodeIndex;
+        
+        ref var startNode = ref _nodePool[currentIndex];
+        
+        if (startNode.PlayerIndex != 0) scoreToPropagate *= -1;
+
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
             currentNode.UpdateStats(scoreToPropagate);
 
-            scoreToPropagate *= -1;
+            scoreToPropagate *= -1; // Inversione NegaMax standard per il genitore
             currentIndex = currentNode.ParentIndex;
         }
     }
