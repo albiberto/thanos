@@ -5,6 +5,8 @@ namespace Thanos.Common;
 
 public static class ZobristHasher
 {
+    // In Thanos/Common/ZobristHasher.cs
+
     public static long CalculateHash(in Arena arena)
     {
         long hash = 0;
@@ -16,6 +18,20 @@ public static class ZobristHasher
 
             var snakeBodyBitboard = snake.Body.Buffer;
             hash = HashSnakeBitboard(hash, snakeBodyBitboard, i);
+        
+            // --- INIZIO FIX ---
+            // Aggiungi HP e Lunghezza all'hash per renderlo univoco.
+            // La soluzione Zobrist "pura" richiederebbe di espandere ZobristTable,
+            // ma un hash/rotazione semplice è già un enorme miglioramento.
+        
+            // Combina l'hash con l'indice e la salute
+            hash ^= i; // Assicura che l'HP del Serpente 0 sia diverso da quello del Serpente 1
+            hash = long.RotateLeft(hash, 7);
+            hash ^= snake.HP;
+            hash = long.RotateLeft(hash, 13);
+            hash ^= snake.Length;
+            hash = long.RotateLeft(hash, 11);
+            // --- FINE FIX ---
         }
 
         var foodBitboard = arena.Food.Buffer;
