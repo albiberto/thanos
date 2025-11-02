@@ -111,40 +111,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             return;
         }
 
-        var safeMoves = GetLegalMoves(in playerArena, in playerSnake, playerIndex);
+        var safeMoves = playerArena.GetLegalMoves(playerSnake.Head, playerSnake.Tail, playerSnake.ElementBeforeTail);
 
         ExpandNode(parentIndex, safeMoves, ref parentNode, in playerArena, area);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static byte GetLegalMoves(in Arena arena, in WarSnake playerSnake, int playerSnakeIndex)
-    {
-        byte safeMoves = 0;
-
-        var potentialMoves = arena.GetLegalMoves(playerSnake.Head, playerSnake.Tail);
-
-        foreach (var move in AllMoves)
-        {
-            if ((potentialMoves & move) == 0) continue;
-
-            var nextHead = arena.GetNewHeadPosition(playerSnake.Head, move);
-            var isSquareSafe = true;
-
-            for (var enemySnakeIndex = 0; enemySnakeIndex < arena.System.Count; enemySnakeIndex++)
-            {
-                if (enemySnakeIndex == playerSnakeIndex) continue;
-
-                var enemySnake = arena.System[enemySnakeIndex];
-                if (enemySnake.IsDead || enemySnake.Length < playerSnake.Length || arena.ManhattanDistance(enemySnake.Head, nextHead) != 1) continue;
-
-                isSquareSafe = false;
-                break;
-            }
-
-            if (isSquareSafe) safeMoves |= move;
-        }
-
-        return safeMoves;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -217,7 +186,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         if (hasEaten) arena.Food.Unset(newHead);
 
         // La logica per lo spawn del cibo rimane, ma potrebbe essere semplificata in futuro
-        arena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
+        // arena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
     }
 
     private float Evaluate(int leafIndex)

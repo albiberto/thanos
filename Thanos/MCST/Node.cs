@@ -58,7 +58,7 @@ public struct Node
         // della simulazione precedente non sono più validi.
         // Dobbiamo azzerarli per forzare una nuova espansione
         // basata sul nuovo stato reale.
-        FirstChildIndex = -1;
+        // FirstChildIndex = -1;
         // --- FINE FIX ---
     }
 }

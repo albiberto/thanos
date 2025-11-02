@@ -58,40 +58,64 @@ public readonly ref struct Arena(
         source.Snakes.CopyTo(Snakes);
     }
 
-    public byte GetLegalMoves(ushort headPosition, ushort tailPosition)
+    // File: Thanos/War/Arena.cs
+
+// Aggiungi 'Food' come parametro
+    public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition)
     {
         byte legalMoves = 0;
 
         // Controlla ogni mossa (Up, Down, Left, Right)
         // UP
         var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
-        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition))
+        // Passa 'Food' a IsSquareLegal
+        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, in Food))
             legalMoves |= Moves.Up;
 
         // DOWN
         var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
-        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition))
+        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, in Food))
             legalMoves |= Moves.Down;
 
         // LEFT
         var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
-        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition))
+        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, in Food))
             legalMoves |= Moves.Left;
 
         // RIGHT
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
-        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition))
+        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, in Food))
             legalMoves |= Moves.Right;
 
         return legalMoves;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsSquareLegal(ushort position, ushort tailPosition)
+    private bool IsSquareLegal(ushort position, ushort tailPosition, ushort elementBeforeTailPosition, in Bitboard food)
     {
+        // 1. Controlla gli ostacoli globali (Muri, Tutti i serpenti)
         var isBody = Snakes.IsSet(position);
 
-        return !isBody || position == tailPosition;
+        // 2. Se la cella è vuota, è legale.
+        if (!isBody) return true;
+
+        // 3. La cella è occupata. È la nostra coda?
+        var isTail = position == tailPosition;
+
+        // 4. Se è occupata MA NON è la nostra coda, è una collisione (muro, nemico, corpo).
+        if (!isTail) return false;
+
+        // 5. È la nostra coda. Controlliamo se è "collassata" (sovrapposta).
+        //    Se la coda è nella stessa cella del pezzo prima di essa, è sovrapposta.
+        if (tailPosition == elementBeforeTailPosition)
+        {
+            // È illegale muoversi su una coda sovrapposta.
+            return false;
+        }
+
+        // 6. È la nostra coda (e non è sovrapposta).
+        //    È legale muoversi qui SOLO SE non c'è cibo.
+        return !food.IsSet(position);
     }
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);

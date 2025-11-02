@@ -16,7 +16,7 @@ public static class HeuristicsConstants
     public const float FoodWeight = 0.6f;
     public const float TailWeight = 0.5f;
     public const float CenterBonusValue = 15.0f;
-    public const float BorderPenaltyValue = -100.0f;
+    public const float BorderPenaltyValue = -1000.0f;
 }
 
 public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
@@ -93,14 +93,14 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         return health * HeuristicsConstants.HealthWeight;
     }
 
-    /// <summary>
-    /// MODIFICATO: Ora riceve i muri simulati
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateCollisionsAndTraps(ushort head, int myLength, in Bitboard simulatedWalls)
     {
         // Passiamo i muri simulati anche a queste euristiche per coerenza
-        return -Head2HeadCollision(myLength, head) - PenalityTrap(head, in simulatedWalls);
+    
+        // Rimuovi il segno meno da Head2HeadCollision.
+        // Ora sommiamo le due penalità (entrambe sono <= 0).
+        return Head2HeadCollision(myLength, head) - PenalityTrap(head, in simulatedWalls);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -226,7 +226,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
                 _neighborsGrid.Get(head, Moves.Down) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Left) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Right) == enemyHead)
-                return 25000.0f;
+                return float.NegativeInfinity;
         }
 
         return 0.0f;

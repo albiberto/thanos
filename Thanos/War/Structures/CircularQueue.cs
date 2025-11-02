@@ -12,6 +12,7 @@ public ref struct CircularQueue(Span<byte> raw, ref CircularQueueState state)
 
     public ushort PeekHead => Buffer[(_state.HeadIndex - 1) & _state.WrapMask];
     public ushort PeekTail => Buffer[_state.TailIndex];
+    public ushort PeekElementBeforeTail => Buffer[(_state.TailIndex + 1) & _state.WrapMask];
     public readonly int Length => _state.Length;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
