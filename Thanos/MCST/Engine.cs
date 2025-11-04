@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -13,22 +14,21 @@ public class Engine
     private readonly SlotMemoryPool _slotPool;
     private readonly Worker _worker;
 
-    private int _rootIndex;
+    private int _rootIndex = Constants.FirstRootNodeIndex;
 
     public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
         _worker = new Worker(_slotPool, _nodePool);
-        _rootIndex = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int FindBestMove(in Request request, int previousMoveIndex)
+    public int FindBestMove(in Request request, int lastChosenIndex)
     {
-        if (previousMoveIndex > 0)
+        if (lastChosenIndex > 0)
         {
-            _rootIndex = FindNewRoot(previousMoveIndex, in request);
+            _rootIndex = FindNewRoot(lastChosenIndex, in request);
 
             if (_rootIndex > 0)
             {
@@ -41,7 +41,7 @@ public class Engine
         }
         else
         {
-            _rootIndex = 0;
+            _rootIndex = 1;
         }
 
         if (_rootIndex == 0)
@@ -49,7 +49,7 @@ public class Engine
             _rootIndex = 1;
             _worker.Reset(_rootIndex, request.Game.Ruleset.Settings);
 
-            var hash = _slotPool.CalculateHash(_rootIndex, in request);
+            var hash = _slotPool.CalculateRequestHash(_rootIndex, in request);
             ref var rootNode = ref _nodePool[_rootIndex];
             rootNode.PlacementRoot(hash);
 
@@ -68,7 +68,7 @@ public class Engine
 
     private int FindNewRoot(int myLastMoveNodeIndex, in Request request)
     {
-        var currentHash = _slotPool.CalculateHash(1, in request);
+        var currentHash = _slotPool.CalculateRequestHash(1, in request);
 
         ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
         if (myLastMoveNode.IsLeafNode) return 0;
@@ -95,8 +95,11 @@ public class Engine
     {
         var stopwatch = Stopwatch.StartNew();
 
-        while (stopwatch.ElapsedMilliseconds < 450)
-        // while (counter < 1000)
+        #if !DEBUG
+            while (stopwatch.ElapsedMilliseconds < 450)
+        #else
+            while (counter < 50)
+        #endif
         {
             _worker.RunIteration(area, _rootIndex);
             counter++;
@@ -114,68 +117,50 @@ public class Engine
         _worker.Reset(1);
     }
 
-    /// <summary>
-    /// Esegue il dump di tutti i nodi nell'albero di ricerca ATTIVO
-    /// partendo dal nodo root attuale.
-    /// </summary>
     public void LogFullTreeState()
     {
-#if DEBUG
-        Console.WriteLine($"[Engine] --- INIZIO LOG COMPLETO ALBERO (Partendo da root: {_rootIndex}) ---");
+        var sb = new StringBuilder();
 
-        // Avvia la visita ricorsiva dall'indice della root attuale
-        LogNodeRecursive(_rootIndex);
+        sb.AppendLine($"[Engine] --- INIZIO LOG COMPLETO ALBERO (Partendo da root: {_rootIndex}) ---");
+        LogNodeRecursive(_rootIndex, sb, 0);
+        sb.AppendLine("[Engine] --- FINE LOG COMPLETO ALBERO ---");
 
-        Console.WriteLine($"[Engine] --- FINE LOG COMPLETO ALBERO ---");
-#endif
+        Console.WriteLine(sb.ToString());
     }
 
-    /// <summary>
-    /// Metodo helper ricorsivo per visitare e loggare un nodo e tutti i suoi discendenti.
-    /// </summary>
-    private void LogNodeRecursive(int nodeIndex)
+    private void LogNodeRecursive(int nodeIndex, StringBuilder sb, int depth)
     {
-#if DEBUG
-        // Caso base: se l'indice non è valido (es. fine lista fratelli), fermati.
         if (nodeIndex == -1) return;
 
-        // 1. Logga il nodo corrente
-        Console.WriteLine($"--- [Stato Nodo {nodeIndex}] ---");
-        Log(nodeIndex); // Chiama il tuo metodo di log esistente
-        Console.WriteLine($"-------------------------");
+        var indent = new string(' ', depth * 4);
 
-        // 2. Ottieni il riferimento al nodo per trovare i suoi figli
+        sb.AppendLine($"{indent}--- [Stato Nodo {nodeIndex}] ---");
+        Log(nodeIndex, sb, indent);
+        sb.AppendLine($"{indent}-------------------------");
+
         ref var node = ref _nodePool[nodeIndex];
 
-        // 3. Itera su tutti i figli (usando la lista linkata FirstChild/NextSibling)
         var childIndex = node.FirstChildIndex;
         while (childIndex != -1)
         {
-            // 4. Chiamata ricorsiva per ogni figlio
-            LogNodeRecursive(childIndex);
+            LogNodeRecursive(childIndex, sb, depth + 1);
 
-            // 5. Passa al prossimo fratello
             ref var childNode = ref _nodePool[childIndex];
             childIndex = childNode.NextSiblingIndex;
         }
-#endif
     }
 
-
-    private void Log(int childIndex)
+    private void Log(int childIndex, StringBuilder sb, string indent)
     {
-#if DEBUG
-        // --- CORREZIONE BUG ---
-        // La variabile deve essere 'childNodeRef' come l'hai dichiarata,
-        // o rinominiamo la variabile in 'childNode' per coerenza.
-        ref var childNode = ref _nodePool[childIndex]; // Rinominata per coerenza
+        ref var childNode = ref _nodePool[childIndex];
 
-        Console.WriteLine($"[Engine] Checking Child Index: {childIndex}");
-        Console.WriteLine($"[Engine] Node: {JsonSerializer.Serialize(childNode)}"); // Ora 'childNode' è corretta
+        sb.AppendLine($"{indent}[Engine] Checking Child Index: {childIndex}");
+        sb.AppendLine($"{indent}[Engine] Node: {JsonSerializer.Serialize(childNode)}");
         var arena = _slotPool.GetArena(childIndex);
 
-        Console.WriteLine($"[Engine] Arena State for Child Index {childIndex}:");
-        Console.WriteLine($"{arena.Snakes.ToGridString(11, 11)}");
+        sb.AppendLine($"{indent}[Engine] Arena State for Child Index {childIndex}:");
+        var grid = arena.Snakes.ToGridString(11, 11);
+        sb.AppendLine($"{indent}{grid.Replace("\n", $"\n{indent}")}");
 
         var system = arena.System;
         var totalSnakes = system.Count;
@@ -183,19 +168,25 @@ public class Engine
         for (var i = 0; i < totalSnakes; i++)
         {
             var snake = system[i];
-            Console.WriteLine($"[Engine] Snake {i}");
-            Console.WriteLine($"    Head: {snake.Head}");
-            Console.WriteLine($"    Tail: {snake.Tail}");
-            Console.WriteLine($"    Length: {snake.Length}");
-            Console.WriteLine($"    Health: {snake.HP}");
-            Console.WriteLine($"    IsDead: {snake.IsDead}");
-            Console.WriteLine($"    Body Bitboard: {snake.Body.ToGridString(11, 11)}");
-            Console.WriteLine($"    CircularBuffer: {string.Join(" -> ", snake._queue.Buffer.ToArray())}");
-            Console.WriteLine($"    Head: {snake._queue.PeekHead}");
-            Console.WriteLine($"    Tail: {snake._queue.PeekTail}");
-            Console.WriteLine($"    HeadIndex: {snake._queue._state.HeadIndex}");
-            Console.WriteLine($"    TailIndex: {snake._queue._state.TailIndex}");
+
+            var snakeIndent = indent + "    ";
+
+            sb.AppendLine($"{snakeIndent}Snake {i}");
+            sb.AppendLine($"{snakeIndent}    Head: {snake.Head}");
+            sb.AppendLine($"{snakeIndent}    Tail: {snake.Tail}");
+            sb.AppendLine($"{snakeIndent}    Length: {snake.Length}");
+            sb.AppendLine($"{snakeIndent}    Health: {snake.HP}");
+            sb.AppendLine($"{snakeIndent}    IsDead: {snake.IsDead}");
+            sb.AppendLine($"{snakeIndent}    Body Bitboard:");
+
+            var snakeGrid = snake.Body.ToGridString(11, 11);
+            sb.AppendLine($"{snakeIndent}    {snakeGrid.Replace("\n", $"\n{snakeIndent}    ")}");
+
+            sb.AppendLine($"{snakeIndent}    CircularBuffer: {string.Join(" -> ", snake._queue.Buffer.ToArray())}");
+            sb.AppendLine($"{snakeIndent}    Head: {snake._queue.PeekHead}");
+            sb.AppendLine($"{snakeIndent}    Tail: {snake._queue.PeekTail}");
+            sb.AppendLine($"{snakeIndent}    HeadIndex: {snake._queue._state.HeadIndex}");
+            sb.AppendLine($"{snakeIndent}    TailIndex: {snake._queue._state.TailIndex}");
         }
-#endif
     }
 }

@@ -13,7 +13,7 @@ public sealed class BattleSnakeAgent : IDisposable
     private readonly SlotMemoryPool _slotPool;
     private readonly LookupsMemoryPool _lookupsMemoryPool = new(LookupsMemoryLayout.Medium);
 
-    private int _lastChosenIndex;
+    private int _lastChosenIndex = Constants.FirstRootNodeIndex;
 
     public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
@@ -25,7 +25,7 @@ public sealed class BattleSnakeAgent : IDisposable
 
     public void Start(in Request request)
     {
-        _lastChosenIndex = 0;
+        _lastChosenIndex = Constants.FirstRootNodeIndex;
 
         var myId = request.You.Id;
 
@@ -58,7 +58,7 @@ public sealed class BattleSnakeAgent : IDisposable
         return move;
     }
 
-    public void End(in Request request)
+    public void End(in Request _)
     {
     }
 
