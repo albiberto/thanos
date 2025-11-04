@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.IO;
 using Thanos.Common;
@@ -42,7 +43,17 @@ public static class BattleSnakeApiExtensions
             var result = agent.Move(request);
 
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new { move = result.ToApiMove() });
+            await context.Response.WriteAsJsonAsync(new
+            {
+                move = result switch
+                {
+                    Moves.Up => "up",
+                    Moves.Down => "down",
+                    Moves.Left => "left",
+                    Moves.Right => "right",
+                    _ => "up"
+                }
+            });
         });
 
         return app;
@@ -59,7 +70,32 @@ public static class BattleSnakeApiExtensions
         return app;
     }
 
-#if DEBUG
+#if !DEBUG
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<Request> ReadRequestAsync(this HttpContext httpContext)
+    {
+        await using var stream = StreamManager.GetStream();
+        await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
+        stream.Position = 0;
+
+        int width;
+        using (var document = await JsonDocument.ParseAsync(stream, cancellationToken: httpContext.RequestAborted))
+        {
+            width = document.RootElement.GetProperty("board").GetProperty("width").GetInt32();
+        }
+
+        stream.Position = 0;
+
+        var arrayConverter = new CoordinateArrayToUshortArrayConverter(width);
+        var singleConverter = new CoordinateToUshortConverter(width);
+        var options = new JsonSerializerOptions { Converters = { arrayConverter, singleConverter } };
+        var serializerContext = new ThanosSerializerContext(options);
+
+        var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
+        return request!;
+    }
+#else
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static async Task<Request> ReadRequestAsync(this HttpContext httpContext)
     {
         await using var stream = StreamManager.GetStream();
@@ -92,38 +128,5 @@ public static class BattleSnakeApiExtensions
         var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
         return request!;
     }
-#else
-    private static async Task<Request> ReadRequestAsync(this HttpContext httpContext)
-    {
-        await using var stream = StreamManager.GetStream();
-        await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
-        stream.Position = 0;
-
-        int width;
-        using (var document = await JsonDocument.ParseAsync(stream, cancellationToken: httpContext.RequestAborted))
-        {
-            width = document.RootElement.GetProperty("board").GetProperty("width").GetInt32();
-        }
-
-        stream.Position = 0;
-
-        var arrayConverter = new CoordinateArrayToUshortArrayConverter(width);
-        var singleConverter = new CoordinateToUshortConverter(width);
-        var options = new JsonSerializerOptions { Converters = { arrayConverter, singleConverter } };
-        var serializerContext = new ThanosSerializerContext(options);
-
-        var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
-        return request!;
-    }
 #endif
-
-    private static string ToApiMove(this byte move) =>
-        move switch
-        {
-            Moves.Up => "up",
-            Moves.Down => "down",
-            Moves.Left => "left",
-            Moves.Right => "right",
-            _ => "up" // Fallback
-        };
 }

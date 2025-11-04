@@ -2,13 +2,11 @@ using Thanos;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var logFileStream = new FileStream("app_log.txt", FileMode.Create, FileAccess.ReadWrite);
-var logStreamWriter = new StreamWriter(logFileStream);
+#if DEBUG
+OverrideConsoleStandardOutput()
+#endif
 
-logStreamWriter.AutoFlush = true;
-
-Console.SetOut(logStreamWriter);
-Console.SetError(logStreamWriter);
+OverrideConsoleStandardOutput();
 
 var app = builder.Build();
 
@@ -22,3 +20,15 @@ app
     .MapEnd(agent);
 
 await app.RunAsync();
+return;
+
+void OverrideConsoleStandardOutput()
+{
+    var logFileStream = new FileStream("log.log", FileMode.Create, FileAccess.ReadWrite);
+    var logStreamWriter = new StreamWriter(logFileStream);
+
+    logStreamWriter.AutoFlush = true;
+
+    Console.SetOut(logStreamWriter);
+    Console.SetError(logStreamWriter);
+}
