@@ -314,41 +314,43 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         // Resetta buffer
         Array.Clear(rewardsBuffer);
 
-        // 1. Controllo Vittoria/Sconfitta Definitiva
-        var outcome = heuristics.Outcome(); // Ritorna 1 se P0 vince, -1 se muore, 0 altrimenti
+        // 1. Controllo Vittoria/Sconfitta Definitiva (Outcome)
+        // Dobbiamo controllare l'outcome per OGNI giocatore
+        bool terminalFound = false;
         
-        // Mapper 1-vs-All outcome to Vector
-        // Se Outcome = 1 (Io vinco), P0=1.0, Altri= -1.0
-        // Se Outcome = -1 (Io perdo), P0=-1.0, Altri= ? (Non necessariamente vincono, ma per me è male)
-        
-        if (outcome != 0.0f)
+        for(int i=0; i < arena.System.Count; i++)
         {
-            rewardsBuffer[0] = outcome;
-            // Distribuisci il punteggio opposto agli altri vivi
-            int enemiesAlive = 0;
-            for(int i=1; i<arena.System.Count; i++) if(!arena.System[i].IsDead) enemiesAlive++;
-            
-            float enemyScore = outcome > 0 ? -1.0f : (1.0f / Math.Max(1, enemiesAlive)); // Se io perdo, per loro è un bene parziale
-            
-            for(int i=1; i<arena.System.Count; i++) 
-                if(!arena.System[i].IsDead) rewardsBuffer[i] = enemyScore;
-                else rewardsBuffer[i] = -1.0f; // Morti restano a -1
-            
-            return;
+            var outcome = heuristics.Outcome(i);
+            if (outcome != 0.0f)
+            {
+                rewardsBuffer[i] = outcome; // 1.0 se vinto, -1.0 se morto
+                terminalFound = true;
+            }
         }
-
-        // 2. Euristica Intermedia (Solo per P0 attualmente, approssimiamo per gli altri)
-        var score = heuristics.Evaluate();
-        // Normalizza score euristico tra -1 e 1 approssimativamente (tanh)
-        var normScore = MathF.Tanh(score / 100.0f);
         
-        rewardsBuffer[0] = normScore;
-        // Per gli altri, assumiamo punteggio 0 se non abbiamo un'euristica dedicata
-        // In un vero MaxN, dovremmo chiamare heuristics.Evaluate(playerIndex)
-        for(int i=1; i<arena.System.Count; i++)
+        // Se qualcuno ha vinto o tutti morti, usiamo questi valori "hard"
+        // Nota: Se P0 muore (-1) ma P1 è vivo (0), dobbiamo comunque valutare P1.
+        
+        // 2. Euristica Completa (MaxN)
+        // Calcoliamo i punteggi euristici per tutti (anche per chi è vivo ma non ha vinto)
+        // Usiamo un buffer temporaneo nello stack per i risultati raw
+        Span<float> rawScores = stackalloc float[arena.System.Count];
+        heuristics.EvaluateAll(rawScores);
+
+        for (int i = 0; i < arena.System.Count; i++)
         {
-             if(!arena.System[i].IsDead) rewardsBuffer[i] = 0.0f; // Neutrale
-             else rewardsBuffer[i] = -1.0f;
+            // Se abbiamo già un outcome terminale (vittoria/morte), prevale quello
+            if (rewardsBuffer[i] != 0.0f) continue;
+            
+            if (arena.System[i].IsDead)
+            {
+                rewardsBuffer[i] = -1.0f;
+                continue;
+            }
+
+            // Normalizzazione: Tanh per portare i punteggi arbitrari (es. 500) nel range [-1, 1]
+            // Dividiamo per un fattore di scala (es. 100 o 200) per ammorbidire la curva
+            rewardsBuffer[i] = MathF.Tanh(rawScores[i] / 150.0f);
         }
     }
 
