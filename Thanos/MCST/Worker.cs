@@ -140,16 +140,35 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int SelectChanceOutcome(ref Node parentNode)
     {
-        // Per ora implementazione semplice: Sceglie il figlio più visitato o il primo.
-        // In futuro: campionamento basato sulle probabilità.
-        // Dato che generiamo "No Spawn" (85%) e "Spawn" (15%), dovremmo guidare l'esplorazione.
+        // BUG FIX: Non usare SelectBestChildMaxN qui! L'Environment (Player 255) non ha Rewards[255].
         
-        // Se c'è un solo figlio (No Spawn), vai lì.
-        if (parentNode.FirstChildIndex != -1 && _nodePool[parentNode.FirstChildIndex].NextSiblingIndex == -1)
-            return parentNode.FirstChildIndex;
+        var firstChild = parentNode.FirstChildIndex;
+        
+        // Se non ha figli (non dovrebbe succedere se siamo qui), fallback
+        if (firstChild == -1) return -1;
+        
+        ref var firstNode = ref _nodePool[firstChild];
+        var secondChild = firstNode.NextSiblingIndex;
 
-        // Se ci sono più figli, UCB standard per bilanciare l'esplorazione dei vari scenari
-        return SelectBestChildMaxN(ref parentNode); // Riutilizziamo UCT ma playerIndex è 255 (Environment), gestito?
+        // Se c'è solo uno scenario (No Spawn), andiamo lì.
+        if (secondChild == -1) return firstChild;
+
+        // Se ci sono due scenari (No Spawn vs Spawn), dobbiamo scegliere.
+        // Strategia: Campionamento Monte Carlo basato sulle visite per mantenere la proporzione reale?
+        // Oppure forzare la distribuzione di probabilità nota (85% vs 15%)?
+        
+        // Approccio MCTS Puro: UCT sceglie il nodo meno esplorato per bilanciare.
+        // Ma qui vogliamo che l'albero rifletta la realtà (No Spawn è molto più frequente).
+        
+        // Usiamo un semplice Random Weighted Choice per guidare l'esplorazione verso la distribuzione reale.
+        // Assumiamo che il Primo Figlio sia "No Spawn" (creato per primo in ExpandChanceNode)
+        
+        // 15% probabilità di esplorare lo spawn cibo, 85% no.
+        // Questo farà sì che il ramo "No Spawn" riceva l'85% delle visite, rendendo le sue statistiche molto solide.
+        bool pickSpawn = Random.Shared.NextDouble() < _settings.FoodSpawnChance / 100.0;
+        
+        if (pickSpawn) return secondChild; // Spawn Node
+        return firstChild; // No Spawn Node
     }
 
     private void Expand(int parentIndex, ref Node parentNode, int area)
