@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using Thanos.Common;
 using Thanos.Memory;
+using Thanos.PreWarm;
 using Thanos.SourceGen;
 using Thanos.War;
 
@@ -172,14 +173,12 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         if (snake.IsDead)
         {
             parentNode.MarkTerminal();
-            // Se sono morto, è una sconfitta certa per me (ma il gioco continua per altri)
-            parentNode.MarkSolvedLoss(); 
+            parentNode.MarkSolvedLoss();
             return;
         }
 
         var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail);
         
-        // PRUNING: Se non ci sono mosse legali, è terminale
         if (legalMoves == 0)
         {
             parentNode.MarkTerminal();
@@ -187,40 +186,99 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             return;
         }
 
+        // --- INIZIO PRUNING AVANZATO ---
+        // Filtriamo le mosse che portano a morte certa (vicoli ciechi immediati)
+        // Usiamo una maschera 'prunedMoves' che contiene solo le mosse che superano il check di sicurezza.
+        byte prunedMoves = 0;
+        int safeMoveCount = 0;
+
+        foreach (var move in AllMoves)
+        {
+            if ((legalMoves & move) == 0) continue;
+            
+            // Verifica rapida: La mossa porta in una trappola immediata?
+            if (!IsMoveRisky(in arena, snake.Head, move))
+            {
+                prunedMoves |= move;
+                safeMoveCount++;
+            }
+        }
+
+        // SAFETY FALLBACK: Se ho potato TUTTE le mosse (es. sono costretto a entrare in un tunnel),
+        // allora devo per forza esplorare le mosse originali "rischiose".
+        // Meglio rischiare la morte che suicidarsi subito.
+        byte movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
+        // --- FINE PRUNING AVANZATO ---
+
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
         bool isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
+        byte actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
 
         var lastChildIndex = -1;
         foreach (var move in AllMoves)
         {
-            if ((legalMoves & move) == 0) continue;
+            // Usiamo movesToExpand invece di legalMoves
+            if ((movesToExpand & move) == 0) continue;
 
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
             
-            // Copia stato
             childArena.CloneFrom(in arena);
             
-            // Applica mossa
             var snakeToMove = childArena.System[playerIndex];
-            // NOTA: ApplySingleMove NON deve spawnare cibo random ora.
             ApplySingleMove(in childArena, ref snakeToMove, move, area);
 
-            // Zobrist Hash
             var hash = ZobristHasher.CalculateHash(in childArena);
 
-            // Setup Nodo
             ref var childNode = ref _nodePool[childIndex];
-            // Se il prossimo "giocatore" è l'ambiente (255), allora il figlio è un Chance Node
-            byte actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
             childNode.PlacementNew(parentIndex, move, hash, actualNextPlayer, isNextChance);
 
-            // Link Albero
             if (lastChildIndex == -1) parentNode.FirstChildIndex = childIndex;
             else _nodePool[lastChildIndex].NextSiblingIndex = childIndex;
 
             lastChildIndex = childIndex;
         }
+    }
+
+    /// <summary>
+    /// Verifica leggera se una mossa porta in una casella con meno di 2 uscite libere (potenziale trappola).
+    /// Non è un floodfill completo, è un check locale velocissimo.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsMoveRisky(in Arena arena, ushort currentHead, byte move)
+    {
+        // Calcoliamo la posizione futura della testa
+        var newHead = arena.GetNewHeadPosition(currentHead, move);
+        
+        // Se non è valida (es. fuori mappa), è rischiosa (ma GetLegalMoves dovrebbe averla già esclusa)
+        if (!NeighborsGrid.IsValid(newHead)) return true;
+
+        // Contiamo le uscite libere dalla nuova testa
+        int openExits = 0;
+        
+        // Controlliamo i 4 vicini della nuova testa
+        // Nota: Dobbiamo usare NeighborsGrid per ottenere gli indici, ma arena.Snakes per le collisioni
+        // NON possiamo usare GetLegalMoves qui perché richiederebbe Tail/PrevTail che cambieranno
+        
+        // Up
+        var n = arena.GetNewHeadPosition(newHead, Moves.Up);
+        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
+        
+        // Down
+        n = arena.GetNewHeadPosition(newHead, Moves.Down);
+        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
+        
+        // Left
+        n = arena.GetNewHeadPosition(newHead, Moves.Left);
+        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
+        
+        // Right
+        n = arena.GetNewHeadPosition(newHead, Moves.Right);
+        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
+
+        // Se dalla nuova posizione ho 0 o 1 via di fuga, è molto probabile che sia una trappola
+        // (a meno che non sia l'unica mossa possibile, ma quello lo gestisce il fallback)
+        return openExits < 2;
     }
 
     private void ExpandChanceNode(int parentIndex, ref Node parentNode, int area)

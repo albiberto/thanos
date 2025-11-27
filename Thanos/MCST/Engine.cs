@@ -103,15 +103,46 @@ public class Engine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RunIterations(int area, int counter = 0)
     {
+        // Timeout dinamico: Puntiamo a 350ms per stare larghi nei 500ms totali
+        const long maxTimeMs = 350;
+        const long forcedMoveTimeMs = 50; // Se la mossa è forzata, spendiamo poco tempo per verificare
+        
         var stopwatch = Stopwatch.StartNew();
-        // Ridotto leggermente per sicurezza, gestiremo il tempo meglio nel cluster
-        while (stopwatch.ElapsedMilliseconds < 350) 
+        
+        // Controlliamo se è una mossa forzata (1 sola scelta valida alla radice)
+        // Espandiamo la radice una volta per vedere i figli
+        if (_nodePool[_rootIndex].IsLeafNode)
         {
-            _worker.RunIteration(area, _rootIndex);
-            counter++;
+            _worker.RunIteration(area, _rootIndex); 
         }
+        
+        ref var rootNode = ref _nodePool[_rootIndex];
+        int childCount = 0;
+        int childIdx = rootNode.FirstChildIndex;
+        while(childIdx != -1)
+        {
+            childCount++;
+            childIdx = _nodePool[childIdx].NextSiblingIndex;
+        }
+
+        // Se abbiamo 1 sola mossa legale, non serve pensare troppo (a meno che non vogliamo vedere il futuro profondo per tie-breaking)
+        long timeLimit = (childCount <= 1) ? forcedMoveTimeMs : maxTimeMs;
+
+        while (stopwatch.ElapsedMilliseconds < timeLimit)
+        {
+            // Se la radice è risolta (Vittoria o Sconfitta certa), stop anticipato!
+            if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) 
+                break;
+            
+            // Esegui batch di iterazioni per ridurre l'overhead del controllo tempo
+            for(int i=0; i<64; i++) 
+            {
+                _worker.RunIteration(area, _rootIndex);
+            }
+            counter += 64;
+        }
+
         stopwatch.Stop();
-        // Console.WriteLine($"[Engine] Iterations: {counter}");
     }
     
     public unsafe void GetRootStats(List<RootMoveStat> outputBuffer)
