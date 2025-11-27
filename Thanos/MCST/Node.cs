@@ -4,51 +4,57 @@ using Thanos.Common;
 
 namespace Thanos.MCST;
 
+// Layout ottimizzato per allineamento a 8 byte
 [StructLayout(LayoutKind.Explicit, Size = 64)]
 public unsafe struct Node
 {
-    // --- STATISTICHE (20 bytes) ---
-    [FieldOffset(0)] public int Visits;
-    [FieldOffset(4)] public fixed float Rewards[4]; // MaxN per 4 giocatori
+    // --- BLOCCO 1: Dati ad accesso frequente e allineati a 8 byte ---
+    
+    // Hash spostato all'offset 0 per allineamento perfetto (long = 8 byte)
+    [FieldOffset(0)] public long Hash; 
 
-    // --- ALBERO (8 bytes) ---
-    [FieldOffset(20)] public int FirstChildIndex;
-    [FieldOffset(24)] public int NextSiblingIndex;
+    // Rewards (4 float = 16 byte). Offset 8 è multiplo di 4. Perfetto.
+    [FieldOffset(8)] public fixed float Rewards[4]; 
 
-    // --- IDENTIFICAZIONE (16 bytes) ---
-    [FieldOffset(28)] public long Hash;
-    [FieldOffset(36)] public int ParentIndex;
+    // --- BLOCCO 2: Interi (4 byte) ---
+    
+    [FieldOffset(24)] public int Visits;
+    [FieldOffset(28)] public int ParentIndex;
+    [FieldOffset(32)] public int FirstChildIndex;
+    [FieldOffset(36)] public int NextSiblingIndex;
 
-    // --- METADATI (4 bytes) ---
-    [FieldOffset(40)] public byte PlayerIndex; // 0-3: Snake, 255: Environment
+    // --- BLOCCO 3: Byte e Flags (1 byte) ---
+    
+    [FieldOffset(40)] public byte PlayerIndex;
     [FieldOffset(41)] public byte Move;
     [FieldOffset(42)] public NodeFlags Flags;
-    [FieldOffset(43)] private byte _padding;
+    
+    // Padding implicito fino a 64 byte...
 
     // --- METODI ---
 
     public void PlacementRoot(long hash)
     {
+        Hash = hash; // Ora è il primo campo
         Visits = 0;
         ClearRewards();
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
         ParentIndex = -1;
         PlayerIndex = 0;
-        Hash = hash;
         Move = Moves.None;
         Flags = NodeFlags.None;
     }
 
     public void PlacementNew(int parentIndex, byte move, long hash, byte playerIndex, bool isChanceNode)
     {
+        Hash = hash;
         Visits = 0;
         ClearRewards();
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
         ParentIndex = parentIndex;
         PlayerIndex = playerIndex;
-        Hash = hash;
         Move = move;
         Flags = isChanceNode ? NodeFlags.ChanceNode : NodeFlags.None;
     }
@@ -56,11 +62,6 @@ public unsafe struct Node
     public void NewRoot()
     {
         ParentIndex = -1;
-        // Manteniamo le statistiche accumulate per sfruttare il "calore" dell'albero
-        // Ma potremmo voler ridurre il peso delle visite precedenti (decay)
-        // Per ora reset semplice per sicurezza nel cambio root
-        // Visits = 0; 
-        // ClearRewards();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -88,7 +89,6 @@ public unsafe struct Node
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkSolvedLoss() => Flags |= NodeFlags.SolvedLoss;
 
-    // Proprietà
     public bool IsLeafNode => FirstChildIndex == -1;
     public bool IsChanceNode => (Flags & NodeFlags.ChanceNode) != 0;
     public bool IsTerminal => (Flags & NodeFlags.Terminal) != 0;
