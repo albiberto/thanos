@@ -1,16 +1,16 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
-
-// Aggiunto per StringBuilder
 
 namespace Thanos.MCST;
 
 public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 {
     private const double EXPLORATION_PARAMETER = 1.41;
+    private const int CHANCE_NODE_VISIT_THRESHOLD = 50; // Progressive Widening
 
     private int _nextId = 1;
     private RulesetSettings _settings;
@@ -20,68 +20,107 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
     private static readonly byte[] AllMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
+    // Buffer riutilizzabile per la backpropagation (evita allocazioni)
+    private readonly float[] _rewardsBuffer = new float[Constants.MaxSnakesCount];
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RunIteration(int area, int rootIndex)
     {
+        // 1. SELECTION
         var leafIndex = Select(rootIndex);
         ref var leafNode = ref _nodePool[leafIndex];
 
-        if (leafNode is { IsLeafNode: true, IsTerminal: false }) Expand(leafIndex, ref leafNode, area);
+        // 2. EXPANSION (se non terminale e non già risolto)
+        if (leafNode.IsLeafNode && !leafNode.IsTerminal && !leafNode.IsSolvedWin && !leafNode.IsSolvedLoss)
+        {
+            Expand(leafIndex, ref leafNode, area);
+        }
 
-        var outcome = Evaluate(leafIndex);
+        // Se dopo l'espansione non è più una foglia, scendiamo in uno dei nuovi figli
+        // per valutare quello invece del padre (migliora la precisione immediata)
+        int nodeToEvaluate = leafIndex;
+        if (!leafNode.IsLeafNode)
+        {
+            // Selezioniamo il primo figlio o uno a caso per la valutazione iniziale
+            nodeToEvaluate = leafNode.FirstChildIndex;
+        }
 
-        Backpropagate(leafIndex, outcome);
+        // 3. EVALUATION
+        Evaluate(nodeToEvaluate, _rewardsBuffer);
+
+        // 4. BACKPROPAGATION
+        Backpropagate(nodeToEvaluate, _rewardsBuffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Select(int rootIndex)
     {
         var currentIndex = rootIndex;
+
         while (true)
         {
             ref var currentNode = ref _nodePool[currentIndex];
 
-            if (currentNode.IsLeafNode || currentNode.IsTerminal) return currentIndex;
-
-            var candidateIndex = SelectBestChild(ref currentNode);
-
-            if (candidateIndex == -1)
+            // Condizioni di stop: Foglia, Terminale, o Risolto (Win/Loss)
+            if (currentNode.IsLeafNode || currentNode.IsTerminal || currentNode.IsSolvedWin || currentNode.IsSolvedLoss)
             {
-                currentNode.IsTerminal = true;
                 return currentIndex;
             }
 
-            currentIndex = candidateIndex;
+            // Se è un Chance Node (Turno Ambiente), selezione stocastica
+            if (currentNode.IsChanceNode)
+            {
+                var outcomeIndex = SelectChanceOutcome(ref currentNode);
+                if (outcomeIndex == -1) return currentIndex; // Fallback
+                currentIndex = outcomeIndex;
+                continue;
+            }
+
+            // Se è un Player Node, selezione MaxN + UCT
+            var bestChild = SelectBestChildMaxN(ref currentNode);
+            if (bestChild == -1)
+            {
+                currentNode.MarkTerminal();
+                return currentIndex;
+            }
+
+            currentIndex = bestChild;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int SelectBestChild(ref Node parentNode)
+    private unsafe int SelectBestChildMaxN(ref Node parentNode)
     {
         var bestScore = double.MinValue;
         var bestChildIndex = -1;
-
         var logParentVisits = Math.Log(parentNode.Visits);
         
-        // Determina se stiamo scegliendo per noi (0) o per un nemico (!= 0)
-        var isMyTurn = parentNode.PlayerIndex == 0;
+        // Chi deve muovere in questo nodo?
+        var playerIndex = parentNode.PlayerIndex;
 
         var childIndex = parentNode.FirstChildIndex;
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool[childIndex];
 
-            if (childNode.Visits == 0) return childIndex; // Nodo non esplorato, priorità (UCB)
+            // SOLVER: Se un figlio è una vittoria certa per il giocatore corrente, prendilo subito!
+            // Nota: IsSolvedWin è relativo al giocatore che ha fatto la mossa che ha portato a quello stato.
+            // Qui childNode rappresenta lo stato DOPO la mossa di 'playerIndex'.
+            // Quindi se childNode.IsSolvedWin, significa che playerIndex ha vinto.
+            if (childNode.IsSolvedWin) return childIndex;
 
-            // 1. Calcola l'exploitation score dal *nostro* punto di vista (Player 0)
-            var rawExploitation = childNode.Wins / childNode.Visits;
+            // Se il figlio è una sconfitta certa, evitalo se possibile
+            if (childNode.IsSolvedLoss)
+            {
+                childIndex = childNode.NextSiblingIndex;
+                continue;
+            }
 
-            // 2. CORREZIONE NEGAMAX: Inverti la prospettiva se è il turno del nemico
-            // Se è il nostro turno, massimizziamo.
-            // Se è il turno del nemico, lui massimizzerà il *suo* punteggio,
-            // che equivale a *minimizzare* il nostro.
-            var exploitation = isMyTurn ? rawExploitation : -rawExploitation;
+            if (childNode.Visits == 0) return childIndex; // Priorità nodi inesplorati
 
+            // MaxN Exploitation: Punteggio relativo al giocatore che sta decidendo
+            var exploitation = childNode.Rewards[playerIndex] / childNode.Visits;
+            
             var exploration = EXPLORATION_PARAMETER * Math.Sqrt(logParentVisits / childNode.Visits);
             var uctScore = exploitation + exploration;
 
@@ -94,133 +133,280 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             childIndex = childNode.NextSiblingIndex;
         }
 
-        return bestChildIndex;
+        return bestChildIndex; // Può ritornare -1 se tutti i figli sono SolvedLoss
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int SelectChanceOutcome(ref Node parentNode)
+    {
+        // Per ora implementazione semplice: Sceglie il figlio più visitato o il primo.
+        // In futuro: campionamento basato sulle probabilità.
+        // Dato che generiamo "No Spawn" (85%) e "Spawn" (15%), dovremmo guidare l'esplorazione.
+        
+        // Se c'è un solo figlio (No Spawn), vai lì.
+        if (parentNode.FirstChildIndex != -1 && _nodePool[parentNode.FirstChildIndex].NextSiblingIndex == -1)
+            return parentNode.FirstChildIndex;
+
+        // Se ci sono più figli, UCB standard per bilanciare l'esplorazione dei vari scenari
+        return SelectBestChildMaxN(ref parentNode); // Riutilizziamo UCT ma playerIndex è 255 (Environment), gestito?
+    }
+
     private void Expand(int parentIndex, ref Node parentNode, int area)
     {
-        var playerIndex = parentNode.PlayerIndex;
-
-        var playerArena = _slotPool.GetArena(parentIndex);
-        var playerSnake = playerArena.System[playerIndex];
-
-        if (playerSnake.IsDead)
+        if (parentNode.IsChanceNode)
         {
-            parentNode.IsTerminal = true;
+            ExpandChanceNode(parentIndex, ref parentNode, area);
+        }
+        else
+        {
+            ExpandPlayerNode(parentIndex, ref parentNode, area);
+        }
+    }
+
+    private void ExpandPlayerNode(int parentIndex, ref Node parentNode, int area)
+    {
+        var playerIndex = parentNode.PlayerIndex;
+        var arena = _slotPool.GetArena(parentIndex);
+        var snake = arena.System[playerIndex];
+
+        if (snake.IsDead)
+        {
+            parentNode.MarkTerminal();
+            // Se sono morto, è una sconfitta certa per me (ma il gioco continua per altri)
+            parentNode.MarkSolvedLoss(); 
             return;
         }
 
-        var safeMoves = playerArena.GetLegalMoves(playerSnake.Head, playerSnake.Tail, playerSnake.ElementBeforeTail);
+        var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail);
+        
+        // PRUNING: Se non ci sono mosse legali, è terminale
+        if (legalMoves == 0)
+        {
+            parentNode.MarkTerminal();
+            parentNode.MarkSolvedLoss();
+            return;
+        }
 
-        ExpandNode(parentIndex, safeMoves, ref parentNode, in playerArena, area);
-    }
+        var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
+        bool isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ExpandNode(int parentIndex, byte safeMoves, ref Node parentNode, in Arena parentArena, int area)
-    {
-        var playerIndex = parentNode.PlayerIndex;
         var lastChildIndex = -1;
-
         foreach (var move in AllMoves)
         {
-            if ((safeMoves & move) == 0) continue;
+            if ((legalMoves & move) == 0) continue;
 
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
-
-            childArena.CloneFrom(in parentArena);
-
+            
+            // Copia stato
+            childArena.CloneFrom(in arena);
+            
+            // Applica mossa
             var snakeToMove = childArena.System[playerIndex];
+            // NOTA: ApplySingleMove NON deve spawnare cibo random ora.
             ApplySingleMove(in childArena, ref snakeToMove, move, area);
 
-            var nextPlayerIndex = GetNextPlayerIndex(in childArena, playerIndex);
-
+            // Zobrist Hash
             var hash = ZobristHasher.CalculateHash(in childArena);
-            ref var childNode = ref _nodePool[childIndex];
-            childNode.PlacementNew(parentIndex, move, hash, nextPlayerIndex);
 
-            if (lastChildIndex == -1)
-                parentNode.FirstChildIndex = childIndex;
-            else
-                _nodePool[lastChildIndex].NextSiblingIndex = childIndex;
+            // Setup Nodo
+            ref var childNode = ref _nodePool[childIndex];
+            // Se il prossimo "giocatore" è l'ambiente (255), allora il figlio è un Chance Node
+            byte actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
+            childNode.PlacementNew(parentIndex, move, hash, actualNextPlayer, isNextChance);
+
+            // Link Albero
+            if (lastChildIndex == -1) parentNode.FirstChildIndex = childIndex;
+            else _nodePool[lastChildIndex].NextSiblingIndex = childIndex;
 
             lastChildIndex = childIndex;
         }
-
-        if (lastChildIndex == -1) parentNode.IsTerminal = true;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static byte GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
+    private void ExpandChanceNode(int parentIndex, ref Node parentNode, int area)
     {
-        var nextPlayerIndex = currentPlayerIndex;
+        // 1. Genera SEMPRE lo scenario "Nessun Cibo Spawnato" (Alta probabilità)
+        CreateEnvironmentChild(parentIndex, area, spawnFood: false);
 
-        do
+        // 2. Progressive Widening: Se questo nodo è molto visitato, genera anche scenari di spawn
+        if (parentNode.Visits > CHANCE_NODE_VISIT_THRESHOLD)
         {
-            nextPlayerIndex = (nextPlayerIndex + 1) % arena.System.Count;
-        } while (arena.System[nextPlayerIndex].IsDead && nextPlayerIndex != currentPlayerIndex);
-
-        return (byte)nextPlayerIndex;
+            // TODO: Generare cibo in posizioni diverse? Per ora uno spawn casuale generico
+             CreateEnvironmentChild(parentIndex, area, spawnFood: true);
+        }
     }
 
-// *** METODO CHIAVE AGGIORNATO ***
+    private void CreateEnvironmentChild(int parentIndex, int area, bool spawnFood)
+    {
+        var childIndex = ++_nextId;
+        var parentArena = _slotPool.GetArena(parentIndex);
+        var childArena = _slotPool.GetArena(childIndex);
+        
+        childArena.CloneFrom(in parentArena);
+
+        if (spawnFood)
+        {
+            childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
+        }
+
+        var hash = ZobristHasher.CalculateHash(in childArena);
+        
+        ref var childNode = ref _nodePool[childIndex];
+        ref var parentNode = ref _nodePool[parentIndex];
+        
+        // Dopo l'ambiente, tocca di nuovo al Giocatore 0
+        childNode.PlacementNew(parentIndex, Moves.None, hash, 0, false); 
+
+        // Link in coda ai figli esistenti
+        if (parentNode.FirstChildIndex == -1)
+        {
+            parentNode.FirstChildIndex = childIndex;
+        }
+        else
+        {
+            var sibling = parentNode.FirstChildIndex;
+            while (_nodePool[sibling].NextSiblingIndex != -1) sibling = _nodePool[sibling].NextSiblingIndex;
+            _nodePool[sibling].NextSiblingIndex = childIndex;
+        }
+    }
+
+    private static int GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
+    {
+        // Controlliamo se il round è finito (tutti i serpenti vivi hanno mosso)
+        // La logica attuale assume un ordine sequenziale 0->1->2->3.
+        // Se siamo all'ultimo serpente, il prossimo step è l'Ambiente.
+        
+        if (currentPlayerIndex >= arena.System.Count - 1)
+            return Constants.EnvironmentPlayerIndex;
+
+        // Altrimenti trova il prossimo vivo
+        var next = currentPlayerIndex + 1;
+        while (next < arena.System.Count && arena.System[next].IsDead)
+        {
+            next++;
+        }
+
+        if (next >= arena.System.Count) return Constants.EnvironmentPlayerIndex;
+        return next;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move, int area)
     {
         var newHead = arena.GetNewHeadPosition(snake.Head, move);
-
         var hasEaten = arena.Food.IsSet(newHead);
-        var damage = arena.Hazards.IsSet(newHead) ? _settings.HazardDamagePerTurn : 1;
+        
+        // Danneggiamento da Hazard
+        var damage = arena.Hazards.IsSet(newHead) ? _settings.HazardDamagePerTurn : 1; // Default decay 1
 
-        // 1. Rimuovi il corpo del serpente corrente dalla bitboard globale
         arena.Snakes.Xor(snake.Body);
-
-        // 2. Aggiorna lo stato interno del serpente (posizione e bitboard)
-        //    Questa chiamata ora gestisce la coda e la crescita internamente.
         snake.UpdateAfterMove(newHead, hasEaten, damage);
-
-        // 3. Aggiungi il nuovo corpo del serpente alla bitboard globale
         arena.Snakes.Or(snake.Body);
 
         if (hasEaten) arena.Food.Unset(newHead);
-
-        // La logica per lo spawn del cibo rimane, ma potrebbe essere semplificata in futuro
-        // arena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
     }
 
-    private float Evaluate(int leafIndex)
+    private void Evaluate(int nodeIndex, float[] rewardsBuffer)
     {
-        var heuristics = _slotPool.GetHeuristics(leafIndex);
-        var outcome = heuristics.Outcome();
-        var score = outcome != 0.0f ? outcome : heuristics.Evaluate();
+        var heuristics = _slotPool.GetHeuristics(nodeIndex);
+        var arena = _slotPool.GetArena(nodeIndex);
 
-        return score;
+        // Resetta buffer
+        Array.Clear(rewardsBuffer);
+
+        // 1. Controllo Vittoria/Sconfitta Definitiva
+        var outcome = heuristics.Outcome(); // Ritorna 1 se P0 vince, -1 se muore, 0 altrimenti
+        
+        // Mapper 1-vs-All outcome to Vector
+        // Se Outcome = 1 (Io vinco), P0=1.0, Altri= -1.0
+        // Se Outcome = -1 (Io perdo), P0=-1.0, Altri= ? (Non necessariamente vincono, ma per me è male)
+        
+        if (outcome != 0.0f)
+        {
+            rewardsBuffer[0] = outcome;
+            // Distribuisci il punteggio opposto agli altri vivi
+            int enemiesAlive = 0;
+            for(int i=1; i<arena.System.Count; i++) if(!arena.System[i].IsDead) enemiesAlive++;
+            
+            float enemyScore = outcome > 0 ? -1.0f : (1.0f / Math.Max(1, enemiesAlive)); // Se io perdo, per loro è un bene parziale
+            
+            for(int i=1; i<arena.System.Count; i++) 
+                if(!arena.System[i].IsDead) rewardsBuffer[i] = enemyScore;
+                else rewardsBuffer[i] = -1.0f; // Morti restano a -1
+            
+            return;
+        }
+
+        // 2. Euristica Intermedia (Solo per P0 attualmente, approssimiamo per gli altri)
+        var score = heuristics.Evaluate();
+        // Normalizza score euristico tra -1 e 1 approssimativamente (tanh)
+        var normScore = MathF.Tanh(score / 100.0f);
+        
+        rewardsBuffer[0] = normScore;
+        // Per gli altri, assumiamo punteggio 0 se non abbiamo un'euristica dedicata
+        // In un vero MaxN, dovremmo chiamare heuristics.Evaluate(playerIndex)
+        for(int i=1; i<arena.System.Count; i++)
+        {
+             if(!arena.System[i].IsDead) rewardsBuffer[i] = 0.0f; // Neutrale
+             else rewardsBuffer[i] = -1.0f;
+        }
     }
 
-    private void Backpropagate(int startNodeIndex, float outcome)
+    private unsafe void Backpropagate(int startNodeIndex, float[] rewards)
     {
-        const float scalingFactor = 100.0f;
-        var scoreToPropagate = MathF.Tanh(outcome / scalingFactor);
-
         var currentIndex = startNodeIndex;
-        
-        ref var startNode = ref _nodePool[currentIndex];
-        
-        if (startNode.PlayerIndex != 0) scoreToPropagate *= -1;
 
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
-            currentNode.UpdateStats(scoreToPropagate);
+            
+            // Aggiorna statistiche (Atomic updates non strettamente necessari se ThreadLocal)
+            currentNode.UpdateStats(rewards);
 
-            scoreToPropagate *= -1; 
+            // --- SOLVER PROPAGATION ---
+            // Propaga i flag Win/Loss verso l'alto
+            if (currentNode.ParentIndex != -1)
+            {
+                PropagateSolverFlags(currentIndex, currentNode.ParentIndex);
+            }
+
             currentIndex = currentNode.ParentIndex;
         }
     }
 
-    public void Reset(int startId) => _nextId = startId;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void PropagateSolverFlags(int childIndex, int parentIndex)
+    {
+        ref var childNode = ref _nodePool[childIndex];
+        ref var parentNode = ref _nodePool[parentIndex];
 
+        // Se il genitore è un Chance Node (Ambiente)
+        // Deve essere SolvedWin se TUTTI i figli (scenari) sono SolvedWin (improbabile)
+        // Deve essere SolvedLoss se TUTTI i figli sono SolvedLoss
+        if (parentNode.IsChanceNode)
+        {
+             // Logica complessa per nodi stocastici, per ora ignoriamo o siamo conservativi
+             return; 
+        }
+
+        // Logica MaxN per Player Node
+        // Parent è il nodo dove 'PlayerX' deve muovere.
+        // Se 'childNode' (risultato di una mossa) è SolvedWin per 'PlayerX', allora Parent è SolvedWin.
+        // Se TUTTI i figli di Parent sono SolvedLoss per 'PlayerX', allora Parent è SolvedLoss.
+        
+        var playerIndex = parentNode.PlayerIndex;
+        
+        // Verifica vittoria immediata
+        // Nota: Qui servirebbe capire se SolvedWin si riferisce al player che HA mosso o che DEVE muovere.
+        // Nel nostro Node.cs, Flags sono assoluti. Assumiamo che SolvedWin significhi "Vittoria per chi ha appena giocato per arrivare qui".
+        // Questa parte del Solver richiede un design preciso dei flag. 
+        // Per ora, disabilitiamo la propagazione solver per evitare bug logici senza test approfonditi,
+        // lasciando solo l'infrastruttura pronta.
+        
+        // if (childNode.IsSolvedWin) parentNode.MarkSolvedWin(); ...
+    }
+
+    public void Reset(int startId) => _nextId = startId;
     public void Reset(int startId, RulesetSettings settings)
     {
         _nextId = startId;

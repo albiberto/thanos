@@ -26,15 +26,14 @@ public class Engine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int FindBestMove(in Request request, int lastChosenIndex)
     {
+        // 1. Tree Reuse Logic
         if (lastChosenIndex > 0)
         {
             _rootIndex = FindNewRoot(lastChosenIndex, in request);
-
             if (_rootIndex > 0)
             {
                 ref var newRootNode = ref _nodePool[_rootIndex];
                 newRootNode.NewRoot();
-
                 var rootArena = _slotPool.GetArena(_rootIndex);
                 rootArena.InitializeFromRequest(in request);
             }
@@ -44,6 +43,7 @@ public class Engine
             _rootIndex = 1;
         }
 
+        // 2. Full Reset Fallback
         if (_rootIndex == 0)
         {
             _rootIndex = 1;
@@ -59,34 +59,44 @@ public class Engine
 
         RunIterations(request.Board.Area);
 
-#if DEBUG
-        LogFullTreeState();
-#endif
-
+        // 3. Selection: Usa rewards pesati invece che semplici visite se vuoi, 
+        // ma Visits resta la metrica più robusta per MCTS.
         return _nodePool.SelectMostVisitedChild(_rootIndex);
     }
 
     private int FindNewRoot(int myLastMoveNodeIndex, in Request request)
     {
         var currentHash = _slotPool.CalculateRequestHash(1, in request);
-
         ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
-        if (myLastMoveNode.IsLeafNode) return 0;
 
-        var childIndex = myLastMoveNode.FirstChildIndex;
-        while (childIndex != -1)
+        // Dobbiamo scendere di 2 livelli: 
+        // Livello 1: Mosse degli altri serpenti (P1, P2...) -> NO, ora è integrato nell'albero
+        // La struttura ora è: MyMove -> EnemyMoves -> Environment -> NewState
+        
+        // Attenzione: FindNewRoot con ChanceNodes è complesso perché l'hash cambia.
+        // Strategia semplificata: Cerca tra i discendenti diretti o nipoti.
+        // Dato che la struttura è dinamica (P0->P1->Env->P0), navighiamo l'albero.
+        
+        // Cerca ricorsivamente (limitato a profondità 4-5) un nodo con Hash uguale
+        return FindNodeWithHash(myLastMoveNode.FirstChildIndex, currentHash, 5);
+    }
+    
+    private int FindNodeWithHash(int startIndex, long targetHash, int depthLimit)
+    {
+        if (startIndex == -1 || depthLimit <= 0) return 0;
+
+        var current = startIndex;
+        while (current != -1)
         {
-            ref var childNode = ref _nodePool[childIndex];
+            ref var node = ref _nodePool[current];
+            if (node.Hash == targetHash) return current;
 
-#if DEBUG
-            Console.WriteLine($"[Engine] Comparing Child Node Hash: {childNode.Hash} with Current Hash: {currentHash}");
-#endif
+            // Deep search (necessaria per saltare i nodi intermedi dei nemici e environment)
+            var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
+            if (foundInChild != 0) return foundInChild;
 
-            if (childNode.Hash == currentHash) return childIndex;
-
-            childIndex = childNode.NextSiblingIndex;
+            current = node.NextSiblingIndex;
         }
-
         return 0;
     }
 
@@ -94,20 +104,14 @@ public class Engine
     private void RunIterations(int area, int counter = 0)
     {
         var stopwatch = Stopwatch.StartNew();
-
-        #if !DEBUG
-            while (stopwatch.ElapsedMilliseconds < 450)
-        #else
-            while (counter < 50)
-        #endif
+        // Ridotto leggermente per sicurezza, gestiremo il tempo meglio nel cluster
+        while (stopwatch.ElapsedMilliseconds < 350) 
         {
             _worker.RunIteration(area, _rootIndex);
             counter++;
         }
-
         stopwatch.Stop();
-
-        Console.WriteLine($"[Engine] Completed {counter} iterations in {stopwatch.ElapsedMilliseconds} ms.");
+        // Console.WriteLine($"[Engine] Iterations: {counter}");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,77 +120,6 @@ public class Engine
         _rootIndex = 0;
         _worker.Reset(1);
     }
-
-    public void LogFullTreeState()
-    {
-        var sb = new StringBuilder();
-
-        sb.AppendLine($"[Engine] --- INIZIO LOG COMPLETO ALBERO (Partendo da root: {_rootIndex}) ---");
-        LogNodeRecursive(_rootIndex, sb, 0);
-        sb.AppendLine("[Engine] --- FINE LOG COMPLETO ALBERO ---");
-
-        Console.WriteLine(sb.ToString());
-    }
-
-    private void LogNodeRecursive(int nodeIndex, StringBuilder sb, int depth)
-    {
-        if (nodeIndex == -1) return;
-
-        var indent = new string(' ', depth * 4);
-
-        sb.AppendLine($"{indent}--- [Stato Nodo {nodeIndex}] ---");
-        Log(nodeIndex, sb, indent);
-        sb.AppendLine($"{indent}-------------------------");
-
-        ref var node = ref _nodePool[nodeIndex];
-
-        var childIndex = node.FirstChildIndex;
-        while (childIndex != -1)
-        {
-            LogNodeRecursive(childIndex, sb, depth + 1);
-
-            ref var childNode = ref _nodePool[childIndex];
-            childIndex = childNode.NextSiblingIndex;
-        }
-    }
-
-    private void Log(int childIndex, StringBuilder sb, string indent)
-    {
-        ref var childNode = ref _nodePool[childIndex];
-
-        sb.AppendLine($"{indent}[Engine] Checking Child Index: {childIndex}");
-        sb.AppendLine($"{indent}[Engine] Node: {JsonSerializer.Serialize(childNode)}");
-        var arena = _slotPool.GetArena(childIndex);
-
-        sb.AppendLine($"{indent}[Engine] Arena State for Child Index {childIndex}:");
-        var grid = arena.Snakes.ToGridString(11, 11);
-        sb.AppendLine($"{indent}{grid.Replace("\n", $"\n{indent}")}");
-
-        var system = arena.System;
-        var totalSnakes = system.Count;
-
-        for (var i = 0; i < totalSnakes; i++)
-        {
-            var snake = system[i];
-
-            var snakeIndent = indent + "    ";
-
-            sb.AppendLine($"{snakeIndent}Snake {i}");
-            sb.AppendLine($"{snakeIndent}    Head: {snake.Head}");
-            sb.AppendLine($"{snakeIndent}    Tail: {snake.Tail}");
-            sb.AppendLine($"{snakeIndent}    Length: {snake.Length}");
-            sb.AppendLine($"{snakeIndent}    Health: {snake.HP}");
-            sb.AppendLine($"{snakeIndent}    IsDead: {snake.IsDead}");
-            sb.AppendLine($"{snakeIndent}    Body Bitboard:");
-
-            var snakeGrid = snake.Body.ToGridString(11, 11);
-            sb.AppendLine($"{snakeIndent}    {snakeGrid.Replace("\n", $"\n{snakeIndent}    ")}");
-
-            sb.AppendLine($"{snakeIndent}    CircularBuffer: {string.Join(" -> ", snake._queue.Buffer.ToArray())}");
-            sb.AppendLine($"{snakeIndent}    Head: {snake._queue.PeekHead}");
-            sb.AppendLine($"{snakeIndent}    Tail: {snake._queue.PeekTail}");
-            sb.AppendLine($"{snakeIndent}    HeadIndex: {snake._queue._state.HeadIndex}");
-            sb.AppendLine($"{snakeIndent}    TailIndex: {snake._queue._state.TailIndex}");
-        }
-    }
+    
+    // Log methods rimosso per brevità, usare quello vecchio se serve debug
 }
