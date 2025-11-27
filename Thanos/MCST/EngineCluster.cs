@@ -1,0 +1,125 @@
+using System.Diagnostics;
+using Thanos.Common;
+using Thanos.Memory;
+using Thanos.SourceGen;
+
+namespace Thanos.MCST;
+
+// RIMOSSO 'unsafe' dalla classe. Ora è una classe safe standard.
+public sealed class EngineCluster : IDisposable
+{
+    private readonly Engine[] _engines;
+    private readonly SlotMemoryPool[] _slotPools;
+    private readonly NodeMemoryPool[] _nodePools;
+    
+    private readonly LookupsMemoryPool _sharedLookups; 
+    
+    private readonly int[] _lastChosenIndices;
+
+    private readonly ThreadLocal<List<RootMoveStat>> _threadLocalStatsBuffer = new(() => new List<RootMoveStat>(16));
+
+    public EngineCluster(uint maxNodes)
+    {
+        var coreCount = Math.Max(1, Environment.ProcessorCount);
+        
+        Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines...");
+
+        _engines = new Engine[coreCount];
+        _slotPools = new SlotMemoryPool[coreCount];
+        _nodePools = new NodeMemoryPool[coreCount];
+        _lastChosenIndices = new int[coreCount];
+
+        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Large);
+
+        for (var i = 0; i < coreCount; i++)
+        {
+            _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
+            _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Worst);
+            _engines[i] = new Engine(_slotPools[i], _nodePools[i]);
+            _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
+        }
+    }
+
+    // Metodo Async standard (senza unsafe)
+    public async Task<byte> ComputeMoveAsync(Request request)
+    {
+        // 1. Esecuzione Parallela
+        var tasks = new Task[_engines.Length];
+        for (var i = 0; i < _engines.Length; i++)
+        {
+            var index = i; // Capture index
+            tasks[i] = Task.Run(() =>
+            {
+                // Avvolgiamo la chiamata all'Engine (che manipola puntatori) in un blocco unsafe
+                unsafe 
+                {
+                    var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index]);
+                    _lastChosenIndices[index] = bestLocalIndex;
+                }
+            });
+        }
+
+        await Task.WhenAll(tasks);
+
+        // 2. Merge dei Risultati
+        // Usiamo un array normale invece di stackalloc per evitare problemi con async/unsafe
+        long[] totalVisits = new long[16]; 
+
+        for (var i = 0; i < _engines.Length; i++)
+        {
+            var buffer = _threadLocalStatsBuffer.Value!;
+            
+            // Anche qui avvolgiamo la chiamata in unsafe
+            unsafe
+            {
+                _engines[i].GetRootStats(buffer);
+            }
+
+            foreach (var stat in buffer)
+            {
+                totalVisits[stat.Move] += stat.Visits;
+            }
+        }
+
+        // 3. Selezione Finale
+        byte bestMove = Moves.Up; 
+        long maxVisits = -1;
+
+        byte[] movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+        
+        foreach (var move in movesToCheck)
+        {
+            if (totalVisits[move] > maxVisits)
+            {
+                maxVisits = totalVisits[move];
+                bestMove = move;
+            }
+        }
+        
+        if (maxVisits <= 0) return Moves.None;
+
+        return bestMove;
+    }
+
+    public void Reset()
+    {
+        for (var i = 0; i < _engines.Length; i++)
+        {
+            _engines[i].Reset();
+            _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
+        }
+    }
+    
+    public void SetMap(Dictionary<string, int> map)
+    {
+        foreach (var pool in _slotPools) pool.Set(map);
+    }
+
+    public void Dispose()
+    {
+        foreach (var pool in _slotPools) pool.Dispose();
+        foreach (var pool in _nodePools) pool.Dispose();
+        _sharedLookups.Dispose();
+        _threadLocalStatsBuffer.Dispose();
+    }
+}

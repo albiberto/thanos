@@ -40,7 +40,8 @@ public static class BattleSnakeApiExtensions
         app.MapPost("/move", async context =>
         {
             var request = await context.ReadRequestAsync();
-            var result = agent.Move(request);
+            // Await diretto
+            var result = await agent.Move(request); 
 
             context.Response.ContentType = "application/json";
             await context.Response.WriteAsJsonAsync(new

@@ -1,32 +1,22 @@
 ﻿using Thanos.Common;
 using Thanos.MCST;
-using Thanos.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos;
 
 public sealed class BattleSnakeAgent : IDisposable
 {
-    private readonly Engine _engine;
-
-    private readonly NodeMemoryPool _nodePool;
-    private readonly SlotMemoryPool _slotPool;
-    private readonly LookupsMemoryPool _lookupsMemoryPool = new(LookupsMemoryLayout.Medium);
-
-    private int _lastChosenIndex = Constants.FirstRootNodeIndex;
+    // Sostituiamo Engine con EngineCluster
+    private readonly EngineCluster _cluster;
 
     public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
     {
-        _nodePool = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
-        _slotPool = new SlotMemoryPool(maxNodes, _lookupsMemoryPool, SlotMemoryLayout.Worst);
-
-        _engine = new Engine(_slotPool, _nodePool);
+        // Il cluster si occupa di allocare tutto (N volte)
+        _cluster = new EngineCluster(maxNodes);
     }
 
     public void Start(in Request request)
     {
-        _lastChosenIndex = Constants.FirstRootNodeIndex;
-
         var myId = request.You.Id;
 
         var map = new Dictionary<string, int>
@@ -36,35 +26,27 @@ public sealed class BattleSnakeAgent : IDisposable
 
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
         
-        #if DEBUG
-        Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join("\n ", map.Select(kv => $"Snake-{kv.Key}: {kv.Value}"))}");
-        #endif
+#if DEBUG
+        Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join(", ", map.Select(kv => $"{kv.Key}:{kv.Value}"))}");
+#endif
 
-        _slotPool.Set(map);
-        _engine.Reset();
+        // Passiamo la mappa al cluster che la propaga a tutti i pool
+        _cluster.SetMap(map);
+        _cluster.Reset();
     }
 
-    public byte Move(in Request request)
-    {
-        var bestIndex = _engine.FindBestMove(in request, _lastChosenIndex);
-
-        if (bestIndex == -1) return Moves.None;
-
-        _lastChosenIndex = bestIndex;
-
-        ref var chosenNode = ref _nodePool[_lastChosenIndex];
-        var move = chosenNode.Move;
-
-        return move;
+    public Task<byte> Move(Request request) // Rimuovi 'in' se async dà problemi con ref struct, ma Request è readonly struct normale
+    { 
+        return _cluster.ComputeMoveAsync(request); 
     }
 
     public void End(in Request _)
     {
+        // Opzionale: logiche di fine partita
     }
 
     public void Dispose()
     {
-        _slotPool.Dispose();
-        _nodePool.Dispose();
+        _cluster.Dispose();
     }
 }

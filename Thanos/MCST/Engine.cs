@@ -113,6 +113,34 @@ public class Engine
         stopwatch.Stop();
         // Console.WriteLine($"[Engine] Iterations: {counter}");
     }
+    
+    public unsafe void GetRootStats(List<RootMoveStat> outputBuffer)
+    {
+        outputBuffer.Clear();
+
+        if (_rootIndex <= 0) return;
+
+        ref var rootNode = ref _nodePool[_rootIndex];
+        var childIndex = rootNode.FirstChildIndex;
+
+        while (childIndex != -1)
+        {
+            ref var childNode = ref _nodePool[childIndex];
+            
+            // Raccogliamo statistiche solo per le mosse valide del giocatore
+            // Ignoriamo nodi risolti come persi se hanno 0 visite (a meno che non siano terminali forzati)
+            if (childNode.Visits > 0 || childNode.IsSolvedWin)
+            {
+                // Calcoliamo uno score normalizzato per il debug
+                // Nota: In MaxN childNode.Rewards[0] è il reward cumulativo.
+                float avgScore = childNode.Visits > 0 ? childNode.Rewards[0] / childNode.Visits : -1;
+                
+                outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
+            }
+
+            childIndex = childNode.NextSiblingIndex;
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
