@@ -5,7 +5,6 @@ using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
-// RIMOSSO 'unsafe' dalla classe. Ora è una classe safe standard.
 public sealed class EngineCluster : IDisposable
 {
     private readonly Engine[] _engines;
@@ -20,9 +19,12 @@ public sealed class EngineCluster : IDisposable
 
     public EngineCluster(uint maxNodes)
     {
-        var coreCount = Math.Max(1, Environment.ProcessorCount);
+        // MODIFICA QUI: Imposta manualmente i core o limitali
+        // var coreCount = Math.Max(1, Environment.ProcessorCount); // <-- Vecchia logica (Tutti i core)
         
-        Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines...");
+        var coreCount = 2; // <-- NUOVA LOGICA: Forza 2 Core per il test
+        
+        Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines (Manual Limit)...");
 
         _engines = new Engine[coreCount];
         _slotPools = new SlotMemoryPool[coreCount];
@@ -40,6 +42,9 @@ public sealed class EngineCluster : IDisposable
         }
     }
 
+    // ... Il resto della classe rimane identico ...
+    // (Incluso ComputeMoveAsync, Reset, SetMap, Dispose)
+    
     // Metodo Async standard (senza unsafe)
     public async Task<byte> ComputeMoveAsync(Request request)
     {
@@ -62,14 +67,12 @@ public sealed class EngineCluster : IDisposable
         await Task.WhenAll(tasks);
 
         // 2. Merge dei Risultati
-        // Usiamo un array normale invece di stackalloc per evitare problemi con async/unsafe
         long[] totalVisits = new long[16]; 
 
         for (var i = 0; i < _engines.Length; i++)
         {
             var buffer = _threadLocalStatsBuffer.Value!;
             
-            // Anche qui avvolgiamo la chiamata in unsafe
             unsafe
             {
                 _engines[i].GetRootStats(buffer);
