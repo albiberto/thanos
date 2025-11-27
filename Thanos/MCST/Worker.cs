@@ -428,36 +428,54 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
     }
 
+// Inserisci questo metodo in Worker.cs al posto di quello vecchio vuoto
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PropagateSolverFlags(int childIndex, int parentIndex)
     {
         ref var childNode = ref _nodePool[childIndex];
-        ref var parentNode = ref _nodePool[parentIndex];
-
-        // Se il genitore è un Chance Node (Ambiente)
-        // Deve essere SolvedWin se TUTTI i figli (scenari) sono SolvedWin (improbabile)
-        // Deve essere SolvedLoss se TUTTI i figli sono SolvedLoss
-        if (parentNode.IsChanceNode)
+        
+        // 1. Propagazione SCONFITTA (Dead End Propagation)
+        // Se il figlio appena aggiornato è una sconfitta certa, controlliamo se il padre ha altre opzioni.
+        if (childNode.IsSolvedLoss)
         {
-             // Logica complessa per nodi stocastici, per ora ignoriamo o siamo conservativi
-             return; 
+            ref var parentNode = ref _nodePool[parentIndex];
+            
+            // Se il padre è già risolto, inutile controllare
+            if (parentNode.IsSolvedLoss || parentNode.IsSolvedWin) return;
+
+            // Se il padre è un Chance Node (Ambiente), la logica è diversa:
+            // L'ambiente "perde" solo se TUTTI gli scenari sono impossibili (molto raro).
+            if (parentNode.IsChanceNode) return;
+
+            // Se è un nodo Giocatore:
+            // Controlliamo se TUTTI i figli sono SolvedLoss.
+            // Se non c'è nessuna mossa che salva il giocatore, allora il padre è SolvedLoss.
+            
+            bool allChildrenLost = true;
+            var currentSibling = parentNode.FirstChildIndex;
+            while (currentSibling != -1)
+            {
+                ref var siblingNode = ref _nodePool[currentSibling];
+                if (!siblingNode.IsSolvedLoss)
+                {
+                    allChildrenLost = false;
+                    break; 
+                }
+                currentSibling = siblingNode.NextSiblingIndex;
+            }
+
+            if (allChildrenLost)
+            {
+                parentNode.MarkSolvedLoss();
+            }
+            return;
         }
 
-        // Logica MaxN per Player Node
-        // Parent è il nodo dove 'PlayerX' deve muovere.
-        // Se 'childNode' (risultato di una mossa) è SolvedWin per 'PlayerX', allora Parent è SolvedWin.
-        // Se TUTTI i figli di Parent sono SolvedLoss per 'PlayerX', allora Parent è SolvedLoss.
-        
-        var playerIndex = parentNode.PlayerIndex;
-        
-        // Verifica vittoria immediata
-        // Nota: Qui servirebbe capire se SolvedWin si riferisce al player che HA mosso o che DEVE muovere.
-        // Nel nostro Node.cs, Flags sono assoluti. Assumiamo che SolvedWin significhi "Vittoria per chi ha appena giocato per arrivare qui".
-        // Questa parte del Solver richiede un design preciso dei flag. 
-        // Per ora, disabilitiamo la propagazione solver per evitare bug logici senza test approfonditi,
-        // lasciando solo l'infrastruttura pronta.
-        
-        // if (childNode.IsSolvedWin) parentNode.MarkSolvedWin(); ...
+        // 2. Propagazione VITTORIA (Win Propagation)
+        // Se il figlio è una vittoria certa E garantisce la vittoria al giocatore che muove nel padre.
+        // (Logica complessa in 4-player, la omettiamo per sicurezza per evitare falsi positivi.
+        //  La Dead End Propagation è la parte più critica per la sopravvivenza).
     }
 
     public void Reset(int startId) => _nextId = startId;
