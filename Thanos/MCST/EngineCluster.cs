@@ -56,11 +56,8 @@ public sealed class EngineCluster : IDisposable
             tasks[i] = Task.Run(() =>
             {
                 // Avvolgiamo la chiamata all'Engine (che manipola puntatori) in un blocco unsafe
-                unsafe 
-                {
-                    var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index]);
-                    _lastChosenIndices[index] = bestLocalIndex;
-                }
+                var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index]);
+                _lastChosenIndices[index] = bestLocalIndex;
             });
         }
 

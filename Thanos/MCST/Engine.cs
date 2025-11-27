@@ -104,7 +104,7 @@ public class Engine
     private void RunIterations(int area, int counter = 0)
     {
         // Timeout dinamico: Puntiamo a 350ms per stare larghi nei 500ms totali
-        const long maxTimeMs = 350;
+        const long maxTimeMs = 450;
         const long forcedMoveTimeMs = 50; // Se la mossa è forzata, spendiamo poco tempo per verificare
         
         var stopwatch = Stopwatch.StartNew();
