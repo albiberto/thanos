@@ -20,41 +20,43 @@ public sealed class EngineCluster : IDisposable
 
     public EngineCluster(uint maxNodes)
     {
-        // MODIFICA QUI: Imposta manualmente i core o limitali
-        // var coreCount = Math.Max(1, Environment.ProcessorCount); // <-- Vecchia logica (Tutti i core)
+        // Configurazione Core (Manuale per Debug o Automatica)
+        const int coreCount = 1; 
         
-        const int coreCount = 1; // <-- NUOVA LOGICA: Forza 2 Core per il test
-        
-        Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines (Manual Limit)...");
+        Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines using 'Medium' (11x11) profile...");
 
         _engines = new Engine[coreCount];
         _slotPools = new SlotMemoryPool[coreCount];
         _nodePools = new NodeMemoryPool[coreCount];
         _lastChosenIndices = new int[coreCount];
 
-        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Large);
+        // 1. LOOKUPS: Profilo Medium (11x11)
+        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium); 
 
         for (var i = 0; i < coreCount; i++)
         {
             _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
-            _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Worst);
+            
+            // 2. SLOTS: Profilo Medium (11x11)
+            // Perfettamente allineato con LookupsMemoryLayout.Medium
+            _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Medium);
+            
             _engines[i] = new Engine(_slotPools[i], _nodePools[i]);
             _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
         }
     }
 
+    // ... (Il resto della classe: ComputeMoveAsync, Reset, Dispose rimane invariato) ...
     public async Task<byte> ComputeMoveAsync(Request request)
     {
         var targetHash = _slotPools[0].CalculateRequestHash(0, in request);
 
-        // --- FASE 2: Esecuzione Parallela ---
         var tasks = new Task[_engines.Length];
         for (var i = 0; i < _engines.Length; i++)
         {
             var index = i;
             tasks[i] = Task.Run(() =>
             {
-                // Passiamo 'targetHash' invece di farlglielo calcolare
                 var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index], targetHash);
                 _lastChosenIndices[index] = bestLocalIndex;
             });
@@ -67,7 +69,6 @@ public sealed class EngineCluster : IDisposable
         foreach (var engine in _engines)
         {
             var buffer = _threadLocalStatsBuffer.Value!;
-
             engine.GetRootStats(buffer);
 
             foreach (var stat in buffer)
@@ -76,10 +77,8 @@ public sealed class EngineCluster : IDisposable
             }
         }
 
-        // 3. Selezione Finale
         var bestMove = Moves.Up; 
         long maxVisits = -1;
-
         byte[] movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
         
         foreach (var move in movesToCheck)
