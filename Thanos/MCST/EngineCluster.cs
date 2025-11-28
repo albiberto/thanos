@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Thanos.Common;
+using Thanos.Extensions;
 using Thanos.Memory;
 using Thanos.SourceGen;
 
@@ -42,28 +43,25 @@ public sealed class EngineCluster : IDisposable
         }
     }
 
-    // ... Il resto della classe rimane identico ...
-    // (Incluso ComputeMoveAsync, Reset, SetMap, Dispose)
-    
-    // Metodo Async standard (senza unsafe)
     public async Task<byte> ComputeMoveAsync(Request request)
     {
-        // 1. Esecuzione Parallela
+        var targetHash = _slotPools[0].CalculateRequestHash(0, in request);
+
+        // --- FASE 2: Esecuzione Parallela ---
         var tasks = new Task[_engines.Length];
         for (var i = 0; i < _engines.Length; i++)
         {
-            var index = i; // Capture index
+            var index = i;
             tasks[i] = Task.Run(() =>
             {
-                // Avvolgiamo la chiamata all'Engine (che manipola puntatori) in un blocco unsafe
-                var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index]);
+                // Passiamo 'targetHash' invece di farlglielo calcolare
+                var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index], targetHash);
                 _lastChosenIndices[index] = bestLocalIndex;
             });
         }
 
         await Task.WhenAll(tasks);
 
-        // 2. Merge dei Risultati
         var totalVisits = new long[16]; 
 
         foreach (var engine in _engines)

@@ -4,16 +4,9 @@ using Thanos.SourceGen;
 
 namespace Thanos;
 
-public sealed class BattleSnakeAgent : IDisposable
+public sealed class BattleSnakeAgent(uint maxNodes = Constants.MaxNodes) : IDisposable
 {
-    // Sostituiamo Engine con EngineCluster
-    private readonly EngineCluster _cluster;
-
-    public BattleSnakeAgent(uint maxNodes = Constants.MaxNodes)
-    {
-        // Il cluster si occupa di allocare tutto (N volte)
-        _cluster = new EngineCluster(maxNodes);
-    }
+    private readonly EngineCluster _cluster = new(maxNodes);
 
     public void Start(in Request request)
     {

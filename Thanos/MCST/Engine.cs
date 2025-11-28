@@ -24,79 +24,87 @@ public class Engine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int FindBestMove(in Request request, int lastChosenIndex)
+    public int FindBestMove(in Request request, int lastChosenIndex, long targetHash)
     {
         // 1. Tree Reuse Logic
+        // Tentiamo di trovare il nodo corrispondente al nuovo stato nell'albero esistente
         if (lastChosenIndex > 0)
         {
-            _rootIndex = FindNewRoot(lastChosenIndex, in request);
+            _rootIndex = FindNewRoot(lastChosenIndex, targetHash);
+            
             if (_rootIndex > 0)
             {
+                // Trovato! Promuoviamo questo nodo a nuova radice
                 ref var newRootNode = ref _nodePool[_rootIndex];
                 newRootNode.NewRoot();
+                
+                // Aggiorniamo l'Arena con i dati freschi della Request 
+                // (per correggere eventuali discrepanze di simulazione)
                 var rootArena = _slotPool.GetArena(_rootIndex);
                 rootArena.InitializeFromRequest(in request);
             }
         }
         else
         {
-            _rootIndex = 1;
+            _rootIndex = 0; // Forza il reset se non avevamo una mossa precedente valida
         }
 
         // 2. Full Reset Fallback
-        if (_rootIndex == 0)
+        // Se il riutilizzo è fallito o non era possibile, resettiamo tutto
+        if (_rootIndex <= 0)
         {
-            _rootIndex = 1;
+            _rootIndex = Constants.FirstRootNodeIndex; // Di solito 1
             _worker.Reset(_rootIndex, request.Game.Ruleset.Settings);
 
-            var hash = _slotPool.CalculateRequestHash(_rootIndex, in request);
-            ref var rootNode = ref _nodePool[_rootIndex];
-            rootNode.PlacementRoot(hash);
-
+            // Inizializziamo l'Arena della radice
             var rootArena = _slotPool.GetArena(_rootIndex);
             rootArena.InitializeFromRequest(in request);
+            
+            // Inizializziamo il Nodo radice usando l'hash calcolato esternamente
+            ref var rootNode = ref _nodePool[_rootIndex];
+            rootNode.PlacementRoot(targetHash);
         }
 
         RunIterations(request.Board.Area);
 
-        // 3. Selection: Usa rewards pesati invece che semplici visite se vuoi, 
-        // ma Visits resta la metrica più robusta per MCTS.
+        // 3. Selection
         return _nodePool.SelectMostVisitedChild(_rootIndex);
     }
 
-    private int FindNewRoot(int myLastMoveNodeIndex, in Request request)
+    private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
     {
-        var currentHash = _slotPool.CalculateRequestHash(1, in request);
         ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
 
-        // Dobbiamo scendere di 2 livelli: 
-        // Livello 1: Mosse degli altri serpenti (P1, P2...) -> NO, ora è integrato nell'albero
-        // La struttura ora è: MyMove -> EnemyMoves -> Environment -> NewState
-        
-        // Attenzione: FindNewRoot con ChanceNodes è complesso perché l'hash cambia.
-        // Strategia semplificata: Cerca tra i discendenti diretti o nipoti.
-        // Dato che la struttura è dinamica (P0->P1->Env->P0), navighiamo l'albero.
-        
-        // Cerca ricorsivamente (limitato a profondità 4-5) un nodo con Hash uguale
-        return FindNodeWithHash(myLastMoveNode.FirstChildIndex, currentHash, 5);
+        // Cerchiamo tra i discendenti (gestendo la profondità dinamica dovuta a EnemyMoves/Environment)
+        // Passiamo 5 come profondità massima di ricerca
+        return FindNodeWithHash(myLastMoveNode.FirstChildIndex, targetHash, 5);
     }
     
     private int FindNodeWithHash(int startIndex, long targetHash, int depthLimit)
     {
-        if (startIndex == -1 || depthLimit <= 0) return 0;
+        // FIX LOOP INFINITO: Controlliamo <= 0. 
+        // 0 è la memoria di default (bug o nodo vuoto), -1 è il terminatore.
+        if (startIndex <= 0 || depthLimit <= 0) return 0;
 
         var current = startIndex;
-        while (current != -1)
+        
+        // FIX LOOP INFINITO: Safety Counter per evitare blocchi su grafi ciclici corrotti
+        var safetyCounter = 0;
+        const int MaxSiblingsSearch = 10000; 
+
+        while (current > 0 && safetyCounter++ < MaxSiblingsSearch)
         {
             ref var node = ref _nodePool[current];
+            
             if (node.Hash == targetHash) return current;
 
-            // Deep search (necessaria per saltare i nodi intermedi dei nemici e environment)
+            // Deep search ricorsiva (per saltare i livelli intermedi)
             var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
             if (foundInChild != 0) return foundInChild;
 
             current = node.NextSiblingIndex;
         }
+        
         return 0;
     }
 
