@@ -20,20 +20,17 @@ public sealed class EngineCluster : IDisposable
 
     public EngineCluster(uint maxNodes)
     {
-        // Configurazione Core (Manuale per Debug o Automatica)
-        const int coreCount = 1; 
-        
-        Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines using 'Medium' (11x11) profile...");
+        Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using 'Medium' (11x11) profile...");
 
-        _engines = new Engine[coreCount];
-        _slotPools = new SlotMemoryPool[coreCount];
-        _nodePools = new NodeMemoryPool[coreCount];
-        _lastChosenIndices = new int[coreCount];
+        _engines = new Engine[Constants.CoreCount];
+        _slotPools = new SlotMemoryPool[Constants.CoreCount];
+        _nodePools = new NodeMemoryPool[Constants.CoreCount];
+        _lastChosenIndices = new int[Constants.CoreCount];
 
         // 1. LOOKUPS: Profilo Medium (11x11)
         _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium); 
 
-        for (var i = 0; i < coreCount; i++)
+        for (var i = 0; i < Constants.CoreCount; i++)
         {
             _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
             

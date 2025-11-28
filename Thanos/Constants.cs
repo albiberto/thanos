@@ -9,7 +9,8 @@ public static class Constants
     // Aumentiamo i nodi o riduciamo a seconda della RAM disponibile, 
     // dato che ora ogni nodo pesa il doppio (64 byte vs 32 byte).
     // Con 2.5M nodi * 64 byte = ~160 MB. È accettabile.
-    public const int MaxNodes = 2_500_000; 
+    public const int MaxNodes = 1_250_000;
+    public const int CoreCount = 2;
     public const double TimeoutRatio = .9;
 
     public const int Large = 19 * 19;
