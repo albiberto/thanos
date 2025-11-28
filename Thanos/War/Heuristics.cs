@@ -40,7 +40,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         if (snake.IsDead) return -1.0f;
 
         // Se sono l'unico vivo, ho vinto
-        int othersAlive = 0;
+        var othersAlive = 0;
         for (var i = 0; i < _system.Count; i++)
         {
             if (i != playerIndex && !_system[i].IsDead) othersAlive++;
@@ -58,7 +58,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     [SkipLocalsInit]
     public void EvaluateAll(Span<float> results)
     {
-        int area = _positionalScores.Length;
+        var area = _positionalScores.Length;
 
         // 1. Setup Muri
         Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
@@ -69,7 +69,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         EvaluateTerritoryAndFoodFair(area, in baseWalls, results);
 
         // 3. Euristiche individuali (Self-preservation & Aggression)
-        for (int i = 0; i < _system.Count; i++)
+        for (var i = 0; i < _system.Count; i++)
         {
             var snake = _system[i];
             if (snake.IsDead)
@@ -81,7 +81,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             var head = snake.Head;
             if (head >= area) continue;
 
-            float score = 0.0f;
+            var score = 0.0f;
 
             // Statica
             score += EvaluatePositionalScore(head);
@@ -132,8 +132,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     {
         // Code per BFS
         Span<ushort> queue = stackalloc ushort[area]; 
-        int queueHead = 0;
-        int queueTail = 0;
+        var queueHead = 0;
+        var queueTail = 0;
 
         // Array dei proprietari: -1 = nessuno, -2 = conteso (pareggio), 0..3 = snakeIndex
         Span<int> owners = stackalloc int[area];
@@ -144,12 +144,12 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         distances.Fill(ushort.MaxValue);
 
         // Inizializza BFS con le teste
-        for (int i = 0; i < _system.Count; i++)
+        for (var i = 0; i < _system.Count; i++)
         {
             var snake = _system[i];
             if (snake.IsDead) continue;
             
-            ushort head = snake.Head;
+            var head = snake.Head;
             if(head >= area) continue;
             
             owners[head] = i; 
@@ -160,9 +160,9 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         // BFS Expansion
         while (queueHead < queueTail)
         {
-            ushort currentPos = queue[queueHead++];
-            int currentOwner = owners[currentPos];
-            ushort currentDist = distances[currentPos];
+            var currentPos = queue[queueHead++];
+            var currentOwner = owners[currentPos];
+            var currentDist = distances[currentPos];
 
             // Se la cella di partenza era contesa (-2), non espandiamo la proprietà
             if (currentOwner == -2) continue;
@@ -171,12 +171,12 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
             foreach (var move in AllMovesArray)
             {
-                ushort neighborPos = _neighborsGrid.Get(currentPos, move);
+                var neighborPos = _neighborsGrid.Get(currentPos, move);
                 
                 if (!NeighborsGrid.IsValid(neighborPos) || walls.IsSet(neighborPos)) 
                     continue;
 
-                int neighborOwner = owners[neighborPos];
+                var neighborOwner = owners[neighborPos];
 
                 // Caso 1: Cella non visitata
                 if (neighborOwner == -1)
@@ -206,12 +206,12 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         spaceCounts.Clear();
         
         Span<float> foodUrgencies = stackalloc float[_system.Count];
-        for(int i=0; i<_system.Count; i++) 
+        for(var i=0; i<_system.Count; i++) 
              foodUrgencies[i] = (101.0f - _system[i].HP) * HeuristicsConstants.FoodWeight;
 
-        for (int i = 0; i < area; i++)
+        for (var i = 0; i < area; i++)
         {
-            int owner = owners[i];
+            var owner = owners[i];
             
             // Ignoriamo celle libere o contese
             if (owner < 0) continue; 
@@ -224,12 +224,12 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             }
         }
 
-        for(int i=0; i<_system.Count; i++)
+        for(var i=0; i<_system.Count; i++)
         {
             if (_system[i].IsDead) continue;
 
-            int mySpace = spaceCounts[i];
-            int myLength = _system[i].Length;
+            var mySpace = spaceCounts[i];
+            var myLength = _system[i].Length;
 
             // SURVIVAL INSTINCT:
             // Se lo spazio che controllo è minore della mia lunghezza, sono in trappola (soffocamento).

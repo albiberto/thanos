@@ -39,7 +39,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
         // Se dopo l'espansione non è più una foglia, scendiamo in uno dei nuovi figli
         // per valutare quello invece del padre (migliora la precisione immediata)
-        int nodeToEvaluate = leafIndex;
+        var nodeToEvaluate = leafIndex;
         if (!leafNode.IsLeafNode)
         {
             // Selezioniamo il primo figlio o uno a caso per la valutazione iniziale
@@ -165,7 +165,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         
         // 15% probabilità di esplorare lo spawn cibo, 85% no.
         // Questo farà sì che il ramo "No Spawn" riceva l'85% delle visite, rendendo le sue statistiche molto solide.
-        bool pickSpawn = Random.Shared.NextDouble() < _settings.FoodSpawnChance / 100.0;
+        var pickSpawn = Random.Shared.NextDouble() < _settings.FoodSpawnChance / 100.0;
         
         if (pickSpawn) return secondChild; // Spawn Node
         return firstChild; // No Spawn Node
@@ -209,7 +209,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         // Filtriamo le mosse che portano a morte certa (vicoli ciechi immediati)
         // Usiamo una maschera 'prunedMoves' che contiene solo le mosse che superano il check di sicurezza.
         byte prunedMoves = 0;
-        int safeMoveCount = 0;
+        var safeMoveCount = 0;
 
         foreach (var move in AllMoves)
         {
@@ -226,12 +226,12 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         // SAFETY FALLBACK: Se ho potato TUTTE le mosse (es. sono costretto a entrare in un tunnel),
         // allora devo per forza esplorare le mosse originali "rischiose".
         // Meglio rischiare la morte che suicidarsi subito.
-        byte movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
+        var movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
         // --- FINE PRUNING AVANZATO ---
 
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
-        bool isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
-        byte actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
+        var isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
+        var actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
 
         var lastChildIndex = -1;
         foreach (var move in AllMoves)
@@ -273,7 +273,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         if (!NeighborsGrid.IsValid(newHead)) return true;
 
         // Contiamo le uscite libere dalla nuova testa
-        int openExits = 0;
+        var openExits = 0;
         
         // Controlliamo i 4 vicini della nuova testa
         // Nota: Dobbiamo usare NeighborsGrid per ottenere gli indici, ma arena.Snakes per le collisioni
@@ -395,7 +395,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             // Dobbiamo controllare l'outcome per OGNI giocatore
             // Rimosso 'terminalFound' perché non utilizzato
             
-            for(int i=0; i < arena.System.Count; i++)
+            for(var i=0; i < arena.System.Count; i++)
             {
                 var outcome = heuristics.Outcome(i);
                 if (outcome != 0.0f)
@@ -409,7 +409,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             Span<float> rawScores = stackalloc float[arena.System.Count];
             heuristics.EvaluateAll(rawScores);
     
-            for (int i = 0; i < arena.System.Count; i++)
+            for (var i = 0; i < arena.System.Count; i++)
             {
                 // Se abbiamo già un outcome terminale (vittoria/morte), prevale quello
                 if (rewardsBuffer[i] != 0.0f) continue;
@@ -471,7 +471,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             // Controlliamo se TUTTI i figli sono SolvedLoss.
             // Se non c'è nessuna mossa che salva il giocatore, allora il padre è SolvedLoss.
             
-            bool allChildrenLost = true;
+            var allChildrenLost = true;
             var currentSibling = parentNode.FirstChildIndex;
             while (currentSibling != -1)
             {

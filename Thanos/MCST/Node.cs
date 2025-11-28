@@ -68,7 +68,7 @@ public unsafe struct Node
     public void UpdateStats(ReadOnlySpan<float> rewards)
     {
         Visits++;
-        for (int i = 0; i < 4; i++)
+        for (var i = 0; i < 4; i++)
         {
             Rewards[i] += rewards[i];
         }
@@ -77,7 +77,7 @@ public unsafe struct Node
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearRewards()
     {
-        for (int i = 0; i < 4; i++) Rewards[i] = 0;
+        for (var i = 0; i < 4; i++) Rewards[i] = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

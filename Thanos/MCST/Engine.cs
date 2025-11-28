@@ -117,8 +117,8 @@ public class Engine
         }
         
         ref var rootNode = ref _nodePool[_rootIndex];
-        int childCount = 0;
-        int childIdx = rootNode.FirstChildIndex;
+        var childCount = 0;
+        var childIdx = rootNode.FirstChildIndex;
         while(childIdx != -1)
         {
             childCount++;
@@ -126,7 +126,7 @@ public class Engine
         }
 
         // Se abbiamo 1 sola mossa legale, non serve pensare troppo (a meno che non vogliamo vedere il futuro profondo per tie-breaking)
-        long timeLimit = (childCount <= 1) ? forcedMoveTimeMs : maxTimeMs;
+        var timeLimit = (childCount <= 1) ? forcedMoveTimeMs : maxTimeMs;
 
         while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
@@ -135,7 +135,7 @@ public class Engine
                 break;
             
             // Esegui batch di iterazioni per ridurre l'overhead del controllo tempo
-            for(int i=0; i<64; i++) 
+            for(var i=0; i<64; i++) 
             {
                 _worker.RunIteration(area, _rootIndex);
             }
@@ -164,7 +164,7 @@ public class Engine
             {
                 // Calcoliamo uno score normalizzato per il debug
                 // Nota: In MaxN childNode.Rewards[0] è il reward cumulativo.
-                float avgScore = childNode.Visits > 0 ? childNode.Rewards[0] / childNode.Visits : -1;
+                var avgScore = childNode.Visits > 0 ? childNode.Rewards[0] / childNode.Visits : -1;
                 
                 outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
             }

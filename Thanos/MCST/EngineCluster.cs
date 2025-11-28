@@ -64,16 +64,13 @@ public sealed class EngineCluster : IDisposable
         await Task.WhenAll(tasks);
 
         // 2. Merge dei Risultati
-        long[] totalVisits = new long[16]; 
+        var totalVisits = new long[16]; 
 
-        for (var i = 0; i < _engines.Length; i++)
+        foreach (var engine in _engines)
         {
             var buffer = _threadLocalStatsBuffer.Value!;
-            
-            unsafe
-            {
-                _engines[i].GetRootStats(buffer);
-            }
+
+            engine.GetRootStats(buffer);
 
             foreach (var stat in buffer)
             {
@@ -82,7 +79,7 @@ public sealed class EngineCluster : IDisposable
         }
 
         // 3. Selezione Finale
-        byte bestMove = Moves.Up; 
+        var bestMove = Moves.Up; 
         long maxVisits = -1;
 
         byte[] movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
