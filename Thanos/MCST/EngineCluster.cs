@@ -22,7 +22,7 @@ public sealed class EngineCluster : IDisposable
         // MODIFICA QUI: Imposta manualmente i core o limitali
         // var coreCount = Math.Max(1, Environment.ProcessorCount); // <-- Vecchia logica (Tutti i core)
         
-        var coreCount = 2; // <-- NUOVA LOGICA: Forza 2 Core per il test
+        const int coreCount = 1; // <-- NUOVA LOGICA: Forza 2 Core per il test
         
         Console.WriteLine($"[EngineCluster] Initializing {coreCount} engines (Manual Limit)...");
 

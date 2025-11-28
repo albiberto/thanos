@@ -6,8 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 OverrideConsoleStandardOutput()
 #endif
 
-OverrideConsoleStandardOutput();
-
 var app = builder.Build();
 
 var agent = new BattleSnakeAgent();
