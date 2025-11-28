@@ -20,7 +20,7 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         _layout = layout;
         _slotSize = _layout.SlotSize;
 
-        var memorySize = (nuint)_slotSize * maxSlots * Constants.MaxSnakesCount;
+        var memorySize = (nuint)_slotSize * maxSlots;
         _basePointer = NativeMemory.AlignedAlloc(memorySize, 64);
 
         Console.WriteLine($"[SlotMemoryPool] Allocated {(double)memorySize / (1024 * 1024 * 1024):F3} GB for {_slotSize}-byte nodes, max nodes: {maxSlots}");
