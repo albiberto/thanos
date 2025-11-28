@@ -7,7 +7,6 @@ namespace Thanos.Memory;
 
 public struct SlotMemoryLayout
 {
-    // ... Campi invariati ...
     public readonly int WarSnakeLifeSize;
     public readonly int CircularQueueStateSize;
     public readonly int BitboardSize;
@@ -26,26 +25,11 @@ public struct SlotMemoryLayout
 
     public readonly ushort Capacity;
 
-    // Profilo "Medium" (Standard 11x11):
-    // Constants.Medium = 121
-    // Constants.MaxSnakeBodyCapacity = 256
-    // Constants.MaxSnakesCount = 4
-    public static SlotMemoryLayout Medium { get; } = new(
-        Constants.Medium, 
-        (ushort)Constants.MaxSnakeBodyCapacity, 
-        Constants.MaxSnakesCount
+    public static SlotMemoryLayout Medium { get; } = new(Constants.Medium, 128, Constants.MaxSnakesCount
     );
 
-    // Profilo "Worst" (Large 19x19) per sicurezza o mappe custom
-    public static SlotMemoryLayout Large { get; } = new(
-        Constants.Large, 
-        (ushort)Constants.MaxSnakeBodyCapacity, 
-        Constants.MaxSnakesCount
-    );
-
-    public SlotMemoryLayout(int area, ushort capacity, int snakeCount)
+    private SlotMemoryLayout(int area, ushort capacity, int snakeCount)
     {
-        // ... Logica costruttore invariata ...
         Capacity = capacity;
 
         WarSnakeLifeSize = Unsafe.SizeOf<WarSnakeLife>();
