@@ -11,7 +11,7 @@ namespace Thanos.MCST;
 public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 {
     private const double EXPLORATION_PARAMETER = 1.41;
-    private const int CHANCE_NODE_VISIT_THRESHOLD = 50;
+    private const int CHANCE_NODE_VISIT_THRESHOLD = 50; 
 
     private int _nextId = 1;
     private RulesetSettings _settings;
@@ -22,8 +22,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private static readonly byte[] AllMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
     private readonly float[] _rewardsBuffer = new float[Constants.MaxSnakesCount];
 
-    // ... [Il metodo RunIteration e Select rimangono uguali] ...
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RunIteration(int area, int rootIndex)
     {
@@ -42,7 +40,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         Backpropagate(nodeToEvaluate, _rewardsBuffer);
     }
 
-    // ... [Select, SelectBestChildMaxN, SelectChanceOutcome rimangono uguali] ...
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int Select(int rootIndex)
     {
@@ -135,60 +132,34 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var arena = _slotPool.GetArena(parentIndex);
         var snake = arena.System[playerIndex];
 
-        // LOG DEBUG: Stato iniziale espansione
-        Console.WriteLine($"[DEBUG-EXPAND] Node {parentIndex}: Player {playerIndex} expanding. Head: {snake.Head}, Dead: {snake.IsDead}");
-
         if (snake.IsDead)
         {
-            Console.WriteLine($"[DEBUG-EXPAND] Player {playerIndex} is DEAD. Marking Terminal.");
             parentNode.MarkTerminal();
             parentNode.MarkSolvedLoss();
             return;
         }
 
         var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail);
-        
         if (legalMoves == 0)
         {
-            Console.WriteLine($"[DEBUG-EXPAND] Player {playerIndex} has NO LEGAL MOVES (Wall/Body). Marking Terminal.");
             parentNode.MarkTerminal();
             parentNode.MarkSolvedLoss();
             return;
         }
 
-        // --- PRUNING LOGIC ---
-        byte prunedMoves = 0;
-        var safeMoveCount = 0;
-        foreach (var move in AllMoves)
-        {
-            if ((legalMoves & move) == 0) continue;
-            if (!IsMoveRisky(in arena, snake.Head, move))
-            {
-                prunedMoves |= move;
-                safeMoveCount++;
-            }
-        }
-        var movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
-        // ---------------------
-
-        // LOG DEBUG: Mosse
-        Console.WriteLine($"[DEBUG-EXPAND] P{playerIndex} Moves - Legal: {legalMoves}, Pruned: {movesToExpand}");
-
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
         var isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
         var actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
 
-        // LOG DEBUG: Round Robin Transition
-        Console.WriteLine($"[DEBUG-RR] P{playerIndex} -> Next: {(isNextChance ? "ENV" : "P" + actualNextPlayer)}");
-
         var lastChildIndex = -1;
         foreach (var move in AllMoves)
         {
-            if ((movesToExpand & move) == 0) continue;
+            if ((legalMoves & move) == 0) continue;
+
+            if (IsMoveRisky(in arena, snake.Head, move)) continue;
 
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
-            
             childArena.CloneFrom(in arena);
             
             var snakeToMove = childArena.System[playerIndex];
@@ -209,35 +180,14 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsMoveRisky(in Arena arena, ushort currentHead, byte move)
     {
-        var newHead = arena.GetNewHeadPosition(currentHead, move);
-        if (!NeighborsGrid.IsValid(newHead)) return true;
-
-        var openExits = 0;
-        
-        var n = arena.GetNewHeadPosition(newHead, Moves.Up);
-        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
-        
-        n = arena.GetNewHeadPosition(newHead, Moves.Down);
-        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
-        
-        n = arena.GetNewHeadPosition(newHead, Moves.Left);
-        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
-        
-        n = arena.GetNewHeadPosition(newHead, Moves.Right);
-        if (NeighborsGrid.IsValid(n) && !arena.Snakes.IsSet(n)) openExits++;
-
-        return openExits < 2;
+        return false; 
     }
 
     private void ExpandChanceNode(int parentIndex, ref Node parentNode, int area)
     {
-        Console.WriteLine($"[DEBUG-CHANCE] Expanding Environment Node {parentIndex}");
         CreateEnvironmentChild(parentIndex, area, spawnFood: false);
-
         if (parentNode.Visits > CHANCE_NODE_VISIT_THRESHOLD)
-        {
              CreateEnvironmentChild(parentIndex, area, spawnFood: true);
-        }
     }
 
     private void CreateEnvironmentChild(int parentIndex, int area, bool spawnFood)
@@ -245,28 +195,24 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var childIndex = ++_nextId;
         var parentArena = _slotPool.GetArena(parentIndex);
         var childArena = _slotPool.GetArena(childIndex);
-        
         childArena.CloneFrom(in parentArena);
 
-        if (spawnFood)
-        {
-            childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
-        }
+        if (spawnFood) childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
 
         var hash = ZobristHasher.CalculateHash(in childArena);
         
         ref var childNode = ref _nodePool[childIndex];
         ref var parentNode = ref _nodePool[parentIndex];
         
-        // LOG DEBUG: Restart Round Robin
-        Console.WriteLine($"[DEBUG-RR] Environment -> P0 (Restarting Round)");
+        // FIX ROUND ROBIN: Cerca il primo giocatore VIVO
+        var firstAlive = GetFirstAlivePlayerIndex(in childArena);
+        var isNextChance = firstAlive == Constants.EnvironmentPlayerIndex;
+        var nextPlayer = (byte)firstAlive;
+        
+        childNode.PlacementNew(parentIndex, Moves.None, hash, nextPlayer, isNextChance); 
+        if (isNextChance) childNode.MarkTerminal();
 
-        childNode.PlacementNew(parentIndex, Moves.None, hash, 0, false); // Turno torna a P0
-
-        if (parentNode.FirstChildIndex == -1)
-        {
-            parentNode.FirstChildIndex = childIndex;
-        }
+        if (parentNode.FirstChildIndex == -1) parentNode.FirstChildIndex = childIndex;
         else
         {
             var sibling = parentNode.FirstChildIndex;
@@ -275,49 +221,68 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
     }
 
-    // --- LOGICA ROUND ROBIN STRUMENTATA ---
     private static int GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
     {
-        // Caso base: siamo all'ultimo serpente della lista -> tocca all'ambiente
-        if (currentPlayerIndex >= arena.System.Count - 1)
-        {
-            Console.WriteLine($"[DEBUG-RR] Player {currentPlayerIndex} is last. Next -> Environment");
-            return Constants.EnvironmentPlayerIndex;
-        }
-
         var next = currentPlayerIndex + 1;
-        
-        // Ciclo per saltare i serpenti morti
-        while (next < arena.System.Count && arena.System[next].IsDead)
-        {
-            Console.WriteLine($"[DEBUG-RR] Skipping Player {next} (DEAD)");
-            next++;
-        }
-
-        // Se dopo aver saltato i morti siamo usciti dalla lista, tocca all'ambiente
-        if (next >= arena.System.Count) 
-        {
-            Console.WriteLine($"[DEBUG-RR] No more alive players after {currentPlayerIndex}. Next -> Environment");
-            return Constants.EnvironmentPlayerIndex;
-        }
-
-        Console.WriteLine($"[DEBUG-RR] Next active player after {currentPlayerIndex} is {next}");
+        while (next < arena.System.Count && arena.System[next].IsDead) next++;
+        if (next >= arena.System.Count) return Constants.EnvironmentPlayerIndex;
         return next;
     }
 
-    // ... [ApplySingleMove, Evaluate, Backpropagate, ecc. rimangono uguali] ...
-    
+    // --- METODO AGGIUNTO (Che mancava prima) ---
+    private static int GetFirstAlivePlayerIndex(in Arena arena)
+    {
+        var next = 0;
+        // Cerca il primo giocatore che NON è morto
+        while (next < arena.System.Count && arena.System[next].IsDead)
+        {
+            next++;
+        }
+
+        // Se tutti sono morti o abbiamo finito la lista, ritorna Environment
+        if (next >= arena.System.Count) return Constants.EnvironmentPlayerIndex;
+        
+        return next;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move, int area)
     {
         var newHead = arena.GetNewHeadPosition(snake.Head, move);
-        var hasEaten = arena.Food.IsSet(newHead);
         
+        arena.Snakes.Xor(snake.Body);
+
+        if (arena.Snakes.IsSet(newHead))
+        {
+            for (var i = 0; i < arena.System.Count; i++)
+            {
+                var enemy = arena.System[i];
+                if (enemy.IsOnBody(newHead))
+                {
+                    if (enemy.Head == newHead) // HEAD-TO-HEAD
+                    {
+                        if (snake.Length <= enemy.Length) snake.Kill(); 
+                        if (snake.Length >= enemy.Length) 
+                        {
+                            arena.System[i].Kill(); 
+                            arena.Snakes.Xor(arena.System[i].Body); 
+                        }
+                    }
+                    else // BODY HIT
+                    {
+                        snake.Kill(); 
+                    }
+                }
+            }
+        }
+
+        if (snake.IsDead) return;
+
+        var hasEaten = arena.Food.IsSet(newHead);
         var damage = arena.Hazards.IsSet(newHead) ? _settings.HazardDamagePerTurn : 1;
 
-        arena.Snakes.Xor(snake.Body);
         snake.UpdateAfterMove(newHead, hasEaten, damage);
-        arena.Snakes.Or(snake.Body);
+        arena.Snakes.Or(snake.Body); 
 
         if (hasEaten) arena.Food.Unset(newHead);
     }
@@ -332,10 +297,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         for(var i=0; i < arena.System.Count; i++)
         {
             var outcome = heuristics.Outcome(i);
-            if (outcome != 0.0f)
-            {
-                rewardsBuffer[i] = outcome; 
-            }
+            if (outcome != 0.0f) rewardsBuffer[i] = outcome; 
         }
         
         Span<float> rawScores = stackalloc float[arena.System.Count];
@@ -344,13 +306,11 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         for (var i = 0; i < arena.System.Count; i++)
         {
             if (rewardsBuffer[i] != 0.0f) continue;
-            
             if (arena.System[i].IsDead)
             {
                 rewardsBuffer[i] = -1.0f;
                 continue;
             }
-
             rewardsBuffer[i] = MathF.Tanh(rawScores[i] / 150.0f);
         }
     }
@@ -358,17 +318,11 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private unsafe void Backpropagate(int startNodeIndex, float[] rewards)
     {
         var currentIndex = startNodeIndex;
-
         while (currentIndex != -1)
         {
             ref var currentNode = ref _nodePool[currentIndex];
             currentNode.UpdateStats(rewards);
-
-            if (currentNode.ParentIndex != -1)
-            {
-                PropagateSolverFlags(currentIndex, currentNode.ParentIndex);
-            }
-
+            if (currentNode.ParentIndex != -1) PropagateSolverFlags(currentIndex, currentNode.ParentIndex);
             currentIndex = currentNode.ParentIndex;
         }
     }
@@ -377,11 +331,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private void PropagateSolverFlags(int childIndex, int parentIndex)
     {
         ref var childNode = ref _nodePool[childIndex];
-        
         if (childNode.IsSolvedLoss)
         {
             ref var parentNode = ref _nodePool[parentIndex];
-            
             if (parentNode.IsSolvedLoss || parentNode.IsSolvedWin) return;
             if (parentNode.IsChanceNode) return;
 
@@ -398,11 +350,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 currentSibling = siblingNode.NextSiblingIndex;
             }
 
-            if (allChildrenLost)
-            {
-                parentNode.MarkSolvedLoss();
-            }
-            return;
+            if (allChildrenLost) parentNode.MarkSolvedLoss();
         }
     }
 

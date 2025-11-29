@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
 using Thanos.Extensions;
@@ -179,6 +180,26 @@ public class Engine
 
             childIndex = childNode.NextSiblingIndex;
         }
+    }
+    
+    public byte GetFallbackMove()
+    {
+        // Se la radice è corrotta, default UP
+        if (_rootIndex <= 0) return Moves.Up;
+
+        var arena = _slotPool.GetArena(_rootIndex);
+        var me = arena.System[0]; // Assumiamo che io sia sempre P0
+
+        // Chiediamo all'Arena quali mosse sono legali
+        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail);
+
+        // Ritorniamo la prima mossa legale disponibile
+        if ((legalMoves & Moves.Up) != 0) return Moves.Up;
+        if ((legalMoves & Moves.Down) != 0) return Moves.Down;
+        if ((legalMoves & Moves.Left) != 0) return Moves.Left;
+        if ((legalMoves & Moves.Right) != 0) return Moves.Right;
+
+        return Moves.Up; // Nessuna mossa legale, moriamo
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

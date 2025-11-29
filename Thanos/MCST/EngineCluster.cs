@@ -44,8 +44,11 @@ public sealed class EngineCluster : IDisposable
     }
 
     // ... (Il resto della classe: ComputeMoveAsync, Reset, Dispose rimane invariato) ...
+    // In Thanos/MCST/EngineCluster.cs
+
     public async Task<byte> ComputeMoveAsync(Request request)
     {
+        // ... (parte iniziale identica fino al foreach bestMove) ...
         var targetHash = _slotPools[0].CalculateRequestHash(0, in request);
 
         var tasks = new Task[_engines.Length];
@@ -87,7 +90,15 @@ public sealed class EngineCluster : IDisposable
             }
         }
         
-        if (maxVisits <= 0) return Moves.None;
+        // --- FIX SAFETY NET ---
+        // Se maxVisits è <= 0, l'MCTS ha fallito (panico o bug).
+        // Invece di ritornare None (che diventa "Up" e ti uccide), chiediamo una mossa legale qualsiasi.
+        if (maxVisits <= 0) 
+        {
+            Console.WriteLine("[EngineCluster] PANIC: MCTS returned no moves. Using Fallback.");
+            // Usa il primo motore per calcolare una mossa di emergenza valida
+            return _engines[0].GetFallbackMove();
+        }
 
         return bestMove;
     }
