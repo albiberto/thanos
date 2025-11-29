@@ -19,11 +19,11 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         _lookupsMemoryPool = lookupsMemoryPool;
         _layout = layout;
         _slotSize = _layout.SlotSize;
-        
-        var memorySize = (nuint)_slotSize * maxSlots * Constants.MaxSnakesCount; 
+
+        var memorySize = (nuint)_slotSize * maxSlots;
         _basePointer = NativeMemory.AlignedAlloc(memorySize, 64);
 
-        Console.WriteLine($"[SlotMemoryPool] Allocated {(double)memorySize / (1024 * 1024 * 1024):F3} GB for {_slotSize}-byte nodes, max nodes: {maxSlots}");
+        // Console.WriteLine($"[SlotMemoryPool] Allocated {(double)memorySize / (1024 * 1024 * 1024):F3} GB for {_slotSize}-byte nodes, max nodes: {maxSlots}");
     }
 
     public Arena GetArena(int index)
@@ -33,12 +33,12 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         BuildBitboards(slotMemory, out var food, out var hazards, out var snakes);
 
         return new Arena(
-            system, 
-            food, 
-            hazards, 
-            snakes, 
-            _map ?? [], 
-            _lookupsMemoryPool.NeighborsGrid,  
+            system,
+            food,
+            hazards,
+            snakes,
+            _map ?? [],
+            _lookupsMemoryPool.NeighborsGrid,
             _lookupsMemoryPool.ConversionsMap);
     }
 
@@ -47,19 +47,19 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         var slotMemory = GetSlotSpan(index);
         var system = GetSnakesSystem(index);
         BuildBitboards(slotMemory, out var food, out var hazards, out var snakes);
-        
+
         return new Heuristics(
-            system, 
-            food, 
-            hazards, 
-            snakes, 
-            _lookupsMemoryPool.NeighborsGrid, 
+            system,
+            food,
+            hazards,
+            snakes,
+            _lookupsMemoryPool.NeighborsGrid,
             _lookupsMemoryPool.ConversionsMap,
             _lookupsMemoryPool.PositionalScores);
     }
 
     public void Set(Dictionary<string, int> map) => _map = map;
-    
+
     private Span<byte> GetSlotSpan(int index)
     {
         var pointer = (byte*)_basePointer + index * _slotSize;
@@ -71,13 +71,13 @@ public sealed unsafe class SlotMemoryPool : IDisposable
         var memory = GetSlotSpan(index);
         return new SnakesSystem(memory, in _layout, _map?.Count ?? 0);
     }
-    
+
     private void BuildBitboards(Span<byte> slotMemory, out Bitboard food, out Bitboard hazards, out Bitboard snakes)
     {
         food = new Bitboard(slotMemory.Slice(_layout.FoodBitboardOffset, _layout.BitboardSize));
         hazards = new Bitboard(slotMemory.Slice(_layout.HazardsBitboardOffset, _layout.BitboardSize));
         snakes = new Bitboard(slotMemory.Slice(_layout.SnakesBitboardOffset, _layout.BitboardSize));
     }
-    
+
     public void Dispose() => NativeMemory.AlignedFree(_basePointer);
 }

@@ -1,8 +1,11 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
+using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
-using Thanos.Extensions; 
+using Thanos.Extensions;
 
 namespace Thanos.MCST;
 
@@ -12,149 +15,171 @@ public class Engine
     private readonly SlotMemoryPool _slotPool;
     private readonly Worker _worker;
 
-    private int _rootIndex;
+    private int _rootIndex = Constants.FirstRootNodeIndex;
 
     public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
         _worker = new Worker(_slotPool, _nodePool);
-        _rootIndex = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int FindBestMove(in Request request, int previousMoveIndex)
+    public int FindBestMove(in Request request, int lastChosenIndex, long targetHash)
     {
-        // --- 1. LOGICA DI RIUTILIZZO DELL'ALBERO ---
-        if (previousMoveIndex > 0)
+        // 1. Tree Reuse Logic
+        if (lastChosenIndex > 0)
         {
-            // Tenta di trovare un nuovo nodo radice in base alla mossa dell'avversario
-            _rootIndex = FindNewRoot(previousMoveIndex, in request);
-
+            _rootIndex = FindNewRoot(lastChosenIndex, targetHash);
+            
             if (_rootIndex > 0)
             {
-                #if DEBUG
-                Console.WriteLine($"[Engine.FindBestMove] INFO: Riutilizzo albero riuscito. Nuova radice: {_rootIndex}.");
-                #endif
-                
-                // Imposta il nodo trovato come nuova radice
                 ref var newRootNode = ref _nodePool[_rootIndex];
-                newRootNode.NewRoot(); // Imposta ParentIndex = -1
+                newRootNode.NewRoot();
                 
-                // Sincronizza lo stato dell'arena di questo nodo con il request attuale
-                // (es. per aggiornare cibo, salute, ecc.)
                 var rootArena = _slotPool.GetArena(_rootIndex);
                 rootArena.InitializeFromRequest(in request);
             }
         }
         else
         {
-            _rootIndex = 0; // Forza un reset se non c'è una mossa precedente
+            _rootIndex = 0; 
         }
-        
-        // --- 2. CREAZIONE NUOVO ALBERO (se _rootIndex è 0) ---
-        // Questo blocco ora gestisce sia l'inizio di una partita (previousMoveIndex == 0)
-        // sia un fallimento nel riutilizzo dell'albero (_rootIndex == 0)
-        if (_rootIndex == 0)
-        {
-            #if DEBUG
-                if (previousMoveIndex > 0) {
-                    Console.WriteLine("[Engine.FindBestMove] INFO: Riutilizzo albero fallito. Creazione nuovo albero.");
-                } else {
-                    Console.WriteLine("[Engine.FindBestMove] INFO: Creazione nuovo albero MCTS da zero.");
-                }
-            #endif
 
-            _rootIndex = 1; // Usa lo slot 1 come radice
+        // 2. Full Reset Fallback
+        if (_rootIndex <= 0)
+        {
+            _rootIndex = Constants.FirstRootNodeIndex; 
             _worker.Reset(_rootIndex, request.Game.Ruleset.Settings);
 
-            // Calcola l'hash per lo stato ATTUALE
-            var hash = _slotPool.CalculateHash(_rootIndex, in request);
-            ref var rootNode = ref _nodePool[_rootIndex];
-            rootNode.PlacementRoot(hash);
-            
-            // INIZIALIZZA anche l'arena per la nuova radice
             var rootArena = _slotPool.GetArena(_rootIndex);
             rootArena.InitializeFromRequest(in request);
+            
+            ref var rootNode = ref _nodePool[_rootIndex];
+            rootNode.PlacementRoot(targetHash);
         }
 
-        // --- 3. ESECUZIONE ITERAZIONI ---
-        // _rootIndex è ora impostato correttamente sul nodo che rappresenta
-        // lo stato attuale, ed è il *nostro* turno (Player 0).
         RunIterations(request.Board.Area);
-        
-        // --- 4. SELEZIONE MOSSA ---
-        #if DEBUG
-            var bestChildIndex = _nodePool.SelectMostVisitedChildWithLogging(_rootIndex);
-        #else
-            var bestChildIndex = _nodePool.SelectMostVisitedChild(_rootIndex);
-        #endif
 
-        // Restituisce l'indice del nodo della *nostra* mossa migliore
-        return bestChildIndex;
+        // 3. Selection
+        return _nodePool.SelectMostVisitedChild(_rootIndex);
     }
 
-    private int FindNewRoot(int myLastMoveNodeIndex, in Request request)
+    private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
     {
-        // 1. Calcola l'hash dello stato attuale (Turno 9).
-        //    Usa temporaneamente lo slot 1 per questo calcolo.
-        var currentHash = _slotPool.CalculateHash(1, in request);
-
-        // 2. Prendi il nodo della nostra mossa precedente (Node 1127).
-        //    I suoi figli rappresentano le possibili risposte dell'avversario
-        //    simulate durante il Turno 8.
         ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
-        if (myLastMoveNode.IsLeafNode)
+        return FindNodeWithHash(myLastMoveNode.FirstChildIndex, targetHash, 5);
+    }
+    
+    private int FindNodeWithHash(int startIndex, long targetHash, int depthLimit)
+    {
+        if (startIndex <= 0 || depthLimit <= 0) return 0;
+
+        var current = startIndex;
+        
+        var safetyCounter = 0;
+        const int MaxSiblingsSearch = 10000; 
+
+        while (current > 0 && safetyCounter++ < MaxSiblingsSearch)
         {
-            return 0; // L'avversario non è stato simulato, resetta.
+            ref var node = ref _nodePool[current];
+            
+            if (node.Hash == targetHash) return current;
+
+            var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
+            if (foundInChild != 0) return foundInChild;
+
+            current = node.NextSiblingIndex;
+        }
+        
+        return 0;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void RunIterations(int area, int counter = 0)
+    {
+        const long maxTimeMs = 450;
+        const long forcedMoveTimeMs = 50; 
+        
+        var stopwatch = Stopwatch.StartNew();
+        
+        if (_nodePool[_rootIndex].IsLeafNode)
+        {
+            _worker.RunIteration(area, _rootIndex); 
+        }
+        
+        ref var rootNode = ref _nodePool[_rootIndex];
+        var childCount = 0;
+        var childIdx = rootNode.FirstChildIndex;
+        while(childIdx != -1)
+        {
+            childCount++;
+            childIdx = _nodePool[childIdx].NextSiblingIndex;
         }
 
-        // 3. Itera attraverso i figli (le mosse simulate dell'avversario).
-        var childIndex = myLastMoveNode.FirstChildIndex;
+        var timeLimit = (childCount <= 1) ? forcedMoveTimeMs : maxTimeMs;
+
+        while (stopwatch.ElapsedMilliseconds < timeLimit)
+        {
+            if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) 
+                break;
+            
+            for(var i=0; i<64; i++) 
+            {
+                _worker.RunIteration(area, _rootIndex);
+            }
+            counter += 64;
+        }
+
+        // Console.WriteLine($"[Engine] Iterations: {counter}, Time: {stopwatch.ElapsedMilliseconds}ms, ChildMoves: {childCount}");
+        stopwatch.Stop();
+    }
+    
+    public unsafe void GetRootStats(List<RootMoveStat> outputBuffer)
+    {
+        outputBuffer.Clear();
+
+        if (_rootIndex <= 0) return;
+
+        ref var rootNode = ref _nodePool[_rootIndex];
+        var childIndex = rootNode.FirstChildIndex;
+
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool[childIndex];
             
-            // 4. Confronta l'hash del nodo figlio con l'hash dello stato attuale.
-            if (childNode.Hash == currentHash)
+            if (childNode.Visits > 0 || childNode.IsSolvedWin)
             {
-                // TROVATO! Questo figlio rappresenta la mossa che l'avversario
-                // ha effettivamente fatto. Diventerà la nostra nuova radice.
-                // (es. Node 1200, che ha PlayerIndex = 0)
-                return childIndex;
+                var avgScore = childNode.Visits > 0 ? childNode.Rewards[0] / childNode.Visits : -1;
+                outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
             }
-            
+
             childIndex = childNode.NextSiblingIndex;
         }
-
-        // 5. Nessuna corrispondenza. L'avversario ha fatto una mossa che non avevamo
-        //    esplorato, o c'è un problema di hash. Resettiamo l'albero.
-        return 0;
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RunIterations(int area, int counter = 0)
+    public byte GetFallbackMove()
     {
-        var stopwatch = Stopwatch.StartNew();
+        if (_rootIndex <= 0) return Moves.Up;
 
-        while (stopwatch.ElapsedMilliseconds < 450)
-        // while (counter < 50)
-        {
-            _worker.RunIteration(area, _rootIndex);
-            counter++;
-        }
-        
-        stopwatch.Stop();
-        
-        #if DEBUG
-            Console.WriteLine($"[Engine.FindBestMove.RunIterations] INFO: Iterations completed: {counter} in {stopwatch.ElapsedMilliseconds}ms.");
-        #endif
+        var arena = _slotPool.GetArena(_rootIndex);
+        var me = arena.System[0]; 
+
+        // FIX COMPILAZIONE: Aggiunto parametro '0' (heroIndex)
+        // Stiamo chiedendo le mosse legali per il serpente 0 (NOI).
+        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail, 0);
+
+        if ((legalMoves & Moves.Up) != 0) return Moves.Up;
+        if ((legalMoves & Moves.Down) != 0) return Moves.Down;
+        if ((legalMoves & Moves.Left) != 0) return Moves.Left;
+        if ((legalMoves & Moves.Right) != 0) return Moves.Right;
+
+        return Moves.Up; 
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
-        Console.WriteLine("[Engine.Reset] INFO: Resettando l'albero MCTS.");
         _rootIndex = 0;
         _worker.Reset(1);
     }

@@ -1,8 +1,5 @@
 using System.Text;
-using Thanos.War;
 using Thanos.War.Structures;
-
-// Assicurati che il namespace della tua Bitboard sia corretto
 
 namespace Thanos.Extensions;
 

@@ -1,26 +1,21 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.SourceGen;
-using System.Text;
 using Thanos.PreWarm;
-using Thanos.War.Structures; // Aggiunto per StringBuilder
+using Thanos.War.Structures;
 
 namespace Thanos.War;
 
-/// <summary>
-///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
-/// </summary>
 public readonly ref struct Arena(
-    SnakesSystem system, 
-    Bitboard food, 
-    Bitboard hazards, 
-    Bitboard snakes, 
+    SnakesSystem system,
+    Bitboard food,
+    Bitboard hazards,
+    Bitboard snakes,
     Dictionary<string, int> map,
-    NeighborsGrid neighborsGrid, 
+    NeighborsGrid neighborsGrid,
     ReadOnlySpan<Coordinate> conversionsMap)
 {
     public readonly SnakesSystem System = system;
-
     public readonly Bitboard Food = food;
     public readonly Bitboard Hazards = hazards;
     public readonly Bitboard Snakes = snakes;
@@ -30,9 +25,6 @@ public readonly ref struct Arena(
 
     public void InitializeFromRequest(in Request request)
     {
-        // LOGGING: Annuncia l'inizializzazione
-        Console.WriteLine($"[Arena] Initializing from request for turn {request.Turn}. Snakes: {request.Board.Snakes.Length}, Food: {request.Board.Food.Length}.");
-
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
@@ -42,14 +34,12 @@ public readonly ref struct Arena(
         var board = request.Board;
 
         foreach (var snakeData in board.Snakes)
-        {
             if (map.TryGetValue(snakeData.Id, out var snakeIndex))
             {
                 var snake = System[snakeIndex];
                 snake.Initialize(snakeData);
                 Snakes.Or(snake.Body);
             }
-        }
 
         foreach (var foodPosition in board.Food) Food.Set(foodPosition);
         foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
@@ -58,144 +48,82 @@ public readonly ref struct Arena(
     public void CloneFrom(in Arena source)
     {
         source.System.Raw.CopyTo(System.Raw);
-
         source.Food.CopyTo(Food);
         source.Hazards.CopyTo(Hazards);
         source.Snakes.CopyTo(Snakes);
     }
-    
-    private WarSnake Me => System.Me;
-    
-    public byte GetLegalMoves(ushort headPosition)
+
+    // MODIFICATO: Ora accetta 'heroIndex' per controllare chi sta muovendo
+    public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex)
     {
         byte legalMoves = 0;
+
+        // UP
         var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
-        if (NeighborsGrid.IsValid(upPos) && !Snakes.IsSet(upPos)) legalMoves |= Moves.Up;
-        
+        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+            legalMoves |= Moves.Up;
+
+        // DOWN
         var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
-        if (NeighborsGrid.IsValid(downPos) && !Snakes.IsSet(downPos)) legalMoves |= Moves.Down;
-        
+        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+            legalMoves |= Moves.Down;
+
+        // LEFT
         var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
-        if (NeighborsGrid.IsValid(leftPos) && !Snakes.IsSet(leftPos)) legalMoves |= Moves.Left;
-        
+        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+            legalMoves |= Moves.Left;
+
+        // RIGHT
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
-        if (NeighborsGrid.IsValid(rightPos) && !Snakes.IsSet(rightPos)) legalMoves |= Moves.Right;
+        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+            legalMoves |= Moves.Right;
 
-        #if DEBUG
-            var logBuilder = new StringBuilder();
-            logBuilder.Append($"[GetLegalMoves] Head at {headPosition}. Legal moves bitmap: {Convert.ToString(legalMoves, 2).PadLeft(4, '0')} (");
-
-            if ((legalMoves & Moves.Up) != 0) logBuilder.Append("Up ");
-            if ((legalMoves & Moves.Down) != 0) logBuilder.Append("Down ");
-            if ((legalMoves & Moves.Left) != 0) logBuilder.Append("Left ");
-            if ((legalMoves & Moves.Right) != 0) logBuilder.Append("Right ");
-            logBuilder.Append(")");
-
-            Console.WriteLine(logBuilder.ToString());
-        #endif
-        
         return legalMoves;
     }
 
-public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
-{
-    // --- BLOCCO DI LOGGING DETTAGLIATO ---
-    var log = new StringBuilder();
-    log.AppendLine("==================================================================");
-    log.AppendLine($"[CalculateNewTailPosition] Inizio calcolo per serpente con Head:{snake.Head}, Tail:{snake.Tail}, Length:{snake.Length}");
-    log.AppendLine($" -> Bit a 1 nel corpo (segmenti fisici): {snake.Body.PopCount()}");
-
-    if (ateFood)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool IsSquareLegal(ushort position, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex, in Bitboard food)
     {
-        log.AppendLine(" -> DECISIONE: Serpente ha mangiato. La coda non si muove.");
-        log.AppendLine($" -> RITORNO: Vecchia coda ({snake.Tail})");
-        log.AppendLine("==================================================================");
-        Console.WriteLine(log.ToString());
-        return snake.Tail;
-    }
+        // 1. Controlla se la casella è occupata
+        var isBody = Snakes.IsSet(position);
 
-    if (snake.Length <= 2)
-    {
-        log.AppendLine(" -> DECISIONE: Serpente corto (<=2). La nuova coda sarà la vecchia testa.");
-        log.AppendLine($" -> RITORNO: Vecchia testa ({snake.Head})");
-        log.AppendLine("==================================================================");
-        Console.WriteLine(log.ToString());
-        return snake.Head;
-    }
-
-    var oldTail = snake.Tail;
-    log.AppendLine($" -> La vecchia coda si trova in posizione: {oldTail}");
-
-    // UP
-    var up = _neighborsGrid.Get(oldTail, Moves.Up);
-    if (NeighborsGrid.IsValid(up))
-    {
-        log.Append($"   -> Controllo SU ({up}): È parte del corpo? {snake.IsOnBody(up)}");
-        if (snake.IsOnBody(up))
+        if (isBody)
         {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {up}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return up;
-        }
-        log.AppendLine();
-    }
+            // FIX INTELLIGENTE: Gestione Collisioni Testa-a-Testa
+            // Controlliamo se stiamo colpendo la testa di un nemico che HA GIÀ MOSSO.
+            
+            var heroLength = System[heroIndex].Length;
 
-    // DOWN
-    var down = _neighborsGrid.Get(oldTail, Moves.Down);
-    if (NeighborsGrid.IsValid(down))
-    {
-        log.Append($"   -> Controllo GIÙ ({down}): È parte del corpo? {snake.IsOnBody(down)}");
-        if (snake.IsOnBody(down))
-        {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {down}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return down;
-        }
-        log.AppendLine();
-    }
+            for (var i = 0; i < System.Count; i++)
+            {
+                if (i == heroIndex) continue; // Salta noi stessi
 
-    // LEFT
-    var left = _neighborsGrid.Get(oldTail, Moves.Left);
-    if (NeighborsGrid.IsValid(left))
-    {
-        log.Append($"   -> Controllo SINISTRA ({left}): È parte del corpo? {snake.IsOnBody(left)}");
-        if (snake.IsOnBody(left))
-        {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {left}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return left;
-        }
-        log.AppendLine();
-    }
+                // Controlliamo solo i nemici con indice < heroIndex.
+                // In un ciclo Round-Robin 0->1->2->3, questi sono quelli che hanno già aggiornato la loro posizione.
+                // Colpire la loro testa ora simula una collisione reale.
+                // Colpire la testa di chi NON ha mosso (i > heroIndex) significa colpire il collo -> Suicidio.
+                if (i < heroIndex)
+                {
+                    if (System[i].Head == position)
+                    {
+                        // È un testa-a-testa valido. Applichiamo la tua logica:
+                        // Se sono più lungo -> VALIDA (Kill).
+                        // Se sono più corto o uguale -> INVALIDA (Suicidio/Pareggio da evitare).
+                        return heroLength > System[i].Length;
+                    }
+                }
+            }
 
-    // RIGHT
-    var right = _neighborsGrid.Get(oldTail, Moves.Right);
-    if (NeighborsGrid.IsValid(right))
-    {
-        log.Append($"   -> Controllo DESTRA ({right}): È parte del corpo? {snake.IsOnBody(right)}");
-        if (snake.IsOnBody(right))
-        {
-            log.AppendLine(" -> TROVATO! Questa sarà la nuova coda.");
-            log.AppendLine($" -> RITORNO: {right}");
-            log.AppendLine("==================================================================");
-            Console.WriteLine(log.ToString());
-            return right;
+            // Se non è una testa "uccidibile", applichiamo la logica standard (coda/muro)
+            var isTail = position == tailPosition;
+            if (!isTail) return false;
+            
+            if (tailPosition == elementBeforeTailPosition) return false;
+            return !food.IsSet(position);
         }
-        log.AppendLine();
-    }
 
-    log.AppendLine(" -> ERRORE LOGICO: Nessun segmento del corpo adiacente alla coda trovato.");
-    log.AppendLine($" -> RITORNO (fallback): Vecchia coda ({oldTail})");
-    log.AppendLine("==================================================================");
-    Console.WriteLine(log.ToString());
-    return oldTail;
-}
+        return true;
+    }
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
 
@@ -208,6 +136,7 @@ public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
             var spawnLocation = GetRandomEmptySquare(area);
             if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
+
         if (Random.Shared.Next(0, 100) < foodSpawnChance)
         {
             var spawnLocation = GetRandomEmptySquare(area);
@@ -225,12 +154,11 @@ public ushort CalculateNewTailPosition(WarSnake snake, bool ateFood)
         }
         return ushort.MaxValue;
     }
-    
+
     public int ManhattanDistance(ushort pos1, ushort pos2)
     {
         ref readonly var coord1 = ref _conversionsMap[pos1];
         ref readonly var coord2 = ref _conversionsMap[pos2];
-
         return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
     }
 }

@@ -1,0 +1,127 @@
+using System.Diagnostics;
+using Thanos.Common;
+using Thanos.Extensions;
+using Thanos.Memory;
+using Thanos.SourceGen;
+
+namespace Thanos.MCST;
+
+public sealed class EngineCluster : IDisposable
+{
+    private readonly Engine[] _engines;
+    private readonly SlotMemoryPool[] _slotPools;
+    private readonly NodeMemoryPool[] _nodePools;
+    
+    private readonly LookupsMemoryPool _sharedLookups; 
+    
+    private readonly int[] _lastChosenIndices;
+
+    private readonly ThreadLocal<List<RootMoveStat>> _threadLocalStatsBuffer = new(() => new List<RootMoveStat>(16));
+
+    public EngineCluster(uint maxNodes)
+    {
+        // Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using 'Medium' (11x11) profile...");
+
+        _engines = new Engine[Constants.CoreCount];
+        _slotPools = new SlotMemoryPool[Constants.CoreCount];
+        _nodePools = new NodeMemoryPool[Constants.CoreCount];
+        _lastChosenIndices = new int[Constants.CoreCount];
+
+        // 1. LOOKUPS: Profilo Medium (11x11)
+        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium); 
+
+        for (var i = 0; i < Constants.CoreCount; i++)
+        {
+            _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
+            
+            // 2. SLOTS: Profilo Medium (11x11)
+            // Perfettamente allineato con LookupsMemoryLayout.Medium
+            _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Medium);
+            
+            _engines[i] = new Engine(_slotPools[i], _nodePools[i]);
+            _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
+        }
+    }
+
+    // ... (Il resto della classe: ComputeMoveAsync, Reset, Dispose rimane invariato) ...
+    // In Thanos/MCST/EngineCluster.cs
+
+    public async Task<byte> ComputeMoveAsync(Request request)
+    {
+        // ... (parte iniziale identica fino al foreach bestMove) ...
+        var targetHash = _slotPools[0].CalculateRequestHash(0, in request);
+
+        var tasks = new Task[_engines.Length];
+        for (var i = 0; i < _engines.Length; i++)
+        {
+            var index = i;
+            tasks[i] = Task.Run(() =>
+            {
+                var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index], targetHash);
+                _lastChosenIndices[index] = bestLocalIndex;
+            });
+        }
+
+        await Task.WhenAll(tasks);
+
+        var totalVisits = new long[16]; 
+
+        foreach (var engine in _engines)
+        {
+            var buffer = _threadLocalStatsBuffer.Value!;
+            engine.GetRootStats(buffer);
+
+            foreach (var stat in buffer)
+            {
+                totalVisits[stat.Move] += stat.Visits;
+            }
+        }
+
+        var bestMove = Moves.Up; 
+        long maxVisits = -1;
+        byte[] movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+        
+        foreach (var move in movesToCheck)
+        {
+            if (totalVisits[move] > maxVisits)
+            {
+                maxVisits = totalVisits[move];
+                bestMove = move;
+            }
+        }
+        
+        // --- FIX SAFETY NET ---
+        // Se maxVisits è <= 0, l'MCTS ha fallito (panico o bug).
+        // Invece di ritornare None (che diventa "Up" e ti uccide), chiediamo una mossa legale qualsiasi.
+        if (maxVisits <= 0) 
+        {
+            // Console.WriteLine("[EngineCluster] PANIC: MCTS returned no moves. Using Fallback.");
+            // Usa il primo motore per calcolare una mossa di emergenza valida
+            return _engines[0].GetFallbackMove();
+        }
+
+        return bestMove;
+    }
+
+    public void Reset()
+    {
+        for (var i = 0; i < _engines.Length; i++)
+        {
+            _engines[i].Reset();
+            _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
+        }
+    }
+    
+    public void SetMap(Dictionary<string, int> map)
+    {
+        foreach (var pool in _slotPools) pool.Set(map);
+    }
+
+    public void Dispose()
+    {
+        foreach (var pool in _slotPools) pool.Dispose();
+        foreach (var pool in _nodePools) pool.Dispose();
+        _sharedLookups.Dispose();
+        _threadLocalStatsBuffer.Dispose();
+    }
+}

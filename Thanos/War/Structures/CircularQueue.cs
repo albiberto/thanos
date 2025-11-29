@@ -6,12 +6,13 @@ namespace Thanos.War.Structures;
 public ref struct CircularQueue(Span<byte> raw, ref CircularQueueState state)
 {
     public Span<byte> Raw { get; } = raw;
-    private Span<ushort> Buffer { get; } = MemoryMarshal.Cast<byte, ushort>(raw);
+    public Span<ushort> Buffer { get; } = MemoryMarshal.Cast<byte, ushort>(raw);
 
-    private ref CircularQueueState _state = ref state;
+    public ref CircularQueueState _state = ref state;
 
     public ushort PeekHead => Buffer[(_state.HeadIndex - 1) & _state.WrapMask];
     public ushort PeekTail => Buffer[_state.TailIndex];
+    public ushort PeekElementBeforeTail => Buffer[(_state.TailIndex + 1) & _state.WrapMask];
     public readonly int Length => _state.Length;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,5 +33,9 @@ public ref struct CircularQueue(Span<byte> raw, ref CircularQueueState state)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Clear() => Raw.Clear();
+    public void Clear()
+    {
+        Raw.Clear();
+        _state.Reset();
+    }
 }

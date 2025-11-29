@@ -15,12 +15,12 @@ public sealed unsafe class NodeMemoryPool : IDisposable
         _layout = layout;
         _maxNodes = maxNodes;
 
-        var totalSize = _layout.Size * maxNodes;
+        var totalSize = NodeMemoryLayout.Size * maxNodes;
 
         _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)totalSize, Constants.CacheLine);
         NativeMemory.Clear(_basePointer, (nuint)totalSize);
 
-        Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {_layout.Size}-byte nodes, max nodes: {_maxNodes}");
+        // Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {NodeMemoryLayout.Size}-byte nodes, max nodes: {_maxNodes}");
     }
 
     public ref Node this[int index]
@@ -29,7 +29,7 @@ public sealed unsafe class NodeMemoryPool : IDisposable
         {
             if (index >= _maxNodes) throw new OutOfMemoryException($"Accesso illegale allo SlotMemoryPool. Richiesto indice {index}, ma la capacità massima è {_maxNodes}.");
 
-            var startOffset = (long)index * _layout.Size;
+            var startOffset = (long)index * NodeMemoryLayout.Size;
             var nodePointer = _basePointer + startOffset;
 
             return ref Unsafe.AsRef<Node>(nodePointer);

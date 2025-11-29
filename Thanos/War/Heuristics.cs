@@ -1,6 +1,4 @@
-﻿// Thanos/War/Heuristics.cs
-
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.PreWarm;
@@ -14,196 +12,277 @@ public static class HeuristicsConstants
     public const float SpaceWeight = 10.5f;
     public const float HealthWeight = 0.5f;
     public const float FoodWeight = 0.6f;
+    public const float TailWeight = 0.5f;
+    
     public const float CenterBonusValue = 15.0f;
-    public const float BorderPenaltyValue = -100.0f;
+    public const float BorderPenaltyValue = -1000.0f;
+    
+    // Penalità per chi si infila in uno spazio più piccolo della sua lunghezza
+    public const float SuffocationPenalty = -50000.0f; 
 }
 
-public readonly ref struct Heuristics
+public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
 {
-    private readonly SnakesSystem _system;
-    private readonly Bitboard _food;
-    private readonly Bitboard _hazards;
-    private readonly Bitboard _snakes;
-    private readonly NeighborsGrid _neighborsGrid;
-    private readonly ReadOnlySpan<Coordinate> _conversionsMap;
-    private readonly ReadOnlySpan<float> _positionalScores;
+    private readonly SnakesSystem _system = system;
+    private readonly Bitboard _food = food;
+    // Hazard non usato direttamente nel Voronoi per ora, ma disponibile
+    private readonly Bitboard _hazards = hazards; 
+    private readonly Bitboard _snakes = snakes;
+    private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
+    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
+    private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
 
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
-    public Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
+    public float Outcome(int playerIndex)
     {
-        _system = system;
-        _food = food;
-        _hazards = hazards;
-        _snakes = snakes;
-        _neighborsGrid = neighborsGrid;
-        _conversionsMap = conversionsMap;
-        _positionalScores = positionalScores;
-    }
+        var snake = _system[playerIndex];
+        if (snake.IsDead) return -1.0f;
 
-    public float Outcome()
-    {
-        var me = _system.Me;
-        if (me.IsDead) return -1.0f;
-
-        for (var i = 1; i < _system.Count; i++)
+        // Se sono l'unico vivo, ho vinto
+        var othersAlive = 0;
+        for (var i = 0; i < _system.Count; i++)
         {
-            if (!_system[i].IsDead)
-                return 0.0f;
+            if (i != playerIndex && !_system[i].IsDead) othersAlive++;
         }
 
-        return 1.0f;
+        if (othersAlive == 0) return 1.0f;
+
+        return 0.0f;
     }
 
+    /// <summary>
+    /// Valuta lo stato per TUTTI i serpenti usando un Fair Voronoi (gestione pareggi)
+    /// e rilevamento trappole topologiche (spazio < lunghezza).
+    /// </summary>
+    [SkipLocalsInit]
+    public void EvaluateAll(Span<float> results)
+    {
+        var area = _positionalScores.Length;
+
+        // 1. Setup Muri
+        Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
+        _snakes.Raw.CopyTo(wallsMemoryCopy);
+        var baseWalls = new Bitboard(wallsMemoryCopy);
+
+        // 2. Calcolo Fair Voronoi (Space & Food & Trap Detection)
+        EvaluateTerritoryAndFoodFair(area, in baseWalls, results);
+
+        // 3. Euristiche individuali (Self-preservation & Aggression)
+        for (var i = 0; i < _system.Count; i++)
+        {
+            var snake = _system[i];
+            if (snake.IsDead)
+            {
+                results[i] = -10000.0f; 
+                continue;
+            }
+
+            var head = snake.Head;
+            if (head >= area) continue;
+
+            var score = 0.0f;
+
+            // Statica
+            score += EvaluatePositionalScore(head);
+            score += EvaluateHealth(snake.HP);
+            score += EvaluateTailDistance(head, snake.Tail);
+
+            // Dinamica
+            score += EvaluateCollisionsAndTraps(i, head, snake.Length, in baseWalls);
+
+            results[i] += score;
+        }
+    }
+    
     public float Evaluate()
     {
-        var me = _system.Me;
-        if (me.IsDead) return float.NegativeInfinity;
-
-        var head = me.Head;
-        if (head >= _positionalScores.Length) return float.NegativeInfinity;
-
-        var myLength = me.Length;
-        // CORREZIONE: La proprietà era HP, ora è Health
-        var health = me.HP;
-        var score = 0.0f;
-        
-        score += _positionalScores[head];
-        score -= Head2HeadCollision(myLength, head);
-        score -= PenalityTrap(head);
-        score += health * HeuristicsConstants.HealthWeight;
-
-        // --- EURISTICA DELLO SPAZIO (Flood Fill) ---
-        var walls = _snakes;
-        Span<byte> wallsMemoryCopy = stackalloc byte[walls.Raw.Length];
-        walls.Raw.CopyTo(wallsMemoryCopy);
-        var simulatedWalls = new Bitboard(wallsMemoryCopy);
-        
-        // CORREZIONE: La proprietà 'WillGrow' non esiste più.
-        // Assumiamo lo scenario più comune in cui il serpente non mangia e quindi la coda si sposta,
-        // liberando una casella. Questo è fondamentale per non sottostimare lo spazio disponibile.
-        simulatedWalls.Unset(me.Tail);
-        
-        var mySpace = FloodFill(head, simulatedWalls);
-        score += mySpace * HeuristicsConstants.SpaceWeight;
-
-        // --- EURISTICA DEL CIBO ---
-        // CORREZIONE: La Bitboard non espone più 'Memory', usiamo la proprietà 'Raw'
-        var foodBitboard = _food.Buffer;
-        var headCoord = _conversionsMap[head];
-        score += HeuristicsConstants.FoodWeight * CalculateFoodIncentive(headCoord, health, foodBitboard, _conversionsMap);
-
-        return score;
+        Span<float> results = stackalloc float[_system.Count];
+        EvaluateAll(results);
+        return results[0];
     }
 
-    private float PenalityTrap(ushort head)
+    // --- METODI EURISTICI PRIVATI ---
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluatePositionalScore(ushort head) => _positionalScores[head];
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluateHealth(int health) => health * HeuristicsConstants.HealthWeight;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluateCollisionsAndTraps(int snakeIndex, ushort head, int myLength, in Bitboard simulatedWalls)
+    {
+        return Head2HeadCollision(snakeIndex, myLength, head) - PenalityTrap(head, in simulatedWalls);
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float EvaluateTailDistance(ushort head, ushort tail)
+    {
+        return ManhattanDistance(head, tail) * HeuristicsConstants.TailWeight;
+    }
+
+    /// <summary>
+    /// Implementazione Voronoi "Fair" (Equo).
+    /// Gestisce l'arrivo simultaneo su una cella: se due serpenti arrivano nello stesso step, la cella è contesa (neutral).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SkipLocalsInit]
+    private void EvaluateTerritoryAndFoodFair(int area, in Bitboard walls, Span<float> results)
+    {
+        // Code per BFS
+        Span<ushort> queue = stackalloc ushort[area]; 
+        var queueHead = 0;
+        var queueTail = 0;
+
+        // Array dei proprietari: -1 = nessuno, -2 = conteso (pareggio), 0..3 = snakeIndex
+        Span<int> owners = stackalloc int[area];
+        owners.Fill(-1);
+        
+        // Array delle distanze per gestire i pareggi
+        Span<ushort> distances = stackalloc ushort[area];
+        distances.Fill(ushort.MaxValue);
+
+        // Inizializza BFS con le teste
+        for (var i = 0; i < _system.Count; i++)
+        {
+            var snake = _system[i];
+            if (snake.IsDead) continue;
+            
+            var head = snake.Head;
+            if(head >= area) continue;
+            
+            owners[head] = i; 
+            distances[head] = 0;
+            queue[queueTail++] = head;
+        }
+
+        // BFS Expansion
+        while (queueHead < queueTail)
+        {
+            var currentPos = queue[queueHead++];
+            var currentOwner = owners[currentPos];
+            var currentDist = distances[currentPos];
+
+            // Se la cella di partenza era contesa (-2), non espandiamo la proprietà
+            if (currentOwner == -2) continue;
+
+            var nextDist = (ushort)(currentDist + 1);
+
+            foreach (var move in AllMovesArray)
+            {
+                var neighborPos = _neighborsGrid.Get(currentPos, move);
+                
+                if (!NeighborsGrid.IsValid(neighborPos) || walls.IsSet(neighborPos)) 
+                    continue;
+
+                var neighborOwner = owners[neighborPos];
+
+                // Caso 1: Cella non visitata
+                if (neighborOwner == -1)
+                {
+                    owners[neighborPos] = currentOwner;
+                    distances[neighborPos] = nextDist;
+                    queue[queueTail++] = neighborPos;
+                }
+                // Caso 2: Cella già visitata, controlliamo se c'è un pareggio (distanza uguale)
+                else if (neighborOwner != currentOwner && neighborOwner != -2)
+                {
+                    if (distances[neighborPos] == nextDist)
+                    {
+                        // CONFLITTO! Arrivo simultaneo.
+                        // La cella diventa contesa (nessuno prende punti)
+                        owners[neighborPos] = -2; 
+                        // Non serve ri-accodare perché la distanza non cambia, ma lo stato ownership sì.
+                        // Chiunque altro arrivi a questa distanza troverà -2 e si fermerà.
+                    }
+                }
+            }
+        }
+
+        // --- AGGREGAZIONE E SURVIVAL INSTINCT ---
+        
+        Span<int> spaceCounts = stackalloc int[_system.Count];
+        spaceCounts.Clear();
+        
+        Span<float> foodUrgencies = stackalloc float[_system.Count];
+        for(var i=0; i<_system.Count; i++) 
+             foodUrgencies[i] = (101.0f - _system[i].HP) * HeuristicsConstants.FoodWeight;
+
+        for (var i = 0; i < area; i++)
+        {
+            var owner = owners[i];
+            
+            // Ignoriamo celle libere o contese
+            if (owner < 0) continue; 
+
+            spaceCounts[owner]++;
+
+            if (_food.IsSet((ushort)i))
+            {
+                results[owner] += foodUrgencies[owner];
+            }
+        }
+
+        for(var i=0; i<_system.Count; i++)
+        {
+            if (_system[i].IsDead) continue;
+
+            var mySpace = spaceCounts[i];
+            var myLength = _system[i].Length;
+
+            // SURVIVAL INSTINCT:
+            // Se lo spazio che controllo è minore della mia lunghezza, sono in trappola (soffocamento).
+            // Applico una penalità enorme per insegnare al MCTS a evitare queste situazioni.
+            // Nota: Usiamo una soglia leggermente permissiva (Length) perché la coda si muove.
+            if (mySpace < myLength)
+            {
+                results[i] += HeuristicsConstants.SuffocationPenalty;
+            }
+            
+            // Punteggio base per lo spazio
+            results[i] += mySpace * HeuristicsConstants.SpaceWeight;
+        }
+    }
+
+    private float PenalityTrap(ushort head, in Bitboard simulatedWalls)
     {
         var openExits = 0;
-        var currentWalls = _snakes;
         foreach (var move in AllMovesArray)
         {
             var neighbor = _neighborsGrid.Get(head, move);
-            if (NeighborsGrid.IsValid(neighbor) && !currentWalls.IsSet(neighbor)) openExits++;
+            if (NeighborsGrid.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor)) 
+                openExits++;
         }
-
-        return openExits switch
-        {
-            <= 1 => 750.0f,
-            2 => 200.0f,
-            _ => 0
-        };
+        return openExits switch { <= 1 => 750.0f, 2 => 200.0f, _ => 0 };
     }
 
-    private float Head2HeadCollision(int myLength, ushort head)
+    private float Head2HeadCollision(int snakeIndex, int myLength, ushort head)
     {
-        for (var i = 1; i < _system.Count; i++)
+        for (var i = 0; i < _system.Count; i++) 
         {
+            if (i == snakeIndex) continue; 
+            
             var enemy = _system[i];
             if (enemy.IsDead || enemy.Length < myLength) continue;
 
             var enemyHead = enemy.Head;
+            
             if (_neighborsGrid.Get(head, Moves.Up) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Down) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Left) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Right) == enemyHead)
-            {
-                return 25000.0f;
-            }
+                return float.NegativeInfinity;
         }
+
         return 0.0f;
     }
-
-    private static float CalculateFoodIncentive(Coordinate head, int health, ReadOnlySpan<ulong> food, ReadOnlySpan<Coordinate> map)
-    {
-        var distance = int.MaxValue;
-
-        for (var i = 0; i < food.Length; i++)
-        {
-            var chunk = food[i];
-            if (chunk == 0) continue;
-
-            while (chunk != 0)
-            {
-                var bitIndex = BitOperations.TrailingZeroCount(chunk);
-                var pos1D = (ushort)((i << 6) + bitIndex);
-
-                var foodCoords = map[pos1D];
-                var d = Abs(head.X - foodCoords.X) + Abs(head.Y - foodCoords.Y);
-                if (d < distance)
-                {
-                    distance = d;
-                    if (distance == 1) goto EndLoop;
-                }
-
-                chunk &= ~(1UL << bitIndex);
-            }
-        }
-
-    EndLoop:
-        if (distance is >= int.MaxValue or 0) return 0.0f;
-        
-        var urgency = 101.0f - health;
-        return urgency / distance;
-    }
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int Abs(int n)
+    private int ManhattanDistance(ushort pos1, ushort pos2)
     {
-        var mask = n >> 31;
-        return (n + mask) ^ mask;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [SkipLocalsInit]
-    private int FloodFill(ushort startNode, in Bitboard walls)
-    {
-        if (walls.IsSet(startNode)) return 0;
-        
-        const int MaxStackSize = 256;
-        Span<ushort> stack = stackalloc ushort[MaxStackSize];
-        
-        Span<byte> visitedMemory = stackalloc byte[MaxStackSize / 8];
-        visitedMemory.Clear();
-        var visited = new Bitboard(visitedMemory);
-
-        stack[0] = startNode;
-        var stackPointer = 1;
-        visited.Set(startNode);
-        var count = 1;
-
-        while (stackPointer > 0)
-        {
-            var current = stack[--stackPointer];
-            foreach (var move in AllMovesArray)
-            {
-                var neighbor = _neighborsGrid.Get(current, move);
-                if (!NeighborsGrid.IsValid(neighbor) || walls.IsSet(neighbor) || visited.IsSet(neighbor)) continue;
-                visited.Set(neighbor);
-                stack[stackPointer++] = neighbor;
-                count++;
-            }
-        }
-
-        return count;
+        ref readonly var coord1 = ref _conversionsMap[pos1];
+        ref readonly var coord2 = ref _conversionsMap[pos2];
+        return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
     }
 }
