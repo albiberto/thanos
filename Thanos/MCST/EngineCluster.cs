@@ -20,7 +20,7 @@ public sealed class EngineCluster : IDisposable
 
     public EngineCluster(uint maxNodes)
     {
-        Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using 'Medium' (11x11) profile...");
+        // Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using 'Medium' (11x11) profile...");
 
         _engines = new Engine[Constants.CoreCount];
         _slotPools = new SlotMemoryPool[Constants.CoreCount];
@@ -95,7 +95,7 @@ public sealed class EngineCluster : IDisposable
         // Invece di ritornare None (che diventa "Up" e ti uccide), chiediamo una mossa legale qualsiasi.
         if (maxVisits <= 0) 
         {
-            Console.WriteLine("[EngineCluster] PANIC: MCTS returned no moves. Using Fallback.");
+            // Console.WriteLine("[EngineCluster] PANIC: MCTS returned no moves. Using Fallback.");
             // Usa il primo motore per calcolare una mossa di emergenza valida
             return _engines[0].GetFallbackMove();
         }

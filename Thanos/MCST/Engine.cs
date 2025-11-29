@@ -151,6 +151,7 @@ public class Engine
             counter += 64;
         }
 
+        Console.WriteLine($"[Engine] Iterations: {counter}, Time: {stopwatch.ElapsedMilliseconds}ms, ChildMoves: {childCount}");
         stopwatch.Stop();
     }
     

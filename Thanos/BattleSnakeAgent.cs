@@ -20,7 +20,7 @@ public sealed class BattleSnakeAgent(uint maxNodes = Constants.MaxNodes) : IDisp
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
         
 #if DEBUG
-        Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join(", ", map.Select(kv => $"{kv.Key}:{kv.Value}"))}");
+        // Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join(", ", map.Select(kv => $"{kv.Key}:{kv.Value}"))}");
 #endif
 
         // Passiamo la mappa al cluster che la propaga a tutti i pool

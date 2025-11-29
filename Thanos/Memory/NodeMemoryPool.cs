@@ -20,7 +20,7 @@ public sealed unsafe class NodeMemoryPool : IDisposable
         _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)totalSize, Constants.CacheLine);
         NativeMemory.Clear(_basePointer, (nuint)totalSize);
 
-        Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {NodeMemoryLayout.Size}-byte nodes, max nodes: {_maxNodes}");
+        // Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {NodeMemoryLayout.Size}-byte nodes, max nodes: {_maxNodes}");
     }
 
     public ref Node this[int index]

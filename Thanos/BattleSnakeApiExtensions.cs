@@ -106,9 +106,9 @@ public static class BattleSnakeApiExtensions
         using (var reader = new StreamReader(stream, leaveOpen: true))
         {
             var json = await reader.ReadToEndAsync();
-            Console.WriteLine("--- RAW JSON RECEIVED ---");
-            Console.WriteLine(json);
-            Console.WriteLine("------------------------------");
+            // Console.WriteLine("--- RAW JSON RECEIVED ---");
+            // Console.WriteLine(json);
+            // Console.WriteLine("------------------------------");
         }
         
         stream.Position = 0;

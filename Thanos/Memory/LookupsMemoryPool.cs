@@ -24,7 +24,7 @@ public sealed unsafe class LookupsMemoryPool : IDisposable
         ConversionMapBuilder.Build(layout.Width, ConversionsMapBuffer);
         PositionalScoreBuilder.Build(layout.Width, PositionalScoresBuffer);
 
-        Console.WriteLine($"[LookupsMemoryPool] Allocated {(double)_layout.TotalSize / (1024 * 1024):F3} MB for unmanaged LUTs.");
+        // Console.WriteLine($"[LookupsMemoryPool] Allocated {(double)_layout.TotalSize / (1024 * 1024):F3} MB for unmanaged LUTs.");
     }
 
     private Span<ushort> NeighborsBuffer => new(_basePointer + _layout.NeighborsOffset, _layout.NeighborsLength);
