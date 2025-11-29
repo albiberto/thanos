@@ -28,40 +28,33 @@ public class Engine
     public int FindBestMove(in Request request, int lastChosenIndex, long targetHash)
     {
         // 1. Tree Reuse Logic
-        // Tentiamo di trovare il nodo corrispondente al nuovo stato nell'albero esistente
         if (lastChosenIndex > 0)
         {
             _rootIndex = FindNewRoot(lastChosenIndex, targetHash);
             
             if (_rootIndex > 0)
             {
-                // Trovato! Promuoviamo questo nodo a nuova radice
                 ref var newRootNode = ref _nodePool[_rootIndex];
                 newRootNode.NewRoot();
                 
-                // Aggiorniamo l'Arena con i dati freschi della Request 
-                // (per correggere eventuali discrepanze di simulazione)
                 var rootArena = _slotPool.GetArena(_rootIndex);
                 rootArena.InitializeFromRequest(in request);
             }
         }
         else
         {
-            _rootIndex = 0; // Forza il reset se non avevamo una mossa precedente valida
+            _rootIndex = 0; 
         }
 
         // 2. Full Reset Fallback
-        // Se il riutilizzo è fallito o non era possibile, resettiamo tutto
         if (_rootIndex <= 0)
         {
-            _rootIndex = Constants.FirstRootNodeIndex; // Di solito 1
+            _rootIndex = Constants.FirstRootNodeIndex; 
             _worker.Reset(_rootIndex, request.Game.Ruleset.Settings);
 
-            // Inizializziamo l'Arena della radice
             var rootArena = _slotPool.GetArena(_rootIndex);
             rootArena.InitializeFromRequest(in request);
             
-            // Inizializziamo il Nodo radice usando l'hash calcolato esternamente
             ref var rootNode = ref _nodePool[_rootIndex];
             rootNode.PlacementRoot(targetHash);
         }
@@ -75,21 +68,15 @@ public class Engine
     private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
     {
         ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
-
-        // Cerchiamo tra i discendenti (gestendo la profondità dinamica dovuta a EnemyMoves/Environment)
-        // Passiamo 5 come profondità massima di ricerca
         return FindNodeWithHash(myLastMoveNode.FirstChildIndex, targetHash, 5);
     }
     
     private int FindNodeWithHash(int startIndex, long targetHash, int depthLimit)
     {
-        // FIX LOOP INFINITO: Controlliamo <= 0. 
-        // 0 è la memoria di default (bug o nodo vuoto), -1 è il terminatore.
         if (startIndex <= 0 || depthLimit <= 0) return 0;
 
         var current = startIndex;
         
-        // FIX LOOP INFINITO: Safety Counter per evitare blocchi su grafi ciclici corrotti
         var safetyCounter = 0;
         const int MaxSiblingsSearch = 10000; 
 
@@ -99,7 +86,6 @@ public class Engine
             
             if (node.Hash == targetHash) return current;
 
-            // Deep search ricorsiva (per saltare i livelli intermedi)
             var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
             if (foundInChild != 0) return foundInChild;
 
@@ -112,14 +98,11 @@ public class Engine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void RunIterations(int area, int counter = 0)
     {
-        // Timeout dinamico: Puntiamo a 350ms per stare larghi nei 500ms totali
         const long maxTimeMs = 450;
-        const long forcedMoveTimeMs = 50; // Se la mossa è forzata, spendiamo poco tempo per verificare
+        const long forcedMoveTimeMs = 50; 
         
         var stopwatch = Stopwatch.StartNew();
         
-        // Controlliamo se è una mossa forzata (1 sola scelta valida alla radice)
-        // Espandiamo la radice una volta per vedere i figli
         if (_nodePool[_rootIndex].IsLeafNode)
         {
             _worker.RunIteration(area, _rootIndex); 
@@ -134,16 +117,13 @@ public class Engine
             childIdx = _nodePool[childIdx].NextSiblingIndex;
         }
 
-        // Se abbiamo 1 sola mossa legale, non serve pensare troppo (a meno che non vogliamo vedere il futuro profondo per tie-breaking)
         var timeLimit = (childCount <= 1) ? forcedMoveTimeMs : maxTimeMs;
 
         while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
-            // Se la radice è risolta (Vittoria o Sconfitta certa), stop anticipato!
             if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) 
                 break;
             
-            // Esegui batch di iterazioni per ridurre l'overhead del controllo tempo
             for(var i=0; i<64; i++) 
             {
                 _worker.RunIteration(area, _rootIndex);
@@ -151,7 +131,7 @@ public class Engine
             counter += 64;
         }
 
-        Console.WriteLine($"[Engine] Iterations: {counter}, Time: {stopwatch.ElapsedMilliseconds}ms, ChildMoves: {childCount}");
+        // Console.WriteLine($"[Engine] Iterations: {counter}, Time: {stopwatch.ElapsedMilliseconds}ms, ChildMoves: {childCount}");
         stopwatch.Stop();
     }
     
@@ -168,14 +148,9 @@ public class Engine
         {
             ref var childNode = ref _nodePool[childIndex];
             
-            // Raccogliamo statistiche solo per le mosse valide del giocatore
-            // Ignoriamo nodi risolti come persi se hanno 0 visite (a meno che non siano terminali forzati)
             if (childNode.Visits > 0 || childNode.IsSolvedWin)
             {
-                // Calcoliamo uno score normalizzato per il debug
-                // Nota: In MaxN childNode.Rewards[0] è il reward cumulativo.
                 var avgScore = childNode.Visits > 0 ? childNode.Rewards[0] / childNode.Visits : -1;
-                
                 outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
             }
 
@@ -185,22 +160,21 @@ public class Engine
     
     public byte GetFallbackMove()
     {
-        // Se la radice è corrotta, default UP
         if (_rootIndex <= 0) return Moves.Up;
 
         var arena = _slotPool.GetArena(_rootIndex);
-        var me = arena.System[0]; // Assumiamo che io sia sempre P0
+        var me = arena.System[0]; 
 
-        // Chiediamo all'Arena quali mosse sono legali
-        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail);
+        // FIX COMPILAZIONE: Aggiunto parametro '0' (heroIndex)
+        // Stiamo chiedendo le mosse legali per il serpente 0 (NOI).
+        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail, 0);
 
-        // Ritorniamo la prima mossa legale disponibile
         if ((legalMoves & Moves.Up) != 0) return Moves.Up;
         if ((legalMoves & Moves.Down) != 0) return Moves.Down;
         if ((legalMoves & Moves.Left) != 0) return Moves.Left;
         if ((legalMoves & Moves.Right) != 0) return Moves.Right;
 
-        return Moves.Up; // Nessuna mossa legale, moriamo
+        return Moves.Up; 
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,6 +183,4 @@ public class Engine
         _rootIndex = 0;
         _worker.Reset(1);
     }
-    
-    // Log methods rimosso per brevità, usare quello vecchio se serve debug
 }

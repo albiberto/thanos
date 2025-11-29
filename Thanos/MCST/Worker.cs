@@ -132,20 +132,36 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var arena = _slotPool.GetArena(parentIndex);
         var snake = arena.System[playerIndex];
 
+        // FIX PANICO: Se il serpente è morto, è Terminal ma NON SolvedLoss globale.
         if (snake.IsDead)
         {
             parentNode.MarkTerminal();
-            parentNode.MarkSolvedLoss();
             return;
         }
 
-        var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail);
+        // UPDATED: Passiamo playerIndex per la logica di collisione
+        var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail, playerIndex);
+        
         if (legalMoves == 0)
         {
             parentNode.MarkTerminal();
-            parentNode.MarkSolvedLoss();
             return;
         }
+
+        // --- PRUNING LOGIC (Invariata) ---
+        byte prunedMoves = 0;
+        var safeMoveCount = 0;
+        foreach (var move in AllMoves)
+        {
+            if ((legalMoves & move) == 0) continue;
+            if (!IsMoveRisky(in arena, snake.Head, move))
+            {
+                prunedMoves |= move;
+                safeMoveCount++;
+            }
+        }
+        var movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
+        // ---------------------------------
 
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
         var isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
@@ -154,12 +170,11 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var lastChildIndex = -1;
         foreach (var move in AllMoves)
         {
-            if ((legalMoves & move) == 0) continue;
-
-            if (IsMoveRisky(in arena, snake.Head, move)) continue;
+            if ((movesToExpand & move) == 0) continue;
 
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
+            
             childArena.CloneFrom(in arena);
             
             var snakeToMove = childArena.System[playerIndex];
@@ -229,19 +244,11 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         return next;
     }
 
-    // --- METODO AGGIUNTO (Che mancava prima) ---
     private static int GetFirstAlivePlayerIndex(in Arena arena)
     {
         var next = 0;
-        // Cerca il primo giocatore che NON è morto
-        while (next < arena.System.Count && arena.System[next].IsDead)
-        {
-            next++;
-        }
-
-        // Se tutti sono morti o abbiamo finito la lista, ritorna Environment
+        while (next < arena.System.Count && arena.System[next].IsDead) next++;
         if (next >= arena.System.Count) return Constants.EnvironmentPlayerIndex;
-        
         return next;
     }
 

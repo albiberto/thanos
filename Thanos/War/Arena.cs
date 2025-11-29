@@ -2,13 +2,10 @@
 using Thanos.Common;
 using Thanos.SourceGen;
 using Thanos.PreWarm;
-using Thanos.War.Structures; // Aggiunto per StringBuilder
+using Thanos.War.Structures;
 
 namespace Thanos.War;
 
-/// <summary>
-///     Rappresenta una singola istanza di gioco. È il cervello che orchestra la logica.
-/// </summary>
 public readonly ref struct Arena(
     SnakesSystem system,
     Bitboard food,
@@ -19,7 +16,6 @@ public readonly ref struct Arena(
     ReadOnlySpan<Coordinate> conversionsMap)
 {
     public readonly SnakesSystem System = system;
-
     public readonly Bitboard Food = food;
     public readonly Bitboard Hazards = hazards;
     public readonly Bitboard Snakes = snakes;
@@ -52,70 +48,81 @@ public readonly ref struct Arena(
     public void CloneFrom(in Arena source)
     {
         source.System.Raw.CopyTo(System.Raw);
-
         source.Food.CopyTo(Food);
         source.Hazards.CopyTo(Hazards);
         source.Snakes.CopyTo(Snakes);
     }
 
-    // File: Thanos/War/Arena.cs
-
-// Aggiungi 'Food' come parametro
-    public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition)
+    // MODIFICATO: Ora accetta 'heroIndex' per controllare chi sta muovendo
+    public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex)
     {
         byte legalMoves = 0;
 
-        // Controlla ogni mossa (Up, Down, Left, Right)
         // UP
         var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
-        // Passa 'Food' a IsSquareLegal
-        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, in Food))
+        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Up;
 
         // DOWN
         var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
-        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, in Food))
+        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Down;
 
         // LEFT
         var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
-        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, in Food))
+        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Left;
 
         // RIGHT
         var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
-        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, in Food))
+        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Right;
 
         return legalMoves;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsSquareLegal(ushort position, ushort tailPosition, ushort elementBeforeTailPosition, in Bitboard food)
+    private bool IsSquareLegal(ushort position, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex, in Bitboard food)
     {
-        // 1. Controlla gli ostacoli globali (Muri, Tutti i serpenti)
+        // 1. Controlla se la casella è occupata
         var isBody = Snakes.IsSet(position);
 
-        // 2. Se la cella è vuota, è legale.
-        if (!isBody) return true;
-
-        // 3. La cella è occupata. È la nostra coda?
-        var isTail = position == tailPosition;
-
-        // 4. Se è occupata MA NON è la nostra coda, è una collisione (muro, nemico, corpo).
-        if (!isTail) return false;
-
-        // 5. È la nostra coda. Controlliamo se è "collassata" (sovrapposta).
-        //    Se la coda è nella stessa cella del pezzo prima di essa, è sovrapposta.
-        if (tailPosition == elementBeforeTailPosition)
+        if (isBody)
         {
-            // È illegale muoversi su una coda sovrapposta.
-            return false;
+            // FIX INTELLIGENTE: Gestione Collisioni Testa-a-Testa
+            // Controlliamo se stiamo colpendo la testa di un nemico che HA GIÀ MOSSO.
+            
+            var heroLength = System[heroIndex].Length;
+
+            for (var i = 0; i < System.Count; i++)
+            {
+                if (i == heroIndex) continue; // Salta noi stessi
+
+                // Controlliamo solo i nemici con indice < heroIndex.
+                // In un ciclo Round-Robin 0->1->2->3, questi sono quelli che hanno già aggiornato la loro posizione.
+                // Colpire la loro testa ora simula una collisione reale.
+                // Colpire la testa di chi NON ha mosso (i > heroIndex) significa colpire il collo -> Suicidio.
+                if (i < heroIndex)
+                {
+                    if (System[i].Head == position)
+                    {
+                        // È un testa-a-testa valido. Applichiamo la tua logica:
+                        // Se sono più lungo -> VALIDA (Kill).
+                        // Se sono più corto o uguale -> INVALIDA (Suicidio/Pareggio da evitare).
+                        return heroLength > System[i].Length;
+                    }
+                }
+            }
+
+            // Se non è una testa "uccidibile", applichiamo la logica standard (coda/muro)
+            var isTail = position == tailPosition;
+            if (!isTail) return false;
+            
+            if (tailPosition == elementBeforeTailPosition) return false;
+            return !food.IsSet(position);
         }
 
-        // 6. È la nostra coda (e non è sovrapposta).
-        //    È legale muoversi qui SOLO SE non c'è cibo.
-        return !food.IsSet(position);
+        return true;
     }
 
     public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
@@ -145,7 +152,6 @@ public readonly ref struct Arena(
             var potentialSpot = (ushort)Random.Shared.Next(0, area);
             if (Snakes.IsUnset(potentialSpot)) return potentialSpot;
         }
-
         return ushort.MaxValue;
     }
 
@@ -153,7 +159,6 @@ public readonly ref struct Arena(
     {
         ref readonly var coord1 = ref _conversionsMap[pos1];
         ref readonly var coord2 = ref _conversionsMap[pos2];
-
         return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
     }
 }
