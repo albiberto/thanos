@@ -1,5 +1,4 @@
-﻿using Thanos.Common;
-using Thanos.MCST;
+﻿using Thanos.MCST;
 using Thanos.SourceGen;
 
 namespace Thanos;
@@ -18,28 +17,21 @@ public sealed class BattleSnakeAgent(uint maxNodes = Constants.MaxNodes) : IDisp
         };
 
         foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
-        
+
 #if DEBUG
-        // Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join(", ", map.Select(kv => $"{kv.Key}:{kv.Value}"))}");
+        Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join(", ", map.Select(kv => $"{kv.Key}:{kv.Value}"))}");
 #endif
 
-        // Passiamo la mappa al cluster che la propaga a tutti i pool
         _cluster.SetMap(map);
         _cluster.Reset();
     }
 
-    public Task<byte> Move(Request request) // Rimuovi 'in' se async dà problemi con ref struct, ma Request è readonly struct normale
-    { 
-        return _cluster.ComputeMoveAsync(request); 
-    }
+    public Task<byte> Move(Request request) => _cluster.ComputeMoveAsync(request);
 
     public void End(in Request _)
     {
         // Opzionale: logiche di fine partita
     }
 
-    public void Dispose()
-    {
-        _cluster.Dispose();
-    }
+    public void Dispose() => _cluster.Dispose();
 }

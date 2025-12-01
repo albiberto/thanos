@@ -20,35 +20,27 @@ public sealed class EngineCluster : IDisposable
 
     public EngineCluster(uint maxNodes)
     {
-        // Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using 'Medium' (11x11) profile...");
+        Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using {LookupsMemoryLayout.Medium} profile...");
 
         _engines = new Engine[Constants.CoreCount];
         _slotPools = new SlotMemoryPool[Constants.CoreCount];
         _nodePools = new NodeMemoryPool[Constants.CoreCount];
         _lastChosenIndices = new int[Constants.CoreCount];
 
-        // 1. LOOKUPS: Profilo Medium (11x11)
         _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium); 
 
         for (var i = 0; i < Constants.CoreCount; i++)
         {
             _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
-            
-            // 2. SLOTS: Profilo Medium (11x11)
-            // Perfettamente allineato con LookupsMemoryLayout.Medium
             _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Medium);
-            
             _engines[i] = new Engine(_slotPools[i], _nodePools[i]);
+            
             _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
         }
     }
 
-    // ... (Il resto della classe: ComputeMoveAsync, Reset, Dispose rimane invariato) ...
-    // In Thanos/MCST/EngineCluster.cs
-
     public async Task<byte> ComputeMoveAsync(Request request)
     {
-        // ... (parte iniziale identica fino al foreach bestMove) ...
         var targetHash = _slotPools[0].CalculateRequestHash(0, in request);
 
         var tasks = new Task[_engines.Length];
@@ -83,24 +75,14 @@ public sealed class EngineCluster : IDisposable
         
         foreach (var move in movesToCheck)
         {
-            if (totalVisits[move] > maxVisits)
-            {
-                maxVisits = totalVisits[move];
-                bestMove = move;
-            }
+            if (totalVisits[move] <= maxVisits) continue;
+            maxVisits = totalVisits[move];
+            bestMove = move;
         }
         
-        // --- FIX SAFETY NET ---
-        // Se maxVisits è <= 0, l'MCTS ha fallito (panico o bug).
-        // Invece di ritornare None (che diventa "Up" e ti uccide), chiediamo una mossa legale qualsiasi.
-        if (maxVisits <= 0) 
-        {
-            // Console.WriteLine("[EngineCluster] PANIC: MCTS returned no moves. Using Fallback.");
-            // Usa il primo motore per calcolare una mossa di emergenza valida
-            return _engines[0].GetFallbackMove();
-        }
-
-        return bestMove;
+        return maxVisits <= 0 
+            ? _engines[0].GetFallbackMove() 
+            : bestMove;
     }
 
     public void Reset()
@@ -121,6 +103,7 @@ public sealed class EngineCluster : IDisposable
     {
         foreach (var pool in _slotPools) pool.Dispose();
         foreach (var pool in _nodePools) pool.Dispose();
+        
         _sharedLookups.Dispose();
         _threadLocalStatsBuffer.Dispose();
     }
