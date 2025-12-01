@@ -5,7 +5,6 @@ var builder = WebApplication.CreateBuilder(args);
 #if DEBUG
 OverrideConsoleStandardOutput();
 #endif
-OverrideConsoleStandardOutput();
 
 var app = builder.Build();
 
