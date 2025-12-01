@@ -33,6 +33,9 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public Bitboard Body => _bitboard;
     public int HP => _life.HP;
     public bool IsDead => _life.IsDead;
+    
+    // MODIFICA: Espone lo stato di crescita per l'euristica
+    public bool IsGrowthPending => _life.IsGrowthPending;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ushort RemoveTail() => _queue.Dequeue();

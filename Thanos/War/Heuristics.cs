@@ -21,64 +21,58 @@ public static class HeuristicsConstants
     public const float SuffocationPenalty = -50000.0f; 
 }
 
-// 1. Rimuoviamo le costanti statiche e creiamo una struttura dati per i pesi
 public readonly struct HeuristicWeights
 {
     public float Space { get; init; }
     public float Health { get; init; }
     public float Food { get; init; }
     public float Tail { get; init; }
-    public float Aggression { get; init; } // Nuovo parametro per l'HeadHunter
+    public float Aggression { get; init; }
     public float CenterBonus { get; init; }
     
-    // Penalità fisse (possono rimanere costanti o diventare dinamiche se serve)
     public const float BorderPenalty = -1000.0f;
     public const float SuffocationPenalty = -50000.0f;
 
-    // --- PROFILI PREDEFINITI ---
+    // --- PROFILI ---
 
-    // 1. Balanced: Comportamento standard inizio partita
     public static HeuristicWeights Balanced => new()
     {
         Space = 10.5f,
         Health = 0.5f,
-        Food = 0.8f, // Leggermente aumentato per incoraggiare la crescita early game
+        Food = 0.8f,
         Tail = 0.5f,
-        Aggression = 2.0f,
+        Aggression = 1.5f, 
         CenterBonus = 15.0f
     };
 
-    // 2. Hungry (Starving): Quando HP < 30 o siamo molto piccoli
     public static HeuristicWeights Hungry => new()
     {
-        Space = 5.0f,      // Meno interesse per lo spazio
-        Health = 0.0f,     // La salute è già inclusa nel peso cibo dinamico, ma lo azzeriamo per non interferire
-        Food = 4.5f,       // PRIORITÀ MASSIMA AL CIBO
+        Space = 5.0f,
+        Health = 0.0f,
+        Food = 4.5f,
         Tail = 0.2f,
-        Aggression = 0.0f, // Non rischiare scontri quando hai fame
+        Aggression = 0.0f,
         CenterBonus = 5.0f
     };
 
-    // 3. HeadHunter (Predator): Quando siamo i più grandi e in salute
     public static HeuristicWeights HeadHunter => new()
     {
-        Space = 12.0f,     // Controlla il territorio per soffocare
-        Health = 0.1f,     // La salute conta poco, siamo grossi
-        Food = 0.2f,       // Mangia solo se capita
+        Space = 12.0f,
+        Health = 0.1f,
+        Food = 0.2f,
         Tail = 0.1f,
-        Aggression = 8.0f, // Caccia le teste nemiche!
-        CenterBonus = 20.0f // Domina il centro
+        Aggression = 10.0f, 
+        CenterBonus = 20.0f
     };
 
-    // 4. Defensive (Survival): Quando siamo intrappolati o in svantaggio
     public static HeuristicWeights Defensive => new()
     {
-        Space = 25.0f,     // MASSIMA priorità allo spazio vitale
-        Health = 1.0f,     // Mantieniti vivo
-        Food = 0.5f,
-        Tail = 2.0f,       // Segui la coda per sicurezza
-        Aggression = -5.0f, // Evita i nemici
-        CenterBonus = 0.0f // Non rischiare il centro
+        Space = 25.0f,
+        Health = 1.0f,
+        Food = 0.6f,
+        Tail = 2.0f,
+        Aggression = -10.0f, 
+        CenterBonus = 0.0f
     };
 }
 
@@ -86,7 +80,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 {
     private readonly SnakesSystem _system = system;
     private readonly Bitboard _food = food;
-    private readonly Bitboard _hazards = hazards; // Disponibile per future logiche Hazard
+    private readonly Bitboard _hazards = hazards;
     private readonly Bitboard _snakes = snakes;
     private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
     private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
@@ -99,7 +93,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         var snake = _system[playerIndex];
         if (snake.IsDead) return -1.0f;
 
-        // Se sono l'unico vivo, ho vinto
         var othersAlive = 0;
         for (var i = 0; i < _system.Count; i++)
         {
@@ -112,27 +105,21 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     }
 
     /// <summary>
-    /// Valuta lo stato usando profili dinamici per ogni serpente.
+    /// EvaluateAll ora accetta 'isPhaseComplete'.
+    /// Se false (siamo a metà turno), saremo conservativi sulla lunghezza.
     /// </summary>
     [SkipLocalsInit]
-    public void EvaluateAll(Span<float> results)
+    public void EvaluateAll(Span<float> results, bool isPhaseComplete)
     {
         var area = _positionalScores.Length;
 
-        // 1. Setup Muri
         Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
         _snakes.Raw.CopyTo(wallsMemoryCopy);
         var baseWalls = new Bitboard(wallsMemoryCopy);
 
-        // 2. Calcoliamo i profili dinamici per OGNI serpente
-        //    (Nota: potremmo ottimizzare calcolando solo il nostro, ma per il Fair Voronoi serve uniformità o logica dedicata)
-        //    Per ora usiamo il profilo "Balanced" per il Voronoi generale, ma applichiamo pesi specifici dopo.
-        
-        // Calcolo Fair Voronoi (Space & Food & Trap Detection)
-        // Usiamo pesi base per il Voronoi score, poi li rifiniamo.
-        EvaluateTerritoryAndFoodFair(area, in baseWalls, results);
+        // Passiamo isPhaseComplete anche al Voronoi per coerenza (pesi cibo/spazio)
+        EvaluateTerritoryAndFoodFair(area, in baseWalls, results, isPhaseComplete);
 
-        // 3. Euristiche individuali con PROFILI DINAMICI
         for (var i = 0; i < _system.Count; i++)
         {
             var snake = _system[i];
@@ -145,73 +132,76 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             var head = snake.Head;
             if (head >= area) continue;
 
-            // --- SELEZIONE DINAMICA DEL PROFILO ---
-            var weights = SelectProfile(in snake, i);
+            // Selezione Profilo sensibile alla Fase del Turno
+            var weights = SelectProfile(in snake, i, isPhaseComplete);
             
             var score = 0.0f;
 
-            // Statica
             score += EvaluatePositionalScore(head, weights.CenterBonus);
             score += EvaluateHealth(snake.HP, weights.Health);
             score += EvaluateTailDistance(head, snake.Tail, weights.Tail);
-
-            // Dinamica
             score += EvaluateCollisionsAndTraps(i, head, snake.Length, in baseWalls);
             
-            // Aggressione (HeadHunter logic)
-            if (weights.Aggression > 0)
+            if (weights.Aggression != 0)
             {
-                score += EvaluateAggression(i, head, snake.Length, weights.Aggression);
+                // Usiamo la lunghezza conservativa anche per calcolare l'efficacia dell'aggressione
+                var effectiveLen = GetConservativeLength(in snake, isPhaseComplete);
+                score += EvaluateAggression(i, head, effectiveLen, weights.Aggression);
             }
 
             results[i] += score;
         }
     }
     
-    // --- LOGICA DI SELEZIONE DEL PROFILO ---
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private HeuristicWeights SelectProfile(in WarSnake snake, int snakeIndex)
+    private int GetConservativeLength(in WarSnake snake, bool isPhaseComplete)
     {
-        // 1. Hungry Mode: Se stiamo morendo di fame
-        if (snake.HP < 35) 
-            return HeuristicWeights.Hungry;
-
-        // 2. Analisi Dominio: Sono il serpente più lungo?
-        var amIBiggest = true;
-        var maxEnemyLen = 0;
+        // Se il turno NON è completo (gli altri devono ancora muovere) E ho appena mangiato (pending growth),
+        // ignoro temporaneamente il +1 di lunghezza per non sentirmi falsamente superiore.
+        if (!isPhaseComplete && snake.IsGrowthPending) 
+            return snake.Length - 1;
         
+        return snake.Length;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private HeuristicWeights SelectProfile(in WarSnake snake, int snakeIndex, bool isPhaseComplete)
+    {
+        if (snake.HP < 35) return HeuristicWeights.Hungry;
+
+        // Calcoliamo la lunghezza "effettiva" (conservativa se necessario)
+        var myLen = GetConservativeLength(in snake, isPhaseComplete);
+        
+        var maxEnemyLen = 0;
         for(var i=0; i < _system.Count; i++)
         {
             if (i == snakeIndex || _system[i].IsDead) continue;
             var enemyLen = _system[i].Length;
-            if (enemyLen >= snake.Length) amIBiggest = false;
             if (enemyLen > maxEnemyLen) maxEnemyLen = enemyLen;
         }
 
-        // 3. HeadHunter Mode: Se sono il più grande e ho salute decente
-        if (amIBiggest && snake.HP > 50)
+        // Ora HeadHunter si attiva solo se siamo "Veramente" più grandi, 
+        // scontando eventuali vantaggi temporanei di questo turno.
+        if (myLen > maxEnemyLen && snake.HP > 50)
             return HeuristicWeights.HeadHunter;
 
-        // 4. Defensive Mode: Se c'è un nemico molto più grande vicino o ho poca mappa (semplificato)
-        //    (Qui potremmo integrare i dati del Voronoi se fossero disponibili prima, ma per velocità usiamo Length)
-        if (!amIBiggest && (maxEnemyLen - snake.Length) >= 2)
+        if (myLen <= maxEnemyLen)
              return HeuristicWeights.Defensive;
 
-        // 5. Default
         return HeuristicWeights.Balanced;
     }
 
-    public float Evaluate()
+    public float Evaluate(bool isPhaseComplete)
     {
         Span<float> results = stackalloc float[_system.Count];
-        EvaluateAll(results);
+        EvaluateAll(results, isPhaseComplete);
         return results[0];
     }
 
-    // --- METODI EURISTICI PRIVATI ---
+    // --- METODI EURISTICI ---
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluatePositionalScore(ushort head, float weight) => _positionalScores[head] * (weight / 15.0f); // Normalizziamo rispetto al vecchio default
+    private float EvaluatePositionalScore(ushort head, float weight) => _positionalScores[head] * (weight / 15.0f);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateHealth(int health, float weight) => health * weight;
@@ -228,7 +218,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         return ManhattanDistance(head, tail) * weight;
     }
     
-    // NUOVO: Logica HeadHunter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateAggression(int myIndex, ushort myHead, int myLength, float weight)
     {
@@ -238,28 +227,39 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             if (i == myIndex || _system[i].IsDead) continue;
             var enemy = _system[i];
             
-            // Caccia solo chi puoi uccidere
-            if (myLength > enemy.Length)
+            var dist = ManhattanDistance(myHead, enemy.Head);
+
+            if (weight > 0) // HeadHunter / Balanced (Aggressive)
             {
-                var dist = ManhattanDistance(myHead, enemy.Head);
-                
-                // Bonus massiccio se siamo vicini alla testa di una preda
-                if (dist <= 2) score += 50.0f * weight; 
-                else if (dist <= 4) score += 20.0f * weight;
-                else score += (10.0f / dist) * weight;
+                // Attacca solo se sei strettamente più lungo
+                if (myLength > enemy.Length)
+                {
+                    if (dist <= 2) score += 50.0f * weight; 
+                    else if (dist <= 4) score += 20.0f * weight;
+                    else score += (10.0f / dist) * weight;
+                }
+            }
+            else // Defensive (weight < 0)
+            {
+                // Se il nemico può uccidermi (o pareggiare che è male uguale)
+                if (enemy.Length >= myLength)
+                {
+                    // MODIFICA: Penalità DRACONIANA.
+                    // Moltiplichiamo per 1000 per assicurarci che superi qualsiasi bonus spazio (Space=25).
+                    // Esempio: -10 * 50 * 100 = -50.000 (Equivalente al soffocamento)
+                    
+                    if (dist <= 2) score += 5000.0f * weight; // Penalità MASSIVA (-50.000 se weight è -10)
+                    else if (dist <= 3) score += 1000.0f * weight; // Penalità forte per vicinanza media
+                }
             }
         }
         return score;
     }
 
-    /// <summary>
-    /// Voronoi Fair (Invariato nella logica di calcolo, ma usa pesi base per l'aggregazione)
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [SkipLocalsInit]
-    private void EvaluateTerritoryAndFoodFair(int area, in Bitboard walls, Span<float> results)
+    private void EvaluateTerritoryAndFoodFair(int area, in Bitboard walls, Span<float> results, bool isPhaseComplete)
     {
-        // Code per BFS
         Span<ushort> queue = stackalloc ushort[area]; 
         var queueHead = 0;
         var queueTail = 0;
@@ -270,7 +270,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         Span<ushort> distances = stackalloc ushort[area];
         distances.Fill(ushort.MaxValue);
 
-        // Init BFS
         for (var i = 0; i < _system.Count; i++)
         {
             var snake = _system[i];
@@ -282,7 +281,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             queue[queueTail++] = head;
         }
 
-        // BFS Expansion
         while (queueHead < queueTail)
         {
             var currentPos = queue[queueHead++];
@@ -311,21 +309,15 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             }
         }
 
-        // --- AGGREGAZIONE CON PESI DINAMICI "AL VOLO" ---
-        
         Span<int> spaceCounts = stackalloc int[_system.Count];
         spaceCounts.Clear();
         
-        // Calcolo FoodScore specifico per ogni serpente basato sul suo profilo
         Span<float> foodScores = stackalloc float[_system.Count];
         
-        // Qui calcoliamo i profili "al volo" solo per determinare il peso del cibo e spazio nel Voronoi
         for(var i=0; i < _system.Count; i++)
         {
             if (_system[i].IsDead) continue;
-            var w = SelectProfile(_system[i], i);
-            
-            // Formula dinamica per il cibo: Più ho fame, più il cibo vale (esponenzialmente)
+            var w = SelectProfile(_system[i], i, isPhaseComplete);
             foodScores[i] = (101.0f - _system[i].HP) * w.Food; 
         }
 
@@ -335,11 +327,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             if (owner < 0) continue; 
 
             spaceCounts[owner]++;
-
-            if (_food.IsSet((ushort)i))
-            {
-                results[owner] += foodScores[owner];
-            }
+            if (_food.IsSet((ushort)i)) results[owner] += foodScores[owner];
         }
 
         for(var i=0; i<_system.Count; i++)
@@ -348,14 +336,9 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
             var mySpace = spaceCounts[i];
             var myLength = _system[i].Length;
-            
-            var w = SelectProfile(_system[i], i);
+            var w = SelectProfile(_system[i], i, isPhaseComplete);
 
-            if (mySpace < myLength)
-            {
-                results[i] += HeuristicWeights.SuffocationPenalty;
-            }
-            
+            if (mySpace < myLength) results[i] += HeuristicWeights.SuffocationPenalty;
             results[i] += mySpace * w.Space;
         }
     }

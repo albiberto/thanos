@@ -132,14 +132,12 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var arena = _slotPool.GetArena(parentIndex);
         var snake = arena.System[playerIndex];
 
-        // FIX PANICO: Se il serpente è morto, è Terminal ma NON SolvedLoss globale.
         if (snake.IsDead)
         {
             parentNode.MarkTerminal();
             return;
         }
 
-        // UPDATED: Passiamo playerIndex per la logica di collisione
         var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail, playerIndex);
         
         if (legalMoves == 0)
@@ -148,7 +146,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             return;
         }
 
-        // --- PRUNING LOGIC (Invariata) ---
         byte prunedMoves = 0;
         var safeMoveCount = 0;
         foreach (var move in AllMoves)
@@ -161,7 +158,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             }
         }
         var movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
-        // ---------------------------------
 
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
         var isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
@@ -219,7 +215,6 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         ref var childNode = ref _nodePool[childIndex];
         ref var parentNode = ref _nodePool[parentIndex];
         
-        // FIX ROUND ROBIN: Cerca il primo giocatore VIVO
         var firstAlive = GetFirstAlivePlayerIndex(in childArena);
         var isNextChance = firstAlive == Constants.EnvironmentPlayerIndex;
         var nextPlayer = (byte)firstAlive;
@@ -266,7 +261,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 var enemy = arena.System[i];
                 if (enemy.IsOnBody(newHead))
                 {
-                    if (enemy.Head == newHead) // HEAD-TO-HEAD
+                    if (enemy.Head == newHead) 
                     {
                         if (snake.Length <= enemy.Length) snake.Kill(); 
                         if (snake.Length >= enemy.Length) 
@@ -275,7 +270,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                             arena.Snakes.Xor(arena.System[i].Body); 
                         }
                     }
-                    else // BODY HIT
+                    else 
                     {
                         snake.Kill(); 
                     }
@@ -298,6 +293,12 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         var heuristics = _slotPool.GetHeuristics(nodeIndex);
         var arena = _slotPool.GetArena(nodeIndex);
+        
+        // MODIFICA: Determina se il turno è completo
+        // Se il prossimo a muovere è Environment o Player 0 (noi, inizio nuovo turno), 
+        // significa che tutti gli avversari hanno mosso nel turno precedente.
+        ref var node = ref _nodePool[nodeIndex];
+        var isPhaseComplete = node.PlayerIndex == Constants.EnvironmentPlayerIndex || node.PlayerIndex == 0;
 
         Array.Clear(rewardsBuffer);
 
@@ -308,7 +309,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
         
         Span<float> rawScores = stackalloc float[arena.System.Count];
-        heuristics.EvaluateAll(rawScores);
+        
+        // Passiamo il flag isPhaseComplete all'euristica
+        heuristics.EvaluateAll(rawScores, isPhaseComplete);
 
         for (var i = 0; i < arena.System.Count; i++)
         {
