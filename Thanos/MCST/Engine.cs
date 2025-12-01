@@ -103,12 +103,10 @@ public class Engine
         
         var stopwatch = Stopwatch.StartNew();
         
-        if (_nodePool[_rootIndex].IsLeafNode)
-        {
-            _worker.RunIteration(area, _rootIndex); 
-        }
+        if (_nodePool[_rootIndex].IsLeafNode) _worker.RunIteration(area, _rootIndex);
         
         ref var rootNode = ref _nodePool[_rootIndex];
+        
         var childCount = 0;
         var childIdx = rootNode.FirstChildIndex;
         while(childIdx != -1)
@@ -117,21 +115,29 @@ public class Engine
             childIdx = _nodePool[childIdx].NextSiblingIndex;
         }
 
-        var timeLimit = (childCount <= 1) ? forcedMoveTimeMs : maxTimeMs;
+        var timeLimit = childCount <= 1 ? forcedMoveTimeMs : maxTimeMs;
 
         while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
-            if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) 
-                break;
+            if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) break;
             
-            for(var i=0; i<64; i++) 
+            var remainingTime = timeLimit - stopwatch.ElapsedMilliseconds;
+
+            var currentBatchSize = remainingTime switch
+            {
+                > 250 => 2048,
+                > 150 => 1024,
+                > 80 => 512,
+                _ => 256
+            };
+
+            for(var i = 0; i < currentBatchSize; i++) 
             {
                 _worker.RunIteration(area, _rootIndex);
             }
-            counter += 64;
+            counter += currentBatchSize;
         }
 
-        // Console.WriteLine($"[Engine] Iterations: {counter}, Time: {stopwatch.ElapsedMilliseconds}ms, ChildMoves: {childCount}");
         stopwatch.Stop();
     }
     
