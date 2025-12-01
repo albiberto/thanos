@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
+using Thanos.Shared;
 using Thanos.SourceGen;
-using Thanos.PreWarm;
 using Thanos.War.Structures;
 
 namespace Thanos.War;
@@ -91,7 +91,7 @@ public readonly ref struct Arena(
         {
             // FIX INTELLIGENTE: Gestione Collisioni Testa-a-Testa
             // Controlliamo se stiamo colpendo la testa di un nemico che HA GIÀ MOSSO.
-            
+
             var heroLength = System[heroIndex].Length;
 
             for (var i = 0; i < System.Count; i++)
@@ -103,21 +103,17 @@ public readonly ref struct Arena(
                 // Colpire la loro testa ora simula una collisione reale.
                 // Colpire la testa di chi NON ha mosso (i > heroIndex) significa colpire il collo -> Suicidio.
                 if (i < heroIndex)
-                {
                     if (System[i].Head == position)
-                    {
                         // È un testa-a-testa valido. Applichiamo la tua logica:
                         // Se sono più lungo -> VALIDA (Kill).
                         // Se sono più corto o uguale -> INVALIDA (Suicidio/Pareggio da evitare).
                         return heroLength > System[i].Length;
-                    }
-                }
             }
 
             // Se non è una testa "uccidibile", applichiamo la logica standard (coda/muro)
             var isTail = position == tailPosition;
             if (!isTail) return false;
-            
+
             if (tailPosition == elementBeforeTailPosition) return false;
             return !food.IsSet(position);
         }
@@ -152,6 +148,7 @@ public readonly ref struct Arena(
             var potentialSpot = (ushort)Random.Shared.Next(0, area);
             if (Snakes.IsUnset(potentialSpot)) return potentialSpot;
         }
+
         return ushort.MaxValue;
     }
 

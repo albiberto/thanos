@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using Thanos.Common;
 using Thanos.Memory;
-using Thanos.PreWarm;
 using Thanos.SourceGen;
 using Thanos.War;
 
@@ -11,7 +10,7 @@ namespace Thanos.MCST;
 public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 {
     private const double EXPLORATION_PARAMETER = 1.41;
-    private const int CHANCE_NODE_VISIT_THRESHOLD = 50; 
+    private const int CHANCE_NODE_VISIT_THRESHOLD = 50;
 
     private int _nextId = 1;
     private RulesetSettings _settings;
@@ -28,10 +27,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var leafIndex = Select(rootIndex);
         ref var leafNode = ref _nodePool[leafIndex];
 
-        if (leafNode.IsLeafNode && !leafNode.IsTerminal && !leafNode.IsSolvedWin && !leafNode.IsSolvedLoss)
-        {
-            Expand(leafIndex, ref leafNode, area);
-        }
+        if (leafNode.IsLeafNode && !leafNode.IsTerminal && !leafNode.IsSolvedWin && !leafNode.IsSolvedLoss) Expand(leafIndex, ref leafNode, area);
 
         var nodeToEvaluate = leafIndex;
         if (!leafNode.IsLeafNode) nodeToEvaluate = leafNode.FirstChildIndex;
@@ -54,7 +50,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             if (currentNode.IsChanceNode)
             {
                 var outcomeIndex = SelectChanceOutcome(ref currentNode);
-                if (outcomeIndex == -1) return currentIndex; 
+                if (outcomeIndex == -1) return currentIndex;
                 currentIndex = outcomeIndex;
                 continue;
             }
@@ -65,6 +61,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 currentNode.MarkTerminal();
                 return currentIndex;
             }
+
             currentIndex = bestChild;
         }
     }
@@ -89,7 +86,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 continue;
             }
 
-            if (childNode.Visits == 0) return childIndex; 
+            if (childNode.Visits == 0) return childIndex;
 
             var exploitation = childNode.Rewards[playerIndex] / childNode.Visits;
             var exploration = EXPLORATION_PARAMETER * Math.Sqrt(logParentVisits / childNode.Visits);
@@ -100,9 +97,11 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 bestScore = uctScore;
                 bestChildIndex = childIndex;
             }
+
             childIndex = childNode.NextSiblingIndex;
         }
-        return bestChildIndex; 
+
+        return bestChildIndex;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -110,14 +109,14 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         var firstChild = parentNode.FirstChildIndex;
         if (firstChild == -1) return -1;
-        
+
         ref var firstNode = ref _nodePool[firstChild];
         var secondChild = firstNode.NextSiblingIndex;
 
         if (secondChild == -1) return firstChild;
 
         var pickSpawn = Random.Shared.NextDouble() < _settings.FoodSpawnChance / 100.0;
-        return pickSpawn ? secondChild : firstChild; 
+        return pickSpawn ? secondChild : firstChild;
     }
 
     private void Expand(int parentIndex, ref Node parentNode, int area)
@@ -139,7 +138,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         }
 
         var legalMoves = arena.GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail, playerIndex);
-        
+
         if (legalMoves == 0)
         {
             parentNode.MarkTerminal();
@@ -157,7 +156,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 safeMoveCount++;
             }
         }
-        var movesToExpand = (safeMoveCount > 0) ? prunedMoves : legalMoves;
+
+        var movesToExpand = safeMoveCount > 0 ? prunedMoves : legalMoves;
 
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
         var isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
@@ -170,9 +170,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
             var childIndex = ++_nextId;
             var childArena = _slotPool.GetArena(childIndex);
-            
+
             childArena.CloneFrom(in arena);
-            
+
             var snakeToMove = childArena.System[playerIndex];
             ApplySingleMove(in childArena, ref snakeToMove, move, area);
 
@@ -189,16 +189,13 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool IsMoveRisky(in Arena arena, ushort currentHead, byte move)
-    {
-        return false; 
-    }
+    private static bool IsMoveRisky(in Arena arena, ushort currentHead, byte move) => false;
 
     private void ExpandChanceNode(int parentIndex, ref Node parentNode, int area)
     {
-        CreateEnvironmentChild(parentIndex, area, spawnFood: false);
+        CreateEnvironmentChild(parentIndex, area, false);
         if (parentNode.Visits > CHANCE_NODE_VISIT_THRESHOLD)
-             CreateEnvironmentChild(parentIndex, area, spawnFood: true);
+            CreateEnvironmentChild(parentIndex, area, true);
     }
 
     private void CreateEnvironmentChild(int parentIndex, int area, bool spawnFood)
@@ -211,18 +208,21 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         if (spawnFood) childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
 
         var hash = ZobristHasher.CalculateHash(in childArena);
-        
+
         ref var childNode = ref _nodePool[childIndex];
         ref var parentNode = ref _nodePool[parentIndex];
-        
+
         var firstAlive = GetFirstAlivePlayerIndex(in childArena);
         var isNextChance = firstAlive == Constants.EnvironmentPlayerIndex;
         var nextPlayer = (byte)firstAlive;
-        
-        childNode.PlacementNew(parentIndex, Moves.None, hash, nextPlayer, isNextChance); 
+
+        childNode.PlacementNew(parentIndex, Moves.None, hash, nextPlayer, isNextChance);
         if (isNextChance) childNode.MarkTerminal();
 
-        if (parentNode.FirstChildIndex == -1) parentNode.FirstChildIndex = childIndex;
+        if (parentNode.FirstChildIndex == -1)
+        {
+            parentNode.FirstChildIndex = childIndex;
+        }
         else
         {
             var sibling = parentNode.FirstChildIndex;
@@ -251,32 +251,30 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move, int area)
     {
         var newHead = arena.GetNewHeadPosition(snake.Head, move);
-        
+
         arena.Snakes.Xor(snake.Body);
 
         if (arena.Snakes.IsSet(newHead))
-        {
             for (var i = 0; i < arena.System.Count; i++)
             {
                 var enemy = arena.System[i];
                 if (enemy.IsOnBody(newHead))
                 {
-                    if (enemy.Head == newHead) 
+                    if (enemy.Head == newHead)
                     {
-                        if (snake.Length <= enemy.Length) snake.Kill(); 
-                        if (snake.Length >= enemy.Length) 
+                        if (snake.Length <= enemy.Length) snake.Kill();
+                        if (snake.Length >= enemy.Length)
                         {
-                            arena.System[i].Kill(); 
-                            arena.Snakes.Xor(arena.System[i].Body); 
+                            arena.System[i].Kill();
+                            arena.Snakes.Xor(arena.System[i].Body);
                         }
                     }
-                    else 
+                    else
                     {
-                        snake.Kill(); 
+                        snake.Kill();
                     }
                 }
             }
-        }
 
         if (snake.IsDead) return;
 
@@ -284,7 +282,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var damage = arena.Hazards.IsSet(newHead) ? _settings.HazardDamagePerTurn : 1;
 
         snake.UpdateAfterMove(newHead, hasEaten, damage);
-        arena.Snakes.Or(snake.Body); 
+        arena.Snakes.Or(snake.Body);
 
         if (hasEaten) arena.Food.Unset(newHead);
     }
@@ -293,7 +291,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     {
         var heuristics = _slotPool.GetHeuristics(nodeIndex);
         var arena = _slotPool.GetArena(nodeIndex);
-        
+
         // MODIFICA: Determina se il turno è completo
         // Se il prossimo a muovere è Environment o Player 0 (noi, inizio nuovo turno), 
         // significa che tutti gli avversari hanno mosso nel turno precedente.
@@ -302,14 +300,14 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
         Array.Clear(rewardsBuffer);
 
-        for(var i=0; i < arena.System.Count; i++)
+        for (var i = 0; i < arena.System.Count; i++)
         {
             var outcome = heuristics.Outcome(i);
-            if (outcome != 0.0f) rewardsBuffer[i] = outcome; 
+            if (outcome != 0.0f) rewardsBuffer[i] = outcome;
         }
-        
+
         Span<float> rawScores = stackalloc float[arena.System.Count];
-        
+
         // Passiamo il flag isPhaseComplete all'euristica
         heuristics.EvaluateAll(rawScores, isPhaseComplete);
 
@@ -321,6 +319,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 rewardsBuffer[i] = -1.0f;
                 continue;
             }
+
             rewardsBuffer[i] = MathF.Tanh(rawScores[i] / 150.0f);
         }
     }
@@ -355,8 +354,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
                 if (!siblingNode.IsSolvedLoss)
                 {
                     allChildrenLost = false;
-                    break; 
+                    break;
                 }
+
                 currentSibling = siblingNode.NextSiblingIndex;
             }
 
@@ -365,6 +365,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     }
 
     public void Reset(int startId) => _nextId = startId;
+
     public void Reset(int startId, RulesetSettings settings)
     {
         _nextId = startId;

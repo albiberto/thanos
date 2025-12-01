@@ -11,9 +11,9 @@ public sealed class EngineCluster : IDisposable
     private readonly Engine[] _engines;
     private readonly SlotMemoryPool[] _slotPools;
     private readonly NodeMemoryPool[] _nodePools;
-    
-    private readonly LookupsMemoryPool _sharedLookups; 
-    
+
+    private readonly LookupsMemoryPool _sharedLookups;
+
     private readonly int[] _lastChosenIndices;
 
     private readonly ThreadLocal<List<RootMoveStat>> _threadLocalStatsBuffer = new(() => new List<RootMoveStat>(16));
@@ -27,14 +27,14 @@ public sealed class EngineCluster : IDisposable
         _nodePools = new NodeMemoryPool[Constants.CoreCount];
         _lastChosenIndices = new int[Constants.CoreCount];
 
-        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium); 
+        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium);
 
         for (var i = 0; i < Constants.CoreCount; i++)
         {
             _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
             _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Medium);
             _engines[i] = new Engine(_slotPools[i], _nodePools[i]);
-            
+
             _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
         }
     }
@@ -56,32 +56,29 @@ public sealed class EngineCluster : IDisposable
 
         await Task.WhenAll(tasks);
 
-        var totalVisits = new long[16]; 
+        var totalVisits = new long[16];
 
         foreach (var engine in _engines)
         {
             var buffer = _threadLocalStatsBuffer.Value!;
             engine.GetRootStats(buffer);
 
-            foreach (var stat in buffer)
-            {
-                totalVisits[stat.Move] += stat.Visits;
-            }
+            foreach (var stat in buffer) totalVisits[stat.Move] += stat.Visits;
         }
 
-        var bestMove = Moves.Up; 
+        var bestMove = Moves.Up;
         long maxVisits = -1;
         byte[] movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-        
+
         foreach (var move in movesToCheck)
         {
             if (totalVisits[move] <= maxVisits) continue;
             maxVisits = totalVisits[move];
             bestMove = move;
         }
-        
-        return maxVisits <= 0 
-            ? _engines[0].GetFallbackMove() 
+
+        return maxVisits <= 0
+            ? _engines[0].GetFallbackMove()
             : bestMove;
     }
 
@@ -93,7 +90,7 @@ public sealed class EngineCluster : IDisposable
             _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
         }
     }
-    
+
     public void SetMap(Dictionary<string, int> map)
     {
         foreach (var pool in _slotPools) pool.Set(map);
@@ -103,7 +100,7 @@ public sealed class EngineCluster : IDisposable
     {
         foreach (var pool in _slotPools) pool.Dispose();
         foreach (var pool in _nodePools) pool.Dispose();
-        
+
         _sharedLookups.Dispose();
         _threadLocalStatsBuffer.Dispose();
     }

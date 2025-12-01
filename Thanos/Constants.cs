@@ -5,7 +5,7 @@ public static class Constants
     public const int CacheLine = 64;
 
     public const int FirstRootNodeIndex = 1;
-    
+
     // Aumentiamo i nodi o riduciamo a seconda della RAM disponibile, 
     // dato che ora ogni nodo pesa il doppio (64 byte vs 32 byte).
     // Con 2.5M nodi * 64 byte = ~160 MB. È accettabile.

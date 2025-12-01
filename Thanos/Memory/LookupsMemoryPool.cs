@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Thanos.PreWarm;
+using Thanos.Shared;
 using Thanos.SourceGen;
 
 namespace Thanos.Memory;

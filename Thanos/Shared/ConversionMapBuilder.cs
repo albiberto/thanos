@@ -1,6 +1,6 @@
 ﻿using Thanos.SourceGen;
 
-namespace Thanos.PreWarm;
+namespace Thanos.Shared;
 
 public static class ConversionMapBuilder
 {

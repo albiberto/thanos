@@ -1,6 +1,6 @@
 ﻿using Thanos.War;
 
-namespace Thanos.PreWarm;
+namespace Thanos.Shared;
 
 public static class PositionalScoreBuilder
 {

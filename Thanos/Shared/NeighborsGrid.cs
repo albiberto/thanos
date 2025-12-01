@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 
-namespace Thanos.PreWarm;
+namespace Thanos.Shared;
 
 public readonly ref struct NeighborsGrid(ReadOnlySpan<ushort> neighbors)
 {

@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Common;
-using Thanos.PreWarm;
+using Thanos.Shared;
 using Thanos.SourceGen;
 using Thanos.War.Structures;
 
@@ -13,12 +13,12 @@ public static class HeuristicsConstants
     public const float HealthWeight = 0.5f;
     public const float FoodWeight = 0.6f;
     public const float TailWeight = 0.5f;
-    
+
     public const float CenterBonusValue = 15.0f;
     public const float BorderPenaltyValue = -1000.0f;
-    
+
     // Penalità per chi si infila in uno spazio più piccolo della sua lunghezza
-    public const float SuffocationPenalty = -50000.0f; 
+    public const float SuffocationPenalty = -50000.0f;
 }
 
 public readonly struct HeuristicWeights
@@ -29,7 +29,7 @@ public readonly struct HeuristicWeights
     public float Tail { get; init; }
     public float Aggression { get; init; }
     public float CenterBonus { get; init; }
-    
+
     public const float BorderPenalty = -1000.0f;
     public const float SuffocationPenalty = -50000.0f;
 
@@ -41,7 +41,7 @@ public readonly struct HeuristicWeights
         Health = 0.5f,
         Food = 0.8f,
         Tail = 0.5f,
-        Aggression = 1.5f, 
+        Aggression = 1.5f,
         CenterBonus = 15.0f
     };
 
@@ -61,7 +61,7 @@ public readonly struct HeuristicWeights
         Health = 0.1f,
         Food = 0.2f,
         Tail = 0.1f,
-        Aggression = 10.0f, 
+        Aggression = 10.0f,
         CenterBonus = 20.0f
     };
 
@@ -71,7 +71,7 @@ public readonly struct HeuristicWeights
         Health = 1.0f,
         Food = 0.6f,
         Tail = 2.0f,
-        Aggression = -10.0f, 
+        Aggression = -10.0f,
         CenterBonus = 0.0f
     };
 }
@@ -95,9 +95,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
         var othersAlive = 0;
         for (var i = 0; i < _system.Count; i++)
-        {
-            if (i != playerIndex && !_system[i].IsDead) othersAlive++;
-        }
+            if (i != playerIndex && !_system[i].IsDead)
+                othersAlive++;
 
         if (othersAlive == 0) return 1.0f;
 
@@ -125,7 +124,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             var snake = _system[i];
             if (snake.IsDead)
             {
-                results[i] = -10000.0f; 
+                results[i] = -10000.0f;
                 continue;
             }
 
@@ -134,14 +133,14 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
             // Selezione Profilo sensibile alla Fase del Turno
             var weights = SelectProfile(in snake, i, isPhaseComplete);
-            
+
             var score = 0.0f;
 
             score += EvaluatePositionalScore(head, weights.CenterBonus);
             score += EvaluateHealth(snake.HP, weights.Health);
             score += EvaluateTailDistance(head, snake.Tail, weights.Tail);
             score += EvaluateCollisionsAndTraps(i, head, snake.Length, in baseWalls);
-            
+
             if (weights.Aggression != 0)
             {
                 // Usiamo la lunghezza conservativa anche per calcolare l'efficacia dell'aggressione
@@ -152,15 +151,15 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             results[i] += score;
         }
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetConservativeLength(in WarSnake snake, bool isPhaseComplete)
     {
         // Se il turno NON è completo (gli altri devono ancora muovere) E ho appena mangiato (pending growth),
         // ignoro temporaneamente il +1 di lunghezza per non sentirmi falsamente superiore.
-        if (!isPhaseComplete && snake.IsGrowthPending) 
+        if (!isPhaseComplete && snake.IsGrowthPending)
             return snake.Length - 1;
-        
+
         return snake.Length;
     }
 
@@ -171,9 +170,9 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
         // Calcoliamo la lunghezza "effettiva" (conservativa se necessario)
         var myLen = GetConservativeLength(in snake, isPhaseComplete);
-        
+
         var maxEnemyLen = 0;
-        for(var i=0; i < _system.Count; i++)
+        for (var i = 0; i < _system.Count; i++)
         {
             if (i == snakeIndex || _system[i].IsDead) continue;
             var enemyLen = _system[i].Length;
@@ -186,7 +185,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             return HeuristicWeights.HeadHunter;
 
         if (myLen <= maxEnemyLen)
-             return HeuristicWeights.Defensive;
+            return HeuristicWeights.Defensive;
 
         return HeuristicWeights.Balanced;
     }
@@ -202,22 +201,16 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluatePositionalScore(ushort head, float weight) => _positionalScores[head] * (weight / 15.0f);
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateHealth(int health, float weight) => health * weight;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateCollisionsAndTraps(int snakeIndex, ushort head, int myLength, in Bitboard simulatedWalls)
-    {
-        return Head2HeadCollision(snakeIndex, myLength, head) - PenalityTrap(head, in simulatedWalls);
-    }
-    
+    private float EvaluateCollisionsAndTraps(int snakeIndex, ushort head, int myLength, in Bitboard simulatedWalls) => Head2HeadCollision(snakeIndex, myLength, head) - PenalityTrap(head, in simulatedWalls);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateTailDistance(ushort head, ushort tail, float weight)
-    {
-        return ManhattanDistance(head, tail) * weight;
-    }
-    
+    private float EvaluateTailDistance(ushort head, ushort tail, float weight) => ManhattanDistance(head, tail) * weight;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateAggression(int myIndex, ushort myHead, int myLength, float weight)
     {
@@ -226,7 +219,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         {
             if (i == myIndex || _system[i].IsDead) continue;
             var enemy = _system[i];
-            
+
             var dist = ManhattanDistance(myHead, enemy.Head);
 
             if (weight > 0) // HeadHunter / Balanced (Aggressive)
@@ -234,9 +227,9 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
                 // Attacca solo se sei strettamente più lungo
                 if (myLength > enemy.Length)
                 {
-                    if (dist <= 2) score += 50.0f * weight; 
+                    if (dist <= 2) score += 50.0f * weight;
                     else if (dist <= 4) score += 20.0f * weight;
-                    else score += (10.0f / dist) * weight;
+                    else score += 10.0f / dist * weight;
                 }
             }
             else // Defensive (weight < 0)
@@ -247,12 +240,13 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
                     // MODIFICA: Penalità DRACONIANA.
                     // Moltiplichiamo per 1000 per assicurarci che superi qualsiasi bonus spazio (Space=25).
                     // Esempio: -10 * 50 * 100 = -50.000 (Equivalente al soffocamento)
-                    
+
                     if (dist <= 2) score += 5000.0f * weight; // Penalità MASSIVA (-50.000 se weight è -10)
                     else if (dist <= 3) score += 1000.0f * weight; // Penalità forte per vicinanza media
                 }
             }
         }
+
         return score;
     }
 
@@ -260,13 +254,13 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     [SkipLocalsInit]
     private void EvaluateTerritoryAndFoodFair(int area, in Bitboard walls, Span<float> results, bool isPhaseComplete)
     {
-        Span<ushort> queue = stackalloc ushort[area]; 
+        Span<ushort> queue = stackalloc ushort[area];
         var queueHead = 0;
         var queueTail = 0;
 
         Span<int> owners = stackalloc int[area];
         owners.Fill(-1);
-        
+
         Span<ushort> distances = stackalloc ushort[area];
         distances.Fill(ushort.MaxValue);
 
@@ -275,8 +269,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             var snake = _system[i];
             if (snake.IsDead) continue;
             var head = snake.Head;
-            if(head >= area) continue;
-            owners[head] = i; 
+            if (head >= area) continue;
+            owners[head] = i;
             distances[head] = 0;
             queue[queueTail++] = head;
         }
@@ -304,33 +298,33 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
                 }
                 else if (neighborOwner != currentOwner && neighborOwner != -2)
                 {
-                    if (distances[neighborPos] == nextDist) owners[neighborPos] = -2; 
+                    if (distances[neighborPos] == nextDist) owners[neighborPos] = -2;
                 }
             }
         }
 
         Span<int> spaceCounts = stackalloc int[_system.Count];
         spaceCounts.Clear();
-        
+
         Span<float> foodScores = stackalloc float[_system.Count];
-        
-        for(var i=0; i < _system.Count; i++)
+
+        for (var i = 0; i < _system.Count; i++)
         {
             if (_system[i].IsDead) continue;
             var w = SelectProfile(_system[i], i, isPhaseComplete);
-            foodScores[i] = (101.0f - _system[i].HP) * w.Food; 
+            foodScores[i] = (101.0f - _system[i].HP) * w.Food;
         }
 
         for (var i = 0; i < area; i++)
         {
             var owner = owners[i];
-            if (owner < 0) continue; 
+            if (owner < 0) continue;
 
             spaceCounts[owner]++;
             if (_food.IsSet((ushort)i)) results[owner] += foodScores[owner];
         }
 
-        for(var i=0; i<_system.Count; i++)
+        for (var i = 0; i < _system.Count; i++)
         {
             if (_system[i].IsDead) continue;
 
@@ -349,30 +343,32 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         foreach (var move in AllMovesArray)
         {
             var neighbor = _neighborsGrid.Get(head, move);
-            if (NeighborsGrid.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor)) 
+            if (NeighborsGrid.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor))
                 openExits++;
         }
+
         return openExits switch { <= 1 => 750.0f, 2 => 200.0f, _ => 0 };
     }
 
     private float Head2HeadCollision(int snakeIndex, int myLength, ushort head)
     {
-        for (var i = 0; i < _system.Count; i++) 
+        for (var i = 0; i < _system.Count; i++)
         {
-            if (i == snakeIndex) continue; 
+            if (i == snakeIndex) continue;
             var enemy = _system[i];
             if (enemy.IsDead || enemy.Length < myLength) continue;
             var enemyHead = enemy.Head;
-            
+
             if (_neighborsGrid.Get(head, Moves.Up) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Down) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Left) == enemyHead ||
                 _neighborsGrid.Get(head, Moves.Right) == enemyHead)
                 return float.NegativeInfinity;
         }
+
         return 0.0f;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ManhattanDistance(ushort pos1, ushort pos2)
     {

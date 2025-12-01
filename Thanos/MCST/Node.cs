@@ -9,26 +9,26 @@ namespace Thanos.MCST;
 public unsafe struct Node
 {
     // --- BLOCCO 1: Dati ad accesso frequente e allineati a 8 byte ---
-    
+
     // Hash spostato all'offset 0 per allineamento perfetto (long = 8 byte)
-    [FieldOffset(0)] public long Hash; 
+    [FieldOffset(0)] public long Hash;
 
     // Rewards (4 float = 16 byte). Offset 8 è multiplo di 4. Perfetto.
-    [FieldOffset(8)] public fixed float Rewards[4]; 
+    [FieldOffset(8)] public fixed float Rewards[4];
 
     // --- BLOCCO 2: Interi (4 byte) ---
-    
+
     [FieldOffset(24)] public int Visits;
     [FieldOffset(28)] public int ParentIndex;
     [FieldOffset(32)] public int FirstChildIndex;
     [FieldOffset(36)] public int NextSiblingIndex;
 
     // --- BLOCCO 3: Byte e Flags (1 byte) ---
-    
+
     [FieldOffset(40)] public byte PlayerIndex;
     [FieldOffset(41)] public byte Move;
     [FieldOffset(42)] public NodeFlags Flags;
-    
+
     // Padding implicito fino a 64 byte...
 
     // --- METODI ---
@@ -68,10 +68,7 @@ public unsafe struct Node
     public void UpdateStats(ReadOnlySpan<float> rewards)
     {
         Visits++;
-        for (var i = 0; i < 4; i++)
-        {
-            Rewards[i] += rewards[i];
-        }
+        for (var i = 0; i < 4; i++) Rewards[i] += rewards[i];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,10 +79,10 @@ public unsafe struct Node
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkTerminal() => Flags |= NodeFlags.Terminal;
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkSolvedWin() => Flags |= NodeFlags.SolvedWin;
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkSolvedLoss() => Flags |= NodeFlags.SolvedLoss;
 
