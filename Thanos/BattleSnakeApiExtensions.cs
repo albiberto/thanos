@@ -16,7 +16,7 @@ public static class BattleSnakeApiExtensions
         {
             apiversion = "1",
             author = "Thanos",
-            color = "#65BF70",
+            color = "#EB9736",
             head = "safe",
             tail = "round-bum"
         });
