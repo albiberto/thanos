@@ -82,6 +82,9 @@ public class LookupsMemoryLayoutTests
     {
         var layout = new LookupsMemoryLayout(33);
 
-        using (EnterMultipleScope()) That(layout.Neighbors.Offset, Is.EqualTo(128), "Neighbors offset should be 128");
+        using (EnterMultipleScope())
+        {
+            That(layout.Neighbors.Offset, Is.EqualTo(128), "Neighbors offset should be 128");
+        }
     }
 }

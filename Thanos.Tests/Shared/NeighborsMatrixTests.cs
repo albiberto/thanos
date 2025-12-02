@@ -50,7 +50,10 @@ public class NeighborsMatrixTests
 
         buffer[0] = 999;
 
-        using (EnterMultipleScope()) That(matrix.GetAt(0, 0), Is.EqualTo(999), "Matrix should reflect changes in underlying buffer.");
+        using (EnterMultipleScope())
+        {
+            That(matrix.Get(0, Moves.Up), Is.EqualTo(999), "Matrix should reflect changes in underlying buffer.");
+        }
     }
 
     /// <summary>

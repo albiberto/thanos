@@ -26,7 +26,10 @@ public class CoordinatesBuilderTests
             var expectedY = (byte)(i / width);
             var expectedCoord = new Coordinate(expectedX, expectedY);
 
-            using (EnterMultipleScope()) That(buffer[i], Is.EqualTo(expectedCoord), $"Error at index {i}: expected {expectedCoord}, found {buffer[i]}");
+            using (EnterMultipleScope())
+            {
+                That(buffer[i], Is.EqualTo(expectedCoord), $"Error at index {i}: expected {expectedCoord}, found {buffer[i]}");
+            }
         }
     }
 
@@ -39,6 +42,9 @@ public class CoordinatesBuilderTests
     {
         var wrongBuffer = new Coordinate[area - 1];
 
-        using (EnterMultipleScope()) Throws<ArgumentException>(() => CoordinatesBuilder.Populate(width, height, wrongBuffer));
+        using (EnterMultipleScope())
+        {
+            Throws<ArgumentException>(() => CoordinatesBuilder.Populate(width, height, wrongBuffer));
+        }
     }
 }
