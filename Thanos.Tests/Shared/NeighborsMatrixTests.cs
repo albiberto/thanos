@@ -9,19 +9,20 @@ public class NeighborsMatrixTests
 {
     private static object[][] Dimensions => Support.Dimensions;
 
+    /// <summary>
+    /// Verifies that NeighborsMatrix correctly reads neighbor indices from the underlying memory buffer
+    /// using both GetAt() method (with move index) and Get() method (with move mask) across different grid dimensions.
+    /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Matrix_ShouldRead_Correctly_FromUnderlyingMemory(byte width, byte height, ushort area)
     {
-        // Arrange
         var buffer = new ushort[area * 4];
         for (var i = 0; i < buffer.Length; i++) buffer[i] = (ushort)i;
 
         byte[] masks = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
-        // Act
         var matrix = new NeighborsMatrix(buffer);
 
-        // Assert
         for (ushort pos = 0; pos < area; pos++)
         for (var moveIndex = 0; moveIndex < 4; moveIndex++)
         {
@@ -36,21 +37,26 @@ public class NeighborsMatrixTests
         }
     }
 
+    /// <summary>
+    /// Verifies that NeighborsMatrix reflects changes made to the underlying memory buffer,
+    /// ensuring the matrix acts as a view over the buffer rather than a copy.
+    /// </summary>
     [Test]
     public void Matrix_ShouldReflect_ChangesInUnderlyingMemory()
     {
-        // Arrange
         var buffer = new ushort[4];
         buffer[0] = 100;
         var matrix = new NeighborsMatrix(buffer);
 
-        // Act
         buffer[0] = 999;
 
-        // Assert
-        That(matrix.GetAt(0, 0), Is.EqualTo(999));
+        using (EnterMultipleScope()) That(matrix.GetAt(0, 0), Is.EqualTo(999), "Matrix should reflect changes in underlying buffer.");
     }
 
+    /// <summary>
+    /// Verifies that NeighborsMatrix.IsValid correctly identifies ushort.MaxValue as invalid
+    /// and all other values as valid neighbor indices.
+    /// </summary>
     [Test]
     public void IsValid_ShouldReturnCorrectBoolean()
     {
