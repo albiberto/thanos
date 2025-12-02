@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos", "Thanos\Thanos.csproj", "{C23A7EB8-1B6A-4B99-8F64-9FF33B0CECFC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.Tests", "Thanos.Tests\Thanos.Tests.csproj", "{D84428FA-559F-44DB-9163-C793F31E1A7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{C23A7EB8-1B6A-4B99-8F64-9FF33B0CECFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C23A7EB8-1B6A-4B99-8F64-9FF33B0CECFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C23A7EB8-1B6A-4B99-8F64-9FF33B0CECFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D84428FA-559F-44DB-9163-C793F31E1A7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D84428FA-559F-44DB-9163-C793F31E1A7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D84428FA-559F-44DB-9163-C793F31E1A7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D84428FA-559F-44DB-9163-C793F31E1A7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
