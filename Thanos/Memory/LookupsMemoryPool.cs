@@ -16,9 +16,9 @@ public sealed unsafe class LookupsMemoryPool : IDisposable
     public CoordinatesMatrix CoordinatesMatrix => new(_coordinatesMemory);
     public NeighborsMatrix NeighborsMatrix => new(_neighborsMemory);
 
-    private LookupsMemoryPool(byte width, byte height, int area)
+    private LookupsMemoryPool(byte width, byte height, ushort area)
     {
-        _layout = new(width, height, area);
+        _layout = new(area);
         _basePointer = (byte*)NativeMemory.AlignedAlloc(_layout.TotalSize, Constants.CacheLine);
 
         NativeMemory.Clear(_basePointer, _layout.TotalSize);
