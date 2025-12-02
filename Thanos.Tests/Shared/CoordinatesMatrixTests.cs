@@ -14,7 +14,7 @@ public class CoordinatesMatrixTests
     {
         // Arrange
         var buffer = new Coordinate[area];
-        for (byte i = 0; i < area; i++) buffer[i] = new Coordinate(i, i);
+        for (ushort i = 0; i < area; i++) buffer[i] = new Coordinate((byte)(i % width), (byte)(i / width));
 
         // Act
         var matrix = new CoordinatesMatrix(buffer);
