@@ -3,16 +3,14 @@
 public static class Constants
 {
     public const int CacheLine = 64;
-
     public const int FirstRootNodeIndex = 1;
 
-    // Aumentiamo i nodi o riduciamo a seconda della RAM disponibile, 
-    // dato che ora ogni nodo pesa il doppio (64 byte vs 32 byte).
-    // Con 2.5M nodi * 64 byte = ~160 MB. È accettabile.
     public const int MaxNodes = 2_000_000;
     public const int CoreCount = 4;
 
-    public const int Medium = 11 * 11;
+    public static (byte Width, byte Height, ushort Area) Small = (7, 7, 49);
+    public static (byte Width, byte Height, ushort Area) Medium = (11, 11, 121);
+    public static (byte Width, byte Height, ushort Area) Large = (19, 19, 361);
 
     public const int MaxSnakesCount = 4; // Fondamentale per il fixed buffer di Node
     public const int EnvironmentPlayerIndex = 255; // ID speciale per il turno "Environment"

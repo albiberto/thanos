@@ -20,14 +20,12 @@ public sealed class EngineCluster : IDisposable
 
     public EngineCluster(uint maxNodes)
     {
-        Console.WriteLine($"[EngineCluster] Initializing {Constants.CoreCount} engines using {LookupsMemoryLayout.Medium} profile...");
-
         _engines = new Engine[Constants.CoreCount];
         _slotPools = new SlotMemoryPool[Constants.CoreCount];
         _nodePools = new NodeMemoryPool[Constants.CoreCount];
         _lastChosenIndices = new int[Constants.CoreCount];
 
-        _sharedLookups = new LookupsMemoryPool(LookupsMemoryLayout.Medium);
+        _sharedLookups = LookupsMemoryPool.Medium;
 
         for (var i = 0; i < Constants.CoreCount; i++)
         {

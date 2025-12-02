@@ -1,4 +1,4 @@
-using Thanos.Common; // Per AlignUp64
+using Thanos.Common;
 using Thanos.SourceGen;
 
 namespace Thanos.Memory;
@@ -6,44 +6,30 @@ namespace Thanos.Memory;
 public readonly unsafe struct LookupsMemoryLayout
 {
     public readonly byte Width;
+    public readonly byte Height;
+    public readonly ushort Area;
 
-    // --- 1. LUNGHEZZE (Element Count) ---
-    public readonly int NeighborsLength;
-    public readonly int ConversionMapLength;
-    public readonly int PositionalScoreLength;
+    public readonly MemoryBlock Coordinates;
+    public readonly MemoryBlock Neighbors;
 
-    // --- 2. OFFSET (Corretti) ---
-    public readonly int NeighborsOffset;
-    public readonly int ConversionMapOffset;
-    public readonly int PositionalScoreOffset;
-
-    // --- 3. DIMENSIONE TOTALE (Corretta) ---
     public readonly nuint TotalSize;
 
-    private LookupsMemoryLayout(ushort area, byte width)
+    public LookupsMemoryLayout(byte width, byte height, int area)
     {
         Width = width;
+        Height = height;
+        Area = (ushort)area;
 
-        // 1. Calcola le LUNGHEZZE (numero di elementi)
-        NeighborsLength = area * 4;
-        ConversionMapLength = area;
-        PositionalScoreLength = area;
+        var coordsByteSize = area * sizeof(Coordinate);
+        Coordinates = new MemoryBlock(0, area);
 
-        // 2. Calcola le DIMENSIONI IN BYTE e allineale
-        var neighborsByteSize = (NeighborsLength * sizeof(ushort)).AlignUp64();
-        var conversionMapByteSize = (ConversionMapLength * sizeof(Coordinate)).AlignUp64();
-        var positionalScoreByteSize = (PositionalScoreLength * sizeof(float)).AlignUp64();
+        var neighborsOffset = coordsByteSize.AlignUp64();
+        var neighborsLength = area * 4;
+        
+        Neighbors = new MemoryBlock(neighborsOffset, neighborsLength);
 
-        // 3. Calcola gli OFFSET basati sulle dimensioni allineate
-        NeighborsOffset = 0;
-        ConversionMapOffset = NeighborsOffset + neighborsByteSize;
-        PositionalScoreOffset = ConversionMapOffset + conversionMapByteSize;
+        var neighborsByteSize = neighborsLength * sizeof(ushort);
 
-        // 4. Calcola la DIMENSIONE TOTALE (Corretta)
-        TotalSize = (nuint)(PositionalScoreOffset + positionalScoreByteSize);
+        TotalSize = (nuint)(neighborsOffset + neighborsByteSize).AlignUp64();
     }
-
-    public static LookupsMemoryLayout Small => new(7 * 7, 7);
-    public static LookupsMemoryLayout Medium => new(11 * 11, 11);
-    public static LookupsMemoryLayout Large => new(19 * 19, 19);
 }

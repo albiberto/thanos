@@ -76,15 +76,14 @@ public readonly struct HeuristicWeights
     };
 }
 
-public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsGrid neighborsGrid, ReadOnlySpan<Coordinate> conversionsMap, ReadOnlySpan<float> positionalScores)
+public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsMatrix neighborsMatrix, CoordinatesMatrix conversionsMatrix)
 {
     private readonly SnakesSystem _system = system;
     private readonly Bitboard _food = food;
     private readonly Bitboard _hazards = hazards;
     private readonly Bitboard _snakes = snakes;
-    private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
-    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
-    private readonly ReadOnlySpan<float> _positionalScores = positionalScores;
+    private readonly NeighborsMatrix _neighborsMatrix = neighborsMatrix;
+    private readonly CoordinatesMatrix _conversionsMatrix = conversionsMatrix;
 
     private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
@@ -110,7 +109,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     [SkipLocalsInit]
     public void EvaluateAll(Span<float> results, bool isPhaseComplete)
     {
-        var area = _positionalScores.Length;
+        var area = Constants.Medium.Area;
 
         Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
         _snakes.Raw.CopyTo(wallsMemoryCopy);
@@ -136,7 +135,6 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
             var score = 0.0f;
 
-            score += EvaluatePositionalScore(head, weights.CenterBonus);
             score += EvaluateHealth(snake.HP, weights.Health);
             score += EvaluateTailDistance(head, snake.Tail, weights.Tail);
             score += EvaluateCollisionsAndTraps(i, head, snake.Length, in baseWalls);
@@ -198,10 +196,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     }
 
     // --- METODI EURISTICI ---
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluatePositionalScore(ushort head, float weight) => _positionalScores[head] * (weight / 15.0f);
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private float EvaluateHealth(int health, float weight) => health * weight;
 
@@ -286,8 +281,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
             foreach (var move in AllMovesArray)
             {
-                var neighborPos = _neighborsGrid.Get(currentPos, move);
-                if (!NeighborsGrid.IsValid(neighborPos) || walls.IsSet(neighborPos)) continue;
+                var neighborPos = _neighborsMatrix.Get(currentPos, move);
+                if (!NeighborsMatrix.IsValid(neighborPos) || walls.IsSet(neighborPos)) continue;
 
                 var neighborOwner = owners[neighborPos];
                 if (neighborOwner == -1)
@@ -342,8 +337,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         var openExits = 0;
         foreach (var move in AllMovesArray)
         {
-            var neighbor = _neighborsGrid.Get(head, move);
-            if (NeighborsGrid.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor))
+            var neighbor = _neighborsMatrix.Get(head, move);
+            if (NeighborsMatrix.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor))
                 openExits++;
         }
 
@@ -359,10 +354,10 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
             if (enemy.IsDead || enemy.Length < myLength) continue;
             var enemyHead = enemy.Head;
 
-            if (_neighborsGrid.Get(head, Moves.Up) == enemyHead ||
-                _neighborsGrid.Get(head, Moves.Down) == enemyHead ||
-                _neighborsGrid.Get(head, Moves.Left) == enemyHead ||
-                _neighborsGrid.Get(head, Moves.Right) == enemyHead)
+            if (_neighborsMatrix.Get(head, Moves.Up) == enemyHead ||
+                _neighborsMatrix.Get(head, Moves.Down) == enemyHead ||
+                _neighborsMatrix.Get(head, Moves.Left) == enemyHead ||
+                _neighborsMatrix.Get(head, Moves.Right) == enemyHead)
                 return float.NegativeInfinity;
         }
 
@@ -372,8 +367,8 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ManhattanDistance(ushort pos1, ushort pos2)
     {
-        ref readonly var coord1 = ref _conversionsMap[pos1];
-        ref readonly var coord2 = ref _conversionsMap[pos2];
+        var coord1 = _conversionsMatrix[pos1];
+        var coord2 = _conversionsMatrix[pos2];
         return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
     }
 }

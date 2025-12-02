@@ -12,16 +12,16 @@ public readonly ref struct Arena(
     Bitboard hazards,
     Bitboard snakes,
     Dictionary<string, int> map,
-    NeighborsGrid neighborsGrid,
-    ReadOnlySpan<Coordinate> conversionsMap)
+    NeighborsMatrix neighborsMatrix,
+    CoordinatesMatrix conversionsMatrix)
 {
     public readonly SnakesSystem System = system;
     public readonly Bitboard Food = food;
     public readonly Bitboard Hazards = hazards;
     public readonly Bitboard Snakes = snakes;
 
-    private readonly NeighborsGrid _neighborsGrid = neighborsGrid;
-    private readonly ReadOnlySpan<Coordinate> _conversionsMap = conversionsMap;
+    private readonly NeighborsMatrix _neighborsMatrix = neighborsMatrix;
+    private readonly CoordinatesMatrix _conversionsMatrix = conversionsMatrix;
 
     public void InitializeFromRequest(in Request request)
     {
@@ -59,23 +59,23 @@ public readonly ref struct Arena(
         byte legalMoves = 0;
 
         // UP
-        var upPos = _neighborsGrid.Get(headPosition, Moves.Up);
-        if (NeighborsGrid.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+        var upPos = _neighborsMatrix.Get(headPosition, Moves.Up);
+        if (NeighborsMatrix.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Up;
 
         // DOWN
-        var downPos = _neighborsGrid.Get(headPosition, Moves.Down);
-        if (NeighborsGrid.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+        var downPos = _neighborsMatrix.Get(headPosition, Moves.Down);
+        if (NeighborsMatrix.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Down;
 
         // LEFT
-        var leftPos = _neighborsGrid.Get(headPosition, Moves.Left);
-        if (NeighborsGrid.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+        var leftPos = _neighborsMatrix.Get(headPosition, Moves.Left);
+        if (NeighborsMatrix.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Left;
 
         // RIGHT
-        var rightPos = _neighborsGrid.Get(headPosition, Moves.Right);
-        if (NeighborsGrid.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
+        var rightPos = _neighborsMatrix.Get(headPosition, Moves.Right);
+        if (NeighborsMatrix.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
             legalMoves |= Moves.Right;
 
         return legalMoves;
@@ -121,7 +121,7 @@ public readonly ref struct Arena(
         return true;
     }
 
-    public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsGrid.Get(head, move);
+    public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsMatrix.Get(head, move);
 
     public void SimulateRandomFoodSpawn(int foodSpawnChance, int minimumFood, int area)
     {
@@ -130,13 +130,13 @@ public readonly ref struct Arena(
         for (var i = 0; i < foodToSpawn; i++)
         {
             var spawnLocation = GetRandomEmptySquare(area);
-            if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
+            if (NeighborsMatrix.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
 
         if (Random.Shared.Next(0, 100) < foodSpawnChance)
         {
             var spawnLocation = GetRandomEmptySquare(area);
-            if (NeighborsGrid.IsValid(spawnLocation)) Food.Set(spawnLocation);
+            if (NeighborsMatrix.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
     }
 
@@ -150,12 +150,5 @@ public readonly ref struct Arena(
         }
 
         return ushort.MaxValue;
-    }
-
-    public int ManhattanDistance(ushort pos1, ushort pos2)
-    {
-        ref readonly var coord1 = ref _conversionsMap[pos1];
-        ref readonly var coord2 = ref _conversionsMap[pos2];
-        return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
     }
 }

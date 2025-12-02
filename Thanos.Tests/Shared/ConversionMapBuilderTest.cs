@@ -1,7 +1,7 @@
 using Thanos.Shared;
 using Thanos.SourceGen;
 
-namespace Thanos.Tests;
+namespace Thanos.Tests.Shared;
 
 [TestFixture]
 public class ConversionMapBuilderTests
@@ -17,7 +17,7 @@ public class ConversionMapBuilderTests
         var coordinates = new Coordinate[area];
 
         // Act
-        ConversionMapBuilder.Build(width, coordinates);
+        ConversionMapBuilder.PlacementNew(width, coordinates);
 
         // Assert
         for (var i = 0; i < area; i++)

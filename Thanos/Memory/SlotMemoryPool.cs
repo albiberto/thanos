@@ -22,8 +22,6 @@ public sealed unsafe class SlotMemoryPool : IDisposable
 
         var memorySize = (nuint)_slotSize * maxSlots;
         _basePointer = NativeMemory.AlignedAlloc(memorySize, 64);
-
-        // Console.WriteLine($"[SlotMemoryPool] Allocated {(double)memorySize / (1024 * 1024 * 1024):F3} GB for {_slotSize}-byte nodes, max nodes: {maxSlots}");
     }
 
     public Arena GetArena(int index)
@@ -38,8 +36,8 @@ public sealed unsafe class SlotMemoryPool : IDisposable
             hazards,
             snakes,
             _map ?? [],
-            _lookupsMemoryPool.NeighborsGrid,
-            _lookupsMemoryPool.ConversionsMap);
+            _lookupsMemoryPool.NeighborsMatrix,
+            _lookupsMemoryPool.CoordinatesMatrix);
     }
 
     public Heuristics GetHeuristics(int index)
@@ -53,9 +51,8 @@ public sealed unsafe class SlotMemoryPool : IDisposable
             food,
             hazards,
             snakes,
-            _lookupsMemoryPool.NeighborsGrid,
-            _lookupsMemoryPool.ConversionsMap,
-            _lookupsMemoryPool.PositionalScores);
+            _lookupsMemoryPool.NeighborsMatrix,
+            _lookupsMemoryPool.CoordinatesMatrix);
     }
 
     public void Set(Dictionary<string, int> map) => _map = map;

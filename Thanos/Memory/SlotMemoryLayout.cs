@@ -25,7 +25,7 @@ public struct SlotMemoryLayout
 
     public readonly ushort Capacity;
 
-    public static SlotMemoryLayout Medium { get; } = new(Constants.Medium, 128, Constants.MaxSnakesCount
+    public static SlotMemoryLayout Medium { get; } = new(Constants.Medium.Area, 128, Constants.MaxSnakesCount
     );
 
     private SlotMemoryLayout(int area, ushort capacity, int snakeCount)
