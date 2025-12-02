@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Thanos\Thanos.csproj" />
+        <ProjectReference Include="..\Thanos\Thanos.csproj"/>
     </ItemGroup>
 
 </Project>

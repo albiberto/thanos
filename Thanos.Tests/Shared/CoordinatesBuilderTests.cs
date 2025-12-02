@@ -8,7 +8,7 @@ namespace Thanos.Tests.Shared;
 public class CoordinatesBuilderTests
 {
     private static object[][] Dimensions => Support.Dimensions;
-    
+
     [TestCaseSource(nameof(Dimensions))]
     public void Populate_ShouldFillCoordinates_WithCorrectRowMajorLogic(byte width, byte height, ushort area)
     {
