@@ -10,8 +10,8 @@ public class CoordinatesBuilderTests
     private static object[][] Dimensions => Support.Dimensions;
 
     /// <summary>
-    /// Verifies that CoordinatesBuilder.Populate fills a coordinate buffer using correct row-major order logic,
-    /// where each coordinate maps to (x = index % width, y = index / width) for various grid dimensions.
+    ///     Verifies that CoordinatesBuilder.Populate fills a coordinate buffer using correct row-major order logic,
+    ///     where each coordinate maps to (x = index % width, y = index / width) for various grid dimensions.
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Populate_ShouldFillCoordinates_WithCorrectRowMajorLogic(byte width, byte height, ushort area)
@@ -34,8 +34,8 @@ public class CoordinatesBuilderTests
     }
 
     /// <summary>
-    /// Verifies that CoordinatesBuilder.Populate throws an ArgumentException when the buffer size
-    /// does not match the expected dimensions (width * height).
+    ///     Verifies that CoordinatesBuilder.Populate throws an ArgumentException when the buffer size
+    ///     does not match the expected dimensions (width * height).
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Populate_ShouldThrow_WhenBufferSizeDoesNotMatchDimensions(byte width, byte height, ushort area)

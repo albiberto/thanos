@@ -10,8 +10,8 @@ public class NeighborsMatrixTests
     private static object[][] Dimensions => Support.Dimensions;
 
     /// <summary>
-    /// Verifies that NeighborsMatrix correctly reads neighbor indices from the underlying memory buffer
-    /// using both GetAt() method (with move index) and Get() method (with move mask) across different grid dimensions.
+    ///     Verifies that NeighborsMatrix correctly reads neighbor indices from the underlying memory buffer
+    ///     using both GetAt() method (with move index) and Get() method (with move mask) across different grid dimensions.
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Matrix_ShouldRead_Correctly_FromUnderlyingMemory(byte width, byte height, ushort area)
@@ -38,8 +38,8 @@ public class NeighborsMatrixTests
     }
 
     /// <summary>
-    /// Verifies that NeighborsMatrix reflects changes made to the underlying memory buffer,
-    /// ensuring the matrix acts as a view over the buffer rather than a copy.
+    ///     Verifies that NeighborsMatrix reflects changes made to the underlying memory buffer,
+    ///     ensuring the matrix acts as a view over the buffer rather than a copy.
     /// </summary>
     [Test]
     public void Matrix_ShouldReflect_ChangesInUnderlyingMemory()
@@ -57,8 +57,8 @@ public class NeighborsMatrixTests
     }
 
     /// <summary>
-    /// Verifies that NeighborsMatrix.IsValid correctly identifies ushort.MaxValue as invalid
-    /// and all other values as valid neighbor indices.
+    ///     Verifies that NeighborsMatrix.IsValid correctly identifies ushort.MaxValue as invalid
+    ///     and all other values as valid neighbor indices.
     /// </summary>
     [Test]
     public void IsValid_ShouldReturnCorrectBoolean()

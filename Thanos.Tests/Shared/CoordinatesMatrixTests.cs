@@ -10,8 +10,8 @@ public class CoordinatesMatrixTests
     private static object[][] Dimensions => Support.Dimensions;
 
     /// <summary>
-    /// Verifies that CoordinatesMatrix correctly reads coordinate values from the underlying memory buffer
-    /// using both Get() method and indexer syntax across different grid dimensions.
+    ///     Verifies that CoordinatesMatrix correctly reads coordinate values from the underlying memory buffer
+    ///     using both Get() method and indexer syntax across different grid dimensions.
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Matrix_ShouldRead_Correctly_FromUnderlyingMemory(byte width, byte height, ushort area)
@@ -34,8 +34,8 @@ public class CoordinatesMatrixTests
     }
 
     /// <summary>
-    /// Verifies that CoordinatesMatrix reflects changes made to the underlying memory buffer,
-    /// ensuring the matrix acts as a view over the buffer rather than a copy.
+    ///     Verifies that CoordinatesMatrix reflects changes made to the underlying memory buffer,
+    ///     ensuring the matrix acts as a view over the buffer rather than a copy.
     /// </summary>
     [Test]
     public void Matrix_ShouldReflect_ChangesInUnderlyingMemory()

@@ -10,9 +10,9 @@ public class NeighborsBuilderTests
     private static object[][] Dimensions => Support.Dimensions;
 
     /// <summary>
-    /// Verifies that NeighborsBuilder.Populate correctly fills the neighbors matrix with proper indices
-    /// for each direction (Up, Down, Left, Right), respecting grid boundaries by using ushort.MaxValue
-    /// for out-of-bounds neighbors across various grid dimensions.
+    ///     Verifies that NeighborsBuilder.Populate correctly fills the neighbors matrix with proper indices
+    ///     for each direction (Up, Down, Left, Right), respecting grid boundaries by using ushort.MaxValue
+    ///     for out-of-bounds neighbors across various grid dimensions.
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Populate_ShouldAlignMemory_With_CartesianCoordinates(byte width, byte height, ushort area)
@@ -59,8 +59,8 @@ public class NeighborsBuilderTests
     }
 
     /// <summary>
-    /// Verifies that NeighborsBuilder.Populate throws an ArgumentException when the buffer size
-    /// does not match the expected dimensions (width * height * 4).
+    ///     Verifies that NeighborsBuilder.Populate throws an ArgumentException when the buffer size
+    ///     does not match the expected dimensions (width * height * 4).
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Populate_ShouldThrow_WhenBufferSizeDoesNotMatchDimensions(byte width, byte height, ushort area)

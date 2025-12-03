@@ -1,5 +1,5 @@
-using Thanos.Memory;
 using Thanos.Common;
+using Thanos.Memory;
 using Thanos.Shared;
 using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
@@ -12,8 +12,8 @@ public class LookupsMemoryPoolTests
     private static object[][] Dimensions => Support.Dimensions;
 
     /// <summary>
-    /// Verifies that LookupsMemoryPool initializes correctly and contains accurate coordinate and neighbor data
-    /// for standard grid dimensions, validating both CoordinatesMatrix and NeighborsMatrix contents.
+    ///     Verifies that LookupsMemoryPool initializes correctly and contains accurate coordinate and neighbor data
+    ///     for standard grid dimensions, validating both CoordinatesMatrix and NeighborsMatrix contents.
     /// </summary>
     [TestCaseSource(nameof(Dimensions))]
     public void Pool_ShouldInitialize_AndContainCorrectData(byte width, byte height, ushort area)
@@ -34,8 +34,8 @@ public class LookupsMemoryPoolTests
     }
 
     /// <summary>
-    /// Verifies that LookupsMemoryPool factory methods return new distinct instances for each invocation,
-    /// while containing equivalent data.
+    ///     Verifies that LookupsMemoryPool factory methods return new distinct instances for each invocation,
+    ///     while containing equivalent data.
     /// </summary>
     [Test]
     public void Factories_ShouldReturnNewInstances()
@@ -49,16 +49,16 @@ public class LookupsMemoryPoolTests
             That(pool1.CoordinatesMatrix[0], Is.EqualTo(pool2.CoordinatesMatrix[0]), "Data should be equivalent");
         }
     }
-    
+
     /// <summary>
-    /// Verifies that LookupsMemoryPool.Dispose executes successfully without throwing exceptions,
-    /// ensuring proper resource cleanup.
+    ///     Verifies that LookupsMemoryPool.Dispose executes successfully without throwing exceptions,
+    ///     ensuring proper resource cleanup.
     /// </summary>
     [Test]
     public void Dispose_ShouldRunWithoutExceptions()
     {
         var pool = LookupsMemoryPool.Small;
-        
+
         using (EnterMultipleScope())
         {
             DoesNotThrow(() => pool.Dispose(), "Dispose should not throw exceptions");
