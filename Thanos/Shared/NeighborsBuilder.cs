@@ -4,7 +4,8 @@ public static class NeighborsBuilder
 {
     public static void Populate(int width, int height, Span<ushort> memory)
     {
-        if (memory.Length != width * height * 4) throw new ArgumentException("Buffer size mismatch for Neighbors.");
+        var expectedLength = width * height * 4;
+        if (memory.Length != expectedLength) throw new ArgumentException($"Buffer size mismatch: expected {expectedLength}, got {memory.Length}");
 
         for (var y = 0; y < height; y++)
         {

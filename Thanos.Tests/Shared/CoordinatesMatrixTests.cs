@@ -46,9 +46,6 @@ public class CoordinatesMatrixTests
 
         buffer[0] = new Coordinate(99, 99);
 
-        using (EnterMultipleScope())
-        {
-            That(matrix[0], Is.EqualTo(new Coordinate(99, 99)), "Matrix should reflect changes in underlying buffer.");
-        }
+        That(matrix[0], Is.EqualTo(new Coordinate(99, 99)), "Matrix should reflect changes in underlying buffer.");
     }
 }

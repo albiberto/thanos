@@ -59,10 +59,7 @@ public class LookupsMemoryPoolTests
     {
         var pool = LookupsMemoryPool.Small;
 
-        using (EnterMultipleScope())
-        {
-            DoesNotThrow(() => pool.Dispose(), "Dispose should not throw exceptions");
-        }
+        DoesNotThrow(() => pool.Dispose(), "Dispose should not throw exceptions");
     }
 
     private static LookupsMemoryPool GetPoolByWidth(ushort area) =>

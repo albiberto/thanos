@@ -68,9 +68,6 @@ public class NeighborsBuilderTests
         var expectedLength = area * 4;
         var wrongBuffer = new ushort[expectedLength - 1];
 
-        using (EnterMultipleScope())
-        {
-            Throws<ArgumentException>(() => NeighborsBuilder.Populate(width, height, wrongBuffer));
-        }
+        Throws<ArgumentException>(() => NeighborsBuilder.Populate(width, height, wrongBuffer));
     }
 }
