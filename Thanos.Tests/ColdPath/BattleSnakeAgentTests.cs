@@ -1,6 +1,7 @@
 using Moq;
 using Thanos.Abstract;
 using Thanos.SourceGen;
+using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.ColdPath;
 
@@ -9,62 +10,69 @@ public class BattleSnakeAgentTests
 {
     private MockRepository _repository;
     private Mock<IBattleSnakeCluster> _mockCluster;
+    
     private BattleSnakeAgent _agent;
-
-    private const string SampleJson = """
-    {
-      "game": { "id": "game-id", "ruleset": { "name": "standard", "settings": {} }, "map": "standard" },
-      "turn": 1,
-      "board": {
-        "height": 11, "width": 11,
-        "food": [{"x": 5, "y": 5}],
-        "hazards": [],
-        "snakes": [
-          { "id": "hero-id", "health": 100, "body": [{"x": 0, "y": 0}], "head": {"x":0,"y":0}, "length": 1 },
-          { "id": "enemy-id", "health": 100, "body": [{"x": 1, "y": 1}], "head": {"x":1,"y":1}, "length": 1 }
-        ]
-      },
-      "you": { "id": "hero-id", "health": 100, "body": [{"x": 0, "y": 0}] }
-    }
-    """;
 
     [SetUp]
     public void Setup()
     {
         _repository = new MockRepository(MockBehavior.Strict);
         _mockCluster = _repository.Create<IBattleSnakeCluster>();
+        _mockCluster.Setup(c => c.Dispose());
+
         _agent = new BattleSnakeAgent(_mockCluster.Object);
     }
 
     [TearDown]
     public void TearDown()
     {
-        _agent.Dispose();
-        _repository.VerifyAll();
+        _agent.Dispose(); 
+        _repository.VerifyAll(); 
     }
 
     [Test]
-    public void Start_Should_ParseJson_And_PopulateBufferCorrectly()
+    public void Start_Should_Map_RealJsonRequest_Correctly_To_Cluster()
     {
         // Arrange
-        var request = BattleSnakeSerializer.Parse(SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
 
-        const string myId = "hero-id";
-        const string enemyId = "enemy-id";
-
-        // Exceptations
+        // Expectations
         _mockCluster
             .Setup(c => c.InitializeGame(
                 It.Is<string[]>(buffer => 
-                    buffer[0] == myId && 
-                    buffer[1] == enemyId
+                    buffer[0] == Support.Me && 
+                    buffer[1] == Support.Enemy1 && 
+                    buffer[2] == Support.Enemy2 &&
+                    buffer[3] == Support.Enemy3
                 ),
-                2))
+                4))
             .Verifiable();
 
-        _mockCluster.Setup(c => c.Reset()).Verifiable();
+        _mockCluster
+            .Setup(c => c.Reset())
+            .Verifiable();
 
-        // ACT
+        // Act
         _agent.Start(request);
+    }
+
+    [Test]
+    public async Task Move_Should_DelegateToCluster_And_Return_ComputedByte()
+    {
+        // Arrange
+        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        const byte expectedMove = 2;
+
+        // Expectations
+        _mockCluster
+            .Setup(c => c.ComputeMoveAsync(request))
+            .ReturnsAsync(expectedMove)
+            .Verifiable();
+
+        // Act
+        var result = await _agent.Move(request);
+
+        // Assert
+        That(result, Is.EqualTo(expectedMove));
     }
 }

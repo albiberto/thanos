@@ -9,9 +9,8 @@ public class BattleSnakeSerializerTests
     [Test]
     public void Parse_Should_CorrectlyDeserialize_FullGameRequest_WithThreePartSnakes()
     {
-        var json = File.ReadAllText("Requests/SampleRequest.json");
 
-        var request = BattleSnakeSerializer.Parse(json);
+        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
 
         // --- GLOBAL CHECKS ---
         using (EnterMultipleScope())
@@ -25,7 +24,7 @@ public class BattleSnakeSerializerTests
         var hero = request.Board.Snakes[0];
         using (EnterMultipleScope())
         {
-            That(hero.Id, Is.EqualTo("snake-hero"));
+            That(hero.Id, Is.EqualTo(Support.Me));
             
             That(hero.Body, Has.Length.EqualTo(3));
 
@@ -38,7 +37,7 @@ public class BattleSnakeSerializerTests
         var enemy1 = request.Board.Snakes[1];
         using (EnterMultipleScope())
         {
-            That(enemy1.Id, Is.EqualTo("snake-enemy"));
+            That(enemy1.Id, Is.EqualTo(Support.Enemy1));
             
             That(enemy1.Body, Has.Length.EqualTo(3));
             
@@ -51,7 +50,7 @@ public class BattleSnakeSerializerTests
         var enemy2 = request.Board.Snakes[2];
         using (EnterMultipleScope())
         {
-            That(enemy2.Id, Is.EqualTo("snake-enemy-2"));
+            That(enemy2.Id, Is.EqualTo(Support.Enemy2));
             
             That(enemy2.Body, Has.Length.EqualTo(3));
 
@@ -64,7 +63,7 @@ public class BattleSnakeSerializerTests
         var enemy3 = request.Board.Snakes[3];
         using (EnterMultipleScope())
         {
-            That(enemy3.Id, Is.EqualTo("snake-enemy-3"));
+            That(enemy3.Id, Is.EqualTo(Support.Enemy3));
 
             That(enemy3.Body, Has.Length.EqualTo(3));
             
