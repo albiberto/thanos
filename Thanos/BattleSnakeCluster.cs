@@ -1,41 +1,37 @@
-using System.Diagnostics;
+using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.Extensions;
+using Thanos.MCST;
 using Thanos.Memory;
 using Thanos.SourceGen;
 
-namespace Thanos.MCST;
+namespace Thanos;
 
-public sealed class EngineCluster : IDisposable
+public sealed class BattleSnakeCluster : IBattleSnakeCluster, IDisposable
 {
     private readonly Engine[] _engines;
     private readonly SlotMemoryPool[] _slotPools;
     private readonly NodeMemoryPool[] _nodePools;
-
     private readonly LookupsMemoryPool _sharedLookups;
 
-    private readonly int[] _lastChosenIndices;
-
     private readonly ThreadLocal<List<RootMoveStat>> _threadLocalStatsBuffer = new(() => new List<RootMoveStat>(16));
-
-    public EngineCluster(uint maxNodes)
+    
+    private readonly int[] _lastChosenIndices;
+    
+    public BattleSnakeCluster(Engine[] engines, SlotMemoryPool[] slotPools, NodeMemoryPool[] nodePools, LookupsMemoryPool sharedLookups)
     {
-        _engines = new Engine[Constants.CoreCount];
-        _slotPools = new SlotMemoryPool[Constants.CoreCount];
-        _nodePools = new NodeMemoryPool[Constants.CoreCount];
-        _lastChosenIndices = new int[Constants.CoreCount];
+        if (engines.Length != slotPools.Length || engines.Length != nodePools.Length) throw new ArgumentException("Cluster components length mismatch.");
 
-        _sharedLookups = LookupsMemoryPool.Medium;
+        _engines = engines;
+        _slotPools = slotPools;
+        _nodePools = nodePools;
+        _sharedLookups = sharedLookups;
 
-        for (var i = 0; i < Constants.CoreCount; i++)
-        {
-            _nodePools[i] = new NodeMemoryPool(maxNodes, NodeMemoryLayout.Default);
-            _slotPools[i] = new SlotMemoryPool(maxNodes, _sharedLookups, SlotMemoryLayout.Medium);
-            _engines[i] = new Engine(_slotPools[i], _nodePools[i]);
-
-            _lastChosenIndices[i] = Constants.FirstRootNodeIndex;
-        }
+        _lastChosenIndices = new int[_engines.Length];
+        Array.Fill(_lastChosenIndices, Constants.FirstRootNodeIndex);
     }
+
+    public void InitializeGame(string[] sortedSnakeIds, int count) { }
 
     public async Task<byte> ComputeMoveAsync(Request request)
     {
@@ -45,16 +41,12 @@ public sealed class EngineCluster : IDisposable
         for (var i = 0; i < _engines.Length; i++)
         {
             var index = i;
-            tasks[i] = Task.Run(() =>
-            {
-                var bestLocalIndex = _engines[index].FindBestMove(in request, _lastChosenIndices[index], targetHash);
-                _lastChosenIndices[index] = bestLocalIndex;
-            });
+            tasks[i] = Task.Run(() => _lastChosenIndices[index] = _engines[index].FindBestMove(in request, _lastChosenIndices[index], targetHash));
         }
 
         await Task.WhenAll(tasks);
 
-        var totalVisits = new long[16];
+        var totalVisits = new long[5];
 
         foreach (var engine in _engines)
         {
@@ -66,11 +58,12 @@ public sealed class EngineCluster : IDisposable
 
         var bestMove = Moves.Up;
         long maxVisits = -1;
-        byte[] movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+        ReadOnlySpan<byte> movesToCheck = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
 
         foreach (var move in movesToCheck)
         {
             if (totalVisits[move] <= maxVisits) continue;
+            
             maxVisits = totalVisits[move];
             bestMove = move;
         }
@@ -89,16 +82,11 @@ public sealed class EngineCluster : IDisposable
         }
     }
 
-    public void SetMap(Dictionary<string, int> map)
-    {
-        foreach (var pool in _slotPools) pool.Set(map);
-    }
-
     public void Dispose()
     {
         foreach (var pool in _slotPools) pool.Dispose();
         foreach (var pool in _nodePools) pool.Dispose();
-
+        
         _sharedLookups.Dispose();
         _threadLocalStatsBuffer.Dispose();
     }

@@ -1,11 +1,6 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Thanos.SourceGen;
-
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip)]
-[JsonSerializable(typeof(Request))]
-public partial class ThanosSerializerContext : JsonSerializerContext;
 
 [method: JsonConstructor]
 public readonly struct Request(Game game, int turn, Board board, You you)

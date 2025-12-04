@@ -2,31 +2,12 @@ using Thanos;
 
 var builder = WebApplication.CreateBuilder(args);
 
-#if DEBUG
-OverrideConsoleStandardOutput();
-#endif
+Bootstrapper.OverrideConsoleStandardOutput();
 
 var app = builder.Build();
 
-var agent = new BattleSnakeAgent();
+var agent = Bootstrapper.BuildColdPath(Constants.Cores, Constants.Nodes);
 app.Lifetime.ApplicationStopping.Register(() => agent.Dispose());
-
-app
-    .MapGetInfo()
-    .MapStart(agent)
-    .MapMove(agent)
-    .MapEnd(agent);
+app.MapGetInfo().MapStart(agent).MapMove(agent).MapEnd(agent);
 
 await app.RunAsync();
-return;
-
-void OverrideConsoleStandardOutput()
-{
-    var logFileStream = new FileStream("log.log", FileMode.Create, FileAccess.ReadWrite);
-    var logStreamWriter = new StreamWriter(logFileStream);
-
-    logStreamWriter.AutoFlush = true;
-
-    Console.SetOut(logStreamWriter);
-    Console.SetError(logStreamWriter);
-}

@@ -5,8 +5,8 @@ public static class Constants
     public const int CacheLine = 64;
     public const int FirstRootNodeIndex = 1;
 
-    public const int MaxNodes = 2_000_000;
-    public const int CoreCount = 4;
+    public const uint Nodes = 2_000_000;
+    public const byte Cores = 4;
 
     public static (byte Width, byte Height, ushort Area) Small = (7, 7, 49);
     public static (byte Width, byte Height, ushort Area) Medium = (11, 11, 121);

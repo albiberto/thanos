@@ -1,0 +1,62 @@
+{
+  "game": {
+    "id": "game-001",
+    "ruleset": {
+      "name": "standard",
+      "version": "v1.1.15",
+      "settings": { "foodSpawnChance": 15, "minimumFood": 1, "hazardDamagePerTurn": 14 }
+    },
+    "map": "standard",
+    "source": "league",
+    "timeout": 500
+  },
+  "turn": 42,
+  "board": {
+    "height": 11,
+    "width": 11,
+    "food": [
+      { "x": 5, "y": 5 },
+      { "x": 0, "y": 0 }
+    ],
+    "hazards": [
+      { "x": 10, "y": 10 }
+    ],
+    "snakes": [
+      {
+        "id": "snake-hero",
+        "name": "My Snake",
+        "health": 90,
+        "body": [ { "x": 1, "y": 0 }, { "x": 0, "y": 0 }, { "x": 0, "y": 1 } ],
+        "head": { "x": 1, "y": 0 }, "length": 3, "latency": "100", "shout": ""
+      },
+      {
+        "id": "snake-enemy",
+        "name": "Enemy 1",
+        "health": 80,
+        "body": [ { "x": 5, "y": 5 }, { "x": 5, "y": 6 }, { "x": 6, "y": 6 } ],
+        "head": { "x": 5, "y": 5 }, "length": 3, "latency": "100", "shout": ""
+      },
+      {
+        "id": "snake-enemy-2",
+        "name": "Enemy 2 (Top Right)",
+        "health": 100,
+        "body": [ { "x": 10, "y": 0 }, { "x": 9, "y": 0 }, { "x": 8, "y": 0 } ],
+        "head": { "x": 10, "y": 0 }, "length": 3, "latency": "100", "shout": ""
+      },
+      {
+        "id": "snake-enemy-3",
+        "name": "Enemy 3 (Bottom Right)",
+        "health": 50,
+        "body": [ { "x": 10, "y": 10 }, { "x": 10, "y": 9 }, { "x": 9, "y": 9 } ],
+        "head": { "x": 10, "y": 10 }, "length": 3, "latency": "100", "shout": ""
+      }
+    ]
+  },
+  "you": {
+    "id": "snake-hero",
+    "name": "My Snake",
+    "health": 90,
+    "body": [ { "x": 1, "y": 0 }, { "x": 0, "y": 0 }, { "x": 0, "y": 1 } ],
+    "head": { "x": 1, "y": 0 }, "length": 3, "latency": "100", "shout": ""
+  }
+}

@@ -1,28 +1,33 @@
-﻿using Thanos.MCST;
+﻿using Thanos.Abstract;
 using Thanos.SourceGen;
 
 namespace Thanos;
 
-public sealed class BattleSnakeAgent(uint maxNodes = Constants.MaxNodes) : IDisposable
+public sealed class BattleSnakeAgent(IBattleSnakeCluster cluster) : IBattleSnakeAgent, IDisposable
 {
-    private readonly EngineCluster _cluster = new(maxNodes);
+    private readonly IBattleSnakeCluster _cluster = cluster ?? throw new ArgumentNullException(nameof(cluster));
+    private readonly string[] _idBuffer = new string[Constants.MaxSnakesCount];
 
     public void Start(in Request request)
     {
         var myId = request.You.Id;
 
-        var map = new Dictionary<string, int>
-        {
-            [myId] = 0
-        };
+        // 1. Hero always at index 0
+        _idBuffer[0] = myId;
 
-        foreach (var snake in request.Board.Snakes.Where(s => s.Id != myId)) map[snake.Id] = map.Count;
+        // 2. Select enemies
+        var enemies = request.Board.Snakes
+            .Where(s => !string.Equals(s.Id, myId, StringComparison.Ordinal))
+            .Select(s => s.Id)
+            .ToArray();
 
-#if DEBUG
-        Console.WriteLine($"[BattleSnakeAgent.Start] Assigned IDs: {string.Join(", ", map.Select(kv => $"{kv.Key}:{kv.Value}"))}");
-#endif
+        // 3. Copy enemies into the main buffer starting from index 1
+        if (enemies.Length > 0) Array.Copy(enemies, 0, _idBuffer, 1, enemies.Length);
 
-        _cluster.SetMap(map);
+        // 4. Calculate the total count (1 Hero + N Enemies)
+        var totalCount = 1 + enemies.Length;
+
+        _cluster.InitializeGame(_idBuffer, totalCount);
         _cluster.Reset();
     }
 
@@ -30,7 +35,6 @@ public sealed class BattleSnakeAgent(uint maxNodes = Constants.MaxNodes) : IDisp
 
     public void End(in Request _)
     {
-        // Opzionale: logiche di fine partita
     }
 
     public void Dispose() => _cluster.Dispose();

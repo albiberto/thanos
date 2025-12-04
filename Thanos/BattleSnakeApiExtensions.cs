@@ -1,6 +1,4 @@
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using Microsoft.IO;
+using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.SourceGen;
 
@@ -8,8 +6,6 @@ namespace Thanos;
 
 public static class BattleSnakeApiExtensions
 {
-    private static readonly RecyclableMemoryStreamManager StreamManager = new();
-
     extension(WebApplication app)
     {
         public WebApplication MapGetInfo()
@@ -26,110 +22,63 @@ public static class BattleSnakeApiExtensions
             return app;
         }
 
-        public WebApplication MapStart(BattleSnakeAgent agent)
+        public WebApplication MapStart(IBattleSnakeAgent agent)
         {
             app.MapPost("/start", async context =>
             {
-                var request = await context.ReadRequestAsync();
+                var request = await BattleSnakeSerializer.ReadRequestAsync(context);
                 agent.Start(request);
             });
 
             return app;
         }
 
-        public WebApplication MapMove(BattleSnakeAgent agent)
+        public WebApplication MapMove(IBattleSnakeAgent agent)
         {
             app.MapPost("/move", async context =>
             {
-                var request = await context.ReadRequestAsync();
-                var result = await agent.Move(request);
+                var request = await BattleSnakeSerializer.ReadRequestAsync(context);
+                
+                var move = await agent.Move(request);
 
                 context.Response.ContentType = "application/json";
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    move = result switch
-                    {
-                        Moves.Up => "up",
-                        Moves.Down => "down",
-                        Moves.Left => "left",
-                        Moves.Right => "right",
-                        _ => "up"
-                    }
-                });
+                await context.Response.Body.WriteAsync(MoveResponseCache.Get(move));
             });
 
             return app;
         }
 
-        public WebApplication MapEnd(BattleSnakeAgent agent)
+        public WebApplication MapEnd(IBattleSnakeAgent agent)
         {
             app.MapPost("/end", async context =>
             {
-                var request = await context.ReadRequestAsync();
+                var request = await BattleSnakeSerializer.ReadRequestAsync(context);
                 agent.End(request);
             });
 
             return app;
         }
     }
+}
 
-#if DEBUG
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static async Task<Request> ReadRequestAsync(this HttpContext httpContext)
+public static class MoveResponseCache
+{
+    private static readonly byte[][] _responses = new byte[9][];
+
+    static MoveResponseCache()
     {
-        await using var stream = StreamManager.GetStream();
-        await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
-        stream.Position = 0;
+        var upBytes    = """{"move":"up"}"""u8.ToArray();
+        var downBytes  = """{"move":"down"}"""u8.ToArray();
+        var leftBytes  = """{"move":"left"}"""u8.ToArray();
+        var rightBytes = """{"move":"right"}"""u8.ToArray();
 
-        using (var reader = new StreamReader(stream, leaveOpen: true))
-        {
-            var json = await reader.ReadToEndAsync();
-            Console.WriteLine("--- BEGIN OF RAW JSON ---");
-            Console.WriteLine(json);
-            Console.WriteLine("--- END OF RAW JSON ---");
-        }
+        Array.Fill(_responses, upBytes);
 
-        stream.Position = 0;
-
-        int width;
-        using (var document = await JsonDocument.ParseAsync(stream, cancellationToken: httpContext.RequestAborted))
-        {
-            width = document.RootElement.GetProperty("board").GetProperty("width").GetInt32();
-        }
-
-        stream.Position = 0;
-
-        var arrayConverter = new CoordinateArrayToUshortArrayConverter(width);
-        var singleConverter = new CoordinateToUshortConverter(width);
-        var options = new JsonSerializerOptions { Converters = { arrayConverter, singleConverter } };
-        var serializerContext = new ThanosSerializerContext(options);
-
-        var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
-        return request!;
+        _responses[Moves.Up]    = upBytes;
+        _responses[Moves.Down]  = downBytes;
+        _responses[Moves.Left]  = leftBytes;
+        _responses[Moves.Right] = rightBytes;
     }
-#else
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static async Task<Request> ReadRequestAsync(this HttpContext httpContext)
-    {
-        await using var stream = StreamManager.GetStream();
-        await httpContext.Request.Body.CopyToAsync(stream, httpContext.RequestAborted);
-        stream.Position = 0;
 
-        int width;
-        using (var document = await JsonDocument.ParseAsync(stream, cancellationToken: httpContext.RequestAborted))
-        {
-            width = document.RootElement.GetProperty("board").GetProperty("width").GetInt32();
-        }
-
-        stream.Position = 0;
-
-        var arrayConverter = new CoordinateArrayToUshortArrayConverter(width);
-        var singleConverter = new CoordinateToUshortConverter(width);
-        var options = new JsonSerializerOptions { Converters = { arrayConverter, singleConverter } };
-        var serializerContext = new ThanosSerializerContext(options);
-
-        var request = await JsonSerializer.DeserializeAsync(stream, serializerContext.Request, httpContext.RequestAborted);
-        return request!;
-    }
-#endif
+    public static ReadOnlyMemory<byte> Get(byte moveFlag) => _responses[moveFlag];
 }
