@@ -6,7 +6,7 @@ namespace Thanos;
 
 public static class Bootstrapper
 {
-    public static BattleSnakeAgent BuildColdPath(byte cores, uint nodes)
+    public static BattleSnakeAgent BuildColdPath(byte firstIndex, byte cores, uint nodes)
     {
         var sharedLookups = LookupsMemoryPool.Medium;
 
@@ -17,7 +17,9 @@ public static class Bootstrapper
 
         for (var i = 0; i < cores; i++)
         {
-            nodePools[i] = new NodeMemoryPool(nodes, NodeMemoryLayout.Default);
+            var nodeMemoryLayout = NodeMemoryLayout.Default;
+            nodePools[i] = new NodeMemoryPool(nodes, firstIndex, in nodeMemoryLayout);
+            
             slotPools[i] = new SlotMemoryPool(nodes, sharedLookups, SlotMemoryLayout.Medium);
 
             engines[i] = new Engine(slotPools[i], nodePools[i]);

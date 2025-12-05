@@ -1,40 +1,52 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.Abstract;
 using Thanos.MCST;
 
 namespace Thanos.Memory;
 
-public sealed unsafe class NodeMemoryPool : IDisposable
+public sealed unsafe class NodeMemoryPool : INodePool
 {
     private readonly byte* _basePointer;
-    private readonly NodeMemoryLayout _layout;
-    private readonly uint _maxNodes;
+    
+    private readonly int _stride;
+    private readonly byte _firstIndex;
 
-    public NodeMemoryPool(uint maxNodes, in NodeMemoryLayout layout)
+    public int Count { get; private set; }
+    public uint Capacity { get; }
+
+    public NodeMemoryPool(uint capacity, byte firstIndex, in NodeMemoryLayout layout)
     {
-        _layout = layout;
-        _maxNodes = maxNodes;
+        _stride = layout.Size;
+        _firstIndex = firstIndex;
 
-        var totalSize = NodeMemoryLayout.Size * maxNodes;
-
-        _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)totalSize, Constants.CacheLine);
-        NativeMemory.Clear(_basePointer, (nuint)totalSize);
-
-        // Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {NodeMemoryLayout.Size}-byte nodes, max nodes: {_maxNodes}");
+        Count = _firstIndex;
+        Capacity = capacity;
+        
+        var totalSize = (nuint)(capacity * _stride);
+        _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
+        
+        NativeMemory.Clear(_basePointer, totalSize);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref Node Get(int index) => ref Unsafe.AsRef<Node>(_basePointer + ((long)index * _stride));
 
     public ref Node this[int index]
     {
-        get
-        {
-            if (index >= _maxNodes) throw new OutOfMemoryException($"Accesso illegale allo SlotMemoryPool. Richiesto indice {index}, ma la capacità massima è {_maxNodes}.");
-
-            var startOffset = (long)index * NodeMemoryLayout.Size;
-            var nodePointer = _basePointer + startOffset;
-
-            return ref Unsafe.AsRef<Node>(nodePointer);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref Get(index);
     }
 
-    public void Dispose() => NativeMemory.Free(_basePointer);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Allocate()
+    {
+        if (Count >= Capacity) return -1;
+        return Count++;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset() => Count = _firstIndex;
+
+    public void Dispose() => NativeMemory.AlignedFree(_basePointer);
 }

@@ -7,6 +7,7 @@ public static class Constants
 
     public const uint Nodes = 2_000_000;
     public const byte Cores = 4;
+    public const byte FirstIndex = 1;
 
     public static (byte Width, byte Height, ushort Area) Small = (7, 7, 49);
     public static (byte Width, byte Height, ushort Area) Medium = (11, 11, 121);
