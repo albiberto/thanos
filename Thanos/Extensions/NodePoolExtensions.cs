@@ -6,9 +6,9 @@ namespace Thanos.Extensions;
 public static class NodePoolExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int SelectMostVisitedChild(this NodeMemoryPool nodePool, int rootIndex)
+    public static int SelectMostVisitedChild(this NodeMemoryPool nodeMemoryPool, int rootIndex)
     {
-        ref var parentNode = ref nodePool[rootIndex];
+        ref var parentNode = ref nodeMemoryPool[rootIndex];
 
         if (parentNode.IsLeafNode) return -1;
 
@@ -18,7 +18,7 @@ public static class NodePoolExtensions
         var currentChildIndex = parentNode.FirstChildIndex;
         while (currentChildIndex != -1)
         {
-            ref var childNode = ref nodePool[currentChildIndex];
+            ref var childNode = ref nodeMemoryPool[currentChildIndex];
 
             if (childNode.Visits > maxVisits)
             {

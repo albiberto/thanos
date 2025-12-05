@@ -11,7 +11,6 @@ public readonly ref struct Arena(
     Bitboard food,
     Bitboard hazards,
     Bitboard snakes,
-    Dictionary<string, int> map,
     NeighborsMatrix neighborsMatrix,
     CoordinatesMatrix conversionsMatrix)
 {
@@ -23,23 +22,46 @@ public readonly ref struct Arena(
     private readonly NeighborsMatrix _neighborsMatrix = neighborsMatrix;
     private readonly CoordinatesMatrix _conversionsMatrix = conversionsMatrix;
 
-    public void InitializeFromRequest(in Request request)
+    /// <summary>
+    /// Inizializza l'Arena dallo stato della Request.
+    /// Richiede l'elenco degli ID ordinati (0=Hero, 1..N=Enemies) per mappare correttamente i dati.
+    /// </summary>
+    public void InitializeFromRequest(in Request request, ReadOnlySpan<string> orderedIds)
     {
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
 
+        // Resettiamo/Uccidiamo tutti i serpenti prima di popolarli
         for (var i = 0; i < System.Count; i++) System[i].Kill();
 
         var board = request.Board;
 
+        // Iteriamo sui serpenti del JSON
         foreach (var snakeData in board.Snakes)
-            if (map.TryGetValue(snakeData.Id, out var snakeIndex))
+        {
+            // Troviamo l'indice corrispondente nel nostro sistema
+            // L'indice nel buffer 'orderedIds' corrisponde all'indice in 'System'
+            var snakeIndex = -1;
+            
+            for (int i = 0; i < orderedIds.Length; i++)
+            {
+                // Confronto Ordinal è il più veloce
+                if (string.Equals(orderedIds[i], snakeData.Id, StringComparison.Ordinal))
+                {
+                    snakeIndex = i;
+                    break;
+                }
+            }
+
+            // Se troviamo l'indice (e rientra nel count attivo), inizializziamo
+            if (snakeIndex != -1 && snakeIndex < System.Count)
             {
                 var snake = System[snakeIndex];
                 snake.Initialize(snakeData);
                 Snakes.Or(snake.Body);
             }
+        }
 
         foreach (var foodPosition in board.Food) Food.Set(foodPosition);
         foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
@@ -53,7 +75,6 @@ public readonly ref struct Arena(
         source.Snakes.CopyTo(Snakes);
     }
 
-    // MODIFICATO: Ora accetta 'heroIndex' per controllare chi sta muovendo
     public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex)
     {
         byte legalMoves = 0;
@@ -84,33 +105,22 @@ public readonly ref struct Arena(
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsSquareLegal(ushort position, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex, in Bitboard food)
     {
-        // 1. Controlla se la casella è occupata
         var isBody = Snakes.IsSet(position);
 
         if (isBody)
         {
-            // FIX INTELLIGENTE: Gestione Collisioni Testa-a-Testa
-            // Controlliamo se stiamo colpendo la testa di un nemico che HA GIÀ MOSSO.
-
             var heroLength = System[heroIndex].Length;
 
             for (var i = 0; i < System.Count; i++)
             {
-                if (i == heroIndex) continue; // Salta noi stessi
+                if (i == heroIndex) continue;
 
-                // Controlliamo solo i nemici con indice < heroIndex.
-                // In un ciclo Round-Robin 0->1->2->3, questi sono quelli che hanno già aggiornato la loro posizione.
-                // Colpire la loro testa ora simula una collisione reale.
-                // Colpire la testa di chi NON ha mosso (i > heroIndex) significa colpire il collo -> Suicidio.
+                // Collisione testa-a-testa solo con chi ha già mosso (indici < heroIndex)
                 if (i < heroIndex)
                     if (System[i].Head == position)
-                        // È un testa-a-testa valido. Applichiamo la tua logica:
-                        // Se sono più lungo -> VALIDA (Kill).
-                        // Se sono più corto o uguale -> INVALIDA (Suicidio/Pareggio da evitare).
                         return heroLength > System[i].Length;
             }
 
-            // Se non è una testa "uccidibile", applichiamo la logica standard (coda/muro)
             var isTail = position == tailPosition;
             if (!isTail) return false;
 

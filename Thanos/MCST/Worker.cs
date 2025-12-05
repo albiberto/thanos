@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -7,7 +8,7 @@ using Thanos.War;
 
 namespace Thanos.MCST;
 
-public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
+public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryPool)
 {
     private const double EXPLORATION_PARAMETER = 1.41;
     private const int CHANCE_NODE_VISIT_THRESHOLD = 50;
@@ -15,8 +16,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     private int _nextId = 1;
     private RulesetSettings _settings;
 
-    private readonly NodeMemoryPool _nodePool = nodePool;
-    private readonly SlotMemoryPool _slotPool = slotPool;
+    private readonly INodeMemoryPool _nodeMemoryPool = nodeMemoryPool;
+    private readonly ISlotMemoryPool _slotPool = slotPool;
 
     private static readonly byte[] AllMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
     private readonly float[] _rewardsBuffer = new float[Constants.MaxSnakesCount];
@@ -25,9 +26,9 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     public void RunIteration(int area, int rootIndex)
     {
         var leafIndex = Select(rootIndex);
-        ref var leafNode = ref _nodePool[leafIndex];
+        ref var leafNode = ref _nodeMemoryPool.Get(leafIndex);
 
-        if (leafNode.IsLeafNode && !leafNode.IsTerminal && !leafNode.IsSolvedWin && !leafNode.IsSolvedLoss) Expand(leafIndex, ref leafNode, area);
+        if (leafNode.IsLeafNode && leafNode is { IsTerminal: false, IsSolvedWin: false, IsSolvedLoss: false }) Expand(leafIndex, ref leafNode, area);
 
         var nodeToEvaluate = leafIndex;
         if (!leafNode.IsLeafNode) nodeToEvaluate = leafNode.FirstChildIndex;
@@ -42,7 +43,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var currentIndex = rootIndex;
         while (true)
         {
-            ref var currentNode = ref _nodePool[currentIndex];
+            ref var currentNode = ref _nodeMemoryPool.Get(currentIndex);
 
             if (currentNode.IsLeafNode || currentNode.IsTerminal || currentNode.IsSolvedWin || currentNode.IsSolvedLoss)
                 return currentIndex;
@@ -77,7 +78,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var childIndex = parentNode.FirstChildIndex;
         while (childIndex != -1)
         {
-            ref var childNode = ref _nodePool[childIndex];
+            ref var childNode = ref _nodeMemoryPool.Get(childIndex);
 
             if (childNode.IsSolvedWin) return childIndex;
             if (childNode.IsSolvedLoss)
@@ -110,7 +111,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var firstChild = parentNode.FirstChildIndex;
         if (firstChild == -1) return -1;
 
-        ref var firstNode = ref _nodePool[firstChild];
+        ref var firstNode = ref _nodeMemoryPool.Get(firstChild);
         var secondChild = firstNode.NextSiblingIndex;
 
         if (secondChild == -1) return firstChild;
@@ -178,11 +179,11 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
             var hash = ZobristHasher.CalculateHash(in childArena);
 
-            ref var childNode = ref _nodePool[childIndex];
+            ref var childNode = ref _nodeMemoryPool.Get(childIndex);
             childNode.PlacementNew(parentIndex, move, hash, actualNextPlayer, isNextChance);
 
             if (lastChildIndex == -1) parentNode.FirstChildIndex = childIndex;
-            else _nodePool[lastChildIndex].NextSiblingIndex = childIndex;
+            else _nodeMemoryPool.Get(lastChildIndex).NextSiblingIndex = childIndex;
 
             lastChildIndex = childIndex;
         }
@@ -209,8 +210,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
 
         var hash = ZobristHasher.CalculateHash(in childArena);
 
-        ref var childNode = ref _nodePool[childIndex];
-        ref var parentNode = ref _nodePool[parentIndex];
+        ref var childNode = ref _nodeMemoryPool.Get(childIndex);
+        ref var parentNode = ref _nodeMemoryPool.Get(parentIndex);
 
         var firstAlive = GetFirstAlivePlayerIndex(in childArena);
         var isNextChance = firstAlive == Constants.EnvironmentPlayerIndex;
@@ -226,8 +227,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         else
         {
             var sibling = parentNode.FirstChildIndex;
-            while (_nodePool[sibling].NextSiblingIndex != -1) sibling = _nodePool[sibling].NextSiblingIndex;
-            _nodePool[sibling].NextSiblingIndex = childIndex;
+            while (_nodeMemoryPool.Get(sibling).NextSiblingIndex != -1) sibling = _nodeMemoryPool.Get(sibling).NextSiblingIndex;
+            _nodeMemoryPool.Get(sibling).NextSiblingIndex = childIndex;
         }
     }
 
@@ -295,8 +296,8 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         // MODIFICA: Determina se il turno è completo
         // Se il prossimo a muovere è Environment o Player 0 (noi, inizio nuovo turno), 
         // significa che tutti gli avversari hanno mosso nel turno precedente.
-        ref var node = ref _nodePool[nodeIndex];
-        var isPhaseComplete = node.PlayerIndex == Constants.EnvironmentPlayerIndex || node.PlayerIndex == 0;
+        ref var node = ref _nodeMemoryPool.Get(nodeIndex);
+        var isPhaseComplete = node.PlayerIndex is Constants.EnvironmentPlayerIndex or 0;
 
         Array.Clear(rewardsBuffer);
 
@@ -329,7 +330,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
         var currentIndex = startNodeIndex;
         while (currentIndex != -1)
         {
-            ref var currentNode = ref _nodePool[currentIndex];
+            ref var currentNode = ref _nodeMemoryPool.Get(currentIndex);
             currentNode.UpdateStats(rewards);
             if (currentNode.ParentIndex != -1) PropagateSolverFlags(currentIndex, currentNode.ParentIndex);
             currentIndex = currentNode.ParentIndex;
@@ -339,10 +340,10 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PropagateSolverFlags(int childIndex, int parentIndex)
     {
-        ref var childNode = ref _nodePool[childIndex];
+        ref var childNode = ref _nodeMemoryPool.Get(childIndex);
         if (childNode.IsSolvedLoss)
         {
-            ref var parentNode = ref _nodePool[parentIndex];
+            ref var parentNode = ref _nodeMemoryPool.Get(parentIndex);
             if (parentNode.IsSolvedLoss || parentNode.IsSolvedWin) return;
             if (parentNode.IsChanceNode) return;
 
@@ -350,7 +351,7 @@ public sealed class Worker(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
             var currentSibling = parentNode.FirstChildIndex;
             while (currentSibling != -1)
             {
-                ref var siblingNode = ref _nodePool[currentSibling];
+                ref var siblingNode = ref _nodeMemoryPool.Get(currentSibling);
                 if (!siblingNode.IsSolvedLoss)
                 {
                     allChildrenLost = false;

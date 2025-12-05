@@ -6,9 +6,9 @@ namespace Thanos.Tests.Memory;
 
 
 [TestFixture]
-public class NodeMemoryPoolTests
+public class NodeMemoryMemoryPoolTests
 {
-    private NodeMemoryPool? _pool;
+    private NodeMemoryMemoryPool? _pool;
     private const uint MaxNodes = 100;
 
     [TearDown]
@@ -22,7 +22,7 @@ public class NodeMemoryPoolTests
     public void Constructor_WithIndex1_Should_StartAllocating_From_1()
     {
         const byte firstIndex = 1;
-        _pool = new NodeMemoryPool(MaxNodes, firstIndex, NodeMemoryLayout.Default);
+        _pool = new NodeMemoryMemoryPool(MaxNodes, firstIndex, NodeMemoryLayout.Packed);
 
         var idx = _pool.Allocate();
 
@@ -41,7 +41,7 @@ public class NodeMemoryPoolTests
     public void Constructor_WithIndex0_Should_StartAllocating_From_0()
     {
         const byte firstIndex = 0;
-        _pool = new NodeMemoryPool(MaxNodes, firstIndex, NodeMemoryLayout.Default);
+        _pool = new NodeMemoryMemoryPool(MaxNodes, firstIndex, NodeMemoryLayout.Packed);
 
         var idx = _pool.Allocate();
 
@@ -60,7 +60,7 @@ public class NodeMemoryPoolTests
     public void Reset_Should_Rewind_Count_To_Configured_FirstIndex()
     {
         byte startIdx = 5;
-        _pool = new NodeMemoryPool(MaxNodes, startIdx, NodeMemoryLayout.Default);
+        _pool = new NodeMemoryMemoryPool(MaxNodes, startIdx, NodeMemoryLayout.Packed);
 
         _pool.Allocate();
         _pool.Allocate();
@@ -82,7 +82,7 @@ public class NodeMemoryPoolTests
     public void Constructor_Should_Respect_Padding_In_Layout()
     {
         var paddedLayout = new NodeMemoryLayout(64);
-        _pool = new NodeMemoryPool(MaxNodes, 1, paddedLayout);
+        _pool = new NodeMemoryMemoryPool(MaxNodes, 1, paddedLayout);
 
         _pool.Allocate();
         _pool.Allocate();
@@ -107,7 +107,7 @@ public class NodeMemoryPoolTests
     [Test]
     public void ReadWrite_Should_Persist_Data()
     {
-        _pool = new NodeMemoryPool(MaxNodes, 1, NodeMemoryLayout.Default);
+        _pool = new NodeMemoryMemoryPool(MaxNodes, 1, NodeMemoryLayout.Packed);
 
         var index = _pool.Allocate();
 
@@ -137,7 +137,7 @@ public class NodeMemoryPoolTests
     [Test]
     public void Allocate_WhenFull_Should_Return_MinusOne()
     {
-        _pool = new NodeMemoryPool(2, 0, NodeMemoryLayout.Default);
+        _pool = new NodeMemoryMemoryPool(2, 0, NodeMemoryLayout.Packed);
 
         var idx1 = _pool.Allocate();
         var idx2 = _pool.Allocate();

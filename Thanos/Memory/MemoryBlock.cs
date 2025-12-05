@@ -8,7 +8,7 @@ public readonly struct MemoryBlock(int offset, int length)
     public readonly int Length = length;
     
     /// <summary>
-    /// Offset in bytes from the beginning of the memory block.
+    /// Offset in bytes from the beginning of the memory block / base pointer.
     /// </summary>
     public readonly int Offset = offset;
 }

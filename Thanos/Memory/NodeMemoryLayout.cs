@@ -1,10 +1,13 @@
-﻿using Thanos.MCST;
+﻿using Thanos.Common;
+using Thanos.MCST;
 
 namespace Thanos.Memory;
 
-public readonly unsafe struct NodeMemoryLayout(int size)
+public readonly unsafe struct NodeMemoryLayout
 {
-    public static NodeMemoryLayout Default => new(sizeof(Node)); 
+    public readonly MemoryBlock Node; 
 
-    public readonly int Size = size;
+    private NodeMemoryLayout(int stride) => Node = new MemoryBlock(0, stride);
+
+    public static NodeMemoryLayout Packed => new(sizeof(Node).AlignUp64()); 
 }

@@ -1,27 +1,43 @@
 ﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json;
+using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
-using Thanos.Extensions;
+using Thanos.War;
 
 namespace Thanos.MCST;
 
 public class Engine
 {
-    private readonly NodeMemoryPool _nodePool;
-    private readonly SlotMemoryPool _slotPool;
+    private readonly INodeMemoryPool _nodePool;
+    private readonly ISlotMemoryPool _slotPool;
     private readonly Worker _worker;
 
-    private int _rootIndex = Constants.FirstRootNodeIndex;
+    private int _rootIndex = NodeMemoryPool.FirstIndex; // Usa la costante definita nel pool
+    
+    // Stato del match corrente
+    private string[] _sortedSnakeIds = [];
 
-    public Engine(SlotMemoryPool slotPool, NodeMemoryPool nodePool)
+    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
+        
+        // Assumo che anche Worker sia stato aggiornato per accettare le interfacce
         _worker = new Worker(_slotPool, _nodePool);
+    }
+
+    /// <summary>
+    /// Configura l'engine per la partita corrente.
+    /// </summary>
+    public void InitializeGame(string[] sortedSnakeIds, int count)
+    {
+        _sortedSnakeIds = sortedSnakeIds;
+        // Configura il pool (imposta active snakes per SnakesSystem)
+        _slotPool.Configure(count);
+        // Resetta il worker se necessario
+        _worker.Reset(count);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,11 +50,12 @@ public class Engine
 
             if (_rootIndex > 0)
             {
-                ref var newRootNode = ref _nodePool[_rootIndex];
+                ref var newRootNode = ref _nodePool.Get(_rootIndex);
                 newRootNode.NewRoot();
 
+                // Re-inizializziamo lo stato dell'Arena root per assicurarci che sia sincronizzato col turno corrente
                 var rootArena = _slotPool.GetArena(_rootIndex);
-                rootArena.InitializeFromRequest(in request);
+                rootArena.InitializeFromRequest(in request, _sortedSnakeIds);
             }
         }
         else
@@ -49,14 +66,24 @@ public class Engine
         // 2. Full Reset Fallback
         if (_rootIndex <= 0)
         {
-            _rootIndex = Constants.FirstRootNodeIndex;
-            _worker.Reset(_rootIndex, request.Game.Ruleset.Settings);
+            _rootIndex = NodeMemoryPool.FirstIndex;
+            
+            // Prepariamo la Root Arena
+            var rootIndex = _slotPool.Allocate(); // Alloca slot per la root
+            
+            // Safety check: se allocation fallisce (pool pieno), crashiamo o gestiamo
+            if (rootIndex == -1) throw new InvalidOperationException("SlotPool exhausted at root allocation.");
 
-            var rootArena = _slotPool.GetArena(_rootIndex);
-            rootArena.InitializeFromRequest(in request);
+            var rootArena = _slotPool.GetArena(rootIndex); // Nota: Engine usava _rootIndex come indice slot, assumiamo mappatura 1:1 o logica interna
+            
+            // Qui passiamo gli ID ordinati
+            rootArena.InitializeFromRequest(in request, _sortedSnakeIds);
 
-            ref var rootNode = ref _nodePool[_rootIndex];
+            ref var rootNode = ref _nodePool.Get(_rootIndex);
             rootNode.PlacementRoot(targetHash);
+            
+            // Aggiorniamo il riferimento allo slot nel nodo se necessario, 
+            // oppure assumiamo che il Worker sappia che Node X usa Slot X.
         }
 
         RunIterations(request.Board.Area);
@@ -67,7 +94,7 @@ public class Engine
 
     private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
     {
-        ref var myLastMoveNode = ref _nodePool[myLastMoveNodeIndex];
+        ref var myLastMoveNode = ref _nodePool.Get(myLastMoveNodeIndex);
         return FindNodeWithHash(myLastMoveNode.FirstChildIndex, targetHash, 5);
     }
 
@@ -76,13 +103,12 @@ public class Engine
         if (startIndex <= 0 || depthLimit <= 0) return 0;
 
         var current = startIndex;
-
         var safetyCounter = 0;
         const int MaxSiblingsSearch = 10000;
 
         while (current > 0 && safetyCounter++ < MaxSiblingsSearch)
         {
-            ref var node = ref _nodePool[current];
+            ref var node = ref _nodePool.Get(current);
 
             if (node.Hash == targetHash) return current;
 
@@ -96,26 +122,32 @@ public class Engine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RunIterations(int area, int counter = 0)
+    private void RunIterations(int area)
     {
         const long maxTimeMs = 450;
         const long forcedMoveTimeMs = 50;
 
         var stopwatch = Stopwatch.StartNew();
 
-        if (_nodePool[_rootIndex].IsLeafNode) _worker.RunIteration(area, _rootIndex);
+        ref var rootNode = ref _nodePool.Get(_rootIndex);
 
-        ref var rootNode = ref _nodePool[_rootIndex];
+        // Se la root è foglia (appena creata), espandiamola subito
+        if (rootNode.IsLeafNode) 
+        {
+             _worker.RunIteration(area, _rootIndex);
+        }
 
+        // Contiamo i figli per decidere il time management
         var childCount = 0;
         var childIdx = rootNode.FirstChildIndex;
         while (childIdx != -1)
         {
             childCount++;
-            childIdx = _nodePool[childIdx].NextSiblingIndex;
+            childIdx = _nodePool.Get(childIdx).NextSiblingIndex;
         }
 
         var timeLimit = childCount <= 1 ? forcedMoveTimeMs : maxTimeMs;
+        var counter = 0;
 
         while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
@@ -123,6 +155,7 @@ public class Engine
 
             var remainingTime = timeLimit - stopwatch.ElapsedMilliseconds;
 
+            // Batching dinamico per ridurre overhead del controllo tempo
             var currentBatchSize = remainingTime switch
             {
                 > 250 => 2048,
@@ -131,7 +164,10 @@ public class Engine
                 _ => 256
             };
 
-            for (var i = 0; i < currentBatchSize; i++) _worker.RunIteration(area, _rootIndex);
+            for (var i = 0; i < currentBatchSize; i++) 
+            {
+                _worker.RunIteration(area, _rootIndex);
+            }
             counter += currentBatchSize;
         }
 
@@ -144,16 +180,17 @@ public class Engine
 
         if (_rootIndex <= 0) return;
 
-        ref var rootNode = ref _nodePool[_rootIndex];
+        ref var rootNode = ref _nodePool.Get(_rootIndex);
         var childIndex = rootNode.FirstChildIndex;
 
         while (childIndex != -1)
         {
-            ref var childNode = ref _nodePool[childIndex];
+            ref var childNode = ref _nodePool.Get(childIndex);
 
             if (childNode.Visits > 0 || childNode.IsSolvedWin)
             {
-                var avgScore = childNode.Visits > 0 ? childNode.Rewards[0] / childNode.Visits : -1;
+                // Score calcolato sui float
+                var avgScore = childNode.Visits > 0 ? childNode.Score / childNode.Visits : -1;
                 outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
             }
 
@@ -168,8 +205,7 @@ public class Engine
         var arena = _slotPool.GetArena(_rootIndex);
         var me = arena.System[0];
 
-        // FIX COMPILAZIONE: Aggiunto parametro '0' (heroIndex)
-        // Stiamo chiedendo le mosse legali per il serpente 0 (NOI).
+        // 0 è sempre il nostro indice (Hero) grazie al mapping dell'Agente
         var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail, 0);
 
         if ((legalMoves & Moves.Up) != 0) return Moves.Up;
@@ -184,6 +220,7 @@ public class Engine
     public void Reset()
     {
         _rootIndex = 0;
-        _worker.Reset(1);
+        // Non resettiamo _worker.Reset(count) qui perché il count potrebbe cambiare
+        // Lo facciamo in InitializeGame
     }
 }

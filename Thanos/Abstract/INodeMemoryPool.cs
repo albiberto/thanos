@@ -2,7 +2,7 @@ namespace Thanos.Abstract;
 
 using MCST;
 
-public interface INodePool : IDisposable
+public interface INodeMemoryPool : IDisposable
 {
     /// <summary>
     /// Capacità massima (numero di nodi) del pool.

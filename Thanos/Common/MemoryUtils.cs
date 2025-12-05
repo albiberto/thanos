@@ -16,9 +16,9 @@ public static class MemoryUtils
         public int AlignUp32() => value.AlignUp(32);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int AlignUp64() => value.AlignUp(Constants.CacheLine);
+        public int AlignUp64() => value.AlignUp(64);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int AlignUp(int alignment) => (value + alignment - 1) & ~(alignment - 1);
+        private int AlignUp(int alignment) => (value + alignment - 1) & ~(alignment - 1);
     }
 }

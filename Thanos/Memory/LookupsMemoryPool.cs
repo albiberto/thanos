@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Shared;
 using Thanos.SourceGen;
@@ -18,7 +17,7 @@ public sealed unsafe class LookupsMemoryPool : IDisposable
 
     private LookupsMemoryPool(byte width, byte height, ushort area)
     {
-        _layout = new(area);
+        _layout = new LookupsMemoryLayout(area);
         _basePointer = (byte*)NativeMemory.AlignedAlloc(_layout.TotalSize, Constants.CacheLine);
 
         NativeMemory.Clear(_basePointer, _layout.TotalSize);
@@ -30,9 +29,7 @@ public sealed unsafe class LookupsMemoryPool : IDisposable
         NeighborsBuilder.Populate(width, height, neighborsSpan);
     }
 
-    public static LookupsMemoryPool Small => new(Constants.Small.Width, Constants.Small.Height, Constants.Small.Area);
     public static LookupsMemoryPool Medium => new(Constants.Medium.Width, Constants.Medium.Height, Constants.Medium.Area);
-    public static LookupsMemoryPool Large => new(Constants.Large.Width, Constants.Large.Height, Constants.Large.Area);
 
     public void Dispose() => NativeMemory.AlignedFree(_basePointer);
 }

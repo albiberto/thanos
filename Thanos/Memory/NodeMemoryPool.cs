@@ -1,11 +1,12 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Abstract;
+using Thanos.Common;
 using Thanos.MCST;
 
 namespace Thanos.Memory;
 
-public sealed unsafe class NodeMemoryPool : INodePool
+public sealed unsafe class NodeMemoryPool : INodeMemoryPool
 {
     private readonly byte* _basePointer;
     
@@ -17,16 +18,19 @@ public sealed unsafe class NodeMemoryPool : INodePool
 
     public NodeMemoryPool(uint capacity, byte firstIndex, in NodeMemoryLayout layout)
     {
-        _stride = layout.Size;
+        _stride = layout.Node.Length;
         _firstIndex = firstIndex;
 
         Count = _firstIndex;
         Capacity = capacity;
         
         var totalSize = (nuint)(capacity * _stride);
-        _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
         
-        NativeMemory.Clear(_basePointer, totalSize);
+        var alignedTotalSize = (nuint)((int)totalSize).AlignUp64();
+
+        _basePointer = (byte*)NativeMemory.AlignedAlloc(alignedTotalSize, Constants.CacheLine);
+        
+        NativeMemory.Clear(_basePointer, alignedTotalSize);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

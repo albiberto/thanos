@@ -13,15 +13,14 @@ public readonly unsafe struct LookupsMemoryLayout
     public LookupsMemoryLayout(ushort area)
     {
         var coordsByteSize = area * sizeof(Coordinate);
-        Coordinates = new MemoryBlock(0, area);
-
+        
         var neighborsOffset = coordsByteSize.AlignUp64();
         var neighborsLength = area * 4;
-        
-        Neighbors = new MemoryBlock(neighborsOffset, neighborsLength);
-
         var neighborsByteSize = neighborsLength * sizeof(ushort);
 
+        Coordinates = new MemoryBlock(0, area);
+        Neighbors = new MemoryBlock(neighborsOffset, neighborsLength);
+        
         TotalSize = (nuint)(neighborsOffset + neighborsByteSize).AlignUp64();
     }
 }
