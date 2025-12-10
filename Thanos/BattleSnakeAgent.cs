@@ -3,7 +3,7 @@ using Thanos.SourceGen;
 
 namespace Thanos;
 
-public sealed class BattleSnakeAgent(IBattleSnakeCluster cluster) : IBattleSnakeAgent, IDisposable
+public sealed class BattleSnakeAgent(IBattleSnakeCluster cluster) : IBattleSnakeAgent
 {
     private readonly IBattleSnakeCluster _cluster = cluster ?? throw new ArgumentNullException(nameof(cluster));
     private readonly string[] _idBuffer = new string[Constants.MaxSnakesCount];

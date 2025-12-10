@@ -1,7 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Abstract;
-using Thanos.Common;
 using Thanos.War;
 using Thanos.War.Structures;
 
@@ -10,96 +9,71 @@ namespace Thanos.Memory;
 public sealed unsafe class SlotMemoryPool : ISlotMemoryPool
 {
     private readonly byte* _basePointer;
-    private readonly LookupsMemoryPool _lookupsMemoryPool;
+
+    private readonly int _firstIndex;
+    private readonly int _snakesCount;
+    private readonly nuint _stride; 
     private readonly SlotMemoryLayout _layout;
-    private readonly int _slotSize;
+    private readonly ILookupsMemoryPool _lookupsMemoryPool;
+    
+    public uint Capacity { get; }
+    public int Index { get; private set; }
 
-    public int Capacity { get; }
-    public int Count { get; private set; }
-
-    private int _activeSnakeCount;
-
-    public SlotMemoryPool(uint maxSlots, LookupsMemoryPool lookupsMemoryPool, in SlotMemoryLayout layout)
+    // Aggiunto activeSnakeCount al costruttore
+    public SlotMemoryPool(uint capacity, int firstIndex, int snakesCount, ILookupsMemoryPool lookupsMemoryPool, in SlotMemoryLayout layout)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxSlots);
-
-        Capacity = (int)maxSlots;
-        Count = 0;
-
-        _lookupsMemoryPool = lookupsMemoryPool;
+        _firstIndex = firstIndex;
+        _snakesCount = snakesCount;
+        
         _layout = layout;
-        _slotSize = _layout.SlotSize;
+        _stride = layout.SlotStride.Next;
+        
+        _lookupsMemoryPool = lookupsMemoryPool;
+        
+        Capacity = capacity;
+        Index = _firstIndex;
+        
+        var totalSize = _stride * (nuint)capacity;
+        _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
+        NativeMemory.Clear(_basePointer, totalSize);
+    }
 
-        var memorySize = (nuint)((long)_slotSize * Capacity);
-        
-        // Allineamento totale del blocco di memoria
-        var alignedTotalSize = (nuint)((int)memorySize).AlignUp64();
-        
-        _basePointer = (byte*)NativeMemory.AlignedAlloc(alignedTotalSize, Constants.CacheLine);
-        
-        NativeMemory.Clear(_basePointer, alignedTotalSize);
+    // Il metodo Configure è stato rimosso. Il pool è immutabile nella sua configurazione.
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Arena GetArena(int index)
+    {
+        BuildMemory(index, out var system, out var foodBitboard, out var hazardsBitboard, out var collisionsBitboard);
+        return new Arena(system, foodBitboard, hazardsBitboard, collisionsBitboard, _lookupsMemoryPool.NeighborsMatrix, _lookupsMemoryPool.CoordinatesMatrix);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Configure(int snakeCount)
+    public Heuristics GetHeuristics(int index)
     {
-        _activeSnakeCount = snakeCount;
-        Reset();
+        BuildMemory(index, out var system, out var foodBitboard, out var hazardsBitboard, out var collisionsBitboard);
+        return new Heuristics(system, foodBitboard, hazardsBitboard, collisionsBitboard, _lookupsMemoryPool.NeighborsMatrix, _lookupsMemoryPool.CoordinatesMatrix);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Allocate()
     {
-        if (Count >= Capacity) return -1;
-        return Count++;
+        if (Index >= Capacity) return -1;
+        return Index++;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reset() => Count = 0;
+    public void Reset() => Index = _firstIndex;
 
-    public Arena GetArena(int index)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void BuildMemory(int index, out SnakesSystem system, out Bitboard foodBitboard, out Bitboard hazardsBitboard, out Bitboard collisionsBitboard)
     {
-        var slotSpan = GetSlotSpan(index);
+        var slotPtr = _basePointer + (nuint)index * _stride;
         
-        var system = new SnakesSystem(slotSpan, in _layout, _activeSnakeCount);
-        BuildBitboards(slotSpan, out var food, out var hazards, out var snakes);
+        system = new SnakesSystem(new Span<byte>(slotPtr, (int)_layout.SlotStride.Length), in _layout, _snakesCount);
 
-        return new Arena(
-            system,
-            food,
-            hazards,
-            snakes,
-            _lookupsMemoryPool.NeighborsMatrix,
-            _lookupsMemoryPool.CoordinatesMatrix);
-    }
-
-    public Heuristics GetHeuristics(int index)
-    {
-        var slotSpan = GetSlotSpan(index);
-        var system = new SnakesSystem(slotSpan, in _layout, _activeSnakeCount);
-        BuildBitboards(slotSpan, out var food, out var hazards, out var snakes);
-
-        return new Heuristics(
-            system,
-            food,
-            hazards,
-            snakes,
-            _lookupsMemoryPool.NeighborsMatrix,
-            _lookupsMemoryPool.CoordinatesMatrix);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private Span<byte> GetSlotSpan(int index)
-    {
-        return new Span<byte>(_basePointer + ((long)index * _slotSize), _slotSize);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BuildBitboards(Span<byte> slotMemory, out Bitboard food, out Bitboard hazards, out Bitboard snakes)
-    {
-        food = new Bitboard(slotMemory.Slice(_layout.FoodBitboard.Offset, _layout.FoodBitboard.Length));
-        hazards = new Bitboard(slotMemory.Slice(_layout.HazardsBitboard.Offset, _layout.HazardsBitboard.Length));
-        snakes = new Bitboard(slotMemory.Slice(_layout.SnakesBitboard.Offset, _layout.SnakesBitboard.Length));
+        foodBitboard = new Bitboard(new Span<byte>(slotPtr + _layout.FoodBitboard.Offset, (int)_layout.FoodBitboard.Length));
+        hazardsBitboard = new Bitboard(new Span<byte>(slotPtr + _layout.HazardsBitboard.Offset, (int)_layout.HazardsBitboard.Length));
+        collisionsBitboard = new Bitboard(new Span<byte>(slotPtr + _layout.CollisionsBitboard.Offset, (int)_layout.CollisionsBitboard.Length));
     }
 
     public void Dispose() => NativeMemory.AlignedFree(_basePointer);

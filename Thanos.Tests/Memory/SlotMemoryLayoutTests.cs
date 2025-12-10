@@ -77,11 +77,11 @@ public class SlotMemoryLayoutTests
         using (EnterMultipleScope())
         {
             // Verifica allineamento globale
-            That(_layout.SnakesBitboard.Offset % Constants.CacheLine, Is.Zero, "SnakesBitboard must be aligned");
-            That(_layout.SnakesBitboard.Offset, Is.GreaterThanOrEqualTo(snakesEnd));
+            That(_layout.CollisionsBitboard.Offset % Constants.CacheLine, Is.Zero, "SnakesBitboard must be aligned");
+            That(_layout.CollisionsBitboard.Offset, Is.GreaterThanOrEqualTo(snakesEnd));
             
             // Verifica sequenzialità
-            var snakesBbEnd = _layout.SnakesBitboard.Offset + _layout.SnakesBitboard.Length;
+            var snakesBbEnd = _layout.CollisionsBitboard.Offset + _layout.CollisionsBitboard.Length;
             That(_layout.FoodBitboard.Offset, Is.GreaterThanOrEqualTo(snakesBbEnd));
             
             var foodBbEnd = _layout.FoodBitboard.Offset + _layout.FoodBitboard.Length;

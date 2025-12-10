@@ -39,7 +39,7 @@ public class SlotMemoryPoolTests
         using (EnterMultipleScope())
         {
             That(_pool.Capacity, Is.EqualTo((int)MaxSlots));
-            That(_pool.Count, Is.EqualTo(0), "SlotPool starts at 0 (unlike NodePool)");
+            That(_pool.Index, Is.EqualTo(0), "SlotPool starts at 0 (unlike NodePool)");
         }
     }
 
@@ -55,7 +55,7 @@ public class SlotMemoryPoolTests
         {
             That(idx1, Is.EqualTo(0));
             That(idx2, Is.EqualTo(1));
-            That(_pool.Count, Is.EqualTo(2));
+            That(_pool.Index, Is.EqualTo(2));
         }
     }
 
@@ -71,7 +71,7 @@ public class SlotMemoryPoolTests
 
         using (EnterMultipleScope())
         {
-            That(_pool.Count, Is.EqualTo(0), "Configure should reset the allocator");
+            That(_pool.Index, Is.EqualTo(0), "Configure should reset the allocator");
             
             // Verifichiamo che l'allocazione riparta da 0
             That(_pool.Allocate(), Is.EqualTo(0));

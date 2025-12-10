@@ -12,7 +12,7 @@ public interface INodeMemoryPool : IDisposable
     /// <summary>
     /// Numero di nodi attualmente allocati (incluso l'indice 0 riservato).
     /// </summary>
-    int Count { get; }
+    int Index { get; }
 
     /// <summary>
     /// Ottiene un riferimento al nodo all'indice specificato.

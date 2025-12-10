@@ -1,76 +1,66 @@
-﻿using System.Runtime.CompilerServices;
-using Thanos.Common;
-using Thanos.War;
+﻿using Thanos.War;
 using Thanos.War.Structures;
 
 namespace Thanos.Memory;
 
 public readonly struct SlotMemoryLayout
 {
+    // --- Snake Local Blocks ---
     public readonly MemoryBlock WarSnakeLife;
     public readonly MemoryBlock Bitboard;
     public readonly MemoryBlock CircularQueueState;
     public readonly MemoryBlock QueueBuffer;
 
-    public readonly MemoryBlock SnakesBitboard;
+    // --- Container Block: SNAKE ---
+    // Rappresenta l'intera memoria di UN serpente.
+    // Snake.Offset = 0
+    // Snake.Length = Dimensione dati
+    // Snake.Next   = STRIDE (Offset del prossimo serpente)
+    public readonly MemoryBlock SnakeStride; 
+    
+    public readonly ushort QueueCapacity;
+
+    // --- Global Blocks ---
+    public readonly MemoryBlock CollisionsBitboard;
     public readonly MemoryBlock FoodBitboard;
     public readonly MemoryBlock HazardsBitboard;
 
-    public readonly int SnakeStride;
-    public readonly int SlotSize;
-    public readonly ushort QueueCapacity;
+    // --- Container Block: SLOT ---
+    // Rappresenta l'intera memoria di UNO Slot (Arena).
+    // Slot.Next = SLOT STRIDE (Offset del prossimo slot nel pool)
+    public readonly MemoryBlock SlotStride;
 
-    public static SlotMemoryLayout Medium => new(Constants.Medium.Area, 128, Constants.MaxSnakesCount);
-
-    private SlotMemoryLayout(int area, ushort queueCapacity, int maxSnakeCount)
+    public SlotMemoryLayout(ushort area, ushort queueCapacity, byte maxSnakeCount)
     {
         QueueCapacity = queueCapacity;
-        
-        var bitboardByteSize = sizeof(ulong) * ((area + 63) / 64);
+        var ulongCount = (area + 63) / 64; 
 
-        var relOffset = 0;
+        // 1. Definiamo i sotto-blocchi dello Snake
+        WarSnakeLife = MemoryBlock.CreateUp8<WarSnakeLife>(0, 1);
+        Bitboard = MemoryBlock.CreateUp8<ulong>(WarSnakeLife.Next, ulongCount);
+        CircularQueueState = MemoryBlock.CreateUp8<CircularQueueState>(Bitboard.Next, 1);
+        QueueBuffer = MemoryBlock.CreateUp64<ushort>(CircularQueueState.Next, queueCapacity);
 
-        WarSnakeLife = new MemoryBlock(relOffset, 1); 
-        relOffset += Unsafe.SizeOf<WarSnakeLife>();
+        // 2. Definiamo il blocco SNAKE (Contenitore)
+        // Inizia a 0.
+        // La sua lunghezza "utile" finisce dove finisce il QueueBuffer.
+        // Forziamo l'allineamento a 64 byte per il Next.
+        // QUINDI: Snake.Next è il nostro "SnakeStride".
+        SnakeStride = MemoryBlock.CreateUp64(0, QueueBuffer.Next);
 
-        Bitboard = new MemoryBlock(relOffset, bitboardByteSize);
-        relOffset += bitboardByteSize;
+        // 3. Blocchi Globali
+        // Iniziano dove finisce l'array di serpenti (Snake.Next * N)
+        var snakesTotalSize = SnakeStride.Next * maxSnakeCount;
 
-        // 3. Queue State (piccolo, ~4-8 byte)
-        CircularQueueState = new MemoryBlock(relOffset, 1);
-        relOffset += Unsafe.SizeOf<CircularQueueState>();
+        CollisionsBitboard = MemoryBlock.CreateUp64<ulong>(snakesTotalSize, ulongCount);
+        FoodBitboard = MemoryBlock.CreateUp8<ulong>(CollisionsBitboard.Next, ulongCount);
+        HazardsBitboard = MemoryBlock.CreateUp8<ulong>(FoodBitboard.Next, ulongCount);
 
-        // 4. Queue Buffer (Heavy Data)
-        // OTTIMIZZAZIONE CACHE:
-        // Allineiamo il buffer della coda a 64 byte. 
-        // Questo spreca qualche byte (gap) tra lo State e il Buffer, 
-        // ma garantisce che quando scorriamo l'array del corpo, partiamo da una cache line fresca.
-        relOffset = relOffset.AlignUp64();
-        
-        QueueBuffer = new MemoryBlock(relOffset, queueCapacity);
-        relOffset += sizeof(ushort) * queueCapacity;
-
-        // 5. Chiusura Stride
-        // Allineiamo la fine del serpente a 64 byte. 
-        // Così il serpente successivo inizia pulito su una nuova cache line.
-        SnakeStride = relOffset.AlignUp64();
-
-        // --- LAYOUT GLOBALE SLOT ---
-        var globalOffset = SnakeStride * maxSnakeCount;
-
-        // I Bitboard condivisi dovrebbero essere allineati per operazioni SIMD/Bitmask veloci
-        globalOffset = globalOffset.AlignUp64();
-
-        SnakesBitboard = new MemoryBlock(globalOffset, bitboardByteSize);
-        globalOffset += bitboardByteSize;
-
-        FoodBitboard = new MemoryBlock(globalOffset, bitboardByteSize);
-        globalOffset += bitboardByteSize;
-
-        HazardsBitboard = new MemoryBlock(globalOffset, bitboardByteSize);
-        globalOffset += bitboardByteSize;
-
-        // Dimensione finale Slot
-        SlotSize = globalOffset.AlignUp64();
+        // 4. Definiamo il blocco SLOT (Contenitore Totale)
+        // Inizia a 0.
+        // Finisce dove finisce l'ultimo bitboard.
+        // Forziamo allineamento a 64 byte.
+        // QUINDI: Slot.Next è il nostro "SlotStride".
+        SlotStride = MemoryBlock.CreateUp64(0, HazardsBitboard.Next);
     }
 }

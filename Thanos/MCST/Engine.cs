@@ -4,7 +4,6 @@ using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.Memory;
 using Thanos.SourceGen;
-using Thanos.War;
 
 namespace Thanos.MCST;
 
