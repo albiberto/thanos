@@ -24,12 +24,14 @@ public class CoordinatesMatrixTests
         for (ushort i = 0; i < area; i++)
         {
             var expected = buffer[i];
+            var actualGet = matrix.Get(i);
+            var actualIndexer = matrix[i];
 
-            using (EnterMultipleScope())
+            Multiple(() =>
             {
-                That(matrix.Get(i), Is.EqualTo(expected), $"Get({i}) returned an incorrect value.");
-                That(matrix[i], Is.EqualTo(expected), $"Indexer [{i}] returned an incorrect value.");
-            }
+                That(actualGet, Is.EqualTo(expected), $"Get({i}) should return {expected} but was {actualGet}.");
+                That(actualIndexer, Is.EqualTo(expected), $"Indexer[{i}] should return {expected} but was {actualIndexer}.");
+            });
         }
     }
 
@@ -45,10 +47,9 @@ public class CoordinatesMatrixTests
         var matrix = new CoordinatesMatrix(buffer);
 
         buffer[0] = new Coordinate(99, 99);
+        var expected = new Coordinate(99, 99);
+        var actual = matrix[0];
 
-        using (EnterMultipleScope())
-        {
-            That(matrix[0], Is.EqualTo(new Coordinate(99, 99)), "Matrix should reflect changes in underlying buffer.");
-        }
+        That(actual, Is.EqualTo(expected), $"Matrix[0] should be {expected} reflecting underlying buffer change but was {actual}.");
     }
 }

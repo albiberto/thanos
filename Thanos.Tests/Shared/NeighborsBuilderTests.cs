@@ -27,34 +27,23 @@ public class NeighborsBuilderTests
             var x = i % width;
             var y = i / width;
 
-            var up = grid.Get(i, Moves.Up);
-            var down = grid.Get(i, Moves.Down);
-            var left = grid.Get(i, Moves.Left);
-            var right = grid.Get(i, Moves.Right);
+            var actualUp = grid.Get(i, Moves.Up);
+            var actualDown = grid.Get(i, Moves.Down);
+            var actualLeft = grid.Get(i, Moves.Left);
+            var actualRight = grid.Get(i, Moves.Right);
 
-            var expectedUp = y >= height - 1
-                ? ushort.MaxValue
-                : (ushort)(i + width);
+            var expectedUp = y >= height - 1 ? ushort.MaxValue : (ushort)(i + width);
+            var expectedDown = y == 0 ? ushort.MaxValue : (ushort)(i - width);
+            var expectedLeft = x == 0 ? ushort.MaxValue : (ushort)(i - 1);
+            var expectedRight = x == width - 1 ? ushort.MaxValue : (ushort)(i + 1);
 
-            var expectedDown = y == 0
-                ? ushort.MaxValue
-                : (ushort)(i - width);
-
-            var expectedLeft = x == 0
-                ? ushort.MaxValue
-                : (ushort)(i - 1);
-
-            var expectedRight = x == width - 1
-                ? ushort.MaxValue
-                : (ushort)(i + 1);
-
-            using (EnterMultipleScope())
+            Multiple(() =>
             {
-                That(up, Is.EqualTo(expectedUp), $"Error at {i} ({x},{y}) doing UP");
-                That(down, Is.EqualTo(expectedDown), $"Error at {i} ({x},{y}) doing DOWN");
-                That(left, Is.EqualTo(expectedLeft), $"Error at {i} ({x},{y}) doing LEFT");
-                That(right, Is.EqualTo(expectedRight), $"Error at {i} ({x},{y}) doing RIGHT");
-            }
+                That(actualUp, Is.EqualTo(expectedUp), $"Neighbor Up at index {i} ({x},{y}) should be {expectedUp} but was {actualUp}.");
+                That(actualDown, Is.EqualTo(expectedDown), $"Neighbor Down at index {i} ({x},{y}) should be {expectedDown} but was {actualDown}.");
+                That(actualLeft, Is.EqualTo(expectedLeft), $"Neighbor Left at index {i} ({x},{y}) should be {expectedLeft} but was {actualLeft}.");
+                That(actualRight, Is.EqualTo(expectedRight), $"Neighbor Right at index {i} ({x},{y}) should be {expectedRight} but was {actualRight}.");
+            });
         }
     }
 
@@ -68,6 +57,6 @@ public class NeighborsBuilderTests
         var expectedLength = area * 4;
         var wrongBuffer = new ushort[expectedLength - 1];
 
-        Throws<ArgumentException>(() => NeighborsBuilder.Populate(width, height, wrongBuffer));
+        Throws<ArgumentException>(() => NeighborsBuilder.Populate(width, height, wrongBuffer), $"Buffer size mismatch should throw ArgumentException for width={width}, height={height}, expected length={expectedLength}.");
     }
 }

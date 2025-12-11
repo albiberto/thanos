@@ -28,12 +28,14 @@ public class NeighborsMatrixTests
         {
             var expected = buffer[pos * 4 + moveIndex];
             var moveMask = masks[moveIndex];
+            var actualGetAt = matrix.GetAt(pos, moveIndex);
+            var actualGet = matrix.Get(pos, moveMask);
 
-            using (EnterMultipleScope())
+            Multiple(() =>
             {
-                That(matrix.GetAt(pos, moveIndex), Is.EqualTo(expected), $"GetAt({pos}, {moveIndex}) returned an incorrect value.");
-                That(matrix.Get(pos, moveMask), Is.EqualTo(expected), $"Get({pos}, {moveMask}) returned an incorrect value.");
-            }
+                That(actualGetAt, Is.EqualTo(expected), $"GetAt({pos}, {moveIndex}) should return {expected} but was {actualGetAt}.");
+                That(actualGet, Is.EqualTo(expected), $"Get({pos}, {moveMask}) should return {expected} but was {actualGet}.");
+            });
         }
     }
 
@@ -49,8 +51,10 @@ public class NeighborsMatrixTests
         var matrix = new NeighborsMatrix(buffer);
 
         buffer[0] = 999;
+        var expected = (ushort)999;
+        var actual = matrix.Get(0, Moves.Up);
 
-        That(matrix.Get(0, Moves.Up), Is.EqualTo(999), "Matrix should reflect changes in underlying buffer.");
+        That(actual, Is.EqualTo(expected), $"Matrix.Get(0, Moves.Up) should be {expected} reflecting underlying buffer change but was {actual}.");
     }
 
     /// <summary>
@@ -60,11 +64,15 @@ public class NeighborsMatrixTests
     [Test]
     public void IsValid_ShouldReturnCorrectBoolean()
     {
-        using (EnterMultipleScope())
+        var actualMaxValue = NeighborsMatrix.IsValid(ushort.MaxValue);
+        var actualZero = NeighborsMatrix.IsValid(0);
+        var actualOther = NeighborsMatrix.IsValid(12345);
+
+        Multiple(() =>
         {
-            That(NeighborsMatrix.IsValid(ushort.MaxValue), Is.False, "MaxValue should be Invalid");
-            That(NeighborsMatrix.IsValid(0), Is.True, "0 should be Valid");
-            That(NeighborsMatrix.IsValid(12345), Is.True, "Any other number should be Valid");
-        }
+            That(actualMaxValue, Is.False, $"IsValid(ushort.MaxValue) should be False but was {actualMaxValue}.");
+            That(actualZero, Is.True, $"IsValid(0) should be True but was {actualZero}.");
+            That(actualOther, Is.True, $"IsValid(12345) should be True but was {actualOther}.");
+        });
     }
 }
