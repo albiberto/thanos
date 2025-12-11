@@ -41,7 +41,7 @@ public static class BattleSnakeSerializer
         return Parse(sequence);
     }
 
-    public static Request Parse(ReadOnlySequence<byte> sequence)
+    private static Request Parse(ReadOnlySequence<byte> sequence)
     {
         var width = PeekBoardWidth(sequence);
 
