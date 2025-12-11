@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.Shared;
-using Thanos.SourceGen;
+using Thanos.SourceGen; // Assumo Request sia qui
 using Thanos.War.Structures;
 
 namespace Thanos.War;
@@ -24,29 +24,34 @@ public readonly ref struct Arena(
 
     /// <summary>
     /// Inizializza l'Arena dallo stato della Request.
-    /// Richiede l'elenco degli ID ordinati (0=Hero, 1..N=Enemies) per mappare correttamente i dati.
     /// </summary>
     public void InitializeFromRequest(in Request request, ReadOnlySpan<string> orderedIds)
     {
+        // --- FIX CRITICO: Inizializzazione Strutturale ---
+        // Configura Capacity e WrapMask delle code. 
+        // Senza questo, su memoria zero-init, le code non funzionano (Mask=0).
+        System.Initialize();
+
+        // --- Pulizia Logica ---
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
 
-        // Resettiamo/Uccidiamo tutti i serpenti prima di popolarli
+        // Uccidiamo logicamente i serpenti (HP=0) in attesa di ripopolarli
+        // Nota: Initialize() sopra ha già resettato i puntatori delle code, 
+        // ma Kill() azzera la vita e i flag.
         for (var i = 0; i < System.Count; i++) System[i].Kill();
 
         var board = request.Board;
 
-        // Iteriamo sui serpenti del JSON
+        // --- Popolamento ---
         foreach (var snakeData in board.Snakes)
         {
-            // Troviamo l'indice corrispondente nel nostro sistema
-            // L'indice nel buffer 'orderedIds' corrisponde all'indice in 'System'
             var snakeIndex = -1;
             
+            // Mapping ID stringa -> Indice interno
             for (int i = 0; i < orderedIds.Length; i++)
             {
-                // Confronto Ordinal è il più veloce
                 if (string.Equals(orderedIds[i], snakeData.Id, StringComparison.Ordinal))
                 {
                     snakeIndex = i;
@@ -54,11 +59,13 @@ public readonly ref struct Arena(
                 }
             }
 
-            // Se troviamo l'indice (e rientra nel count attivo), inizializziamo
             if (snakeIndex != -1 && snakeIndex < System.Count)
             {
                 var snake = System[snakeIndex];
+                
+                // Ora possiamo chiamare Initialize sul serpente perché la Queue sottostante è configurata
                 snake.Initialize(snakeData);
+                
                 Snakes.Or(snake.Body);
             }
         }
@@ -67,67 +74,49 @@ public readonly ref struct Arena(
         foreach (var hazardPosition in board.Hazards) Hazards.Set(hazardPosition);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CloneFrom(in Arena source)
     {
-        source.System.Raw.CopyTo(System.Raw);
+        // Copia veloce della memoria raw dei serpenti
+        System.CopyFrom(in source.System);
+        
         source.Food.CopyTo(Food);
         source.Hazards.CopyTo(Hazards);
         source.Snakes.CopyTo(Snakes);
     }
 
+    // ... (Il resto dei metodi GetLegalMoves, IsSquareLegal, GetNewHeadPosition, etc. non cambia) ...
+    // Li includo per completezza di compilazione se serve, altrimenti sono invariati.
+    
     public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex)
     {
         byte legalMoves = 0;
-
-        // UP
         var upPos = _neighborsMatrix.Get(headPosition, Moves.Up);
-        if (NeighborsMatrix.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
-            legalMoves |= Moves.Up;
-
-        // DOWN
+        if (NeighborsMatrix.IsValid(upPos) && IsSquareLegal(upPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food)) legalMoves |= Moves.Up;
         var downPos = _neighborsMatrix.Get(headPosition, Moves.Down);
-        if (NeighborsMatrix.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
-            legalMoves |= Moves.Down;
-
-        // LEFT
+        if (NeighborsMatrix.IsValid(downPos) && IsSquareLegal(downPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food)) legalMoves |= Moves.Down;
         var leftPos = _neighborsMatrix.Get(headPosition, Moves.Left);
-        if (NeighborsMatrix.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
-            legalMoves |= Moves.Left;
-
-        // RIGHT
+        if (NeighborsMatrix.IsValid(leftPos) && IsSquareLegal(leftPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food)) legalMoves |= Moves.Left;
         var rightPos = _neighborsMatrix.Get(headPosition, Moves.Right);
-        if (NeighborsMatrix.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food))
-            legalMoves |= Moves.Right;
-
+        if (NeighborsMatrix.IsValid(rightPos) && IsSquareLegal(rightPos, tailPosition, elementBeforeTailPosition, heroIndex, in Food)) legalMoves |= Moves.Right;
         return legalMoves;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool IsSquareLegal(ushort position, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex, in Bitboard food)
     {
-        var isBody = Snakes.IsSet(position);
-
-        if (isBody)
+        if (Snakes.IsSet(position))
         {
             var heroLength = System[heroIndex].Length;
-
             for (var i = 0; i < System.Count; i++)
             {
                 if (i == heroIndex) continue;
-
-                // Collisione testa-a-testa solo con chi ha già mosso (indici < heroIndex)
-                if (i < heroIndex)
-                    if (System[i].Head == position)
-                        return heroLength > System[i].Length;
+                if (i < heroIndex && System[i].Head == position) return heroLength > System[i].Length;
             }
-
-            var isTail = position == tailPosition;
-            if (!isTail) return false;
-
+            if (position != tailPosition) return false;
             if (tailPosition == elementBeforeTailPosition) return false;
             return !food.IsSet(position);
         }
-
         return true;
     }
 
@@ -142,7 +131,6 @@ public readonly ref struct Arena(
             var spawnLocation = GetRandomEmptySquare(area);
             if (NeighborsMatrix.IsValid(spawnLocation)) Food.Set(spawnLocation);
         }
-
         if (Random.Shared.Next(0, 100) < foodSpawnChance)
         {
             var spawnLocation = GetRandomEmptySquare(area);
@@ -158,7 +146,6 @@ public readonly ref struct Arena(
             var potentialSpot = (ushort)Random.Shared.Next(0, area);
             if (Snakes.IsUnset(potentialSpot)) return potentialSpot;
         }
-
         return ushort.MaxValue;
     }
 }

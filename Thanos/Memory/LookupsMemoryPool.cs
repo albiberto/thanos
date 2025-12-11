@@ -7,17 +7,29 @@ namespace Thanos.Memory;
 
 public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
 {
+    // --- SINGLETON STATICO (Aggiunto) ---
+    // Usiamo Lazy per garantire l'inizializzazione thread-safe e ritardata
+    private static readonly Lazy<LookupsMemoryPool> _mediumInstance = new(() => 
+        new LookupsMemoryPool(Constants.Medium.Width, Constants.Medium.Height, Constants.Medium.Area));
+
+    // Access point globale usato dal Bootstrapper
+    public static LookupsMemoryPool Medium => _mediumInstance.Value;
+
+    // --- MEMBRI DI ISTANZA ---
     private readonly byte* _basePointer;
-    
     private readonly LookupsMemoryLayout _layout;
 
-    
     public CoordinatesMatrix CoordinatesMatrix => new(CoordinatesSpan);
     public NeighborsMatrix NeighborsMatrix => new(NeighborsSpan);
     
-    private ReadOnlySpan<Coordinate> CoordinatesSpan => new(_basePointer + _layout.Coordinates.Offset, _layout.Coordinates.Count<Coordinate>());
-    private ReadOnlySpan<ushort> NeighborsSpan => new(_basePointer + _layout.Neighbors.Offset, _layout.Neighbors.Count<ushort>());
+    private ReadOnlySpan<Coordinate> CoordinatesSpan => 
+        new(_basePointer + _layout.Coordinates.Offset, _layout.Coordinates.Count<Coordinate>());
+    
+    private ReadOnlySpan<ushort> NeighborsSpan => 
+        new(_basePointer + _layout.Neighbors.Offset, _layout.Neighbors.Count<ushort>());
 
+    // Costruttore (Può rimanere public se vuoi poter creare pool di dimensioni diverse in futuro, 
+    // oppure private se vuoi forzare l'uso del Singleton Medium)
     public LookupsMemoryPool(byte width, byte height, ushort area)
     {
         _layout = new LookupsMemoryLayout(area);
@@ -32,5 +44,11 @@ public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
         NeighborsBuilder.Populate(width, height, neighborsSpan);
     }
 
-    public void Dispose() => NativeMemory.AlignedFree(_basePointer);
+    public void Dispose()
+    {
+        if (_basePointer != null)
+        {
+            NativeMemory.AlignedFree(_basePointer);
+        }
+    }
 }

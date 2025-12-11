@@ -69,7 +69,7 @@ public sealed unsafe class SlotMemoryPool : ISlotMemoryPool
     {
         var slotPtr = _basePointer + (nuint)index * _stride;
         
-        system = new SnakesSystem(new Span<byte>(slotPtr, (int)_layout.SlotStride.Length), in _layout, _snakesCount);
+        system = new SnakesSystem(slotPtr, in _layout, _snakesCount);
 
         foodBitboard = new Bitboard(new Span<byte>(slotPtr + _layout.FoodBitboard.Offset, (int)_layout.FoodBitboard.Length));
         hazardsBitboard = new Bitboard(new Span<byte>(slotPtr + _layout.HazardsBitboard.Offset, (int)_layout.HazardsBitboard.Length));

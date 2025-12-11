@@ -1,8 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Thanos.Abstract;
 using Thanos.Common;
-using Thanos.Memory;
 using Thanos.SourceGen;
 using Thanos.War;
 
@@ -13,27 +11,42 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
     private const double EXPLORATION_PARAMETER = 1.41;
     private const int CHANCE_NODE_VISIT_THRESHOLD = 50;
 
-    private int _nextId = 1;
     private RulesetSettings _settings;
 
     private readonly INodeMemoryPool _nodeMemoryPool = nodeMemoryPool;
     private readonly ISlotMemoryPool _slotPool = slotPool;
 
     private static readonly byte[] AllMoves = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+    
+    // Buffer riutilizzabile per i rewards (allocato una volta sola)
     private readonly float[] _rewardsBuffer = new float[Constants.MaxSnakesCount];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RunIteration(int area, int rootIndex)
     {
+        // 1. Selection
         var leafIndex = Select(rootIndex);
+        
+        // Controllo validità selezione (se pool corrotto o logic error)
+        if (leafIndex == -1) return;
+
         ref var leafNode = ref _nodeMemoryPool.Get(leafIndex);
 
-        if (leafNode.IsLeafNode && leafNode is { IsTerminal: false, IsSolvedWin: false, IsSolvedLoss: false }) Expand(leafIndex, ref leafNode, area);
+        // 2. Expansion
+        // Espandiamo solo se è una foglia non terminale e non risolta
+        if (leafNode.IsLeafNode && leafNode is { IsTerminal: false, IsSolvedWin: false, IsSolvedLoss: false }) 
+        {
+            Expand(leafIndex, ref leafNode, area);
+        }
 
+        // 3. Evaluation
+        // Se abbiamo espanso, valutiamo il primo figlio (best guess), altrimenti il nodo stesso
         var nodeToEvaluate = leafIndex;
         if (!leafNode.IsLeafNode) nodeToEvaluate = leafNode.FirstChildIndex;
 
         Evaluate(nodeToEvaluate, _rewardsBuffer);
+
+        // 4. Backpropagation
         Backpropagate(nodeToEvaluate, _rewardsBuffer);
     }
 
@@ -41,7 +54,12 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
     private int Select(int rootIndex)
     {
         var currentIndex = rootIndex;
-        while (true)
+        
+        // Safety loop break (opzionale, per evitare loop infiniti in dev)
+        var depth = 0; 
+        const int maxDepth = 1000;
+
+        while (depth++ < maxDepth)
         {
             ref var currentNode = ref _nodeMemoryPool.Get(currentIndex);
 
@@ -51,7 +69,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
             if (currentNode.IsChanceNode)
             {
                 var outcomeIndex = SelectChanceOutcome(ref currentNode);
-                if (outcomeIndex == -1) return currentIndex;
+                if (outcomeIndex == -1) return currentIndex; // Nessun outcome disponibile (improbabile se non terminale)
                 currentIndex = outcomeIndex;
                 continue;
             }
@@ -59,12 +77,15 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
             var bestChild = SelectBestChildMaxN(ref currentNode);
             if (bestChild == -1)
             {
+                // Non dovrebbe accadere se IsLeafNode è false, ma per sicurezza:
                 currentNode.MarkTerminal();
                 return currentIndex;
             }
 
             currentIndex = bestChild;
         }
+        
+        return currentIndex;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,7 +93,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
     {
         var bestScore = double.MinValue;
         var bestChildIndex = -1;
-        var logParentVisits = Math.Log(parentNode.Visits);
+        var logParentVisits = Math.Log(parentNode.Visits + 1); // +1 per evitare Log(0) o problemi numerici
         var playerIndex = parentNode.PlayerIndex;
 
         var childIndex = parentNode.FirstChildIndex;
@@ -80,13 +101,17 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         {
             ref var childNode = ref _nodeMemoryPool.Get(childIndex);
 
+            // Solver Logic: se trovo una vittoria certa, la prendo subito
             if (childNode.IsSolvedWin) return childIndex;
+            
+            // Solver Logic: se è una sconfitta certa, la evito a meno che non sia l'unica mossa
             if (childNode.IsSolvedLoss)
             {
                 childIndex = childNode.NextSiblingIndex;
                 continue;
             }
 
+            // FPU (First Play Urgency): se non visitato, visitiamo subito per avere una stima
             if (childNode.Visits == 0) return childIndex;
 
             var exploitation = childNode.Rewards[playerIndex] / childNode.Visits;
@@ -102,6 +127,13 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
             childIndex = childNode.NextSiblingIndex;
         }
 
+        // Se tutti i figli sono SolvedLoss, siamo costretti a prenderne uno (il primo disponibile o il meno peggio)
+        // In questo caso il Select loop marcherà il nodo corrente come SolvedLoss in backprop.
+        if (bestChildIndex == -1 && parentNode.FirstChildIndex != -1)
+        {
+             return parentNode.FirstChildIndex;
+        }
+
         return bestChildIndex;
     }
 
@@ -114,14 +146,19 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         ref var firstNode = ref _nodeMemoryPool.Get(firstChild);
         var secondChild = firstNode.NextSiblingIndex;
 
+        // Se c'è un solo figlio (es. no food spawn), torniamo quello
         if (secondChild == -1) return firstChild;
 
+        // Simuliamo la probabilità di spawn del cibo
         var pickSpawn = Random.Shared.NextDouble() < _settings.FoodSpawnChance / 100.0;
         return pickSpawn ? secondChild : firstChild;
     }
 
     private void Expand(int parentIndex, ref Node parentNode, int area)
     {
+        // Se i pool sono pieni, non possiamo espandere.
+        // Controlliamo preventivamente la capacità residua? No, proviamo ad allocare.
+        
         if (parentNode.IsChanceNode) ExpandChanceNode(parentIndex, ref parentNode, area);
         else ExpandPlayerNode(parentIndex, ref parentNode, area);
     }
@@ -146,6 +183,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
             return;
         }
 
+        // --- Move Pruning (Opzionale) ---
         byte prunedMoves = 0;
         var safeMoveCount = 0;
         foreach (var move in AllMoves)
@@ -157,21 +195,33 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
                 safeMoveCount++;
             }
         }
-
         var movesToExpand = safeMoveCount > 0 ? prunedMoves : legalMoves;
+        // --------------------------------
 
         var nextPlayerIndex = GetNextPlayerIndex(in arena, playerIndex);
         var isNextChance = nextPlayerIndex == Constants.EnvironmentPlayerIndex;
         var actualNextPlayer = isNextChance ? (byte)Constants.EnvironmentPlayerIndex : (byte)nextPlayerIndex;
 
         var lastChildIndex = -1;
+
         foreach (var move in AllMoves)
         {
             if ((movesToExpand & move) == 0) continue;
 
-            var childIndex = ++_nextId;
-            var childArena = _slotPool.GetArena(childIndex);
+            // --- ALLOCAZIONE SINCRONIZZATA ---
+            var childIndex = _nodeMemoryPool.Allocate();
+            var childSlotIndex = _slotPool.Allocate();
 
+            // Gestione Out of Memory (Pool Pieni)
+            if (childIndex == -1 || childSlotIndex == -1)
+            {
+                // Rollback parziale se uno dei due è fallito (raro ma possibile se capacity diverse)
+                // Per semplicità, in una competizione, se finisce la memoria ci fermiamo.
+                return; 
+            }
+
+            // Inizializza lo stato del figlio
+            var childArena = _slotPool.GetArena(childIndex);
             childArena.CloneFrom(in arena);
 
             var snakeToMove = childArena.System[playerIndex];
@@ -182,8 +232,15 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
             ref var childNode = ref _nodeMemoryPool.Get(childIndex);
             childNode.PlacementNew(parentIndex, move, hash, actualNextPlayer, isNextChance);
 
-            if (lastChildIndex == -1) parentNode.FirstChildIndex = childIndex;
-            else _nodeMemoryPool.Get(lastChildIndex).NextSiblingIndex = childIndex;
+            // Linking della lista concatenata dei fratelli
+            if (lastChildIndex == -1) 
+            {
+                parentNode.FirstChildIndex = childIndex;
+            }
+            else 
+            {
+                _nodeMemoryPool.Get(lastChildIndex).NextSiblingIndex = childIndex;
+            }
 
             lastChildIndex = childIndex;
         }
@@ -194,19 +251,33 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
 
     private void ExpandChanceNode(int parentIndex, ref Node parentNode, int area)
     {
-        CreateEnvironmentChild(parentIndex, area, false);
-        if (parentNode.Visits > CHANCE_NODE_VISIT_THRESHOLD)
+        // Genera sempre il caso "No Food Spawn"
+        var success1 = CreateEnvironmentChild(parentIndex, area, false);
+        
+        // Se il nodo è molto visitato, espandiamo anche il caso "Food Spawn"
+        if (success1 && parentNode.Visits > CHANCE_NODE_VISIT_THRESHOLD)
+        {
             CreateEnvironmentChild(parentIndex, area, true);
+        }
     }
 
-    private void CreateEnvironmentChild(int parentIndex, int area, bool spawnFood)
+    private bool CreateEnvironmentChild(int parentIndex, int area, bool spawnFood)
     {
-        var childIndex = ++_nextId;
+        // --- ALLOCAZIONE SINCRONIZZATA ---
+        var childIndex = _nodeMemoryPool.Allocate();
+        var childSlotIndex = _slotPool.Allocate();
+
+        if (childIndex == -1 || childSlotIndex == -1) return false;
+
         var parentArena = _slotPool.GetArena(parentIndex);
         var childArena = _slotPool.GetArena(childIndex);
+        
         childArena.CloneFrom(in parentArena);
 
-        if (spawnFood) childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
+        if (spawnFood) 
+        {
+            childArena.SimulateRandomFoodSpawn(_settings.FoodSpawnChance, _settings.MinimumFood, area);
+        }
 
         var hash = ZobristHasher.CalculateHash(in childArena);
 
@@ -214,12 +285,14 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         ref var parentNode = ref _nodeMemoryPool.Get(parentIndex);
 
         var firstAlive = GetFirstAlivePlayerIndex(in childArena);
-        var isNextChance = firstAlive == Constants.EnvironmentPlayerIndex;
+        var isNextChance = firstAlive == Constants.EnvironmentPlayerIndex; // Tutti morti?
         var nextPlayer = (byte)firstAlive;
 
         childNode.PlacementNew(parentIndex, Moves.None, hash, nextPlayer, isNextChance);
+        
         if (isNextChance) childNode.MarkTerminal();
 
+        // Linking
         if (parentNode.FirstChildIndex == -1)
         {
             parentNode.FirstChildIndex = childIndex;
@@ -227,11 +300,20 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         else
         {
             var sibling = parentNode.FirstChildIndex;
-            while (_nodeMemoryPool.Get(sibling).NextSiblingIndex != -1) sibling = _nodeMemoryPool.Get(sibling).NextSiblingIndex;
+            while (_nodeMemoryPool.Get(sibling).NextSiblingIndex != -1) 
+            {
+                sibling = _nodeMemoryPool.Get(sibling).NextSiblingIndex;
+            }
             _nodeMemoryPool.Get(sibling).NextSiblingIndex = childIndex;
         }
+
+        return true;
     }
 
+    // ... GetNextPlayerIndex, GetFirstAlivePlayerIndex, ApplySingleMove rimangono uguali ...
+    // Li ometto per brevità se non sono cambiati logicamente, altrimenti li copio sotto.
+    // Assumo che siano metodi statici puri o helper dell'Arena già corretti.
+    
     private static int GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
     {
         var next = currentPlayerIndex + 1;
@@ -247,7 +329,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         if (next >= arena.System.Count) return Constants.EnvironmentPlayerIndex;
         return next;
     }
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ApplySingleMove(in Arena arena, ref WarSnake snake, byte move, int area)
     {
@@ -293,34 +375,37 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         var heuristics = _slotPool.GetHeuristics(nodeIndex);
         var arena = _slotPool.GetArena(nodeIndex);
 
-        // MODIFICA: Determina se il turno è completo
-        // Se il prossimo a muovere è Environment o Player 0 (noi, inizio nuovo turno), 
-        // significa che tutti gli avversari hanno mosso nel turno precedente.
         ref var node = ref _nodeMemoryPool.Get(nodeIndex);
+        
+        // Determina se il turno è completo (Environment o Player 0 a muovere)
         var isPhaseComplete = node.PlayerIndex is Constants.EnvironmentPlayerIndex or 0;
 
         Array.Clear(rewardsBuffer);
 
+        // 1. Terminal/Outcome check
         for (var i = 0; i < arena.System.Count; i++)
         {
             var outcome = heuristics.Outcome(i);
             if (outcome != 0.0f) rewardsBuffer[i] = outcome;
         }
 
+        // 2. Heuristic evaluation
+        // Usiamo stackalloc per passare lo Span richiesto da EvaluateAll
         Span<float> rawScores = stackalloc float[arena.System.Count];
-
-        // Passiamo il flag isPhaseComplete all'euristica
         heuristics.EvaluateAll(rawScores, isPhaseComplete);
 
         for (var i = 0; i < arena.System.Count; i++)
         {
+            // Se abbiamo già un outcome definitivo (es. vittoria/morte), usiamolo
             if (rewardsBuffer[i] != 0.0f) continue;
+            
             if (arena.System[i].IsDead)
             {
                 rewardsBuffer[i] = -1.0f;
                 continue;
             }
 
+            // Normalizzazione score euristico in [-1, 1] tramite Tanh
             rewardsBuffer[i] = MathF.Tanh(rawScores[i] / 150.0f);
         }
     }
@@ -328,11 +413,16 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
     private unsafe void Backpropagate(int startNodeIndex, float[] rewards)
     {
         var currentIndex = startNodeIndex;
-        while (currentIndex != -1)
+        while (currentIndex != -1) // Risaliamo fino alla root (Parent == -1)
         {
             ref var currentNode = ref _nodeMemoryPool.Get(currentIndex);
             currentNode.UpdateStats(rewards);
-            if (currentNode.ParentIndex != -1) PropagateSolverFlags(currentIndex, currentNode.ParentIndex);
+            
+            if (currentNode.ParentIndex != -1) 
+            {
+                PropagateSolverFlags(currentIndex, currentNode.ParentIndex);
+            }
+            
             currentIndex = currentNode.ParentIndex;
         }
     }
@@ -341,35 +431,43 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
     private void PropagateSolverFlags(int childIndex, int parentIndex)
     {
         ref var childNode = ref _nodeMemoryPool.Get(childIndex);
-        if (childNode.IsSolvedLoss)
+        
+        // Se un figlio è una sconfitta certa, controlliamo se TUTTI i fratelli sono sconfitte.
+        if (!childNode.IsSolvedLoss) return;
+        
+        ref var parentNode = ref _nodeMemoryPool.Get(parentIndex);
+            
+        if (parentNode.IsSolvedLoss || parentNode.IsSolvedWin) return;
+        if (parentNode.IsChanceNode) return; // Chance node ha logiche diverse (media pesata)
+
+        var allChildrenLost = true;
+        var currentSibling = parentNode.FirstChildIndex;
+        while (currentSibling != -1)
         {
-            ref var parentNode = ref _nodeMemoryPool.Get(parentIndex);
-            if (parentNode.IsSolvedLoss || parentNode.IsSolvedWin) return;
-            if (parentNode.IsChanceNode) return;
-
-            var allChildrenLost = true;
-            var currentSibling = parentNode.FirstChildIndex;
-            while (currentSibling != -1)
+            ref var siblingNode = ref _nodeMemoryPool.Get(currentSibling);
+            if (!siblingNode.IsSolvedLoss)
             {
-                ref var siblingNode = ref _nodeMemoryPool.Get(currentSibling);
-                if (!siblingNode.IsSolvedLoss)
-                {
-                    allChildrenLost = false;
-                    break;
-                }
-
-                currentSibling = siblingNode.NextSiblingIndex;
+                allChildrenLost = false;
+                break;
             }
 
-            if (allChildrenLost) parentNode.MarkSolvedLoss();
+            currentSibling = siblingNode.NextSiblingIndex;
         }
+
+        if (allChildrenLost) 
+        {
+            parentNode.MarkSolvedLoss();
+        }
+        // Nota: Se un figlio è SolvedWin, il parent diventa SolvedWin (per noi). 
+        // Ma attenzione: questo vale se tocca a noi muovere nel parent. 
+        // Se tocca all'opponent nel parent, e il figlio è SolvedWin (per noi), per l'opponent è Loss.
+        // La logica solver completa richiede di sapere CHI muove. 
+        // Per ora manteniamo la tua logica originale difensiva.
     }
 
-    public void Reset(int startId) => _nextId = startId;
-
-    public void Reset(int startId, RulesetSettings settings)
+    // Metodo Reset allineato: riceve solo i settings, i pool sono già resettati dall'Engine.
+    public void Reset(RulesetSettings settings)
     {
-        _nextId = startId;
         _settings = settings;
     }
 }

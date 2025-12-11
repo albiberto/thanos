@@ -7,89 +7,86 @@ using Thanos.SourceGen;
 
 namespace Thanos.MCST;
 
-public class Engine
+public sealed class Engine
 {
-    private readonly INodeMemoryPool _nodePool;
     private readonly ISlotMemoryPool _slotPool;
+    private readonly INodeMemoryPool _nodePool;
     private readonly Worker _worker;
 
-    private int _rootIndex = NodeMemoryPool.FirstIndex; // Usa la costante definita nel pool
-    
-    // Stato del match corrente
+    private int _rootIndex = -1; 
     private string[] _sortedSnakeIds = [];
 
     public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
-        
-        // Assumo che anche Worker sia stato aggiornato per accettare le interfacce
         _worker = new Worker(_slotPool, _nodePool);
     }
 
-    /// <summary>
-    /// Configura l'engine per la partita corrente.
-    /// </summary>
-    public void InitializeGame(string[] sortedSnakeIds, int count)
+    public void InitializeGame(string[] sortedSnakeIds)
     {
         _sortedSnakeIds = sortedSnakeIds;
-        // Configura il pool (imposta active snakes per SnakesSystem)
-        _slotPool.Configure(count);
-        // Resetta il worker se necessario
-        _worker.Reset(count);
+        Reset();
+    }
+
+    // Metodo di reset leggero chiamato dal Cluster
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset()
+    {
+        _rootIndex = -1;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int FindBestMove(in Request request, int lastChosenIndex, long targetHash)
     {
-        // 1. Tree Reuse Logic
-        if (lastChosenIndex > 0)
+        var treeReused = false;
+
+        // FASE 1: Tree Reuse
+        if (_rootIndex != -1 && lastChosenIndex > 0)
         {
-            _rootIndex = FindNewRoot(lastChosenIndex, targetHash);
-
-            if (_rootIndex > 0)
+            var potentialRoot = FindNewRoot(lastChosenIndex, targetHash);
+            if (potentialRoot > 0)
             {
+                _rootIndex = potentialRoot;
                 ref var newRootNode = ref _nodePool.Get(_rootIndex);
-                newRootNode.NewRoot();
+                newRootNode.NewRoot(); 
 
-                // Re-inizializziamo lo stato dell'Arena root per assicurarci che sia sincronizzato col turno corrente
                 var rootArena = _slotPool.GetArena(_rootIndex);
                 rootArena.InitializeFromRequest(in request, _sortedSnakeIds);
+                treeReused = true;
             }
         }
-        else
-        {
-            _rootIndex = 0;
-        }
 
-        // 2. Full Reset Fallback
-        if (_rootIndex <= 0)
+        // FASE 2: Full Reset
+        if (!treeReused)
         {
-            _rootIndex = NodeMemoryPool.FirstIndex;
-            
-            // Prepariamo la Root Arena
-            var rootIndex = _slotPool.Allocate(); // Alloca slot per la root
-            
-            // Safety check: se allocation fallisce (pool pieno), crashiamo o gestiamo
-            if (rootIndex == -1) throw new InvalidOperationException("SlotPool exhausted at root allocation.");
+            _nodePool.Reset();
+            _slotPool.Reset();
 
-            var rootArena = _slotPool.GetArena(rootIndex); // Nota: Engine usava _rootIndex come indice slot, assumiamo mappatura 1:1 o logica interna
+            _rootIndex = _nodePool.Allocate();
+            var slotIndex = _slotPool.Allocate();
+
+            if (_rootIndex == -1 || slotIndex == -1) 
+                throw new InvalidOperationException("Pools exhausted.");
             
-            // Qui passiamo gli ID ordinati
+            Debug.Assert(_rootIndex == slotIndex);
+
+            var rootArena = _slotPool.GetArena(_rootIndex);
             rootArena.InitializeFromRequest(in request, _sortedSnakeIds);
 
             ref var rootNode = ref _nodePool.Get(_rootIndex);
-            rootNode.PlacementRoot(targetHash);
-            
-            // Aggiorniamo il riferimento allo slot nel nodo se necessario, 
-            // oppure assumiamo che il Worker sappia che Node X usa Slot X.
+            rootNode.PlacementRoot(targetHash); 
         }
 
+        // FASE 3: MCTS
         RunIterations(request.Board.Area);
 
-        // 3. Selection
-        return _nodePool.SelectMostVisitedChild(_rootIndex);
+        // FASE 4: Selection
+        return SelectBestChildMove(_rootIndex);
     }
+
+    // ... (FindNewRoot, FindNodeWithHash, RunIterations, SelectBestChildMove, GetRootStats, GetFallbackMove) ...
+    // Assumo che questi metodi siano presenti come definiti precedentemente.
 
     private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
     {
@@ -100,23 +97,18 @@ public class Engine
     private int FindNodeWithHash(int startIndex, long targetHash, int depthLimit)
     {
         if (startIndex <= 0 || depthLimit <= 0) return 0;
-
         var current = startIndex;
         var safetyCounter = 0;
-        const int MaxSiblingsSearch = 10000;
+        const int MaxSiblingsSearch = 5000;
 
         while (current > 0 && safetyCounter++ < MaxSiblingsSearch)
         {
             ref var node = ref _nodePool.Get(current);
-
             if (node.Hash == targetHash) return current;
-
             var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
             if (foundInChild != 0) return foundInChild;
-
             current = node.NextSiblingIndex;
         }
-
         return 0;
     }
 
@@ -124,59 +116,72 @@ public class Engine
     private void RunIterations(int area)
     {
         const long maxTimeMs = 450;
-        const long forcedMoveTimeMs = 50;
-
+        const long forcedMoveTimeMs = 50; 
         var stopwatch = Stopwatch.StartNew();
-
         ref var rootNode = ref _nodePool.Get(_rootIndex);
 
-        // Se la root è foglia (appena creata), espandiamola subito
-        if (rootNode.IsLeafNode) 
-        {
-             _worker.RunIteration(area, _rootIndex);
-        }
+        if (rootNode.IsLeafNode) _worker.RunIteration(area, _rootIndex);
 
-        // Contiamo i figli per decidere il time management
-        var childCount = 0;
-        var childIdx = rootNode.FirstChildIndex;
-        while (childIdx != -1)
-        {
-            childCount++;
-            childIdx = _nodePool.Get(childIdx).NextSiblingIndex;
-        }
-
+        var childCount = CountChildren(_rootIndex);
         var timeLimit = childCount <= 1 ? forcedMoveTimeMs : maxTimeMs;
-        var counter = 0;
 
         while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
             if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) break;
-
             var remainingTime = timeLimit - stopwatch.ElapsedMilliseconds;
-
-            // Batching dinamico per ridurre overhead del controllo tempo
             var currentBatchSize = remainingTime switch
             {
-                > 250 => 2048,
-                > 150 => 1024,
-                > 80 => 512,
-                _ => 256
+                > 250 => 1500, > 100 => 500, > 50 => 100, _ => 10
             };
 
-            for (var i = 0; i < currentBatchSize; i++) 
-            {
-                _worker.RunIteration(area, _rootIndex);
-            }
-            counter += currentBatchSize;
+            for (var i = 0; i < currentBatchSize; i++) _worker.RunIteration(area, _rootIndex);
         }
-
         stopwatch.Stop();
+    }
+
+    private unsafe int SelectBestChildMove(int rootIndex)
+    {
+        ref var rootNode = ref _nodePool.Get(rootIndex);
+        var bestMove = Moves.Up; 
+        var maxVisits = -1;
+        var maxScore = float.NegativeInfinity;
+
+        var childIndex = rootNode.FirstChildIndex;
+        while (childIndex != -1)
+        {
+            ref var child = ref _nodePool.Get(childIndex);
+            
+            if (child.Visits > maxVisits)
+            {
+                maxVisits = child.Visits;
+                maxScore = child.Rewards[0];
+                bestMove = child.Move;
+            }
+            else if (child.Visits == maxVisits)
+            {
+                if (child.Rewards[0] > maxScore)
+                {
+                    maxScore = child.Rewards[0];
+                    bestMove = child.Move;
+                }
+            }
+            childIndex = child.NextSiblingIndex;
+        }
+        return bestMove;
+    }
+    
+    private int CountChildren(int nodeIndex)
+    {
+        var count = 0;
+        ref var node = ref _nodePool.Get(nodeIndex);
+        var child = node.FirstChildIndex;
+        while (child != -1) { count++; child = _nodePool.Get(child).NextSiblingIndex; }
+        return count;
     }
 
     public unsafe void GetRootStats(List<RootMoveStat> outputBuffer)
     {
         outputBuffer.Clear();
-
         if (_rootIndex <= 0) return;
 
         ref var rootNode = ref _nodePool.Get(_rootIndex);
@@ -185,14 +190,11 @@ public class Engine
         while (childIndex != -1)
         {
             ref var childNode = ref _nodePool.Get(childIndex);
-
-            if (childNode.Visits > 0 || childNode.IsSolvedWin)
+            if (childNode.Visits > 0)
             {
-                // Score calcolato sui float
-                var avgScore = childNode.Visits > 0 ? childNode.Score / childNode.Visits : -1;
+                var avgScore = childNode.Rewards[0] / childNode.Visits;
                 outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
             }
-
             childIndex = childNode.NextSiblingIndex;
         }
     }
@@ -200,26 +202,14 @@ public class Engine
     public byte GetFallbackMove()
     {
         if (_rootIndex <= 0) return Moves.Up;
-
         var arena = _slotPool.GetArena(_rootIndex);
         var me = arena.System[0];
-
-        // 0 è sempre il nostro indice (Hero) grazie al mapping dell'Agente
         var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail, 0);
 
         if ((legalMoves & Moves.Up) != 0) return Moves.Up;
         if ((legalMoves & Moves.Down) != 0) return Moves.Down;
         if ((legalMoves & Moves.Left) != 0) return Moves.Left;
         if ((legalMoves & Moves.Right) != 0) return Moves.Right;
-
         return Moves.Up;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Reset()
-    {
-        _rootIndex = 0;
-        // Non resettiamo _worker.Reset(count) qui perché il count potrebbe cambiare
-        // Lo facciamo in InitializeGame
     }
 }
