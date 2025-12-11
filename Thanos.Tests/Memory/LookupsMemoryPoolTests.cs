@@ -18,7 +18,7 @@ public class LookupsMemoryPoolTests
     [TestCaseSource(nameof(Dimensions))]
     public void Pool_ShouldInitialize_AndContainCorrectData(byte width, byte height, ushort area)
     {
-        using var pool = GetPoolByWidth(area);
+        var pool = GetPoolByWidth(area);
 
         var lastIndex = (ushort)(area - 1);
         var expectedFirstCoord = new Coordinate(0, 0);
@@ -44,22 +44,22 @@ public class LookupsMemoryPoolTests
     }
 
     /// <summary>
-    ///     Verifies that LookupsMemoryPool factory methods return new distinct instances for each invocation,
-    ///     while containing equivalent data.
+    ///     Verifies that LookupsMemoryPool.Medium singleton returns the same instance for each invocation,
+    ///     ensuring proper singleton pattern implementation.
     /// </summary>
     [Test]
-    public void Factories_ShouldReturnNewInstances()
+    public void Medium_ShouldReturnSameSingletonInstance()
     {
-        using var pool1 = LookupsMemoryPool.Medium;
-        using var pool2 = LookupsMemoryPool.Medium;
+        var pool1 = LookupsMemoryPool.Medium;
+        var pool2 = LookupsMemoryPool.Medium;
 
         var expectedCoord = pool2.CoordinatesMatrix[0];
         var actualCoord = pool1.CoordinatesMatrix[0];
 
         Multiple(() =>
         {
-            That(pool1, Is.Not.SameAs(pool2),
-                $"Factory should return new instances but returned same reference.");
+            That(pool1, Is.SameAs(pool2),
+                $"Medium should return same singleton instance but returned different references.");
             That(actualCoord.X, Is.EqualTo(expectedCoord.X),
                 $"CoordinatesMatrix[0].X should be {expectedCoord.X} but was {actualCoord.X}.");
             That(actualCoord.Y, Is.EqualTo(expectedCoord.Y),
@@ -68,16 +68,25 @@ public class LookupsMemoryPoolTests
     }
 
     /// <summary>
-    ///     Verifies that LookupsMemoryPool.Dispose executes successfully without throwing exceptions,
-    ///     ensuring proper resource cleanup.
+    ///     Verifies that LookupsMemoryPool.Medium singleton is accessible and provides valid data,
+    ///     ensuring proper initialization.
     /// </summary>
     [Test]
-    public void Dispose_ShouldRunWithoutExceptions()
+    public void Medium_ShouldBeAccessible_AndProvideValidData()
     {
         var pool = LookupsMemoryPool.Medium;
+        var firstCoord = pool.CoordinatesMatrix[0];
+        var expectedFirstCoord = new Coordinate(0, 0);
 
-        DoesNotThrow(() => pool.Dispose(),
-            "Dispose should not throw exceptions.");
+        Multiple(() =>
+        {
+            That(pool, Is.Not.Null,
+                "Medium singleton should not be null.");
+            That(firstCoord.X, Is.EqualTo(expectedFirstCoord.X),
+                $"CoordinatesMatrix[0].X should be {expectedFirstCoord.X} but was {firstCoord.X}.");
+            That(firstCoord.Y, Is.EqualTo(expectedFirstCoord.Y),
+                $"CoordinatesMatrix[0].Y should be {expectedFirstCoord.Y} but was {firstCoord.Y}.");
+        });
     }
 
     private static LookupsMemoryPool GetPoolByWidth(ushort area) =>
