@@ -4,7 +4,7 @@ namespace Thanos.Shared;
 
 public static class CoordinatesBuilder
 {
-    public static unsafe void Populate(byte width, byte height, Span<Coordinate> memory)
+    public static void Populate(byte width, byte height, Span<Coordinate> memory)
     {
         if (memory.Length != width * height) throw new ArgumentException($"Buffer size mismatch: expected {width * height}, got {memory.Length}");
 
