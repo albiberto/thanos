@@ -1,0 +1,12 @@
+{
+  "game": { "id": "test" },
+  "turn": 1,
+  "board": {
+    "height": 7,
+    "width": 7,
+    "food": [ {"x": 2, "y": 2} ],
+    "hazards": [],
+    "snakes": []
+  },
+  "you": { "id": "me" }
+}

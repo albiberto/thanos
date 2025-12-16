@@ -27,7 +27,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Requests\SampleRequest.json">
+      <None Update="Requests\MediumRequest.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Requests\SmallRequest.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>

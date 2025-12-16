@@ -2,7 +2,8 @@ namespace Thanos.Tests;
 
 public static class Support
 {
-    public static string SampleJson => File.ReadAllText("Requests/SampleRequest.json");
+    public static string MediumJson => File.ReadAllText("Requests/MediumRequest.json");
+    public static string SmallJson => File.ReadAllText("Requests/SmallRequest.json");
     
     public const string Me = "snake-hero";       
     

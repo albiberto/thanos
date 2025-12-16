@@ -7,9 +7,21 @@ namespace Thanos.Tests.SourceGen;
 public class BattleSnakeSerializerTests
 {
     [Test]
+    public void Parse_Should_CorrectlyDetect_DifferentBoardSizes()
+    {
+        var request = BattleSnakeSerializer.Parse(Support.SmallJson);
+
+        Multiple(() =>
+        {
+            That(request.Board.Width, Is.EqualTo(7), "Should detect width 7");
+            That(request.Board.Food[0], Is.EqualTo(16), "Coordinate calculation should use width 7 (2*7+2=16), not 11");
+        });
+    }
+    
+    [Test]
     public void Parse_Should_CorrectlyDeserialize_FullGameRequest_WithUpdatedFoodAndHazards()
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
 
         // --- 1. GAME META & RULESET CHECKS ---
         Multiple(() =>

@@ -37,7 +37,7 @@ public class BattleSnakeAgentTests
     [Test]
     public void Start_Should_Map_RealJsonRequest_Correctly_To_Cluster()
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
 
         _mockCluster
             .Setup(c => c.InitializeGame(
@@ -62,7 +62,7 @@ public class BattleSnakeAgentTests
     [Test]
     public async Task Move_Should_DelegateToCluster_And_Return_ComputedByte()
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
         const byte expectedMove = 2;
 
         _mockCluster
@@ -88,7 +88,7 @@ public class BattleSnakeAgentTests
     [Test]
     public void Start_Should_Handle_SinglePlayer_Scenario()
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
 
         _mockCluster
             .Setup(c => c.InitializeGame(
@@ -110,7 +110,7 @@ public class BattleSnakeAgentTests
     [Test]
     public void End_Should_Execute_Without_Exceptions()
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
 
         DoesNotThrow(() => _agent.End(request),
             "End should not throw exceptions.");
@@ -153,7 +153,7 @@ public class BattleSnakeAgentTests
     [Test]
     public void Start_Should_Place_Hero_At_Index_Zero()
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
 
         _mockCluster
             .Setup(c => c.InitializeGame(
@@ -178,7 +178,7 @@ public class BattleSnakeAgentTests
     [TestCase((byte)3)]
     public async Task Move_Should_Return_Exact_Byte_From_Cluster(byte moveValue)
     {
-        var request = BattleSnakeSerializer.Parse(Support.SampleJson);
+        var request = BattleSnakeSerializer.Parse(Support.MediumJson);
 
         _mockCluster
             .Setup(c => c.ComputeMoveAsync(request))
