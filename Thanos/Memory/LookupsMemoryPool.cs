@@ -44,13 +44,5 @@ public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
         NeighborsBuilder.Populate(width, height, neighborsSpan);
     }
 
-    public void Dispose()
-    {
-        if (!_disposed && _basePointer != null)
-        {
-            NativeMemory.AlignedFree(_basePointer);
-            _basePointer = null;
-            _disposed = true;
-        }
-    }
+    public void Dispose() => NativeMemory.AlignedFree(_basePointer);
 }
