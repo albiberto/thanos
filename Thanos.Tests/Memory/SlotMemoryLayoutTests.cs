@@ -23,7 +23,7 @@ public class SlotMemoryLayoutTests
         var layout = new SlotMemoryLayout(SmallArea, QueueCapacity, MaxSnakes);
 
         var expectedLifeLength = (nuint)sizeof(WarSnakeLife);
-        var expectedBitboardLength = (nuint)(sizeof(ulong) * 2); // For area 121: (121+63)/64 = 2 ulongs
+        var expectedBitboardLength = (nuint)(sizeof(ulong) * Constants.BitboardQuadWords); // For area 121: (121+63)/64 = 2 ulongs
         
         var actualLifeLength = layout.WarSnakeLife.Length;
         var actualBitboardLength = layout.Bitboard.Length;
@@ -57,6 +57,29 @@ public class SlotMemoryLayoutTests
                 $"QueueBuffer.Offset should be aligned to {Constants.CacheLine} bytes but remainder was {actualBufferOffsetRemainder}.");
             That(actualBufferOffset, Is.GreaterThanOrEqualTo(previousBlockEnd), 
                 $"QueueBuffer.Offset ({actualBufferOffset}) should be >= previousBlockEnd ({previousBlockEnd}) to avoid overlap.");
+        });
+    }
+    
+    [Test]
+    public void Layout_Bitboard_Should_Be_Aligned_To_16Bytes_ForSIMD()
+    {
+        var layout = new SlotMemoryLayout(SmallArea, QueueCapacity, MaxSnakes);
+
+        // Castiamo tutto a long per evitare problemi con nuint in NUnit
+        var offset = (long)layout.Bitboard.Offset;
+        var remainder = offset % 16;
+        
+        // FIX: Cast esplicito a long anche qui
+        var lifeEnd = (long)(layout.WarSnakeLife.Offset + layout.WarSnakeLife.Length);
+
+        Multiple(() =>
+        {
+            That(remainder, Is.Zero, 
+                $"Bitboard.Offset ({offset}) must be aligned to 16 bytes for SIMD, but remainder was {remainder}.");
+            
+            // Ora confrontiamo long con long -> Safe
+            That(offset, Is.GreaterThan(lifeEnd), 
+                $"There should be padding bytes between WarSnakeLife (End: {lifeEnd}) and Bitboard (Start: {offset}).");
         });
     }
 
