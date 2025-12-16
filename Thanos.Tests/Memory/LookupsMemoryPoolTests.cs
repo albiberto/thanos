@@ -80,12 +80,9 @@ public class LookupsMemoryPoolTests
 
         Multiple(() =>
         {
-            That(pool, Is.Not.Null,
-                "Medium singleton should not be null.");
-            That(firstCoord.X, Is.EqualTo(expectedFirstCoord.X),
-                $"CoordinatesMatrix[0].X should be {expectedFirstCoord.X} but was {firstCoord.X}.");
-            That(firstCoord.Y, Is.EqualTo(expectedFirstCoord.Y),
-                $"CoordinatesMatrix[0].Y should be {expectedFirstCoord.Y} but was {firstCoord.Y}.");
+            That(pool, Is.Not.Null, "Medium singleton should not be null.");
+            That(firstCoord.X, Is.EqualTo(expectedFirstCoord.X), $"CoordinatesMatrix[0].X should be {expectedFirstCoord.X} but was {firstCoord.X}.");
+            That(firstCoord.Y, Is.EqualTo(expectedFirstCoord.Y), $"CoordinatesMatrix[0].Y should be {expectedFirstCoord.Y} but was {firstCoord.Y}.");
         });
     }
 

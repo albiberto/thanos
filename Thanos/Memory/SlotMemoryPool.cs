@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.Abstract;
 using Thanos.War;
@@ -8,7 +8,8 @@ namespace Thanos.Memory;
 
 public sealed unsafe class SlotMemoryPool : ISlotMemoryPool
 {
-    private readonly byte* _basePointer;
+    private byte* _basePointer;
+    private bool _disposed;
 
     private readonly int _firstIndex;
     private readonly int _snakesCount;
@@ -76,5 +77,13 @@ public sealed unsafe class SlotMemoryPool : ISlotMemoryPool
         collisionsBitboard = new Bitboard(new Span<byte>(slotPtr + _layout.CollisionsBitboard.Offset, (int)_layout.CollisionsBitboard.Length));
     }
 
-    public void Dispose() => NativeMemory.AlignedFree(_basePointer);
+    public void Dispose()
+    {
+        if (!_disposed && _basePointer != null)
+        {
+            NativeMemory.AlignedFree(_basePointer);
+            _basePointer = null;
+            _disposed = true;
+        }
+    }
 }

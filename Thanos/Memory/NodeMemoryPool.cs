@@ -7,7 +7,8 @@ namespace Thanos.Memory;
 
 public sealed unsafe class NodeMemoryPool : INodeMemoryPool
 {
-    private readonly byte* _basePointer;
+    private byte* _basePointer;
+    private bool _disposed;
 
     private readonly int _firstIndex;
     private readonly nuint _stride; 
@@ -44,5 +45,13 @@ public sealed unsafe class NodeMemoryPool : INodeMemoryPool
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset() => Index = _firstIndex;
 
-    public void Dispose() => NativeMemory.AlignedFree(_basePointer);
+    public void Dispose()
+    {
+        if (!_disposed && _basePointer != null)
+        {
+            NativeMemory.AlignedFree(_basePointer);
+            _basePointer = null;
+            _disposed = true;
+        }
+    }
 }
