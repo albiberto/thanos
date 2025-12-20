@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics; // NECESSARIO PER VECTOR128
 using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.SourceGen;
@@ -310,10 +311,6 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         return true;
     }
 
-    // ... GetNextPlayerIndex, GetFirstAlivePlayerIndex, ApplySingleMove rimangono uguali ...
-    // Li ometto per brevità se non sono cambiati logicamente, altrimenti li copio sotto.
-    // Assumo che siano metodi statici puri o helper dell'Arena già corretti.
-    
     private static int GetNextPlayerIndex(in Arena arena, int currentPlayerIndex)
     {
         var next = currentPlayerIndex + 1;
@@ -412,11 +409,17 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
 
     private unsafe void Backpropagate(int startNodeIndex, float[] rewards)
     {
+        // FIX: Caricamento SIMD una volta sola per tutta la risalita.
+        // Questo è molto più veloce che chiamare un overload scalare per ogni nodo o creare il vettore dentro il loop.
+        var rewardsVector = Vector128.Create(rewards);
+
         var currentIndex = startNodeIndex;
         while (currentIndex != -1) // Risaliamo fino alla root (Parent == -1)
         {
             ref var currentNode = ref _nodeMemoryPool.Get(currentIndex);
-            currentNode.UpdateStats(rewards);
+            
+            // Passiamo il vettore hardware direttamente
+            currentNode.UpdateStats(rewardsVector);
             
             if (currentNode.ParentIndex != -1) 
             {
@@ -458,14 +461,8 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         {
             parentNode.MarkSolvedLoss();
         }
-        // Nota: Se un figlio è SolvedWin, il parent diventa SolvedWin (per noi). 
-        // Ma attenzione: questo vale se tocca a noi muovere nel parent. 
-        // Se tocca all'opponent nel parent, e il figlio è SolvedWin (per noi), per l'opponent è Loss.
-        // La logica solver completa richiede di sapere CHI muove. 
-        // Per ora manteniamo la tua logica originale difensiva.
     }
 
-    // Metodo Reset allineato: riceve solo i settings, i pool sono già resettati dall'Engine.
     public void Reset(RulesetSettings settings)
     {
         _settings = settings;

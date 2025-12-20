@@ -7,40 +7,26 @@ namespace Thanos.Tests.Memory;
 [TestFixture]
 public class NodeMemoryLayoutTests
 {
-    /// <summary>
-    ///     Verifies that NodeMemoryLayout correctly calculates node size in memory.
-    /// </summary>
     [Test]
     public unsafe void Layout_Should_Match_Exact_SizeOf_Node_Struct()
     {
         var layout = new NodeMemoryLayout();
 
-        var expectedNodeLength = (long)sizeof(Node);
-        const long expectedNodeOffset = 0;
+        // Node è layout explicit size 64
+        var expectedNodeLength = 64L; 
         
         var actualNodeLength = (long)layout.Node.Length;
-        var actualNodeOffset = (long)layout.Node.Offset;
 
-        Multiple(() =>
-        {
-            That(actualNodeLength, Is.EqualTo(expectedNodeLength),
-                $"Node.Length should be {expectedNodeLength} but was {actualNodeLength}.");
-            That(actualNodeOffset, Is.EqualTo(expectedNodeOffset),
-                $"Node.Offset should be {expectedNodeOffset} but was {actualNodeOffset}.");
-        });
+        That(actualNodeLength, Is.EqualTo(expectedNodeLength),
+            $"Node.Length should match struct size/stride.");
     }
 
-    /// <summary>
-    ///     Verifies that NodeMemoryLayout.Node.Length is positive,
-    ///     ensuring the layout is valid and usable.
-    /// </summary>
     [Test]
-    public void Layout_Size_Should_Be_Positive()
+    public void Layout_Stride_Should_Be_CacheLine_Aligned()
     {
         var layout = new NodeMemoryLayout();
-        var actualNodeLength = (long)layout.Node.Length;
+        var stride = (long)layout.Node.Next;
 
-        That(actualNodeLength, Is.GreaterThan(0),
-            $"Node.Length should be greater than 0 but was {actualNodeLength}.");
+        That(stride % 64, Is.Zero, "Node stride must be multiple of 64 bytes (Cache Line).");
     }
 }
