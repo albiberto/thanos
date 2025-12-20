@@ -102,8 +102,10 @@ public class NodeMemoryPoolTests
 
         var p1 = (byte*)Unsafe.AsPointer(ref node1);
         var p2 = (byte*)Unsafe.AsPointer(ref node2);
-        var actualDistance = (nuint)(p2 - p1);
-        var expectedDistance = layout.Node.Next;
+        
+        // FIX: Cast a long
+        var actualDistance = (long)(p2 - p1);
+        var expectedDistance = (long)layout.Node.Next;
 
         That(actualDistance, Is.EqualTo(expectedDistance), 
             $"Pool stride should be {expectedDistance} but was {actualDistance}.");
@@ -122,6 +124,8 @@ public class NodeMemoryPoolTests
 
         ref var node = ref _pool.Get(index);
         node.Visits = 42;
+        
+        // Accesso diretto al buffer fixed (Rewards è ora a Offset 0, ma l'accesso C# è lo stesso)
         node.Rewards[0] = 99.9f;
 
         ref var sameNode = ref _pool.Get(index);
@@ -221,4 +225,3 @@ public class NodeMemoryPoolTests
         _pool = null;
     }
 }
-

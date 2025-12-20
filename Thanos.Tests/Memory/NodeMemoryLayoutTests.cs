@@ -15,10 +15,11 @@ public class NodeMemoryLayoutTests
     {
         var layout = new NodeMemoryLayout();
 
-        var expectedNodeLength = (nuint)sizeof(Node);
-        const UIntPtr expectedNodeOffset = 0;
-        var actualNodeLength = layout.Node.Length;
-        var actualNodeOffset = layout.Node.Offset;
+        var expectedNodeLength = (long)sizeof(Node);
+        const long expectedNodeOffset = 0;
+        
+        var actualNodeLength = (long)layout.Node.Length;
+        var actualNodeOffset = (long)layout.Node.Offset;
 
         Multiple(() =>
         {
@@ -37,9 +38,9 @@ public class NodeMemoryLayoutTests
     public void Layout_Size_Should_Be_Positive()
     {
         var layout = new NodeMemoryLayout();
-        var actualNodeLength = layout.Node.Length;
+        var actualNodeLength = (long)layout.Node.Length;
 
-        That(actualNodeLength, Is.GreaterThan((nuint)0),
+        That(actualNodeLength, Is.GreaterThan(0),
             $"Node.Length should be greater than 0 but was {actualNodeLength}.");
     }
 }
