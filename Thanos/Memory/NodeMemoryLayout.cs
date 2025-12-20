@@ -2,9 +2,7 @@
 
 namespace Thanos.Memory;
 
-public unsafe struct NodeMemoryLayout()
+public readonly struct NodeMemoryLayout()
 {
-    public static NodeMemoryLayout Default => new();
-
-    public const int Size = 64;
+    public readonly MemoryBlock Node = MemoryBlock.CreateUp64<Node>(0, 1);
 }

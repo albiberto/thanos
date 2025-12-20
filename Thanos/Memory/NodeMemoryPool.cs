@@ -1,40 +1,57 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Thanos.Abstract;
 using Thanos.MCST;
 
 namespace Thanos.Memory;
 
-public sealed unsafe class NodeMemoryPool : IDisposable
+public sealed unsafe class NodeMemoryPool : INodeMemoryPool
 {
-    private readonly byte* _basePointer;
+    private byte* _basePointer;
+    private bool _disposed;
+
+    private readonly int _firstIndex;
+    private readonly nuint _stride; 
     private readonly NodeMemoryLayout _layout;
-    private readonly uint _maxNodes;
 
-    public NodeMemoryPool(uint maxNodes, in NodeMemoryLayout layout)
+    public uint Capacity { get; }
+    public int Index { get; private set; }
+
+    public NodeMemoryPool(uint capacity, int firstIndex, in NodeMemoryLayout layout)
     {
+        _firstIndex = firstIndex;
+
         _layout = layout;
-        _maxNodes = maxNodes;
-
-        var totalSize = NodeMemoryLayout.Size * maxNodes;
-
-        _basePointer = (byte*)NativeMemory.AlignedAlloc((nuint)totalSize, Constants.CacheLine);
-        NativeMemory.Clear(_basePointer, (nuint)totalSize);
-
-        // Console.WriteLine($"[NodeMemoryPool] Allocated {(double)totalSize / (1024 * 1024 * 1024):F3} GB for {NodeMemoryLayout.Size}-byte nodes, max nodes: {_maxNodes}");
+        _stride = layout.Node.Next;
+        
+        Capacity = capacity;
+        Index = _firstIndex;
+        
+        var totalSize = (nuint)capacity * _stride;
+        _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
+        NativeMemory.Clear(_basePointer, totalSize);
     }
 
-    public ref Node this[int index]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref Node Get(int index) => ref Unsafe.AsRef<Node>(_basePointer + (nuint)index * _stride);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int Allocate()
     {
-        get
+        if (Index >= Capacity) return -1;
+        return Index++;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Reset() => Index = _firstIndex;
+
+    public void Dispose()
+    {
+        if (!_disposed && _basePointer != null)
         {
-            if (index >= _maxNodes) throw new OutOfMemoryException($"Accesso illegale allo SlotMemoryPool. Richiesto indice {index}, ma la capacità massima è {_maxNodes}.");
-
-            var startOffset = (long)index * NodeMemoryLayout.Size;
-            var nodePointer = _basePointer + startOffset;
-
-            return ref Unsafe.AsRef<Node>(nodePointer);
+            NativeMemory.AlignedFree(_basePointer);
+            _basePointer = null;
+            _disposed = true;
         }
     }
-
-    public void Dispose() => NativeMemory.Free(_basePointer);
 }

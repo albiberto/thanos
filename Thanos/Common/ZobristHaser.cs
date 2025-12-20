@@ -18,12 +18,12 @@ public static class ZobristHasher
 
             var snakeBodyBitboard = snake.Body.Buffer;
             hash = HashSnakeBitboard(hash, snakeBodyBitboard, i);
-        
+
             // --- INIZIO FIX ---
             // Aggiungi HP e Lunghezza all'hash per renderlo univoco.
             // La soluzione Zobrist "pura" richiederebbe di espandere ZobristTable,
             // ma un hash/rotazione semplice è già un enorme miglioramento.
-        
+
             // Combina l'hash con l'indice e la salute
             hash ^= i; // Assicura che l'HP del Serpente 0 sia diverso da quello del Serpente 1
             hash = long.RotateLeft(hash, 7);

@@ -34,6 +34,9 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public int HP => _life.HP;
     public bool IsDead => _life.IsDead;
 
+    // MODIFICA: Espone lo stato di crescita per l'euristica
+    public bool IsGrowthPending => _life.IsGrowthPending;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ushort RemoveTail() => _queue.Dequeue();
 
@@ -41,24 +44,21 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public void UpdateAfterMove(ushort newHead, bool ateFood, int damage)
     {
         if (IsDead) return;
-    
+
         var wasGrowing = _life.ConsumePendingGrowth();
 
         if (!wasGrowing && !ateFood)
         {
             // 1. Chiama SEMPRE RemoveTail() per far avanzare la coda logica
-            var oldTailPos = RemoveTail(); 
+            var oldTailPos = RemoveTail();
 
             // 2. Leggi la posizione della NUOVA coda (dopo che RemoveTail ha avanzato l'indice)
-            var newTailPos = _queue.PeekTail; 
+            var newTailPos = _queue.PeekTail;
 
             // 3. Esegui il controllo PRIMA di aggiornare il bitboard
             //    Se la vecchia coda e la nuova coda sono diverse,
             //    significa che il serpente è disteso e possiamo cancellare il bit.
-            if (oldTailPos != newTailPos)
-            {
-                _bitboard.Unset(oldTailPos);
-            }
+            if (oldTailPos != newTailPos) _bitboard.Unset(oldTailPos);
             // Se sono uguali (serpente collassato), non facciamo
             // l'Unset, lasciando il bit attivo (correttamente).
         }

@@ -1,71 +1,61 @@
-﻿using System.Runtime.CompilerServices;
-using Thanos.Common;
-using Thanos.War;
+﻿using Thanos.War;
 using Thanos.War.Structures;
 
 namespace Thanos.Memory;
 
-public struct SlotMemoryLayout
+public readonly struct SlotMemoryLayout
 {
-    public readonly int WarSnakeLifeSize;
-    public readonly int CircularQueueStateSize;
-    public readonly int BitboardSize;
-    public readonly int QueueBufferSize;
+    // --- Snake Local Blocks ---
+    public readonly MemoryBlock WarSnakeLife;
+    public readonly MemoryBlock Bitboard;
+    public readonly MemoryBlock CircularQueueState;
+    public readonly MemoryBlock QueueBuffer;
 
-    public readonly int WarSnakeLifeOffset;
-    public readonly int BitboardOffset;
-    public readonly int CircularQueueStateOffset;
-    public readonly int QueueBufferOffset;
-    public readonly int SnakeStride;
+    // --- Container Block: SNAKE ---
+    public readonly MemoryBlock SnakeStride; 
+    
+    public readonly ushort QueueCapacity;
 
-    public readonly int SnakesBitboardOffset;
-    public readonly int FoodBitboardOffset;
-    public readonly int HazardsBitboardOffset;
-    public readonly int SlotSize;
+    // --- Global Blocks ---
+    public readonly MemoryBlock CollisionsBitboard;
+    public readonly MemoryBlock FoodBitboard;
+    public readonly MemoryBlock HazardsBitboard;
 
-    public readonly ushort Capacity;
+    // --- Container Block: SLOT ---
+    public readonly MemoryBlock SlotStride;
 
-    public static SlotMemoryLayout Medium { get; } = new(Constants.Medium, 128, Constants.MaxSnakesCount
-    );
-
-    private SlotMemoryLayout(int area, ushort capacity, int snakeCount)
+    public SlotMemoryLayout(ushort area, ushort queueCapacity, byte maxSnakeCount)
     {
-        Capacity = capacity;
+        QueueCapacity = queueCapacity;
+        // Per 11x11 (121 bit), (121 + 63) / 64 = 2 ulongs.
+        var ulongCount = (area + 63) / 64; 
 
-        WarSnakeLifeSize = Unsafe.SizeOf<WarSnakeLife>();
-        BitboardSize = sizeof(ulong) * ((area + 63) / 64);
-        CircularQueueStateSize = Unsafe.SizeOf<CircularQueueState>();
-        QueueBufferSize = sizeof(ushort) * capacity;
+        // 1. WarSnakeLife -> Allineamento 8
+        WarSnakeLife = MemoryBlock.CreateUp8<WarSnakeLife>(0, 1);
+        
+        // 2. Bitboard -> Allineamento 16 (CRITICO PER SIMD/NEON)
+        // Inserirà padding automatico dopo WarSnakeLife
+        Bitboard = MemoryBlock.CreateUp16<ulong>(WarSnakeLife.Next, ulongCount);
+        
+        // 3. Queue State -> Allineamento 8
+        CircularQueueState = MemoryBlock.CreateUp8<CircularQueueState>(Bitboard.Next, 1);
+        
+        // 4. Queue Buffer -> Allineamento 64 (Inizio Cache Line pulita per evitare false sharing)
+        QueueBuffer = MemoryBlock.CreateUp64<ushort>(CircularQueueState.Next, queueCapacity);
 
-        var relOffset = 0;
-        WarSnakeLifeOffset = relOffset;
-        relOffset += WarSnakeLifeSize;
+        // 5. Snake Stride -> Allineamento 64 (Contenitore Snake)
+        SnakeStride = MemoryBlock.CreateUp64(0, QueueBuffer.Next);
 
-        BitboardOffset = relOffset;
-        relOffset += BitboardSize;
+        // --- Global Blocks ---
+        var snakesTotalSize = SnakeStride.Next * maxSnakeCount;
 
-        CircularQueueStateOffset = relOffset;
-        relOffset += CircularQueueStateSize;
+        // Le Bitboard globali le allineiamo a 32 byte (Future-proof per AVX)
+        // Va bene anche per NEON (richiede 16, 32 è multiplo di 16).
+        CollisionsBitboard = MemoryBlock.CreateUp32<ulong>(snakesTotalSize, ulongCount);
+        FoodBitboard = MemoryBlock.CreateUp32<ulong>(CollisionsBitboard.Next, ulongCount);
+        HazardsBitboard = MemoryBlock.CreateUp32<ulong>(FoodBitboard.Next, ulongCount);
 
-        relOffset = relOffset.AlignUp64();
-        QueueBufferOffset = relOffset;
-
-        relOffset += QueueBufferSize;
-        SnakeStride = relOffset;
-
-        var globalOffset = SnakeStride * snakeCount;
-
-        globalOffset = globalOffset.AlignUp64();
-
-        SnakesBitboardOffset = globalOffset;
-        globalOffset += BitboardSize;
-
-        FoodBitboardOffset = globalOffset;
-        globalOffset += BitboardSize;
-
-        HazardsBitboardOffset = globalOffset;
-        globalOffset += BitboardSize;
-
-        SlotSize = globalOffset.AlignUp64();
+        // Slot Stride -> Allineamento 64
+        SlotStride = MemoryBlock.CreateUp64(0, HazardsBitboard.Next);
     }
 }
