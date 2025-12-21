@@ -1,6 +1,6 @@
 using Thanos.Abstract;
 using Thanos.Common;
-using Thanos.Extensions; // Namespace del tuo extension method
+using Thanos.Extensions;
 using Thanos.MCST;
 using Thanos.Memory;
 using Thanos.SourceGen;
@@ -13,6 +13,8 @@ public sealed class BattleSnakeCluster : IBattleSnakeCluster
     private readonly ISlotMemoryPool[] _slotPools;
     private readonly INodeMemoryPool[] _nodePools;
     private readonly LookupsMemoryPool _sharedLookups;
+    
+    private readonly ISlotMemoryPool _hashCalculationPool; 
 
     private readonly ThreadLocal<List<RootMoveStat>> _threadLocalStatsBuffer = new(() => new List<RootMoveStat>(16));
     private readonly int[] _lastChosenIndices;
@@ -34,6 +36,11 @@ public sealed class BattleSnakeCluster : IBattleSnakeCluster
 
         _lastChosenIndices = new int[_engines.Length];
         Array.Fill(_lastChosenIndices, -1);
+
+        // --- FIX: Inizializza il pool per l'hash ---
+        // Basta una capacità piccolissima (es. 5 slot), serve solo per 1 istante.
+        var slotLayout = new SlotMemoryLayout(Constants.Medium.Area, 64, Constants.MaxSnakesCount);
+        _hashCalculationPool = new SlotMemoryPool(5, 0, Constants.MaxSnakesCount, sharedLookups, slotLayout);
     }
 
     public void InitializeGame(string[] sortedSnakeIds)
@@ -50,26 +57,22 @@ public sealed class BattleSnakeCluster : IBattleSnakeCluster
     public async Task<byte> ComputeMoveAsync(Request request)
     {
         // ---------------------------------------------------------
-        // 1. Calcolo Hash (Via Extension Method sul Pool 0)
+        // 1. Calcolo Hash (Su Pool ISOLATO)
         // ---------------------------------------------------------
         
-        var mainPool = _slotPools[0];
+        // Reset del pool di calcolo (non tocca gli engine!)
+        _hashCalculationPool.Reset(); 
         
-        // A. Reset preventivo
-        mainPool.Reset(); 
+        var tempIndex = _hashCalculationPool.Allocate();
         
-        // B. Alloco uno slot temporaneo per il parsing
-        var tempIndex = mainPool.Allocate();
-        
+        // Se per assurdo fallisce l'allocazione su 5 slot (impossibile), fallback
         if (tempIndex == -1) return _engines[0].GetFallbackMove(); 
 
-        // C. Calcolo Hash usando l'Extension Method
-        // Questo metodo popola l'Arena e calcola lo Zobrist Hash
-        var targetHash = mainPool.CalculateRequestHash(tempIndex, in request, _sortedSnakeIds);
+        // Calcolo Hash popolando l'Arena temporanea
+        var targetHash = _hashCalculationPool.CalculateRequestHash(tempIndex, in request, _sortedSnakeIds);
 
-        // D. Reset finale
-        // Liberiamo lo slot temporaneo così l'Engine 0 troverà il pool pulito
-        mainPool.Reset();
+        // Ora _hashCalculationPool è sporco, ma verrà resettato al prossimo turno.
+        // I pool _slotPools[0..N] sono INTATTI e pronti per il Tree Reuse.
 
         // ---------------------------------------------------------
         // 2. Parallel Search
@@ -137,6 +140,9 @@ public sealed class BattleSnakeCluster : IBattleSnakeCluster
     {
         foreach (var pool in _slotPools) pool.Dispose();
         foreach (var pool in _nodePools) pool.Dispose();
+        
+        _hashCalculationPool.Dispose(); // Ricordati di disporre anche questo!
+        
         _sharedLookups.Dispose();
         _threadLocalStatsBuffer.Dispose();
     }
