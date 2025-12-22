@@ -1,49 +1,58 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 using Thanos.Common;
 
 namespace Thanos.MCST;
 
-// Layout ottimizzato per SIMD (Rewards a Offset 0)
+// Layout Esplicito: 64 Byte esatti (1 Cache Line)
 [StructLayout(LayoutKind.Explicit, Size = 64)]
 public unsafe struct Node
 {
-    // --- BLOCCO 1: SIMD Hot Data (16 byte - Allineato a 16/64) ---
-    
-    // Spostiamo i Rewards all'inizio.
-    // Il Pool garantisce l'allineamento a 64 byte del nodo.
-    // Quindi Offset 0 è allineato a 16 byte -> Load/Store Vector128 perfettamente allineati.
-    [FieldOffset(0)] public fixed float Rewards[4];
+    // [0-7] Hash Zobrist (8 byte)
+    [FieldOffset(0)] public long Hash;
 
-    // --- BLOCCO 2: Dati 8-byte (16 byte) ---
+    // [8-23] Rewards accumulati per 4 giocatori (4 * float = 16 byte)
+    // SIMD Friendly alignment (Offset 8 è multiplo di 16? No, multiplo di 8. 
+    // Per AVX serve 32, ma per SSE/Neon va bene offset 8 se carichi unaligned o usi Vector128)
+    [FieldOffset(8)] public fixed float Rewards[4];
 
-    // Hash scivola qui. Offset 16 è multiplo di 8 (e anche di 16, ottimo).
-    [FieldOffset(16)] public long Hash;
-
-    // --- BLOCCO 3: Interi (4 byte) ---
-
+    // [24-27] Numero visite
     [FieldOffset(24)] public int Visits;
+
+    // [28-31] Indice nodo padre
     [FieldOffset(28)] public int ParentIndex;
+
+    // [32-35] Primo figlio (Linked List)
     [FieldOffset(32)] public int FirstChildIndex;
+
+    // [36-39] Fratello successivo
     [FieldOffset(36)] public int NextSiblingIndex;
 
-    // --- BLOCCO 4: Byte e Flags ---
-
+    // [40] Chi ha mosso per arrivare qui
     [FieldOffset(40)] public byte PlayerIndex;
+
+    // [41] Mossa fatta per arrivare qui
     [FieldOffset(41)] public byte Move;
+
+    // [42] Flags (Terminal, Solved, Chance)
     [FieldOffset(42)] public NodeFlags Flags;
 
-    // Padding implicito 43..63
+    // [43] Padding (Inutilizzato)
+    
+    // [44-47] OTTIMIZZAZIONE 3: Log(Visits) pre-calcolato
+    // Evita Math.Log() nel loop caldo di Selection.
+    [FieldOffset(44)] public float LogVisits; 
+
+    // Padding [48-63] per arrivare a 64 bytes.
 
     // --- METODI ---
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void PlacementRoot(long hash)
     {
-        ClearRewards(); // SIMD Clear
         Hash = hash;
         Visits = 0;
+        LogVisits = 0;
+        ClearRewards();
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
         ParentIndex = -1;
@@ -52,12 +61,12 @@ public unsafe struct Node
         Flags = NodeFlags.None;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void PlacementNew(int parentIndex, byte move, long hash, byte playerIndex, bool isChanceNode)
     {
-        ClearRewards(); // SIMD Clear
         Hash = hash;
         Visits = 0;
+        LogVisits = 0;
+        ClearRewards();
         FirstChildIndex = -1;
         NextSiblingIndex = -1;
         ParentIndex = parentIndex;
@@ -66,72 +75,31 @@ public unsafe struct Node
         Flags = isChanceNode ? NodeFlags.ChanceNode : NodeFlags.None;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void NewRoot()
     {
         ParentIndex = -1;
     }
 
-    // UPDATE STATS VETTORIZZATO
-    // Riceve già il vettore dei rewards calcolato dal Worker
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void UpdateStats(Vector128<float> rewardsVector)
+    public void UpdateStats(ReadOnlySpan<float> rewards)
     {
         Visits++;
-
-        if (Vector128.IsHardwareAccelerated)
-        {
-            // Carica i rewards correnti (aligned load se offset 0 e pool aligned)
-            var current = Vector128.Load((float*)Unsafe.AsPointer(ref Rewards[0]));
-            // Somma SIMD
-            var result = current + rewardsVector;
-            // Salva
-            result.Store((float*)Unsafe.AsPointer(ref Rewards[0]));
-        }
-        else
-        {
-            // Fallback (non dovrebbe succedere su x64/ARM64 moderni)
-            // Estraiamo i valori dal vettore o usiamo uno span se l'API cambiasse
-            // Qui assumiamo che rewardsVector sia stato passato correttamente
-            // Implementazione scalare di emergenza:
-            var r = rewardsVector;
-            Rewards[0] += r[0];
-            Rewards[1] += r[1];
-            Rewards[2] += r[2];
-            Rewards[3] += r[3];
-        }
-    }
-
-    // Overload per compatibilità se serve passare scalari (ma lento)
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void UpdateStatsScalar(ReadOnlySpan<float> rewards)
-    {
-        Visits++;
-        Rewards[0] += rewards[0];
-        Rewards[1] += rewards[1];
-        Rewards[2] += rewards[2];
-        Rewards[3] += rewards[3];
+        // Pre-calcolo immediato del logaritmo
+        LogVisits = MathF.Log(Visits);
+        
+        for (var i = 0; i < 4; i++) Rewards[i] += rewards[i];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ClearRewards()
     {
-        if (Vector128.IsHardwareAccelerated)
-        {
-            Vector128<float>.Zero.Store((float*)Unsafe.AsPointer(ref Rewards[0]));
-        }
-        else
-        {
-            Rewards[0] = 0; Rewards[1] = 0; Rewards[2] = 0; Rewards[3] = 0;
-        }
+        for (var i = 0; i < 4; i++) Rewards[i] = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkTerminal() => Flags |= NodeFlags.Terminal;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkSolvedWin() => Flags |= NodeFlags.SolvedWin;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MarkSolvedLoss() => Flags |= NodeFlags.SolvedLoss;
 

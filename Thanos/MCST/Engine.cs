@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using Thanos.Abstract;
 using Thanos.Common;
+using Thanos.Memory;
 using Thanos.SourceGen;
 
 namespace Thanos.MCST;
@@ -10,17 +11,15 @@ public sealed class Engine
 {
     private readonly ISlotMemoryPool _slotPool;
     private readonly INodeMemoryPool _nodePool;
-    private readonly int _index;
     private readonly Worker _worker;
 
     private int _rootIndex = -1; 
     private string[] _sortedSnakeIds = [];
 
-    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool, int index)
+    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
-        _index = index;
         _worker = new Worker(_slotPool, _nodePool);
     }
 
@@ -40,11 +39,8 @@ public sealed class Engine
     public int FindBestMove(in Request request, int lastChosenIndex, long targetHash)
     {
         var treeReused = false;
-        
-        var memoryPressure = _nodePool.Index >= _nodePool.Capacity * 0.85f;
 
-        // FASE 1: Tree Reuse
-        if (!memoryPressure && _rootIndex != -1 && lastChosenIndex > 0)
+        if (_rootIndex != -1 && lastChosenIndex > 0)
         {
             var potentialRoot = FindNewRoot(lastChosenIndex, targetHash);
             if (potentialRoot > 0)
@@ -59,7 +55,6 @@ public sealed class Engine
             }
         }
 
-        // FASE 2: Full Reset
         if (!treeReused)
         {
             _nodePool.Reset();
@@ -80,11 +75,9 @@ public sealed class Engine
             rootNode.PlacementRoot(targetHash); 
         }
 
-        // FASE 3: MCTS
         RunIterations(request.Board.Area);
 
-        // FASE 4: Selection
-        return SelectBestChildIndex(_rootIndex);
+        return SelectBestChildMove(_rootIndex);
     }
 
     private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
@@ -104,10 +97,8 @@ public sealed class Engine
         {
             ref var node = ref _nodePool.Get(current);
             if (node.Hash == targetHash) return current;
-
             var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
             if (foundInChild != 0) return foundInChild;
-            
             current = node.NextSiblingIndex;
         }
         return 0;
@@ -117,47 +108,32 @@ public sealed class Engine
     private void RunIterations(int area)
     {
         const long maxTimeMs = 450;
-        const long forcedMoveTimeMs = 50; 
+        // FIX 6: Rimossa variabile inutilizzata 'forcedMoveTimeMs'
+        // const long forcedMoveTimeMs = 50; 
+        
         var stopwatch = Stopwatch.StartNew();
         ref var rootNode = ref _nodePool.Get(_rootIndex);
 
         if (rootNode.IsLeafNode) _worker.RunIteration(area, _rootIndex);
 
-        var childCount = CountChildren(_rootIndex);
-        
-        if (childCount <= 1) 
-        {
-            if (rootNode.Visits >= 50) return;
-            
-            for(var i=0; i<500; i++) _worker.RunIteration(area, _rootIndex);
-            return; 
-        } 
-
-        var counter = 0;
         while (stopwatch.ElapsedMilliseconds < maxTimeMs)
         {
             if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) break;
             var remainingTime = maxTimeMs - stopwatch.ElapsedMilliseconds;
-
             var currentBatchSize = remainingTime switch
             {
                 > 250 => 1500, > 100 => 500, > 50 => 100, _ => 10
             };
-            
-            counter += currentBatchSize;
 
             for (var i = 0; i < currentBatchSize; i++) _worker.RunIteration(area, _rootIndex);
         }
         stopwatch.Stop();
-        
-        Console.WriteLine($"[Engine]: {_index}. MCTS Iterations: {counter}, Children: {childCount}, Visits: {rootNode.Visits}");
     }
 
-    private unsafe int SelectBestChildIndex(int rootIndex)
+    private unsafe int SelectBestChildMove(int rootIndex)
     {
         ref var rootNode = ref _nodePool.Get(rootIndex);
-        
-        var bestChildIndex = -1;
+        var bestMove = Moves.Up; 
         var maxVisits = -1;
         var maxScore = float.NegativeInfinity;
 
@@ -170,31 +146,21 @@ public sealed class Engine
             {
                 maxVisits = child.Visits;
                 maxScore = child.Rewards[0];
-                bestChildIndex = childIndex;
+                bestMove = child.Move;
             }
             else if (child.Visits == maxVisits)
             {
                 if (child.Rewards[0] > maxScore)
                 {
                     maxScore = child.Rewards[0];
-                    bestChildIndex = childIndex;
+                    bestMove = child.Move;
                 }
             }
             childIndex = child.NextSiblingIndex;
         }
-        
-        return bestChildIndex;
+        return bestMove;
     }
     
-    private int CountChildren(int nodeIndex)
-    {
-        var count = 0;
-        ref var node = ref _nodePool.Get(nodeIndex);
-        var child = node.FirstChildIndex;
-        while (child != -1) { count++; child = _nodePool.Get(child).NextSiblingIndex; }
-        return count;
-    }
-
     public unsafe void GetRootStats(List<RootMoveStat> outputBuffer)
     {
         outputBuffer.Clear();
@@ -220,14 +186,12 @@ public sealed class Engine
         if (_rootIndex <= 0) return Moves.Up;
         var arena = _slotPool.GetArena(_rootIndex);
         var me = arena.System[0];
-        
         var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail, 0);
 
         if ((legalMoves & Moves.Up) != 0) return Moves.Up;
         if ((legalMoves & Moves.Down) != 0) return Moves.Down;
         if ((legalMoves & Moves.Left) != 0) return Moves.Left;
         if ((legalMoves & Moves.Right) != 0) return Moves.Right;
-        
         return Moves.Up;
     }
 }

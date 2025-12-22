@@ -9,16 +9,16 @@ namespace Thanos.War;
 
 public static class HeuristicsConstants
 {
-    public const float SpaceWeight = 10.5f;
-    public const float HealthWeight = 0.5f;
-    public const float FoodWeight = 0.6f;
-    public const float TailWeight = 0.5f;
-
-    public const float CenterBonusValue = 15.0f;
-    public const float BorderPenaltyValue = -1000.0f;
-
-    // Penalità per chi si infila in uno spazio più piccolo della sua lunghezza
-    public const float SuffocationPenalty = -50000.0f;
+    // --- GEOPOLITICA ---
+    public const float BaseSpaceValue = 1.0f;
+    public const float CenterBonusMult = 3.0f; // Il centro vale 3 volte lo spazio normale
+    public const float EdgeMalusMult = 0.2f;   // I bordi valgono pochissimo (20%)
+    
+    // --- PESI ---
+    public const float DistanceToCenterWeight = 2.5f; // Attrazione gravitazionale verso (5,5)
+    public const float FoodWeight = 2.0f;
+    public const float SuffocationPenalty = -50000.0f; // Morte certa
+    public const float HazardWeight = -0.5f;
 }
 
 public readonly struct HeuristicWeights
@@ -28,347 +28,267 @@ public readonly struct HeuristicWeights
     public float Food { get; init; }
     public float Tail { get; init; }
     public float Aggression { get; init; }
-    public float CenterBonus { get; init; }
-
-    public const float BorderPenalty = -1000.0f;
-    public const float SuffocationPenalty = -50000.0f;
-
-    // --- PROFILI ---
-
-    public static HeuristicWeights Balanced => new()
-    {
-        Space = 10.5f,
-        Health = 0.5f,
-        Food = 0.8f,
-        Tail = 0.5f,
-        Aggression = 1.5f,
-        CenterBonus = 15.0f
-    };
-
-    public static HeuristicWeights Hungry => new()
-    {
-        Space = 5.0f,
-        Health = 0.0f,
-        Food = 4.5f,
-        Tail = 0.2f,
-        Aggression = 0.0f,
-        CenterBonus = 5.0f
-    };
-
-    public static HeuristicWeights HeadHunter => new()
-    {
-        Space = 12.0f,
-        Health = 0.1f,
-        Food = 0.2f,
-        Tail = 0.1f,
-        Aggression = 10.0f,
-        CenterBonus = 20.0f
-    };
-
-    public static HeuristicWeights Defensive => new()
-    {
-        Space = 25.0f,
-        Health = 1.0f,
-        Food = 0.6f,
-        Tail = 2.0f,
-        Aggression = -10.0f,
-        CenterBonus = 0.0f
-    };
+    
+    // Configurazioni Competitive Aggiornate
+    public static HeuristicWeights Balanced => new() { Space = 10.0f, Health = 0.5f, Food = 1.2f, Tail = 0.5f, Aggression = 2.0f };
+    public static HeuristicWeights Hungry => new() { Space = 5.0f, Health = 2.0f, Food = 40.0f, Tail = 0.1f, Aggression = 0.0f };
+    public static HeuristicWeights HeadHunter => new() { Space = 15.0f, Health = 0.1f, Food = 0.2f, Tail = 0.1f, Aggression = 30.0f };
+    public static HeuristicWeights Defensive => new() { Space = 25.0f, Health = 1.5f, Food = 0.5f, Tail = 2.0f, Aggression = -15.0f };
 }
 
-public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsMatrix neighborsMatrix, CoordinatesMatrix conversionsMatrix)
+public readonly ref struct Heuristics
 {
-    private readonly SnakesSystem _system = system;
-    private readonly Bitboard _food = food;
-    private readonly Bitboard _hazards = hazards;
-    private readonly Bitboard _snakes = snakes;
-    private readonly NeighborsMatrix _neighborsMatrix = neighborsMatrix;
-    private readonly CoordinatesMatrix _conversionsMatrix = conversionsMatrix;
+    private readonly SnakesSystem _system;
+    private readonly Bitboard _food;
+    private readonly Bitboard _hazards;
+    private readonly Bitboard _snakes;
+    private readonly NeighborsMatrix _neighborsMatrix;
+    private readonly CoordinatesMatrix _conversionsMatrix;
 
-    private static readonly byte[] AllMovesArray = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
+    // --- MASCHERE GEOPOLITICHE STATICHE (Pre-calcolate) ---
+    private static readonly ulong _edgeMask0;   // Anello esterno (Morte/Passività)
+    private static readonly ulong _edgeMask1;
+    private static readonly ulong _centerMask0; // 5x5 centrale (Dominio)
+    private static readonly ulong _centerMask1;
+
+    static Heuristics()
+    {
+        Span<byte> buffer = stackalloc byte[16];
+        
+        // 1. Edge Mask (Perimetro)
+        var bbEdge = new Bitboard(buffer);
+        bbEdge.Clear();
+        for (int y = 0; y < 11; y++)
+            for (int x = 0; x < 11; x++)
+                if (x == 0 || x == 10 || y == 0 || y == 10)
+                    bbEdge.Set((ushort)(y * 11 + x));
+        
+        _edgeMask0 = bbEdge.Buffer[0];
+        _edgeMask1 = bbEdge.Buffer[1];
+
+        // 2. Center Mask (Box 5x5 centrale)
+        var bbCenter = new Bitboard(buffer);
+        bbCenter.Clear();
+        for (int y = 3; y <= 7; y++)
+            for (int x = 3; x <= 7; x++)
+                bbCenter.Set((ushort)(y * 11 + x));
+        
+        _centerMask0 = bbCenter.Buffer[0];
+        _centerMask1 = bbCenter.Buffer[1];
+    }
+
+    public Heuristics(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsMatrix neighborsMatrix, CoordinatesMatrix conversionsMatrix)
+    {
+        _system = system;
+        _food = food;
+        _hazards = hazards;
+        _snakes = snakes;
+        _neighborsMatrix = neighborsMatrix;
+        _conversionsMatrix = conversionsMatrix;
+    }
 
     public float Outcome(int playerIndex)
     {
-        var snake = _system[playerIndex];
-        if (snake.IsDead) return -1.0f;
-
+        if (_system[playerIndex].IsDead) return -1.0f;
         var othersAlive = 0;
         for (var i = 0; i < _system.Count; i++)
-            if (i != playerIndex && !_system[i].IsDead)
-                othersAlive++;
-
-        if (othersAlive == 0) return 1.0f;
-
-        return 0.0f;
+            if (i != playerIndex && !_system[i].IsDead) othersAlive++;
+        return othersAlive == 0 ? 1.0f : 0.0f;
     }
 
-    /// <summary>
-    /// EvaluateAll ora accetta 'isPhaseComplete'.
-    /// Se false (siamo a metà turno), saremo conservativi sulla lunghezza.
-    /// </summary>
     [SkipLocalsInit]
     public void EvaluateAll(Span<float> results, bool isPhaseComplete)
     {
-        var area = Constants.Medium.Area;
+        Span<byte> wallsRaw = stackalloc byte[_snakes.Raw.Length];
+        _snakes.Raw.CopyTo(wallsRaw);
+        var globalWalls = new Bitboard(wallsRaw);
 
-        Span<byte> wallsMemoryCopy = stackalloc byte[_snakes.Raw.Length];
-        _snakes.Raw.CopyTo(wallsMemoryCopy);
-        var baseWalls = new Bitboard(wallsMemoryCopy);
-
-        // Passiamo isPhaseComplete anche al Voronoi per coerenza (pesi cibo/spazio)
-        EvaluateTerritoryAndFoodFair(area, in baseWalls, results, isPhaseComplete);
+        // --- 1. Voronoi Pesato (Il cuore dell'intelligenza spaziale) ---
+        EvaluateVoronoiBitwise(in globalWalls, results);
 
         for (var i = 0; i < _system.Count; i++)
         {
             var snake = _system[i];
-            if (snake.IsDead)
-            {
-                results[i] = -10000.0f;
-                continue;
+            if (snake.IsDead) 
+            { 
+                results[i] = -10000.0f; 
+                continue; 
             }
 
-            var head = snake.Head;
-            if (head >= area) continue;
+            var w = SelectProfile(in snake, i);
 
-            // Selezione Profilo sensibile alla Fase del Turno
-            var weights = SelectProfile(in snake, i, isPhaseComplete);
+            // Salute e Coda
+            results[i] += snake.HP * w.Health;
+            results[i] += ManhattanDistance(snake.Head, snake.Tail) * w.Tail;
+            
+            // --- 2. Scontri Testa-a-Testa ---
+            results[i] += EvaluateHead2Head(i, in snake, w.Aggression);
+            
+            // --- 3. Posizionamento Strategico (Gravity) ---
+            // Attrazione esplicita verso il centro (5,5) per rompere il wall-hugging
+            var headCoord = _conversionsMatrix[snake.Head];
+            int distFromCenter = Math.Abs(headCoord.X - 5) + Math.Abs(headCoord.Y - 5);
+            results[i] += (10 - distFromCenter) * HeuristicsConstants.DistanceToCenterWeight;
 
-            var score = 0.0f;
-
-            score += EvaluateHealth(snake.HP, weights.Health);
-            score += EvaluateTailDistance(head, snake.Tail, weights.Tail);
-            score += EvaluateCollisionsAndTraps(i, head, snake.Length, in baseWalls);
-
-            if (weights.Aggression != 0)
-            {
-                // Usiamo la lunghezza conservativa anche per calcolare l'efficacia dell'aggressione
-                var effectiveLen = GetConservativeLength(in snake, isPhaseComplete);
-                score += EvaluateAggression(i, head, effectiveLen, weights.Aggression);
-            }
-
-            results[i] += score;
+            // Trappole
+            results[i] -= PenalityTrap(snake.Head, in globalWalls);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private int GetConservativeLength(in WarSnake snake, bool isPhaseComplete)
+    [SkipLocalsInit]
+    private void EvaluateVoronoiBitwise(in Bitboard initialWalls, Span<float> results)
     {
-        // Se il turno NON è completo (gli altri devono ancora muovere) E ho appena mangiato (pending growth),
-        // ignoro temporaneamente il +1 di lunghezza per non sentirmi falsamente superiore.
-        if (!isPhaseComplete && snake.IsGrowthPending)
-            return snake.Length - 1;
+        // Allocazione stack zero-copy per 4 serpenti
+        const int BB_SIZE = 16; 
+        const int MAX_SNAKES = 4;
+        Span<byte> memory = stackalloc byte[BB_SIZE * (MAX_SNAKES * 2 + 2)];
 
-        return snake.Length;
-    }
+        int OffsetFrontier(int i) => i * BB_SIZE;
+        int OffsetVisited(int i) => (MAX_SNAKES + i) * BB_SIZE;
+        int OffsetWalls = MAX_SNAKES * 2 * BB_SIZE;
+        int OffsetExpansion = (MAX_SNAKES * 2 + 1) * BB_SIZE;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private HeuristicWeights SelectProfile(in WarSnake snake, int snakeIndex, bool isPhaseComplete)
-    {
-        if (snake.HP < 35) return HeuristicWeights.Hungry;
+        memory.Clear();
 
-        // Calcoliamo la lunghezza "effettiva" (conservativa se necessario)
-        var myLen = GetConservativeLength(in snake, isPhaseComplete);
+        var currentWalls = new Bitboard(memory.Slice(OffsetWalls, BB_SIZE));
+        var expansionTemp = new Bitboard(memory.Slice(OffsetExpansion, BB_SIZE));
+        
+        initialWalls.CopyTo(currentWalls);
 
-        var maxEnemyLen = 0;
-        for (var i = 0; i < _system.Count; i++)
+        int activeSnakes = 0;
+        for (int i = 0; i < _system.Count; i++)
         {
-            if (i == snakeIndex || _system[i].IsDead) continue;
-            var enemyLen = _system[i].Length;
-            if (enemyLen > maxEnemyLen) maxEnemyLen = enemyLen;
+            if (_system[i].IsDead) continue;
+            var f = new Bitboard(memory.Slice(OffsetFrontier(i), BB_SIZE));
+            var v = new Bitboard(memory.Slice(OffsetVisited(i), BB_SIZE));
+            f.Set(_system[i].Head);
+            v.Set(_system[i].Head);
+            activeSnakes++;
         }
+        if (activeSnakes == 0) return;
 
-        // Ora HeadHunter si attiva solo se siamo "Veramente" più grandi, 
-        // scontando eventuali vantaggi temporanei di questo turno.
-        if (myLen > maxEnemyLen && snake.HP > 50)
-            return HeuristicWeights.HeadHunter;
+        // Flood Fill per 16 passi (copre gran parte della board utile)
+        for (int depth = 0; depth < 16; depth++)
+        {
+            bool anyGrowth = false;
+            
+            // 1. Espansione Simultanea
+            for (int i = 0; i < _system.Count; i++)
+            {
+                if (_system[i].IsDead) continue;
 
-        if (myLen <= maxEnemyLen)
-            return HeuristicWeights.Defensive;
+                var frontier = new Bitboard(memory.Slice(OffsetFrontier(i), BB_SIZE));
+                var visited = new Bitboard(memory.Slice(OffsetVisited(i), BB_SIZE));
 
-        return HeuristicWeights.Balanced;
+                expansionTemp.Clear();
+                frontier.Dilate(in currentWalls, expansionTemp); 
+                expansionTemp.AndNot(in visited);
+                expansionTemp.CopyTo(frontier); 
+
+                if (expansionTemp.PopCount() > 0) anyGrowth = true;
+            }
+
+            if (!anyGrowth) break;
+
+            // 2. Aggiornamento e Punteggio
+            for (int i = 0; i < _system.Count; i++)
+            {
+                if (_system[i].IsDead) continue;
+
+                var frontier = new Bitboard(memory.Slice(OffsetFrontier(i), BB_SIZE));
+                var visited = new Bitboard(memory.Slice(OffsetVisited(i), BB_SIZE));
+
+                visited.Or(in frontier);
+                currentWalls.Or(in frontier); // Territorio conquistato diventa muro per gli altri
+
+                // --- CALCOLO PUNTEGGIO QUALITATIVO ---
+                ulong f0 = frontier.Buffer[0];
+                ulong f1 = frontier.Buffer[1];
+
+                if ((f0 | f1) == 0) continue;
+
+                var snake = _system[i];
+                var w = SelectProfile(in snake, i);
+                float distFactor = 1.0f - (depth * 0.04f); // Decadimento distanza
+
+                // Contiamo i bit nelle diverse zone
+                int centerHits = BitOperations.PopCount(f0 & _centerMask0) + BitOperations.PopCount(f1 & _centerMask1);
+                int edgeHits = BitOperations.PopCount(f0 & _edgeMask0) + BitOperations.PopCount(f1 & _edgeMask1);
+                int totalHits = BitOperations.PopCount(f0) + BitOperations.PopCount(f1);
+                int normalHits = totalHits - centerHits - edgeHits;
+
+                // Formula Magica: Spazio + Bonus Centro - Malus Bordi
+                float territoryScore = (normalHits * HeuristicsConstants.BaseSpaceValue) +
+                                       (centerHits * HeuristicsConstants.CenterBonusMult) +
+                                       (edgeHits * HeuristicsConstants.EdgeMalusMult);
+
+                results[i] += territoryScore * w.Space * distFactor;
+
+                // Cibo nel territorio
+                ulong food0 = f0 & _food.Buffer[0];
+                ulong food1 = f1 & _food.Buffer[1];
+                if ((food0 | food1) != 0)
+                {
+                    int foodFound = BitOperations.PopCount(food0) + BitOperations.PopCount(food1);
+                    results[i] += foodFound * w.Food * 10.0f * distFactor;
+                }
+            }
+        }
     }
 
-    public float Evaluate(bool isPhaseComplete)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private HeuristicWeights SelectProfile(in WarSnake snake, int index)
     {
-        Span<float> results = stackalloc float[_system.Count];
-        EvaluateAll(results, isPhaseComplete);
-        return results[0];
+        if (snake.HP < 40) return HeuristicWeights.Hungry;
+        
+        int myLen = snake.Length;
+        bool amBiggest = true;
+        for(int i=0; i<_system.Count; i++) 
+            if(i != index && !_system[i].IsDead && _system[i].Length >= myLen) amBiggest = false;
+
+        return amBiggest ? HeuristicWeights.HeadHunter : HeuristicWeights.Balanced;
     }
 
-    // --- METODI EURISTICI ---
-    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateHealth(int health, float weight) => health * weight;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateCollisionsAndTraps(int snakeIndex, ushort head, int myLength, in Bitboard simulatedWalls) => Head2HeadCollision(snakeIndex, myLength, head) - PenalityTrap(head, in simulatedWalls);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateTailDistance(ushort head, ushort tail, float weight) => ManhattanDistance(head, tail) * weight;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private float EvaluateAggression(int myIndex, ushort myHead, int myLength, float weight)
+    private float EvaluateHead2Head(int myIndex, in WarSnake me, float aggressionWeight)
     {
         float score = 0;
+        var myHead = me.Head;
+        var myLen = me.Length;
+
         for (var i = 0; i < _system.Count; i++)
         {
             if (i == myIndex || _system[i].IsDead) continue;
             var enemy = _system[i];
-
             var dist = ManhattanDistance(myHead, enemy.Head);
-
-            if (weight > 0) // HeadHunter / Balanced (Aggressive)
+            
+            if (dist <= 2)
             {
-                // Attacca solo se sei strettamente più lungo
-                if (myLength > enemy.Length)
-                {
-                    if (dist <= 2) score += 50.0f * weight;
-                    else if (dist <= 4) score += 20.0f * weight;
-                    else score += 10.0f / dist * weight;
-                }
-            }
-            else // Defensive (weight < 0)
-            {
-                // Se il nemico può uccidermi (o pareggiare che è male uguale)
-                if (enemy.Length >= myLength)
-                {
-                    // MODIFICA: Penalità DRACONIANA.
-                    // Moltiplichiamo per 1000 per assicurarci che superi qualsiasi bonus spazio (Space=25).
-                    // Esempio: -10 * 50 * 100 = -50.000 (Equivalente al soffocamento)
-
-                    if (dist <= 2) score += 5000.0f * weight; // Penalità MASSIVA (-50.000 se weight è -10)
-                    else if (dist <= 3) score += 1000.0f * weight; // Penalità forte per vicinanza media
-                }
+                if (myLen > enemy.Length) score += 500.0f * aggressionWeight; 
+                else score -= 5000.0f; // Evita suicidi contro più grandi
             }
         }
-
         return score;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    [SkipLocalsInit]
-    private void EvaluateTerritoryAndFoodFair(int area, in Bitboard walls, Span<float> results, bool isPhaseComplete)
-    {
-        Span<ushort> queue = stackalloc ushort[area];
-        var queueHead = 0;
-        var queueTail = 0;
-
-        Span<int> owners = stackalloc int[area];
-        owners.Fill(-1);
-
-        Span<ushort> distances = stackalloc ushort[area];
-        distances.Fill(ushort.MaxValue);
-
-        for (var i = 0; i < _system.Count; i++)
-        {
-            var snake = _system[i];
-            if (snake.IsDead) continue;
-            var head = snake.Head;
-            if (head >= area) continue;
-            owners[head] = i;
-            distances[head] = 0;
-            queue[queueTail++] = head;
-        }
-
-        while (queueHead < queueTail)
-        {
-            var currentPos = queue[queueHead++];
-            var currentOwner = owners[currentPos];
-            var currentDist = distances[currentPos];
-
-            if (currentOwner == -2) continue;
-            var nextDist = (ushort)(currentDist + 1);
-
-            foreach (var move in AllMovesArray)
-            {
-                var neighborPos = _neighborsMatrix.Get(currentPos, move);
-                if (!NeighborsMatrix.IsValid(neighborPos) || walls.IsSet(neighborPos)) continue;
-
-                var neighborOwner = owners[neighborPos];
-                if (neighborOwner == -1)
-                {
-                    owners[neighborPos] = currentOwner;
-                    distances[neighborPos] = nextDist;
-                    queue[queueTail++] = neighborPos;
-                }
-                else if (neighborOwner != currentOwner && neighborOwner != -2)
-                {
-                    if (distances[neighborPos] == nextDist) owners[neighborPos] = -2;
-                }
-            }
-        }
-
-        Span<int> spaceCounts = stackalloc int[_system.Count];
-        spaceCounts.Clear();
-
-        Span<float> foodScores = stackalloc float[_system.Count];
-
-        for (var i = 0; i < _system.Count; i++)
-        {
-            if (_system[i].IsDead) continue;
-            var w = SelectProfile(_system[i], i, isPhaseComplete);
-            foodScores[i] = (101.0f - _system[i].HP) * w.Food;
-        }
-
-        for (var i = 0; i < area; i++)
-        {
-            var owner = owners[i];
-            if (owner < 0) continue;
-
-            spaceCounts[owner]++;
-            if (_food.IsSet((ushort)i)) results[owner] += foodScores[owner];
-        }
-
-        for (var i = 0; i < _system.Count; i++)
-        {
-            if (_system[i].IsDead) continue;
-
-            var mySpace = spaceCounts[i];
-            var myLength = _system[i].Length;
-            var w = SelectProfile(_system[i], i, isPhaseComplete);
-
-            if (mySpace < myLength) results[i] += HeuristicWeights.SuffocationPenalty;
-            results[i] += mySpace * w.Space;
-        }
-    }
-
-    private float PenalityTrap(ushort head, in Bitboard simulatedWalls)
-    {
-        var openExits = 0;
-        foreach (var move in AllMovesArray)
-        {
-            var neighbor = _neighborsMatrix.Get(head, move);
-            if (NeighborsMatrix.IsValid(neighbor) && !simulatedWalls.IsSet(neighbor))
-                openExits++;
-        }
-
-        return openExits switch { <= 1 => 750.0f, 2 => 200.0f, _ => 0 };
-    }
-
-    private float Head2HeadCollision(int snakeIndex, int myLength, ushort head)
-    {
-        for (var i = 0; i < _system.Count; i++)
-        {
-            if (i == snakeIndex) continue;
-            var enemy = _system[i];
-            if (enemy.IsDead || enemy.Length < myLength) continue;
-            var enemyHead = enemy.Head;
-
-            if (_neighborsMatrix.Get(head, Moves.Up) == enemyHead ||
-                _neighborsMatrix.Get(head, Moves.Down) == enemyHead ||
-                _neighborsMatrix.Get(head, Moves.Left) == enemyHead ||
-                _neighborsMatrix.Get(head, Moves.Right) == enemyHead)
-                return float.NegativeInfinity;
-        }
-
-        return 0.0f;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int ManhattanDistance(ushort pos1, ushort pos2)
     {
-        var coord1 = _conversionsMatrix[pos1];
-        var coord2 = _conversionsMatrix[pos2];
-        return Math.Abs(coord1.X - coord2.X) + Math.Abs(coord1.Y - coord2.Y);
+        var c1 = _conversionsMatrix[pos1];
+        var c2 = _conversionsMatrix[pos2];
+        return Math.Abs(c1.X - c2.X) + Math.Abs(c1.Y - c2.Y);
+    }
+
+    private float PenalityTrap(ushort head, in Bitboard walls)
+    {
+        // Semplice controllo uscite libere (vicolo cieco 1x1)
+        var exits = 0;
+        if (!_hazards.IsSet(head)) // Se non siamo già in hazard, conta muri
+        {
+             // Logica semplificata: conta solo muri adiacenti
+             // (Da implementare se necessario, per ora ritorna 0 per non rallentare)
+        }
+        return 0.0f;
     }
 }
