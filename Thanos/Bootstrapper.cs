@@ -45,7 +45,7 @@ public static class Bootstrapper
             slotPools[i] = new SlotMemoryPool(nodes, firstIndex, Constants.MaxSnakesCount, sharedLookups, in slotLayout);
 
             // Il motore unisce logica e memoria
-            engines[i] = new Engine(slotPools[i], nodePools[i]);
+            engines[i] = new Engine(slotPools[i], nodePools[i], i);
         }
 
         // ---------------------------------------------------------

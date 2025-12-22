@@ -10,15 +10,17 @@ public sealed class Engine
 {
     private readonly ISlotMemoryPool _slotPool;
     private readonly INodeMemoryPool _nodePool;
+    private readonly int _index;
     private readonly Worker _worker;
 
     private int _rootIndex = -1; 
     private string[] _sortedSnakeIds = [];
 
-    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool)
+    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool, int index)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
+        _index = index;
         _worker = new Worker(_slotPool, _nodePool);
     }
 
@@ -122,7 +124,16 @@ public sealed class Engine
         if (rootNode.IsLeafNode) _worker.RunIteration(area, _rootIndex);
 
         var childCount = CountChildren(_rootIndex);
-        var timeLimit = childCount <= 1 ? forcedMoveTimeMs : maxTimeMs;
+        
+        if (childCount <= 1) 
+        {
+            if (rootNode.Visits >= 50) return;
+            
+            for(var i=0; i<50; i++) _worker.RunIteration(area, _rootIndex);
+            return; 
+        }
+        
+        const long timeLimit = maxTimeMs;
 
         var counter = 0;
         while (stopwatch.ElapsedMilliseconds < timeLimit)
@@ -141,7 +152,7 @@ public sealed class Engine
         }
         stopwatch.Stop();
         
-        Console.WriteLine($"MCTS Iterations: {counter}, Children: {childCount}, Visits: {rootNode.Visits}");
+        Console.WriteLine($"[Engine]: {_index}. MCTS Iterations: {counter}, Children: {childCount}, Visits: {rootNode.Visits}");
     }
 
     private unsafe int SelectBestChildIndex(int rootIndex)
