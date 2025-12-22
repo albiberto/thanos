@@ -129,17 +129,15 @@ public sealed class Engine
         {
             if (rootNode.Visits >= 50) return;
             
-            for(var i=0; i<50; i++) _worker.RunIteration(area, _rootIndex);
+            for(var i=0; i<500; i++) _worker.RunIteration(area, _rootIndex);
             return; 
-        }
-        
-        const long timeLimit = maxTimeMs;
+        } 
 
         var counter = 0;
-        while (stopwatch.ElapsedMilliseconds < timeLimit)
+        while (stopwatch.ElapsedMilliseconds < maxTimeMs)
         {
             if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) break;
-            var remainingTime = timeLimit - stopwatch.ElapsedMilliseconds;
+            var remainingTime = maxTimeMs - stopwatch.ElapsedMilliseconds;
 
             var currentBatchSize = remainingTime switch
             {

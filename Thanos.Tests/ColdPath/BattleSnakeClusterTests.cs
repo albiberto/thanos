@@ -54,7 +54,7 @@ public class BattleSnakeClusterTests
         {
             slotPools[i] = new SlotMemoryPool(10, 0, snakeCount, _lookups, layout);
             nodePools[i] = new NodeMemoryPool(1000, 1, nodeLayout);
-            engines[i] = new MCST.Engine(slotPools[i], nodePools[i]);
+            engines[i] = new MCST.Engine(slotPools[i], nodePools[i], 1);
         }
 
         BattleSnakeCluster? cluster = null;
@@ -96,7 +96,7 @@ public class BattleSnakeClusterTests
         {
             slotPools[i] = new SlotMemoryPool(10, 0, snakeCount, _lookups, layout);
             nodePools[i] = new NodeMemoryPool(1000, 1, nodeLayout);
-            engines[i] = new MCST.Engine(slotPools[i], nodePools[i]);
+            engines[i] = new MCST.Engine(slotPools[i], nodePools[i], 1);
         }
 
         using var cluster = new BattleSnakeCluster(engines, slotPools, nodePools, _lookups);
@@ -130,7 +130,7 @@ public class BattleSnakeClusterTests
         {
             slotPools[i] = new SlotMemoryPool(10, 0, snakeCount, _lookups, layout);
             nodePools[i] = new NodeMemoryPool(1000, 1, nodeLayout);
-            engines[i] = new MCST.Engine(slotPools[i], nodePools[i]);
+            engines[i] = new MCST.Engine(slotPools[i], nodePools[i], 1);
         }
 
         using var cluster = new BattleSnakeCluster(engines, slotPools, nodePools, _lookups);
@@ -162,7 +162,7 @@ public class BattleSnakeClusterTests
         {
             slotPools[i] = new SlotMemoryPool(10, 0, snakeCount, _lookups, layout);
             nodePools[i] = new NodeMemoryPool(1000, 1, nodeLayout);
-            engines[i] = new MCST.Engine(slotPools[i], nodePools[i]);
+            engines[i] = new MCST.Engine(slotPools[i], nodePools[i], 1);
         }
 
         // Dispose only the pools manually, don't dispose the cluster which would dispose the singleton
