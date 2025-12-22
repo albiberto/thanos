@@ -124,6 +124,7 @@ public sealed class Engine
         var childCount = CountChildren(_rootIndex);
         var timeLimit = childCount <= 1 ? forcedMoveTimeMs : maxTimeMs;
 
+        var counter = 0;
         while (stopwatch.ElapsedMilliseconds < timeLimit)
         {
             if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) break;
@@ -133,10 +134,14 @@ public sealed class Engine
             {
                 > 250 => 1500, > 100 => 500, > 50 => 100, _ => 10
             };
+            
+            counter += currentBatchSize;
 
             for (var i = 0; i < currentBatchSize; i++) _worker.RunIteration(area, _rootIndex);
         }
         stopwatch.Stop();
+        
+        Console.WriteLine($"MCTS Iterations: {counter}, Children: {childCount}, Visits: {rootNode.Visits}");
     }
 
     private unsafe int SelectBestChildIndex(int rootIndex)
