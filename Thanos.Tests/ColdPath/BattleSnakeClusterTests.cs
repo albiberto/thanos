@@ -1,5 +1,6 @@
 using Thanos.Abstract;
 using Thanos.Memory;
+using Thanos.Tests.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.ColdPath;

@@ -1,5 +1,6 @@
 using Thanos.Memory;
 using Thanos.SourceGen;
+using Thanos.Tests.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Memory;

@@ -1,5 +1,6 @@
 using Thanos.Shared;
 using Thanos.SourceGen;
+using Thanos.Tests.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Shared;
