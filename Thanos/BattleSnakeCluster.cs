@@ -142,8 +142,6 @@ public sealed class BattleSnakeCluster : IBattleSnakeCluster
         foreach (var pool in _nodePools) pool.Dispose();
         
         _hashCalculationPool.Dispose(); // Ricordati di disporre anche questo!
-        
-        _sharedLookups.Dispose();
         _threadLocalStatsBuffer.Dispose();
     }
 }

@@ -7,6 +7,8 @@ namespace Thanos.Memory;
 
 public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
 {
+    private bool _disposed; // Flag di sicurezza
+    
     // --- SINGLETON STATICO (Aggiunto) ---
     // Usiamo Lazy per garantire l'inizializzazione thread-safe e ritardata
     private static readonly Lazy<LookupsMemoryPool> _mediumInstance = new(() => 
@@ -16,7 +18,7 @@ public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
     public static LookupsMemoryPool Medium => _mediumInstance.Value;
 
     // --- MEMBRI DI ISTANZA ---
-    private readonly byte* _basePointer;
+    private byte* _basePointer;
     private readonly LookupsMemoryLayout _layout;
 
     public CoordinatesMatrix CoordinatesMatrix => new(CoordinatesSpan);
@@ -44,5 +46,17 @@ public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
         NeighborsBuilder.Populate(width, height, neighborsSpan);
     }
 
-    public void Dispose() => NativeMemory.AlignedFree(_basePointer);
+    public void Dispose()
+    {
+        // Se è già stato disposto, esci subito. Non tentare di liberare di nuovo la memoria.
+        if (_disposed) return;
+        
+        if (_basePointer != null)
+        {
+            NativeMemory.AlignedFree(_basePointer);
+            _basePointer = null;
+        }
+        
+        _disposed = true;
+    }
 }
