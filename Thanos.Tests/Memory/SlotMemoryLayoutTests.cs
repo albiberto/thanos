@@ -23,19 +23,22 @@ public class SlotMemoryLayoutTests
         Multiple(() =>
         {
             // 1. WarSnakeLife (Inizio a 0)
-            That(layout.WarSnakeLife.Offset, Is.Zero);
+            // FIX: Cast esplicito a long per soddisfare NUnit Is.Zero
+            That((long)layout.WarSnakeLife.Offset, Is.Zero);
             That(layout.WarSnakeLife.Count<WarSnakeLife>(), Is.EqualTo(1));
 
             // 2. Bitboard (Deve essere allineata a 16 byte per SIMD/Vector128)
-            var lifeEnd = layout.WarSnakeLife.Next;
-            That(layout.Bitboard.Offset, Is.GreaterThanOrEqualTo(lifeEnd));
+            var lifeEnd = (long)layout.WarSnakeLife.Next;
+        
+            // FIX: Confrontiamo sempre long con long per evitare ambiguità su UIntPtr
+            That((long)layout.Bitboard.Offset, Is.GreaterThanOrEqualTo(lifeEnd));
             That((long)layout.Bitboard.Offset % 16, Is.Zero, "Bitboard must be 16-byte aligned for SIMD.");
 
             // 3. QueueState (Dopo Bitboard)
-            That(layout.CircularQueueState.Offset, Is.GreaterThanOrEqualTo(layout.Bitboard.Next));
+            That((long)layout.CircularQueueState.Offset, Is.GreaterThanOrEqualTo((long)layout.Bitboard.Next));
 
             // 4. QueueBuffer (Critico: Inizio nuova Cache Line per evitare False Sharing sulla coda)
-            That(layout.QueueBuffer.Offset, Is.GreaterThanOrEqualTo(layout.CircularQueueState.Next));
+            That((long)layout.QueueBuffer.Offset, Is.GreaterThanOrEqualTo((long)layout.CircularQueueState.Next));
             That((long)layout.QueueBuffer.Offset % Constants.CacheLine, Is.Zero, "QueueBuffer must start on CacheLine boundary.");
 
             // 5. Snake Stride (La dimensione totale di UNO snake deve essere multipla di 64)

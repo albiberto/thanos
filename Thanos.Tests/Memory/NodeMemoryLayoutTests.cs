@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Thanos.MCST;
 using Thanos.Memory;
 using static NUnit.Framework.Assert;
@@ -5,28 +6,42 @@ using static NUnit.Framework.Assert;
 namespace Thanos.Tests.Memory;
 
 [TestFixture]
+[Parallelizable(ParallelScope.All)]
 public class NodeMemoryLayoutTests
 {
     [Test]
-    public unsafe void Layout_Should_Match_Exact_SizeOf_Node_Struct()
+    public void Constructor_WhenInitialized_ThenNodeSizeMatchesStructSize()
     {
+        // Arrange
         var layout = new NodeMemoryLayout();
 
-        // Node è layout explicit size 64
-        var expectedNodeLength = 64L; 
+        // Node è una struct con LayoutKind.Explicit e Size = 64
+        var expectedNodeSize = Unsafe.SizeOf<Node>(); 
         
-        var actualNodeLength = (long)layout.Node.Length;
-
-        That(actualNodeLength, Is.EqualTo(expectedNodeLength),
-            $"Node.Length should match struct size/stride.");
+        // Act & Assert
+        Multiple(() =>
+        {
+            That((long)layout.Node.Length, Is.EqualTo(expectedNodeSize), 
+                "MemoryBlock length must match sizeof(Node).");
+            
+            That(expectedNodeSize, Is.EqualTo(64), 
+                "Node struct size must be exactly 64 bytes (Cache Line). Check StructLayout.");
+        });
     }
 
     [Test]
-    public void Layout_Stride_Should_Be_CacheLine_Aligned()
+    public void Constructor_WhenInitialized_ThenStrideIsCacheLineAligned()
     {
+        // Arrange
         var layout = new NodeMemoryLayout();
+
+        // Act
         var stride = (long)layout.Node.Next;
 
-        That(stride % 64, Is.Zero, "Node stride must be multiple of 64 bytes (Cache Line).");
+        // Assert
+        // Questo è cruciale per evitare False Sharing tra thread se i nodi fossero processati in parallelo,
+        // e per garantire che l'indirizzo base di ogni nodo sia allineato a 64 byte.
+        That(stride % Constants.CacheLine, Is.Zero, 
+            "Node stride must be multiple of 64 bytes (Cache Line).");
     }
 }

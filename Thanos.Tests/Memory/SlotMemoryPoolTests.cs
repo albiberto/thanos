@@ -138,13 +138,24 @@ public class SlotMemoryPoolTests
     public void Reset_WhenCalled_ThenRewindsIndexAllowingReuse()
     {
         var layout = new SlotMemoryLayout(Area, QueueCapacity, SnakesCount);
-        _pool = new SlotMemoryPool(MaxSlots, 5, SnakesCount, _lookups, layout);
+        
+        // CORREZIONE: Impostiamo StartIndex a 2 con Capacità 5.
+        // Gli indici validi sono 0, 1, 2, 3, 4. 
+        // Partendo da 2, l'allocazione è valida.
+        const int startIndex = 2;
+        _pool = new SlotMemoryPool(MaxSlots, startIndex, SnakesCount, _lookups, layout); 
 
-        _pool.Allocate(); 
-        _pool.Reset();
+        var firstAlloc = _pool.Allocate(); // Deve ritornare 2
+        
+        _pool.Reset(); // Riporta Index a 2
 
-        var newIdx = _pool.Allocate();
-        That(newIdx, Is.EqualTo(5), "Reset should rewind allocator to StartIndex.");
+        var newIdx = _pool.Allocate(); // Deve ritornare di nuovo 2
+        
+        Multiple(() =>
+        {
+            That(firstAlloc, Is.EqualTo(startIndex), "First allocation should match StartIndex.");
+            That(newIdx, Is.EqualTo(startIndex), "Reset should rewind allocator to StartIndex.");
+        });
     }
 
     [Test]
