@@ -1,4 +1,4 @@
-namespace Thanos.Tests.SourceGen;
+namespace Thanos.Tests;
 
 public static class Support
 {

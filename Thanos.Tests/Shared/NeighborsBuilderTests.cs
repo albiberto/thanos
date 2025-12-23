@@ -1,63 +1,81 @@
 using Thanos.Common;
 using Thanos.Shared;
-using Thanos.Tests.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Shared;
 
 [TestFixture]
+[Parallelizable(ParallelScope.All)]
 public class NeighborsBuilderTests
 {
     private static object[][] Dimensions => Support.Dimensions;
 
-    /// <summary>
-    ///     Verifies that NeighborsBuilder.Populate correctly fills the neighbors matrix with proper indices
-    ///     for each direction (Up, Down, Left, Right), respecting grid boundaries by using ushort.MaxValue
-    ///     for out-of-bounds neighbors across various grid dimensions.
-    /// </summary>
     [TestCaseSource(nameof(Dimensions))]
-    public void Populate_ShouldAlignMemory_With_CartesianCoordinates(byte width, byte height, ushort area)
+    public void Populate_WhenGridIsInitialized_ThenMapsTopologyCorrectly(byte width, byte height, ushort area)
     {
+        // Arrange
         var buffer = new ushort[area * 4];
-        NeighborsBuilder.Populate(width, height, buffer);
 
+        // Act
+        NeighborsBuilder.Populate(width, height, buffer);
         var grid = new NeighborsMatrix(buffer);
 
-        for (ushort i = 0; i < area; i++)
+        // Verifica un punto centrale sicuro (es. 5,5 su 11x11) -> Index 60
+        var center = (ushort)(width * height / 2); 
+        
+        // ESTRAZIONE VALORI (Pre-Assert)
+        // Dobbiamo leggere dalla ref struct PRIMA della lambda di Assert.Multiple
+        var actualRight = grid.Get(center, Moves.Right);
+        var actualLeft = grid.Get(center, Moves.Left);
+        var actualUp = grid.Get(center, Moves.Up);
+        var actualDown = grid.Get(center, Moves.Down);
+
+        // Assert
+        Multiple(() =>
         {
-            var x = i % width;
-            var y = i / width;
-
-            var actualUp = grid.Get(i, Moves.Up);
-            var actualDown = grid.Get(i, Moves.Down);
-            var actualLeft = grid.Get(i, Moves.Left);
-            var actualRight = grid.Get(i, Moves.Right);
-
-            var expectedUp = y >= height - 1 ? ushort.MaxValue : (ushort)(i + width);
-            var expectedDown = y == 0 ? ushort.MaxValue : (ushort)(i - width);
-            var expectedLeft = x == 0 ? ushort.MaxValue : (ushort)(i - 1);
-            var expectedRight = x == width - 1 ? ushort.MaxValue : (ushort)(i + 1);
-
-            Multiple(() =>
-            {
-                That(actualUp, Is.EqualTo(expectedUp), $"Neighbor Up at index {i} ({x},{y}) should be {expectedUp} but was {actualUp}.");
-                That(actualDown, Is.EqualTo(expectedDown), $"Neighbor Down at index {i} ({x},{y}) should be {expectedDown} but was {actualDown}.");
-                That(actualLeft, Is.EqualTo(expectedLeft), $"Neighbor Left at index {i} ({x},{y}) should be {expectedLeft} but was {actualLeft}.");
-                That(actualRight, Is.EqualTo(expectedRight), $"Neighbor Right at index {i} ({x},{y}) should be {expectedRight} but was {actualRight}.");
-            });
-        }
+            That(actualRight, Is.EqualTo(center + 1), "Center Right mismatch");
+            That(actualLeft, Is.EqualTo(center - 1), "Center Left mismatch");
+            That(actualUp, Is.EqualTo(center + width), "Center Up mismatch (+Width)");
+            That(actualDown, Is.EqualTo(center - width), "Center Down mismatch (-Width)");
+        });
     }
 
-    /// <summary>
-    ///     Verifies that NeighborsBuilder.Populate throws an ArgumentException when the buffer size
-    ///     does not match the expected dimensions (width * height * 4).
-    /// </summary>
     [TestCaseSource(nameof(Dimensions))]
-    public void Populate_ShouldThrow_WhenBufferSizeDoesNotMatchDimensions(byte width, byte height, ushort area)
+    public void Populate_WhenCheckingBoundaries_ThenUsesSentinelValue(byte width, byte height, ushort area)
     {
-        var expectedLength = area * 4;
-        var wrongBuffer = new ushort[expectedLength - 1];
+        // Arrange
+        var buffer = new ushort[area * 4];
+        NeighborsBuilder.Populate(width, height, buffer);
+        var grid = new NeighborsMatrix(buffer);
 
-        Throws<ArgumentException>(() => NeighborsBuilder.Populate(width, height, wrongBuffer), $"Buffer size mismatch should throw ArgumentException for width={width}, height={height}, expected length={expectedLength}.");
+        // ESTRAZIONE VALORI (Pre-Assert)
+        // Bordo Sinistro (x=0)
+        var leftBoundaryVal = grid.Get(0, Moves.Left);
+        
+        // Bordo Destro (x=w-1)
+        var rightEdgeIndex = (ushort)(width - 1);
+        var rightBoundaryVal = grid.Get(rightEdgeIndex, Moves.Right);
+        
+        // Bordo Inferiore (y=0)
+        var bottomBoundaryVal = grid.Get(0, Moves.Down);
+
+        // Assert
+        Multiple(() =>
+        {
+            That(leftBoundaryVal, Is.EqualTo(ushort.MaxValue), "Left boundary failed (should be Invalid)");
+            That(rightBoundaryVal, Is.EqualTo(ushort.MaxValue), "Right boundary failed (should be Invalid)");
+            That(bottomBoundaryVal, Is.EqualTo(ushort.MaxValue), "Bottom boundary failed (should be Invalid)");
+        });
+    }
+
+    [TestCaseSource(nameof(Dimensions))]
+    public void Populate_WhenBufferSizeMismatch_ThenThrowsArgumentException(byte width, byte height, ushort area)
+    {
+        // Arrange
+        var wrongBuffer = new ushort[area * 4 - 1]; // 1 byte in meno
+
+        // Act & Assert
+        // Qui non usiamo grid, quindi la lambda è sicura (NeighborsBuilder è static)
+        Throws<ArgumentException>(() => NeighborsBuilder.Populate(width, height, wrongBuffer));
     }
 }

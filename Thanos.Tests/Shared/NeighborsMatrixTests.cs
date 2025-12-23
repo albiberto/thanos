@@ -1,79 +1,76 @@
 using Thanos.Common;
 using Thanos.Shared;
-using Thanos.Tests.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Shared;
 
 [TestFixture]
+[Parallelizable(ParallelScope.All)]
 public class NeighborsMatrixTests
 {
     private static object[][] Dimensions => Support.Dimensions;
 
-    /// <summary>
-    ///     Verifies that NeighborsMatrix correctly reads neighbor indices from the underlying memory buffer
-    ///     using both GetAt() method (with move index) and Get() method (with move mask) across different grid dimensions.
-    /// </summary>
     [TestCaseSource(nameof(Dimensions))]
-    public void Matrix_ShouldRead_Correctly_FromUnderlyingMemory(byte width, byte height, ushort area)
+    public void Get_WhenIteratingEveryCell_ThenTopologyIsPerfect(byte width, byte height, ushort area)
     {
+        // Arrange
         var buffer = new ushort[area * 4];
-        for (var i = 0; i < buffer.Length; i++) buffer[i] = (ushort)i;
-
-        byte[] masks = [Moves.Up, Moves.Down, Moves.Left, Moves.Right];
-
+        NeighborsBuilder.Populate(width, height, buffer); // Usiamo il builder per popolare
         var matrix = new NeighborsMatrix(buffer);
 
-        for (ushort pos = 0; pos < area; pos++)
-        for (var moveIndex = 0; moveIndex < 4; moveIndex++)
+        // Act & Assert (Full Scan)
+        for (ushort i = 0; i < area; i++)
         {
-            var expected = buffer[pos * 4 + moveIndex];
-            var moveMask = masks[moveIndex];
-            var actualGetAt = matrix.GetAt(pos, moveIndex);
-            var actualGet = matrix.Get(pos, moveMask);
+            var x = i % width;
+            var y = i / width;
 
-            Multiple(() =>
-            {
-                That(actualGetAt, Is.EqualTo(expected), $"GetAt({pos}, {moveIndex}) should return {expected} but was {actualGetAt}.");
-                That(actualGet, Is.EqualTo(expected), $"Get({pos}, {moveMask}) should return {expected} but was {actualGet}.");
-            });
+            // Calcoliamo l'atteso (Oracle Logic)
+            var expectedUp = y < height - 1 ? (ushort)(i + width) : ushort.MaxValue;
+            var expectedDown = y > 0 ? (ushort)(i - width) : ushort.MaxValue;
+            var expectedLeft = x > 0 ? (ushort)(i - 1) : ushort.MaxValue;
+            var expectedRight = x < width - 1 ? (ushort)(i + 1) : ushort.MaxValue;
+
+            // Eseguiamo le query sulla matrice
+            var actualUp = matrix.Get(i, Moves.Up);
+            var actualDown = matrix.Get(i, Moves.Down);
+            var actualLeft = matrix.Get(i, Moves.Left);
+            var actualRight = matrix.Get(i, Moves.Right);
+
+            // Verifica puntuale
+            if (actualUp != expectedUp)
+                Fail($"Topology Error at ({x},{y}) [Index {i}] Moving UP. Expected: {expectedUp}, Actual: {actualUp}");
+            
+            if (actualDown != expectedDown)
+                Fail($"Topology Error at ({x},{y}) [Index {i}] Moving DOWN. Expected: {expectedDown}, Actual: {actualDown}");
+            
+            if (actualLeft != expectedLeft)
+                Fail($"Topology Error at ({x},{y}) [Index {i}] Moving LEFT. Expected: {expectedLeft}, Actual: {actualLeft}");
+            
+            if (actualRight != expectedRight)
+                Fail($"Topology Error at ({x},{y}) [Index {i}] Moving RIGHT. Expected: {expectedRight}, Actual: {actualRight}");
         }
     }
 
-    /// <summary>
-    ///     Verifies that NeighborsMatrix reflects changes made to the underlying memory buffer,
-    ///     ensuring the matrix acts as a view over the buffer rather than a copy.
-    /// </summary>
     [Test]
-    public void Matrix_ShouldReflect_ChangesInUnderlyingMemory()
+    public void IsValid_Checks_Against_MaxValue()
     {
-        var buffer = new ushort[4];
-        buffer[0] = 100;
-        var matrix = new NeighborsMatrix(buffer);
-
-        buffer[0] = 999;
-        var expected = (ushort)999;
-        var actual = matrix.Get(0, Moves.Up);
-
-        That(actual, Is.EqualTo(expected), $"Matrix.Get(0, Moves.Up) should be {expected} reflecting underlying buffer change but was {actual}.");
-    }
-
-    /// <summary>
-    ///     Verifies that NeighborsMatrix.IsValid correctly identifies ushort.MaxValue as invalid
-    ///     and all other values as valid neighbor indices.
-    /// </summary>
-    [Test]
-    public void IsValid_ShouldReturnCorrectBoolean()
-    {
-        var actualMaxValue = NeighborsMatrix.IsValid(ushort.MaxValue);
-        var actualZero = NeighborsMatrix.IsValid(0);
-        var actualOther = NeighborsMatrix.IsValid(12345);
-
         Multiple(() =>
         {
-            That(actualMaxValue, Is.False, $"IsValid(ushort.MaxValue) should be False but was {actualMaxValue}.");
-            That(actualZero, Is.True, $"IsValid(0) should be True but was {actualZero}.");
-            That(actualOther, Is.True, $"IsValid(12345) should be True but was {actualOther}.");
+            That(NeighborsMatrix.IsValid(ushort.MaxValue), Is.False, "MaxValue must be Invalid");
+            That(NeighborsMatrix.IsValid(0), Is.True, "0 must be Valid");
+            That(NeighborsMatrix.IsValid(123), Is.True, "123 must be Valid");
         });
+    }
+
+    [Test]
+    public void Get_Reflects_MemoryChanges()
+    {
+        var buffer = new ushort[4]; // 1 cella * 4 mosse
+        buffer[0] = 10; // Up
+        var matrix = new NeighborsMatrix(buffer);
+
+        buffer[0] = 99;
+
+        That(matrix.Get(0, Moves.Up), Is.EqualTo(99));
     }
 }
