@@ -103,7 +103,9 @@ public class BattleSnakeClusterTests
         {
             slotPools[i] = new SlotMemoryPool(10, 0, Constants.MaxSnakesCount, _lookups, slotLayout);
             nodePools[i] = new NodeMemoryPool(100, 1, nodeLayout);
-            engines[i] = new Engine(slotPools[i], nodePools[i], i);
+            
+            var worker = new WorkerTests(slotPools[i], nodePools[i]); 
+            engines[i] = new Engine(slotPools[i], nodePools[i], worker, i);
         }
 
         return (engines, slotPools, nodePools);

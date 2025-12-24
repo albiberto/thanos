@@ -7,7 +7,7 @@ using Thanos.War;
 
 namespace Thanos.MCST;
 
-public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryPool)
+public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryPool) : IWorker
 {
     private const double EXPLORATION_PARAMETER = 1.41;
     private const int CHANCE_NODE_VISIT_THRESHOLD = 50;

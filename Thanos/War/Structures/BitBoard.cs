@@ -5,44 +5,37 @@ using System.Runtime.Intrinsics;
 
 namespace Thanos.War.Structures;
 
-public readonly unsafe ref struct Bitboard
+[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+public readonly unsafe ref struct Bitboard(Span<byte> raw)
 {
-    private readonly ulong* _ptr;
-    private readonly int _length;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Bitboard(Span<byte> raw)
-    {
-        // Unsafe cast: il layout garantisce che 'raw' sia allineato a 16 byte.
-        _ptr = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(raw));
-        _length = raw.Length / 8; // Bytes to Ulongs
-    }
+    private readonly ulong* _ptr = (ulong*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(raw));
+    private readonly int _ulongsCount = raw.Length / 8; // Bytes to Ulongs
     
     // Espone lo span per operazioni non critiche (test, debug)
     public Span<ulong> Buffer 
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new(_ptr, _length);
+        get => new(_ptr, _ulongsCount);
     }
     
     // Accesso raw allo span di byte originale (utile per copie bulk)
     public ReadOnlySpan<byte> Raw
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => new(_ptr, _length * 8);
+        get => new(_ptr, _ulongsCount * 8);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
         // Ottimizzazione specifica per board standard (11x11 = 2 ulongs)
-        if (Vector128.IsHardwareAccelerated && _length == 2)
+        if (Vector128.IsHardwareAccelerated && _ulongsCount == 2)
         {
             Vector128<ulong>.Zero.Store(_ptr);
         }
         else
         {
-            new Span<ulong>(_ptr, _length).Clear();
+            new Span<ulong>(_ptr, _ulongsCount).Clear();
         }
     }
 
@@ -74,7 +67,7 @@ public readonly unsafe ref struct Bitboard
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Xor(Bitboard other)
     {
-        if (Vector128.IsHardwareAccelerated && _length == 2)
+        if (Vector128.IsHardwareAccelerated && _ulongsCount == 2)
         {
             var v1 = Vector128.Load(_ptr);
             var v2 = Vector128.Load(other._ptr);
@@ -82,14 +75,14 @@ public readonly unsafe ref struct Bitboard
         }
         else
         {
-            for (var i = 0; i < _length; i++) _ptr[i] ^= other._ptr[i];
+            for (var i = 0; i < _ulongsCount; i++) _ptr[i] ^= other._ptr[i];
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Or(in Bitboard other)
     {
-        if (Vector128.IsHardwareAccelerated && _length == 2)
+        if (Vector128.IsHardwareAccelerated && _ulongsCount == 2)
         {
             var v1 = Vector128.Load(_ptr);
             var v2 = Vector128.Load(other._ptr);
@@ -97,7 +90,7 @@ public readonly unsafe ref struct Bitboard
         }
         else
         {
-            for (var i = 0; i < _length; i++) _ptr[i] |= other._ptr[i];
+            for (var i = 0; i < _ulongsCount; i++) _ptr[i] |= other._ptr[i];
         }
     }
 
@@ -105,27 +98,27 @@ public readonly unsafe ref struct Bitboard
     public int PopCount()
     {
         // Unrolling manuale per 11x11
-        if (_length == 2)
+        if (_ulongsCount == 2)
         {
             return BitOperations.PopCount(_ptr[0]) + BitOperations.PopCount(_ptr[1]);
         }
         
         var count = 0;
-        for (var i = 0; i < _length; i++) count += BitOperations.PopCount(_ptr[i]);
+        for (var i = 0; i < _ulongsCount; i++) count += BitOperations.PopCount(_ptr[i]);
         return count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(Bitboard destination)
     {
-        if (Vector128.IsHardwareAccelerated && _length == 2)
+        if (Vector128.IsHardwareAccelerated && _ulongsCount == 2)
         {
             Vector128.Load(_ptr).Store(destination._ptr);
         }
         else
         {
             // Usiamo CopyBlock (memcpy) per velocità raw
-            Unsafe.CopyBlock(destination._ptr, _ptr, (uint)_length * 8);
+            Unsafe.CopyBlock(destination._ptr, _ptr, (uint)_ulongsCount * 8);
         }
     }
 }

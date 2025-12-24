@@ -43,9 +43,10 @@ public static class Bootstrapper
             // IMPORTANTE: Passiamo 'Constants.MaxSnakesCount' (4) perché questo pool è ottimizzato
             // e pre-allocato per gestire esattamente quel numero di serpenti nel sistema.
             slotPools[i] = new SlotMemoryPool(nodes, firstIndex, Constants.MaxSnakesCount, sharedLookups, in slotLayout);
-
+            
             // Il motore unisce logica e memoria
-            engines[i] = new Engine(slotPools[i], nodePools[i], i);
+            var worker = new Worker(slotPools[i], nodePools[i]);
+            engines[i] = new Engine(slotPools[i], nodePools[i], worker, i);
         }
 
         // ---------------------------------------------------------

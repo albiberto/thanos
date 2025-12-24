@@ -11,17 +11,17 @@ public sealed class Engine
     private readonly ISlotMemoryPool _slotPool;
     private readonly INodeMemoryPool _nodePool;
     private readonly int _index;
-    private readonly Worker _worker;
+    private readonly IWorker _worker;
 
     private int _rootIndex = -1; 
     private string[] _sortedSnakeIds = [];
 
-    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool, int index)
+    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool, IWorker worker, int index)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
         _index = index;
-        _worker = new Worker(_slotPool, _nodePool);
+        _worker = worker;
     }
 
     public void InitializeGame(string[] sortedSnakeIds)

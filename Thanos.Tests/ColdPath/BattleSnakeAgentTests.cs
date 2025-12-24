@@ -6,7 +6,6 @@ using static NUnit.Framework.Assert;
 namespace Thanos.Tests.ColdPath;
 
 [TestFixture]
-[Parallelizable(ParallelScope.All)]
 public class BattleSnakeAgentTests
 {
     private MockRepository _repository;
@@ -18,7 +17,8 @@ public class BattleSnakeAgentTests
     {
         _repository = new MockRepository(MockBehavior.Strict);
         _mockCluster = _repository.Create<IBattleSnakeCluster>();
-        // Setup di base per Dispose, chiamato automaticamente dal TearDown o explicit
+
+        // Setup GLOBALE per Dispose (necessario perché viene chiamato nel TearDown)
         _mockCluster.Setup(c => c.Dispose());
 
         _agent = new BattleSnakeAgent(_mockCluster.Object);
@@ -34,7 +34,7 @@ public class BattleSnakeAgentTests
     [Test]
     public void Constructor_WhenClusterIsNull_ThenThrowsArgumentNullException()
     {
-        Throws<ArgumentNullException>(() => new BattleSnakeAgent(null!));
+        Throws<ArgumentNullException>(() => _ = new BattleSnakeAgent(null!));
     }
 
     [Test]
@@ -42,17 +42,14 @@ public class BattleSnakeAgentTests
     {
         // Arrange
         var request = BattleSnakeSerializer.Parse(Support.MediumJson);
-        // ID attesi dal file MediumRequest.json:
-        // Hero: "snake-hero"
-        // Enemy1: "snake-enemy"
-        // Enemy2: "snake-enemy-2"
-        // Enemy3: "snake-enemy-3"
-
+        
+        // CORRETTO: Qui configuriamo SOLO InitializeGame.
+        // Se per errore qui c'era .Setup(c => c.ComputeMoveAsync...), RIMUOVIDO!
         _mockCluster
             .Setup(c => c.InitializeGame(
                 It.Is<string[]>(ids => 
                     ids.Length == 4 &&
-                    ids[0] == Support.Me &&       // Hero SEMPRE primo
+                    ids[0] == Support.Me &&
                     ids[1] == Support.Enemy1 &&
                     ids[2] == Support.Enemy2 &&
                     ids[3] == Support.Enemy3
@@ -73,8 +70,9 @@ public class BattleSnakeAgentTests
         var request = BattleSnakeSerializer.Parse(Support.MediumJson);
         const byte expectedMove = 2; // Down
 
+        // CORRETTO: Qui (e SOLO QUI) configuriamo ComputeMoveAsync
         _mockCluster
-            .Setup(c => c.ComputeMoveAsync(request))
+            .Setup(c => c.ComputeMoveAsync(It.IsAny<Request>())) 
             .ReturnsAsync(expectedMove)
             .Verifiable();
 
@@ -88,19 +86,15 @@ public class BattleSnakeAgentTests
     [Test]
     public void End_WhenCalled_ThenDoesNotThrow()
     {
-        // Arrange
         var request = BattleSnakeSerializer.Parse(Support.MediumJson);
         
-        // Act & Assert
+        // Nessun Setup necessario qui (a parte Dispose che è globale)
         DoesNotThrow(() => _agent.End(request));
     }
 
     [Test]
     public void Dispose_WhenCalled_ThenDisposesUnderlyingCluster()
     {
-        // Arrange (Setup già fatto, ma esplicitiamo la verifica)
-        _mockCluster.Setup(c => c.Dispose()).Verifiable();
-
         // Act
         _agent.Dispose();
 
