@@ -39,7 +39,7 @@ public readonly unsafe ref struct SnakesSystem(byte* basePtr, in SlotMemoryLayou
         {
             var snakePtr = _basePtr + ((nuint)i * _layout.SnakeStride.Next);
             ref var state = ref Unsafe.AsRef<CircularQueueState>(snakePtr + _layout.CircularQueueState.Offset);
-            state.PlacementNew(_layout.QueueCapacity);
+            state.Reset();
         }
     }
 

@@ -3,30 +3,16 @@ using System.Runtime.InteropServices;
 
 namespace Thanos.War.Structures;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct CircularQueueState
 {
-    public byte Length { get; private set; }
-    public ushort HeadIndex { get; private set; }
-    public ushort TailIndex { get; private set; }
-    public ushort WrapMask { get; private set; }
-
-    public void PlacementNew(ushort capacity) => WrapMask = (ushort)(capacity - 1);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AdvanceHead()
-    {
-        HeadIndex = (ushort)((HeadIndex + 1) & WrapMask);
-        Length++;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AdvanceTail()
-    {
-        TailIndex = (ushort)((TailIndex + 1) & WrapMask);
-        Length--;
-    }
-
+    // Questi 3 byte vivono nel Pool di memoria (Heap/Unmanaged)
+    public byte Length;
+    public byte HeadIndex;
+    public byte TailIndex;
+    
+    // Helper per azzeramento veloce. 
+    // Il JIT lo inlinerà come tre istruzioni MOV [addr], 0.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {
