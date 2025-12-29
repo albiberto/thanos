@@ -12,25 +12,25 @@ public readonly ref partial struct Bitboard
         {
             case 1: // 7x7 (49 bit)
                 if (Vector64.IsHardwareAccelerated)
-                    Vector64<ulong>.Zero.StoreUnsafe(ref _first);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref _root);
                 else
-                    _first = 0;
+                    _root = 0;
                 return;
 
             case 2: // 11x11 (121 bit) - Standard
                 if (Vector128.IsHardwareAccelerated)
                 {
-                    Vector128<ulong>.Zero.StoreUnsafe(ref _first);
+                    Vector128<ulong>.Zero.StoreUnsafe(ref _root);
                 }
                 else if (Vector64.IsHardwareAccelerated)
                 {
-                    Vector64<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 1));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 1));
                 }
                 else
                 {
-                    _first = 0;
-                    Unsafe.Add(ref _first, 1) = 0;
+                    _root = 0;
+                    Unsafe.Add(ref _root, 1) = 0;
                 }
 
                 return;
@@ -39,21 +39,21 @@ public readonly ref partial struct Bitboard
                 if (Vector128.IsHardwareAccelerated && Vector64.IsHardwareAccelerated)
                 {
                     // 2 + 1
-                    Vector128<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
+                    Vector128<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
                 }
                 else if (Vector64.IsHardwareAccelerated)
                 {
                     // 1 + 1 + 1
-                    Vector64<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 1));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 1));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
                 }
                 else
                 {
-                    _first = 0;
-                    Unsafe.Add(ref _first, 1) = 0;
-                    Unsafe.Add(ref _first, 2) = 0;
+                    _root = 0;
+                    Unsafe.Add(ref _root, 1) = 0;
+                    Unsafe.Add(ref _root, 2) = 0;
                 }
 
                 return;
@@ -61,28 +61,28 @@ public readonly ref partial struct Bitboard
             case 4: // (4 ulongs)
                 if (Vector256.IsHardwareAccelerated)
                 {
-                    Vector256<ulong>.Zero.StoreUnsafe(ref _first);
+                    Vector256<ulong>.Zero.StoreUnsafe(ref _root);
                 }
                 else if (Vector128.IsHardwareAccelerated)
                 {
                     // 2 + 2
-                    Vector128<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
+                    Vector128<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
                 }
                 else if (Vector64.IsHardwareAccelerated)
                 {
                     // 1 + 1 + 1 + 1
-                    Vector64<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 1));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 3));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 1));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 3));
                 }
                 else
                 {
-                    _first = 0;
-                    Unsafe.Add(ref _first, 1) = 0;
-                    Unsafe.Add(ref _first, 2) = 0;
-                    Unsafe.Add(ref _first, 3) = 0;
+                    _root = 0;
+                    Unsafe.Add(ref _root, 1) = 0;
+                    Unsafe.Add(ref _root, 2) = 0;
+                    Unsafe.Add(ref _root, 3) = 0;
                 }
 
                 return;
@@ -91,32 +91,32 @@ public readonly ref partial struct Bitboard
                 if (Vector256.IsHardwareAccelerated && Vector64.IsHardwareAccelerated)
                 {
                     // 4 + 1
-                    Vector256<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 4));
+                    Vector256<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 4));
                 }
                 else if (Vector128.IsHardwareAccelerated && Vector64.IsHardwareAccelerated)
                 {
                     // 2 + 2 + 1
-                    Vector128<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 4));
+                    Vector128<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 4));
                 }
                 else if (Vector64.IsHardwareAccelerated)
                 {
                     // Fallback solo su Vector64
-                    Vector64<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 1));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 3));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 4));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 1));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 3));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 4));
                 }
                 else
                 {
-                    _first = 0;
-                    Unsafe.Add(ref _first, 1) = 0;
-                    Unsafe.Add(ref _first, 2) = 0;
-                    Unsafe.Add(ref _first, 3) = 0;
-                    Unsafe.Add(ref _first, 4) = 0;
+                    _root = 0;
+                    Unsafe.Add(ref _root, 1) = 0;
+                    Unsafe.Add(ref _root, 2) = 0;
+                    Unsafe.Add(ref _root, 3) = 0;
+                    Unsafe.Add(ref _root, 4) = 0;
                 }
 
                 return;
@@ -125,34 +125,34 @@ public readonly ref partial struct Bitboard
                 if (Vector256.IsHardwareAccelerated && Vector128.IsHardwareAccelerated)
                 {
                     // 4 + 2
-                    Vector256<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 4));
+                    Vector256<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 4));
                 }
                 else if (Vector128.IsHardwareAccelerated)
                 {
                     // 2 + 2 + 2
-                    Vector128<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
-                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 4));
+                    Vector128<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
+                    Vector128<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 4));
                 }
                 else if (Vector64.IsHardwareAccelerated)
                 {
                     // 1 + 1 + 1 + 1 + 1 + 1
-                    Vector64<ulong>.Zero.StoreUnsafe(ref _first);
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 1));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 2));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 3));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 4));
-                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _first, 5));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref _root);
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 1));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 2));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 3));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 4));
+                    Vector64<ulong>.Zero.StoreUnsafe(ref Unsafe.Add(ref _root, 5));
                 }
                 else
                 {
-                    _first = 0;
-                    Unsafe.Add(ref _first, 1) = 0;
-                    Unsafe.Add(ref _first, 2) = 0;
-                    Unsafe.Add(ref _first, 3) = 0;
-                    Unsafe.Add(ref _first, 4) = 0;
-                    Unsafe.Add(ref _first, 5) = 0;
+                    _root = 0;
+                    Unsafe.Add(ref _root, 1) = 0;
+                    Unsafe.Add(ref _root, 2) = 0;
+                    Unsafe.Add(ref _root, 3) = 0;
+                    Unsafe.Add(ref _root, 4) = 0;
+                    Unsafe.Add(ref _root, 5) = 0;
                 }
 
                 return;
