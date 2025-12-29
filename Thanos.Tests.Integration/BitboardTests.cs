@@ -12,7 +12,7 @@ public class BitboardTests
         get
         {
             // Define the bit-counts we want to test, ranging from less than one ulong (32) to multiple ulongs (512).
-            int[] logicalBitSizes = [32, 64, 96, 128, 192, 256, 512];
+            int[] logicalBitSizes = [2, 4, 8, 16, 32, 64, 96, 128, 192, 256, 320, 384, 448, 512];
 
             foreach (var size in logicalBitSizes)
             {

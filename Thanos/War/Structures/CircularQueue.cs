@@ -5,7 +5,7 @@ namespace Thanos.War.Structures;
 
 public ref struct CircularQueue
 {
-    public Span<byte> Raw { get; }
+    public readonly Span<byte> Raw;
     public readonly Span<ushort> Buffer;
     
     private ref CircularQueueState _state;

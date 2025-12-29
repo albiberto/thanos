@@ -9,7 +9,7 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     private ref WarSnakeLife _life = ref life;
 
     private readonly Bitboard _bitboard = bitboard;
-    public CircularQueue _queue = queue;
+    private CircularQueue _queue = queue;
 
     public void Initialize(in Snake snakeData)
     {
