@@ -13,6 +13,10 @@ public class CircularQueueIntegrationTests
     [
         new((ushort)2),
         new((ushort)4),
+        new((ushort)8),
+        new((ushort)16),
+        new((ushort)32),
+        new((ushort)64),
         new((ushort)128)
     ];
 
