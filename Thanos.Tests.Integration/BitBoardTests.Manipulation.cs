@@ -6,7 +6,7 @@ namespace Thanos.Tests.Integration;
 public partial class BitboardTests
 {
     [TestCaseSource(nameof(TestDimensions))]
-    public void Set_WhenBufferIsEmpty_ShouldSetLogicalBitsAndPreservePadding(ushort lastIndex, int bufferSize)
+    public void Set_WhenCalledOnEmptyBuffer_ShouldSetBitAndPreservePadding(ushort lastIndex, int bufferSize)
     {
         // Arrange
         var buffer = new byte[bufferSize]; // Implicitly 0x00
@@ -16,6 +16,8 @@ public partial class BitboardTests
         for (ushort i = 0; i <= lastIndex; i++)
         {
             bitboard.Set(i);
+
+            // Immediate sanity check (fail fast)
             if (!bitboard.IsSet(i)) Fail($"Immediate failure: Bit {i} was not set.");
         }
 
@@ -28,6 +30,7 @@ public partial class BitboardTests
                 Fail($"Logic mismatch: Bit {i} should be SET.");
 
         // 2. Padding Zone Check (Must stay 0 - Safety Boundary)
+        // This proves that SIMD operations or bit-shifts didn't bleed into reserved memory.
         for (var i = lastIndex + 1; i <= physicalMax; i++)
             if (bitboard.IsSet((ushort)i))
                 Fail($"Memory corruption: Bit {i} (padding) was incorrectly SET.");
@@ -38,7 +41,7 @@ public partial class BitboardTests
     }
 
     [TestCaseSource(nameof(TestDimensions))]
-    public void Unset_WhenBufferIsFull_ShouldClearLogicalBitsAndPreservePadding(ushort lastIndex, int bufferSize)
+    public void Unset_WhenCalledOnFullBuffer_ShouldClearBitAndPreservePadding(ushort lastIndex, int bufferSize)
     {
         // Arrange
         var buffer = new byte[bufferSize];
@@ -61,6 +64,7 @@ public partial class BitboardTests
                 Fail($"Logic mismatch: Bit {i} should be UNSET.");
 
         // 2. Padding Zone Check (Must stay 1 - Safety Boundary)
+        // Since we started with 0xFF, padding must remain 1.
         for (var i = lastIndex + 1; i <= physicalMax; i++)
             if (!bitboard.IsSet((ushort)i))
                 Fail($"Memory corruption: Bit {i} (padding) was incorrectly CLEARED.");
@@ -71,7 +75,7 @@ public partial class BitboardTests
     }
 
     [TestCaseSource(nameof(TestDimensions))]
-    public void CopyTo_ShouldProduceExactBitwiseClone(ushort _, int bufferSize)
+    public void CopyTo_WhenInvoked_ShouldProduceExactBitwiseClone(ushort _, int bufferSize)
     {
         // Arrange
         var sourceRaw = new byte[bufferSize];

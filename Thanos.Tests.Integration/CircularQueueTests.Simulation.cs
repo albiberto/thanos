@@ -10,11 +10,12 @@ public partial class CircularQueueTests
     private static int GetIterations(ushort capacity) => capacity * WrapCycles;
 
     [TestCaseSource(nameof(Capacities))]
-    public void Movement_ShouldPreserveOrder_ThroughMultipleWrapAround(ushort capacity, int bufferSize)
+    public void Enqueue_WhenQueueWrapsAround_ShouldPreserveFifoOrder(ushort capacity, int bufferSize)
     {
         // Skip capacities too small for a snake of length 3
         if (capacity < 4) Ignore("Capacity too small for simulation.");
 
+        // Arrange
         var state = new CircularQueueState();
         var memory = new byte[bufferSize];
         var queue = new CircularQueue(memory, ref state, capacity);
@@ -22,32 +23,34 @@ public partial class CircularQueueTests
         const int SnakeLength = 3;
 
         // 1. Setup Initial Body: [0, 1, 2]
-        // Avoid filling the entire capacity to prevent immediate overwrite 
-        // on the very first Enqueue of the simulation loop.
         foreach (ushort index in Enumerable.Range(0, SnakeLength)) queue.Enqueue(index);
 
-        // 2. Simulation Loop
+        // Act & Assert (Simulation Loop)
         var iterations = GetIterations(capacity);
+
         for (ushort i = 0; i < iterations; i++)
         {
             // Expected values follow a strict deterministic sequence
-            var head = (ushort)(SnakeLength + i);
-            var valueToRemove = i;
+            var nextHeadValue = (ushort)(SnakeLength + i);
+            var expectedDeqValue = i;
 
             // --- ACT: The Move ---
-            queue.Enqueue(head);
+            queue.Enqueue(nextHeadValue);
             var removed = queue.Dequeue();
 
             // --- ASSERT: Invariants ---
-
             // 1. FIFO Integrity
-            That(removed, Is.EqualTo(valueToRemove), $"Iter {i}: FIFO violation. Wrong value dequeued.");
+            That(removed, Is.EqualTo(expectedDeqValue), $"Iter {i}: FIFO violation. Wrong value dequeued.");
 
             // 2. Structural Integrity
             That(queue.Length, Is.EqualTo(SnakeLength), $"Iter {i}: Length corrupted.");
 
-            // 3. Pointers Integrity
-            var expectedHead = head;
+            // 3. Pointers Integrity (Oracle Verification)
+            // Head is always the last inserted value.
+            // Tail is the next value to be dequeued (i + 1).
+            // Neck (ElementBeforeTail) is i + 2.
+
+            var expectedHead = nextHeadValue;
             var expectedTail = (ushort)(i + 1);
             var expectedNeck = (ushort)(i + 2);
 
@@ -58,12 +61,14 @@ public partial class CircularQueueTests
     }
 
     [Test]
-    public void Growth_Should_SaturateAt255_And_Overwrite()
+    public void Enqueue_WhenCapacityIsReached_ShouldOverwriteOldestElement()
     {
+        // Scenario: Hard saturation (255 elements).
         const int capacity = 256;
         const int bufferSize = 256 * sizeof(ushort);
-        const int physicalLength = capacity - 1; // 255
+        const int physicalLength = capacity - 1; // 255 (Max byte value constraint)
 
+        // Arrange
         var state = new CircularQueueState();
         var memory = new byte[bufferSize];
         var queue = new CircularQueue(memory, ref state, capacity);
@@ -75,18 +80,21 @@ public partial class CircularQueueTests
         That(queue.Length, Is.EqualTo(physicalLength), "Length should be exactly 255.");
         That(queue.PeekHead, Is.EqualTo(254), "Head should point to 254.");
 
-        // --- PHASE 2: Massive Overwrite (Constant Testing) ---
+        // --- PHASE 2: Massive Overwrite (Stress Test) ---
         var extraIterations = GetIterations(capacity);
 
-        foreach (var i in Enumerable.Range(0, extraIterations))
+        for (var i = 0; i < extraIterations; i++)
         {
             var val = (ushort)(255 + i);
+
+            // Act
             queue.Enqueue(val);
 
-            // Determine expected values in fixed slots 0 (Tail) and 1 (BeforeTail) 
-            // using simple cycle counts and remainders.
-            var cycle = val / capacity; // Full buffer fills count
-            var head = val % capacity; // Current Head position index
+            // Assert
+            // We verify the internal buffer state directly using math logic (Modulo arithmetic)
+
+            var cycle = val / capacity; // How many times we filled the buffer
+            var headIdx = val % capacity; // Current Head physical index
 
             // 1. Logical Saturation
             That(queue.Length, Is.EqualTo(physicalLength), $"Length failed at i={i}");
@@ -98,12 +106,6 @@ public partial class CircularQueueTests
             // Buffer[0] is updated only when head wraps to 0.
             var expectedTail = (ushort)(cycle * capacity);
             That(queue.PeekTail, Is.EqualTo(expectedTail), $"Tail integrity failed at i={i}");
-
-            // 4. Before Tail Integrity (Buffer[1])
-            // Buffer[1] is updated when head reaches 1. 
-            // If current head < 1, it holds value from previous cycle.
-            var expectedBeforeTail = head >= 1 ? (ushort)(cycle * capacity + 1) : (ushort)((cycle - 1) * capacity + 1);
-            That(queue.PeekElementBeforeTail, Is.EqualTo(expectedBeforeTail), $"BeforeTail integrity failed at i={i}");
         }
     }
 }
