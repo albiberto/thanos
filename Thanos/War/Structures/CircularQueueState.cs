@@ -6,13 +6,13 @@ namespace Thanos.War.Structures;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct CircularQueueState
 {
-    // Questi 3 byte vivono nel Pool di memoria (Heap/Unmanaged)
+    // 3 Byte esatti.
+    // Max Capacity gestibile: 256 (per via degli indici byte)
+    // Max Length logica: 255 (saturata)
     public byte Length;
     public byte HeadIndex;
     public byte TailIndex;
-    
-    // Helper per azzeramento veloce. 
-    // Il JIT lo inlinerà come tre istruzioni MOV [addr], 0.
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Reset()
     {

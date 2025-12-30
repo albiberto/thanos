@@ -51,7 +51,7 @@ public ref struct CircularQueue
         Buffer[_state.HeadIndex & _mask] = value;
         
         _state.HeadIndex++;
-        _state.Length++;
+        if (_state.Length < byte.MaxValue) _state.Length++;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

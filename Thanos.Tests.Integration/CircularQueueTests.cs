@@ -3,123 +3,84 @@ using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration;
 
+/// <summary>
+///     Integration tests for the <see cref="CircularQueue" /> structure.
+///     Validates memory wrapping logic, state management, and FIFO behavior
+///     crucial for the Snake body representation.
+/// </summary>
 [TestFixture]
-public class CircularQueueIntegrationTests
+[Parallelizable(ParallelScope.All)]
+public partial class CircularQueueTests
 {
-    // Testiamo le capacità critiche: 
-    // 128 (Target 11x11)
-    // 2, 4 (Edge cases piccolissimi per stressare il wrap immediato)
-    public static IEnumerable<TestCaseData> Capacities =>
-    [
-        new((ushort)2),
-        new((ushort)4),
-        new((ushort)8),
-        new((ushort)16),
-        new((ushort)32),
-        new((ushort)64),
-        new((ushort)128)
-    ];
-
-    // TEST 1: Inizializzazione Pulita
-    [TestCaseSource(nameof(Capacities))]
-    public void Initialize_ShouldStartEmpty(ushort capacity)
+    /// <summary>
+    ///     Generates test cases for various power-of-two capacities.
+    ///     Includes the pre-calculated byte buffer size to simplify test setup.
+    /// </summary>
+    public static IEnumerable<TestCaseData> Capacities
     {
-        var state = new CircularQueueState();
-        var memory = new byte[capacity * sizeof(ushort)];
-        var queue = new CircularQueue(memory, ref state, capacity);
+        get
+        {
+            // EDGE CASES: Extreme Constriction
+            // Forces immediate wrapping to verify index math logic.
+            yield return Case(2);
+            yield return Case(4);
+            yield return Case(8);
+            yield return Case(16);
+            yield return Case(32);
 
-        That(queue.Length, Is.Zero, "Length iniziale deve essere 0");
-        That(state.HeadIndex, Is.Zero, "HeadIndex deve essere 0");
-        That(state.TailIndex, Is.Zero, "TailIndex deve essere 0");
+            // STANDARD LEAGUE: Small (7x7 = 49 cells)
+            // Next Power of 2 is 64. Fully safe cover.
+            yield return Case(64);
+
+            // STANDARD LEAGUE: Medium (11x11 = 121 cells)
+            // Next Power of 2 is 128. Fully safe cover.
+            yield return Case(128);
+
+            // HARD LIMIT: 256 (19x19 = 361 cells, capped)
+            // Since we use 'byte' for internal indices, we cannot exceed a capacity of 256.
+            // 256 represents the maximum range addressable by a single byte (0..255) before natural overflow.
+            yield return Case(256);
+            yield break;
+
+            static TestCaseData Case(ushort cap) => new(cap, cap * sizeof(ushort));
+        }
     }
 
-    // TEST 2: Reset
     [TestCaseSource(nameof(Capacities))]
-    public void Reset_ShouldCleanState_AfterUsage(ushort capacity)
+    public void Initialize_ShouldStartWithZeroLength_AndResetIndices(ushort capacity, int bufferSize)
     {
+        // Arrange
         var state = new CircularQueueState();
-        var memory = new byte[capacity * sizeof(ushort)];
+        var memory = new byte[bufferSize]; // Size injected directly
+
+        // Act
         var queue = new CircularQueue(memory, ref state, capacity);
 
-        // Sporchiamo lo stato
-        queue.Enqueue(123);
-        queue.Enqueue(456);
+        // Assert
+        That(queue.Length, Is.Zero, "Initial length must be 0.");
+        That(state.HeadIndex, Is.Zero, "Head index must start at 0.");
+        That(state.TailIndex, Is.Zero, "Tail index must start at 0.");
+    }
+
+    [TestCaseSource(nameof(Capacities))]
+    public void Clear_ShouldResetState_AfterUsage(ushort capacity, int bufferSize)
+    {
+        // Arrange
+        var state = new CircularQueueState();
+        var memory = new byte[bufferSize];
+        var queue = new CircularQueue(memory, ref state, capacity);
+
+        // Dirty the state (simulate game turns)
+        queue.Enqueue(100);
+        queue.Enqueue(200);
         queue.Dequeue();
 
-        // Reset
+        // Act
         queue.Clear();
 
-        That(queue.Length, Is.Zero, "Length deve tornare a 0");
-        That(state.HeadIndex, Is.Zero, "HeadIndex deve tornare a 0");
-        That(state.TailIndex, Is.Zero, "TailIndex deve tornare a 0");
-    }
-
-    // TEST 3: THE BATTLESNAKE SIMULATION (Logic + Stress)
-    // Simula un serpente che si muove all'infinito nel buffer.
-    // Verifica Head, Tail, ElementBeforeTail e Length ad ogni singolo passo.
-    [TestCaseSource(nameof(Capacities))]
-    public void SimulateSnakeMovement_StressTest_Wrapping(ushort capacity)
-    {
-        if (capacity < 4) Ignore("Capacity troppo piccola per un serpente di lunghezza 3");
-
-        var state = new CircularQueueState();
-        var memory = new byte[capacity * sizeof(ushort)];
-        var queue = new CircularQueue(memory, ref state, capacity);
-
-        const int snakeLength = 3;
-
-        // Setup iniziale: Creiamo il serpente di lunghezza 3
-        // Valori nel buffer: [10, 20, 30]
-        queue.Enqueue(10);
-        queue.Enqueue(20);
-        queue.Enqueue(30);
-
-        // Iniziamo il loop di movimento
-        // 10 giri completi per essere sicuri al 100% che l'overflow dei byte index non rompa nulla
-        var iterations = capacity * 10;
-
-        // Valore corrente della testa (inizia da 30, quindi il prossimo sarà 40)
-        var nextHeadValue = 40;
-        // Valore atteso della coda (inizia da 10)
-        var expectedTailValue = 10;
-
-        for (var i = 0; i < iterations; i++)
-        {
-            // --- FASE 1: ENQUEUE (Nuova Testa) ---
-            queue.Enqueue((ushort)nextHeadValue);
-
-            // Verifica post-enqueue (Il serpente è momentaneamente lungo 4)
-            That(queue.Length, Is.EqualTo(snakeLength + 1), $"Iter {i}: Length errata dopo Enqueue");
-            That(queue.PeekHead, Is.EqualTo(nextHeadValue), $"Iter {i}: PeekHead errato");
-
-            // --- FASE 2: DEQUEUE (Rimozione Vecchia Coda) ---
-            // In Battlesnake questo avviene se non mangiamo cibo
-            var removedTail = queue.Dequeue();
-
-            // Calcoliamo cosa ci aspettiamo come "ElementBeforeTail"
-            // Se coda era 10, e passo è 10, il prossimo elemento è 20.
-            var expectedElementBeforeTail = expectedTailValue + 10;
-
-            // --- FASE 3: VERIFICA COMPLETA DELLO STATO (Invariant Check) ---
-            // 1. Verifica valore rimosso
-            That(removedTail, Is.EqualTo(expectedTailValue), $"Iter {i}: Dequeue ha restituito il valore errato");
-
-            // 2. Verifica Lunghezza (Tornata a 3)
-            That(queue.Length, Is.EqualTo(snakeLength), $"Iter {i}: Length errata dopo Dequeue");
-
-            // 3. Verifica Head (Deve essere ancora quella appena inserita)
-            That(queue.PeekHead, Is.EqualTo(nextHeadValue), $"Iter {i}: PeekHead corrotto dopo Dequeue");
-
-            // 4. Verifica Tail (La nuova coda deve essere il valore successivo: 20, 30...)
-            That(queue.PeekTail, Is.EqualTo(expectedTailValue + 10), $"Iter {i}: PeekTail errato (Indice Tail non avanzato correttamente?)");
-
-            // 5. Verifica ElementBeforeTail (Cruciale per collisioni collo)
-            // Se Tail è 20, BeforeTail deve essere 30.
-            That(queue.PeekElementBeforeTail, Is.EqualTo(expectedElementBeforeTail + 10), $"Iter {i}: PeekElementBeforeTail errato");
-
-            // Prepariamo i valori per il prossimo giro
-            nextHeadValue += 10;
-            expectedTailValue += 10;
-        }
+        // Assert
+        That(queue.Length, Is.Zero, "Length must be reset to 0.");
+        That(state.HeadIndex, Is.Zero, "Head index must be reset to 0.");
+        That(state.TailIndex, Is.Zero, "Tail index must be reset to 0.");
     }
 }
