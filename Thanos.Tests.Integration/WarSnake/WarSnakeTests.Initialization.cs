@@ -11,7 +11,7 @@ public partial class WarSnakeTests
     {
         // Arrange
         var snake = context.Build();
-        var data = new Snake(Support.Constants.SnakeName, hp, body);
+        var data = new Snake("hero", hp, body);
 
         // Act
         snake.Initialize(in data);
