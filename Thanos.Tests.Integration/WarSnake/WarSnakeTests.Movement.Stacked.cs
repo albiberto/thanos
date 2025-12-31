@@ -7,6 +7,8 @@ namespace Thanos.Tests.Integration.WarSnake;
 
 public partial class WarSnakeTests
 {
+    private const int Damage = 1;
+
     [TestCaseSource(nameof(MovementStackedScenarios))]
     public void UpdateAfterMove_WhenStackedAtStart_ShouldUnrollGradually(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakePlacement _)
     {
@@ -15,13 +17,12 @@ public partial class WarSnakeTests
         var snakeData = new Snake("stacked-hero", hp, body);
         snake.Initialize(in snakeData);
 
-        // Oracle: We use a Queue to model the physical snake segments [Tail -> Body -> Head].
-        // Reverse body (Head->Tail) to match FIFO enqueue order.
+        // Oracle: Physical segments [Tail -> Body -> Head]
         var oracleQueue = new Queue<ushort>(body.Reverse());
         var currentHead = oracleQueue.Last();
 
         var moves = new[] { Moves.Up, Moves.Right, Moves.Down, Moves.Left };
-        var expectedHp = hp;
+        var expectedHp = (int)hp;
 
         // Act & Assert
         foreach (var move in moves)
@@ -31,24 +32,23 @@ public partial class WarSnakeTests
             var (cx, cy) = GetCoord(currentHead, env.Width);
             var (nx, ny) = move switch
             {
-                Moves.Up => (cx, cy + 1),
+                Moves.Up    => (cx, cy + 1),
                 Moves.Right => (cx + 1, cy),
-                Moves.Down => (cx, cy - 1),
-                Moves.Left => (cx - 1, cy),
-                _ => (cx, cy)
+                Moves.Down  => (cx, cy - 1),
+                Moves.Left  => (cx - 1, cy),
+                _           => (cx, cy)
             };
 
             var nextHead = (ushort)(ny * env.Width + nx);
 
             oracleQueue.Enqueue(nextHead);
-            oracleQueue.Dequeue();
-
+            oracleQueue.Dequeue(); // Logic: Move without growth (constant length)
 
             // Execution
-            snake.UpdateAfterMove(nextHead, false, 1);
+            snake.UpdateAfterMove(nextHead, ateFood: false, damage: Damage);
 
             // Verification
-            expectedHp--;
+            expectedHp -= Damage;
             That(snake.HP, Is.EqualTo(expectedHp), $"HP mismatch at {nextHead}.");
             That(snake.IsDead, Is.EqualTo(expectedHp <= 0), "IsDead logic failed.");
             That(snake.IsGrowthPending, Is.False, "Snake should not grow without food.");
@@ -57,15 +57,16 @@ public partial class WarSnakeTests
             That(snake.Head, Is.EqualTo(oracleQueue.Last()), "Head mismatch.");
             That(snake.Tail, Is.EqualTo(oracleQueue.Peek()), "Tail mismatch.");
 
-            if (body.Length >= 2) That(snake.ElementBeforeTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
+            if (body.Length >= 2) 
+                That(snake.ElementBeforeTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
 
             var expectedUniqueBits = oracleQueue.Distinct().Count();
             That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), "PopCount mismatch.");
 
-            foreach (var segment in oracleQueue) That(snake.Body.IsSet(segment), Is.True, $"Bitboard missing segment {segment}.");
-            
+            foreach (var segment in oracleQueue) 
+                That(snake.Body.IsSet(segment), Is.True, $"Bitboard missing segment {segment}.");
+
             currentHead = nextHead;
-            
         }
     }
 
@@ -75,57 +76,84 @@ public partial class WarSnakeTests
         // Arrange
         var snake = context.Build();
         var snakeData = new Snake("hungry-hero", hp, body);
-        snake.Initialize(in snakeData);
-
-        // Oracle: Tail stays anchored (never Dequeue)
-        var oracleQueue = new Queue<ushort>(body.Reverse());
-        var startPosition = oracleQueue.Peek();
-
-        var currentHead = body[0];
-        var (currX, currY) = GetCoord(currentHead, env.Width);
-
-        var pathSegments = new[]
-        {
-            (Dir: Moves.Up, Steps: env.Height - 1 - currY),
-            (Dir: Moves.Right, Steps: env.Width - 1 - currX),
-            (Dir: Moves.Down, Steps: env.Height - 1),
-            (Dir: Moves.Left, Steps: env.Width - 1)
-        };
+        
+        var moves = new[] { Moves.Up, Moves.Right, Moves.Down, Moves.Left };
 
         // Act & Assert
-        foreach (var (dir, steps) in pathSegments)
-        foreach (var __ in Enumerable.Range(1, steps))
+        foreach (var move in moves)
         {
-            // Oracle Step
-            var (nx, ny) = dir switch
+            // 1. Reset for the new direction (Start fresh from center for each cardinal test)
+            snake.Initialize(in snakeData);
+            
+            var oracleQueue = new Queue<ushort>(body.Reverse());
+            var currentHead = oracleQueue.Last();
+            var startPosition = oracleQueue.Peek();
+
+            // 2. Define L-Shape Path: Primary Direction -> Clockwise Direction
+            // Example: Up (to Wall) -> Right (to Wall)
+            var nextMove = move switch
             {
-                Moves.Up => (currX, currY + 1),
-                Moves.Right => (currX + 1, currY),
-                Moves.Down => (currX, currY - 1),
-                Moves.Left => (currX - 1, currY),
-                _ => (currX, currY)
+                Moves.Up    => Moves.Right,
+                Moves.Right => Moves.Down,
+                Moves.Down  => Moves.Left,
+                Moves.Left  => Moves.Up,
+                _           => Moves.None
             };
 
-            var nextHead = (ushort)(ny * env.Width + nx);
-            currX = nx;
-            currY = ny;
+            var pathDirections = new[] { move, nextMove };
 
-            oracleQueue.Enqueue(nextHead);
+            // 3. Simulation Loop
+            foreach (var direction in pathDirections)
+            {
+                // Calculate steps dynamically based on CURRENT head position relative to the board edges.
+                // This replaces the complex pre-calculation logic.
+                var (currX, currY) = GetCoord(currentHead, env.Width);
+                
+                var stepsToWall = direction switch
+                {
+                    Moves.Up    => env.Height - 1 - currY,
+                    Moves.Right => env.Width - 1 - currX,
+                    Moves.Down  => currY, // Distance to 0
+                    Moves.Left  => currX, // Distance to 0
+                    _           => 0
+                };
 
-            // Execution
-            snake.UpdateAfterMove(nextHead, true, 0);
+                foreach (var __ in Enumerable.Range(1, stepsToWall))
+                {
+                    // Oracle Step
+                    (currX, currY) = GetCoord(currentHead, env.Width);
+                    var (nx, ny) = direction switch
+                    {
+                        Moves.Up    => (currX, currY + 1),
+                        Moves.Right => (currX + 1, currY),
+                        Moves.Down  => (currX, currY - 1),
+                        Moves.Left  => (currX - 1, currY),
+                        _           => (currX, currY)
+                    };
 
-            // Verification
-            That(snake.HP, Is.EqualTo(100), "Full cure failed.");
-            That(snake.IsDead, Is.False, "Snake died.");
-            That(snake.IsGrowthPending, Is.True, "Growth pending failed.");
+                    var nextHead = (ushort)(ny * env.Width + nx);
 
-            That(snake.Tail, Is.EqualTo(startPosition), "Tail moved from anchor.");
-            That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
-            That(snake.Length, Is.EqualTo(oracleQueue.Count), "Length mismatch.");
+                    oracleQueue.Enqueue(nextHead);
+                    // Logic: Continuous growth (no Dequeue), Tail stays anchored
 
-            That(snake.Body.PopCount(), Is.EqualTo(oracleQueue.Distinct().Count()), "PopCount mismatch.");
-            That(snake.Body.IsSet(startPosition), Is.True, "Anchor bit lost.");
+                    // Execution
+                    snake.UpdateAfterMove(nextHead, ateFood: true, damage: 0);
+
+                    // Verification
+                    That(snake.HP, Is.EqualTo(100), "Full cure failed.");
+                    That(snake.IsDead, Is.False, "Snake died.");
+                    That(snake.IsGrowthPending, Is.True, "Growth pending failed.");
+
+                    That(snake.Tail, Is.EqualTo(startPosition), "Tail moved from anchor.");
+                    That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
+                    That(snake.Length, Is.EqualTo(oracleQueue.Count), "Length mismatch.");
+
+                    That(snake.Body.PopCount(), Is.EqualTo(oracleQueue.Distinct().Count()), "PopCount mismatch.");
+                    That(snake.Body.IsSet(startPosition), Is.True, "Anchor bit lost.");
+
+                    currentHead = nextHead;
+                }
+            }
         }
     }
 
