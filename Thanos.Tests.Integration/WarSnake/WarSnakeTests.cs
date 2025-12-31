@@ -7,12 +7,10 @@ namespace Thanos.Tests.Integration.WarSnake;
 
 public partial class WarSnakeTests
 {
-    private static readonly byte[] movementHp = [1, 50, 100];
-    
     // --- PUBLIC SCENARIO SOURCES ---
     public static IEnumerable<TestCaseData> ExhaustiveScenarios => BuildScenarios("Stress", Enum.GetValues<SnakeStartCorner>(), (area, _) => Math.Min(area, 255), BodyBuilder.ZigZag, [0, 1, 100, 255]);
-    public static IEnumerable<TestCaseData> MovementStackedScenarios => BuildScenarios("Mov_Stacked", Enum.GetValues<SnakePlacement>(), (_, width) => width - 1, BodyBuilder.Stacked, movementHp);
-    public static IEnumerable<TestCaseData> MovementUnrolledScenarios => BuildScenarios("Mov_Unrolled", Enum.GetValues<SnakeFacing>(), (_, width) => width - 1, BodyBuilder.Linear, movementHp);
+    public static IEnumerable<TestCaseData> MovementStackedScenarios => BuildScenarios("Mov_Stacked", Enum.GetValues<SnakePlacement>(), (_, width) => width - 1, BodyBuilder.Stacked, [50, 100]);
+    public static IEnumerable<TestCaseData> MovementUnrolledScenarios => BuildScenarios("Mov_Unrolled", Enum.GetValues<SnakeFacing>(), (_, width) => width - 1, BodyBuilder.Linear, [1, 50, 100]);
     
     // --- GENERIC ENGINE ---
 

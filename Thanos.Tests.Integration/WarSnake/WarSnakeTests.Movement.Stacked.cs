@@ -7,17 +7,19 @@ namespace Thanos.Tests.Integration.WarSnake;
 
 public partial class WarSnakeTests
 {
-[TestCaseSource(nameof(MovementStackedScenarios))]
-    public void UpdateAfterMove_WhenStackedAtStart_ShouldUnrollGradually(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakePlacement __)
+    [TestCaseSource(nameof(MovementStackedScenarios))]
+    public void UpdateAfterMove_WhenStackedAtStart_ShouldUnrollGradually(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakePlacement _)
     {
         // ---------------------------------------------------------
         // 1. Arrange
         // ---------------------------------------------------------
         var snake = context.Build();
         
-        // ORACLE: The source of truth (Simple logical list)
-        // Note: snakeData.Body is [Head, Body, Tail]
-        var oracleSegments = body.ToList();
+        // ORACLE: The source of truth.
+        // We use a Queue to model the snake segments physically [Tail -> Body -> Head].
+        // WarSnake.Initialize pushes segments starting from Tail up to Head.
+        // So we Reverse() the body array (which is Head->Tail) to match the FIFO enqueue order.
+        var oracleQueue = new Queue<ushort>(body.Reverse());
         
         var snakeData = new Snake("stacked-hero", hp, body);
         snake.Initialize(in snakeData);
@@ -29,12 +31,13 @@ public partial class WarSnakeTests
         // ---------------------------------------------------------
         // 2. Act & Assert (Simulation Loop)
         // ---------------------------------------------------------
-        var currentHead = oracleSegments[0];
+        // In our Queue model [Tail -> ... -> Head], the Head is the LAST element.
+        var currentHead = oracleQueue.Last();
 
         foreach (var move in moves)
         {
             // Move for half width distance to ensure full unroll
-            foreach (var _ in Enumerable.Range(1, env.Width / 2))
+            foreach (var __ in Enumerable.Range(1, env.Width / 2))
             {
                 // --- A. Oracle Calculation (Calculate Expected State) ---
                 var (cx, cy) = GetCoord(currentHead, env.Width);
@@ -49,9 +52,9 @@ public partial class WarSnakeTests
                 
                 var nextHead = (ushort)(ny * env.Width + nx);
                 
-                // Oracle Logic: Move Head, Remove Tail (Standard Move)
-                oracleSegments.Insert(0, nextHead);
-                oracleSegments.RemoveAt(oracleSegments.Count - 1);
+                // Oracle Logic: Add New Head (Enqueue), Drop Old Tail (Dequeue)
+                oracleQueue.Enqueue(nextHead);
+                oracleQueue.Dequeue();
                 
                 expectedHp -= 1; // 1 damage per turn
                 currentHead = nextHead;
@@ -66,35 +69,40 @@ public partial class WarSnakeTests
                     That(snake.IsGrowthPending, Is.False, "Snake should not grow without food.");
 
                     // 2. Queue Geometry (Head/Tail)
+                    // Note: With Queue order [Tail -> Head]:
+                    // - Last() is the Head (newest item)
+                    // - Peek() is the Tail (oldest item)
                     That(snake.Length, Is.EqualTo(body.Length), "Physical Length must remain constant.");
-                    That(snake.Head, Is.EqualTo(oracleSegments[0]), "Head position mismatch.");
-                    That(snake.Tail, Is.EqualTo(oracleSegments[^1]), "Tail position mismatch.");
+                    That(snake.Head, Is.EqualTo(oracleQueue.Last()), "Head position mismatch.");
+                    That(snake.Tail, Is.EqualTo(oracleQueue.Peek()), "Tail position mismatch.");
                     
                     if (body.Length >= 2) 
-                        That(snake.ElementBeforeTail, Is.EqualTo(oracleSegments[^2]), "Neck (BeforeTail) mismatch.");
+                    {
+                        // ElementBeforeTail is the second element in the FIFO queue (Neck)
+                        That(snake.ElementBeforeTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck (BeforeTail) mismatch.");
+                    }
 
                     // 3. Bitboard Consistency (The Core Test)
                     
                     // A. Population Count Integrity
                     // The Bitboard Set bits count must match exactly the number of UNIQUE segments in the Oracle.
                     // This proves that overlapping segments (stacking) are handled correctly (1 bit for N segments).
-                    var expectedUniqueBits = oracleSegments.Distinct().Count();
+                    var expectedUniqueBits = oracleQueue.Distinct().Count();
                     That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), 
-                        $"Bitboard PopCount mismatch. Stacked segments logic error. Oracle: {string.Join(",", oracleSegments)}");
+                        $"Bitboard PopCount mismatch. Stacked segments logic error. Oracle: {string.Join(",", oracleQueue)}");
 
                     // B. Spatial Verification
                     // Every segment in the logical snake must be SET in the Bitboard.
-                    for (var i = 0; i < oracleSegments.Count; i++)
+                    foreach (var segment in oracleQueue)
                     {
-                        var segment = oracleSegments[i];
-                        That(snake.Body.IsSet(segment), Is.True, $"Bitboard missing segment {segment} at index {i}.");
+                        That(snake.Body.IsSet(segment), Is.True, $"Bitboard missing segment {segment}.");
                         That(snake.IsOnBody(segment), Is.True, $"IsOnBody helper failed for {segment}.");
                     }
 
                     // C. Negative Verification
                     // Check a random point NOT in body is NOT set (basic smoke test)
                     var phantom = (ushort)((nextHead + 50) % 121);
-                    if (!oracleSegments.Contains(phantom))
+                    if (!oracleQueue.Contains(phantom))
                     {
                         That(snake.Body.IsSet(phantom), Is.False, "Bitboard has phantom bit set.");
                     }
