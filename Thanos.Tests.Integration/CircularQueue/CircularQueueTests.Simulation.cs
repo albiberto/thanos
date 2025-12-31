@@ -1,7 +1,7 @@
 using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
-namespace Thanos.Tests.Integration;
+namespace Thanos.Tests.Integration.CircularQueue;
 
 public partial class CircularQueueTests
 {
@@ -18,7 +18,7 @@ public partial class CircularQueueTests
         // Arrange
         var state = new CircularQueueState();
         var memory = new byte[bufferSize];
-        var queue = new CircularQueue(memory, ref state, capacity);
+        var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
 
         const int SnakeLength = 3;
 
@@ -71,7 +71,7 @@ public partial class CircularQueueTests
         // Arrange
         var state = new CircularQueueState();
         var memory = new byte[bufferSize];
-        var queue = new CircularQueue(memory, ref state, capacity);
+        var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
 
         // --- PHASE 1: Fill up to the Byte Limit (255) ---
         foreach (var i in Enumerable.Range(0, physicalLength)) queue.Enqueue((ushort)i);

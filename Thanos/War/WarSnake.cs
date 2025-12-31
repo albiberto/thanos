@@ -38,9 +38,6 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public bool IsGrowthPending => _life.IsGrowthPending;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ushort RemoveTail() => _queue.Dequeue();
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void UpdateAfterMove(ushort newHead, bool ateFood, int damage)
     {
         if (IsDead) return;
@@ -50,7 +47,7 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
         if (!wasGrowing && !ateFood)
         {
             // 1. Chiama SEMPRE RemoveTail() per far avanzare la coda logica
-            var oldTailPos = RemoveTail();
+            var oldTailPos = _queue.Dequeue();
 
             // 2. Leggi la posizione della NUOVA coda (dopo che RemoveTail ha avanzato l'indice)
             var newTailPos = _queue.PeekTail;

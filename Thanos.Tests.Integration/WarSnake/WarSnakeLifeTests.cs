@@ -1,7 +1,7 @@
 using Thanos.War;
 using static NUnit.Framework.Assert;
 
-namespace Thanos.Tests.Integration;
+namespace Thanos.Tests.Integration.WarSnake;
 
 [TestFixture]
 public class WarSnakeLifeTests

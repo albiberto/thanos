@@ -1,7 +1,6 @@
-using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
-namespace Thanos.Tests.Integration;
+namespace Thanos.Tests.Integration.Bitboard;
 
 public partial class BitboardTests
 {
@@ -10,7 +9,7 @@ public partial class BitboardTests
     {
         // Arrange
         var buffer = new byte[bufferSize]; // Implicitly 0x00
-        var bitboard = new Bitboard(buffer);
+        var bitboard = new War.Structures.Bitboard(buffer);
 
         // Act
         for (ushort i = 0; i <= lastIndex; i++)
@@ -46,7 +45,7 @@ public partial class BitboardTests
         // Arrange
         var buffer = new byte[bufferSize];
         Array.Fill<byte>(buffer, 0xFF); // Setup: Physically full (All 1s)
-        var bitboard = new Bitboard(buffer);
+        var bitboard = new War.Structures.Bitboard(buffer);
 
         // Act
         for (ushort i = 0; i <= lastIndex; i++)
@@ -87,8 +86,8 @@ public partial class BitboardTests
         Array.Fill(sourceRaw, (byte)0x55);
         Array.Fill(destinationRaw, (byte)0xAA);
 
-        var sourceBitboard = new Bitboard(sourceRaw);
-        var destinationBitboard = new Bitboard(destinationRaw);
+        var sourceBitboard = new War.Structures.Bitboard(sourceRaw);
+        var destinationBitboard = new War.Structures.Bitboard(destinationRaw);
 
         // Act
         sourceBitboard.CopyTo(destinationBitboard);

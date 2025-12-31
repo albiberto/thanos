@@ -1,7 +1,7 @@
 using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
-namespace Thanos.Tests.Integration;
+namespace Thanos.Tests.Integration.CircularQueue;
 
 /// <summary>
 ///     Integration tests for the <see cref="CircularQueue" /> structure.
@@ -47,7 +47,7 @@ public partial class CircularQueueTests
         var memory = new byte[bufferSize];
 
         // Act
-        var queue = new CircularQueue(memory, ref state, capacity);
+        var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
 
         // Assert
         That(queue.Length, Is.Zero, "Initial length must be 0.");
@@ -61,7 +61,7 @@ public partial class CircularQueueTests
         // Arrange
         var state = new CircularQueueState();
         var memory = new byte[bufferSize];
-        var queue = new CircularQueue(memory, ref state, capacity);
+        var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
 
         // Setup: Dirty the state (simulate game turns)
         queue.Enqueue(100);

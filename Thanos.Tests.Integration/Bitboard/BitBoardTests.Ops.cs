@@ -1,8 +1,7 @@
 using System.Numerics;
-using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
-namespace Thanos.Tests.Integration;
+namespace Thanos.Tests.Integration.Bitboard;
 
 public partial class BitboardTests
 {
@@ -12,7 +11,7 @@ public partial class BitboardTests
         // Arrange
         var buffer = new byte[bufferSize];
         Array.Fill<byte>(buffer, 0xFF); // Setup: All bits SET (1)
-        var bitboard = new Bitboard(buffer);
+        var bitboard = new War.Structures.Bitboard(buffer);
 
         // Pre-Assert: Verify strict starting condition
         var (physicalBits, _) = GetPhysicalLimits(bufferSize);
@@ -42,8 +41,8 @@ public partial class BitboardTests
         var buffer2 = new byte[bufferSize];
         Array.Fill(buffer2, (byte)0xAA);
 
-        var bitboard1 = new Bitboard(buffer1);
-        var bitboard2 = new Bitboard(buffer2);
+        var bitboard1 = new War.Structures.Bitboard(buffer1);
+        var bitboard2 = new War.Structures.Bitboard(buffer2);
 
         // Act
         bitboard1.Or(bitboard2);
@@ -77,8 +76,8 @@ public partial class BitboardTests
         var buffer2 = new byte[bufferSize];
         Array.Fill(buffer2, (byte)0xAA);
 
-        var bitboard1 = new Bitboard(buffer1);
-        var bitboard2 = new Bitboard(buffer2);
+        var bitboard1 = new War.Structures.Bitboard(buffer1);
+        var bitboard2 = new War.Structures.Bitboard(buffer2);
 
         // Act
         bitboard1.Xor(bitboard2);
@@ -108,7 +107,7 @@ public partial class BitboardTests
         var rng = new Random(42); // Deterministic seed for reproducibility
         rng.NextBytes(buffer);
 
-        var bitboard = new Bitboard(buffer);
+        var bitboard = new War.Structures.Bitboard(buffer);
 
         // Act
         var actual = bitboard.PopCount();

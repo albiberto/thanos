@@ -1,6 +1,6 @@
 ﻿using Thanos.War.Structures;
 
-namespace Thanos.Tests.Integration;
+namespace Thanos.Tests.Integration.Bitboard;
 
 /// <summary>
 ///     Integration tests for the <see cref="Bitboard" /> structure.
