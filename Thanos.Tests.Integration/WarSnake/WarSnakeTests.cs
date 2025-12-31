@@ -10,10 +10,20 @@ public partial class WarSnakeTests
 {
     private const int NormalDamage = 1;
     
-    // --- PUBLIC SCENARIO SOURCES ---
-    public static IEnumerable<TestCaseData> ExhaustiveScenarios => BuildScenarios("Stress", Enum.GetValues<SnakeStartCorner>(), (area, _) => Math.Min(area, 255), BodyBuilder.ZigZag, [0, 1, 100, 255]);
-    public static IEnumerable<TestCaseData> MovementStackedScenarios => BuildScenarios("Mov_Stacked", Enum.GetValues<SnakePlacement>(), (_, width) => width - 1, BodyBuilder.Stacked, [50, 100]);
-    public static IEnumerable<TestCaseData> MovementUnrolledScenarios => BuildScenarios("Mov_Unrolled", Enum.GetValues<SnakeFacing>(), (_, width) => width - 1, BodyBuilder.Linear, [1, 50, 100]);
+    // --- SCENARI CORRETTI ---
+    
+    // 1. Stress Test: Usa ancora lunghezza massima (non si muove o muove di 1 solo passo sicuro)
+    public static IEnumerable<TestCaseData> ExhaustiveScenarios => 
+        BuildScenarios("Stress", Enum.GetValues<SnakeStartCorner>(), (area, _) => Math.Min(area, 255), BodyBuilder.ZigZag, [0, 1, 100, 255]);
+
+    // 2. Stacked: Usa width - 1 (va bene perché parte dal centro e si srotola a spirale)
+    public static IEnumerable<TestCaseData> MovementStackedScenarios => 
+        BuildScenarios("Mov_Stacked", Enum.GetValues<SnakePlacement>(), (_, width) => width - 1, BodyBuilder.Stacked, [50, 100]);
+
+    // 3. Unrolled (FIX): Riduciamo la lunghezza massima a (Width - 3) 
+    // per garantire almeno 2 passi di margine per i test di digestione/doppio cibo.
+    public static IEnumerable<TestCaseData> MovementUnrolledScenarios => 
+        BuildScenarios("Mov_Unrolled", Enum.GetValues<SnakeFacing>(), (_, width) => Math.Max(3, width - 3), BodyBuilder.Linear, [1, 50, 100]);
     
     // --- GENERIC ENGINE ---
 
@@ -32,51 +42,52 @@ public partial class WarSnakeTests
             var neededCapacity = BitOperations.RoundUpToPowerOf2(map.Data.Area);
             var capacity = (ushort)Math.Min(neededCapacity, 256);
 
-            var context = new SnakeMemoryContext(bitboardBytes, capacity, map.Name);
             var maxLength = maxLengthCalculator(map.Data.Area, map.Data.Width);
 
             foreach (var variation in variations)
+            {
                 for (var len = 3; len <= maxLength; len++)
                 {
+                    // BodyBuilder ora è sicuro e gestisce il posizionamento
                     var body = bodyFactory(len, map.Data.Width, map.Data.Height, variation);
 
                     foreach (var hp in healthValues)
+                    {
+                        // MEMORY ISOLATION: Context creato PER TEST
+                        var isolatedContext = new SnakeMemoryContext(bitboardBytes, capacity, map.Name);
+
                         yield return new TestCaseData(
-                                context, 
-                                new Environment( map.Data.Width, map.Data.Height, map.Data.Area),
+                                isolatedContext, 
+                                new Environment(map.Data.Width, map.Data.Height, map.Data.Area),
                                 body, 
                                 hp,
                                 variation)
                             .SetName($"{namePrefix}_{map.Name}_{variation}_Len{len}_HP{hp}");
+                    }
                 }
+            }
         }
     }
 
+    // --- Helpers & Types ---
+
     public record Environment(byte Width, byte Height, ushort Area);
     
-    /// <summary>
-    ///     Helper class to manage the heap memory required for WarSnake (ref struct).
-    /// </summary>
     public class SnakeMemoryContext(int bitboardBytes, ushort capacity, string debugName)
     {
         private readonly byte[] _bitboardMemory = new byte[bitboardBytes];
         private readonly byte[] _queueMemory = new byte[capacity * sizeof(ushort)];
 
-        // Struct states
         private WarSnakeLife _life;
         private CircularQueueState _queueState;
 
         public War.WarSnake Build()
         {
-            // Reset states implicit in new structs.
-            // Memory arrays are reused (and must be cleared by WarSnake.Initialize).
             var bitboard = new War.Structures.Bitboard(_bitboardMemory);
             var queue = new War.Structures.CircularQueue(_queueMemory, ref _queueState, capacity);
-
             return new War.WarSnake(ref _life, bitboard, queue);
         }
 
-        // Magic touch for NUnit UI: Shows readable name instead of class name.
         public override string ToString() => $"Ctx({debugName})";
     }
 }
