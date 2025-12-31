@@ -5,8 +5,11 @@ using Thanos.War.Structures;
 
 namespace Thanos.Tests.Integration.WarSnake;
 
+[TestFixture]
 public partial class WarSnakeTests
 {
+    private const int NormalDamage = 1;
+    
     // --- PUBLIC SCENARIO SOURCES ---
     public static IEnumerable<TestCaseData> ExhaustiveScenarios => BuildScenarios("Stress", Enum.GetValues<SnakeStartCorner>(), (area, _) => Math.Min(area, 255), BodyBuilder.ZigZag, [0, 1, 100, 255]);
     public static IEnumerable<TestCaseData> MovementStackedScenarios => BuildScenarios("Mov_Stacked", Enum.GetValues<SnakePlacement>(), (_, width) => width - 1, BodyBuilder.Stacked, [50, 100]);

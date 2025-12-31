@@ -7,8 +7,6 @@ namespace Thanos.Tests.Integration.WarSnake;
 
 public partial class WarSnakeTests
 {
-    private const int Damage = 1;
-
     [TestCaseSource(nameof(MovementStackedScenarios))]
     public void UpdateAfterMove_WhenStackedAtStart_ShouldUnrollGradually(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakePlacement _)
     {
@@ -45,10 +43,10 @@ public partial class WarSnakeTests
             oracleQueue.Dequeue(); // Logic: Move without growth (constant length)
 
             // Execution
-            snake.UpdateAfterMove(nextHead, ateFood: false, damage: Damage);
+            snake.UpdateAfterMove(nextHead, ateFood: false, damage: NormalDamage);
 
             // Verification
-            expectedHp -= Damage;
+            expectedHp -= NormalDamage;
             That(snake.HP, Is.EqualTo(expectedHp), $"HP mismatch at {nextHead}.");
             That(snake.IsDead, Is.EqualTo(expectedHp <= 0), "IsDead logic failed.");
             That(snake.IsGrowthPending, Is.False, "Snake should not grow without food.");

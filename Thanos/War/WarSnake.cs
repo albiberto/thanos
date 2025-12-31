@@ -42,9 +42,9 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     {
         if (IsDead) return;
 
-        var wasGrowing = _life.ConsumePendingGrowth();
+        _life.ConsumePendingGrowth();
 
-        if (!wasGrowing && !ateFood)
+        if (!ateFood)
         {
             // 1. Chiama SEMPRE RemoveTail() per far avanzare la coda logica
             var oldTailPos = _queue.Dequeue();
