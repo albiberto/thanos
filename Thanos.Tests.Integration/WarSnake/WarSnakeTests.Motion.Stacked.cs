@@ -30,11 +30,11 @@ public partial class WarSnakeTests
             var (cx, cy) = GetCoord(currentHead, env.Width);
             var (nx, ny) = move switch
             {
-                Moves.Up => (cx, cy + 1),
+                Moves.Up    => (cx, cy + 1),
                 Moves.Right => (cx + 1, cy),
-                Moves.Down => (cx, cy - 1),
-                Moves.Left => (cx - 1, cy),
-                _ => (cx, cy)
+                Moves.Down  => (cx, cy - 1),
+                Moves.Left  => (cx - 1, cy),
+                _           => (cx, cy)
             };
 
             var nextHead = (ushort)(ny * env.Width + nx);
@@ -43,7 +43,7 @@ public partial class WarSnakeTests
             oracleQueue.Dequeue(); // Logic: Move without growth (constant length)
 
             // Execution
-            snake.UpdateAfterMove(nextHead, false, NormalDamage);
+            snake.UpdateAfterMove(nextHead, ateFood: false, damage: NormalDamage);
 
             // Verification
             expectedHp -= NormalDamage;
@@ -55,13 +55,13 @@ public partial class WarSnakeTests
             That(snake.Head, Is.EqualTo(oracleQueue.Last()), "Head mismatch.");
             That(snake.Tail, Is.EqualTo(oracleQueue.Peek()), "Tail mismatch.");
 
-            if (body.Length >= 2)
+            if (body.Length >= 2) 
                 That(snake.ElementBeforeTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
 
             var expectedUniqueBits = oracleQueue.Distinct().Count();
             That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), "PopCount mismatch.");
 
-            foreach (var segment in oracleQueue)
+            foreach (var segment in oracleQueue) 
                 That(snake.Body.IsSet(segment), Is.True, $"Bitboard missing segment {segment}.");
 
             currentHead = nextHead;
@@ -74,15 +74,16 @@ public partial class WarSnakeTests
         // Arrange
         var snake = context.Build();
         var snakeData = new Snake("hungry-hero", hp, body);
-
+        
         var moves = new[] { Moves.Up, Moves.Right, Moves.Down, Moves.Left };
 
         // Act & Assert
         foreach (var move in moves)
         {
             // 1. Reset for the new direction (Start fresh from center for each cardinal test)
+            context.Reset(); // <--- FIX APPLICATO QUI
             snake.Initialize(in snakeData);
-
+            
             var oracleQueue = new Queue<ushort>(body.Reverse());
             var currentHead = oracleQueue.Last();
             var startPosition = oracleQueue.Peek();
@@ -91,11 +92,11 @@ public partial class WarSnakeTests
             // Example: Up (to Wall) -> Right (to Wall)
             var nextMove = move switch
             {
-                Moves.Up => Moves.Right,
+                Moves.Up    => Moves.Right,
                 Moves.Right => Moves.Down,
-                Moves.Down => Moves.Left,
-                Moves.Left => Moves.Up,
-                _ => Moves.None
+                Moves.Down  => Moves.Left,
+                Moves.Left  => Moves.Up,
+                _           => Moves.None
             };
 
             var pathDirections = new[] { move, nextMove };
@@ -106,14 +107,14 @@ public partial class WarSnakeTests
                 // Calculate steps dynamically based on CURRENT head position relative to the board edges.
                 // This replaces the complex pre-calculation logic.
                 var (currX, currY) = GetCoord(currentHead, env.Width);
-
+                
                 var stepsToWall = direction switch
                 {
-                    Moves.Up => env.Height - 1 - currY,
+                    Moves.Up    => env.Height - 1 - currY,
                     Moves.Right => env.Width - 1 - currX,
-                    Moves.Down => currY, // Distance to 0
-                    Moves.Left => currX, // Distance to 0
-                    _ => 0
+                    Moves.Down  => currY, // Distance to 0
+                    Moves.Left  => currX, // Distance to 0
+                    _           => 0
                 };
 
                 foreach (var __ in Enumerable.Range(1, stepsToWall))
@@ -122,11 +123,11 @@ public partial class WarSnakeTests
                     (currX, currY) = GetCoord(currentHead, env.Width);
                     var (nx, ny) = direction switch
                     {
-                        Moves.Up => (currX, currY + 1),
+                        Moves.Up    => (currX, currY + 1),
                         Moves.Right => (currX + 1, currY),
-                        Moves.Down => (currX, currY - 1),
-                        Moves.Left => (currX - 1, currY),
-                        _ => (currX, currY)
+                        Moves.Down  => (currX, currY - 1),
+                        Moves.Left  => (currX - 1, currY),
+                        _           => (currX, currY)
                     };
 
                     var nextHead = (ushort)(ny * env.Width + nx);
@@ -135,7 +136,7 @@ public partial class WarSnakeTests
                     // Logic: Continuous growth (no Dequeue), Tail stays anchored
 
                     // Execution
-                    snake.UpdateAfterMove(nextHead, true, 0);
+                    snake.UpdateAfterMove(nextHead, ateFood: true, damage: 0);
 
                     // Verification
                     That(snake.HP, Is.EqualTo(100), "Full cure failed.");

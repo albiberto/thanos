@@ -84,6 +84,17 @@ public partial class WarSnakeTests
             return new War.WarSnake(ref _life, bitboard, queue);
         }
 
+        /// <summary>
+        ///     Simula la pulizia della memoria che avverrebbe a livello di System.Initialize().
+        ///     Necessario per riutilizzare lo stesso contesto in test multi-iterazione.
+        /// </summary>
+        public void Reset()
+        {
+            Array.Clear(_bitboardMemory);
+            _queueState.Reset();
+            _life.Kill();
+        }
+
         public override string ToString() => $"Ctx({debugName})";
     }
 }
