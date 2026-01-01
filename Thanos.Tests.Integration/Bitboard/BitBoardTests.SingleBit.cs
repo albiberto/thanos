@@ -70,30 +70,52 @@ public partial class BitboardTests
     }
 
     [TestCaseSource(nameof(TestDimensions))]
-    public void CopyTo_WhenInvoked_ShouldProduceExactBitwiseClone(ushort _, int bufferSize)
+    public void Set_WhenCalledRepeatedlyOnSameBit_ShouldRemainSet(ushort _, int bufferSize)
     {
         // Arrange
-        var sourceRaw = new byte[bufferSize];
-        var destinationRaw = new byte[bufferSize];
-
-        // Setup: Distinct patterns to verify overwrite
-        // Source: 01010101 (0x55)
-        // Dest:   10101010 (0xAA)
-        Array.Fill(sourceRaw, (byte)0x55);
-        Array.Fill(destinationRaw, (byte)0xAA);
-
-        var sourceBitboard = new War.Structures.Bitboard(sourceRaw);
-        var destinationBitboard = new War.Structures.Bitboard(destinationRaw);
+        var buffer = new byte[bufferSize];
+        var bitboard = new War.Structures.Bitboard(buffer);
+        const ushort targetBit = 1;
 
         // Act
-        sourceBitboard.CopyTo(destinationBitboard);
+        // Prima attivazione
+        bitboard.Set(targetBit);
+        var popCountAfterFirst = bitboard.PopCount();
+
+        // Seconda attivazione (Idempotenza)
+        bitboard.Set(targetBit);
+        var popCountAfterSecond = bitboard.PopCount();
 
         // Assert
-        var sourceBuffer = sourceBitboard.Buffer;
-        var destinationBuffer = destinationBitboard.Buffer;
+        That(bitboard.IsSet(targetBit), Is.True, "Bit should be set.");
+        That(popCountAfterFirst, Is.EqualTo(1), "PopCount should be 1 after first Set.");
+        That(popCountAfterSecond, Is.EqualTo(1), "PopCount should remain 1 after second Set (Operation must be idempotent).");
+    }
 
-        That(destinationBuffer.Length, Is.EqualTo(sourceBuffer.Length), "Buffer length mismatch.");
-        for (var i = 0; i < sourceBuffer.Length; i++) 
-            That(destinationBuffer[i], Is.EqualTo(sourceBuffer[i]), $"Memory mismatch at ulong index {i}. Expected {sourceBuffer[i]:X16}, got {destinationBuffer[i]:X16}.");
+    [TestCaseSource(nameof(TestDimensions))]
+    public void Unset_WhenCalledRepeatedlyOnEmptyBit_ShouldRemainUnset(ushort _, int bufferSize)
+    {
+        // Arrange
+        var buffer = new byte[bufferSize];
+        // Riempiamo tutto per testare l'unset su un bit specifico
+        Array.Fill<byte>(buffer, 0xFF);
+        var bitboard = new War.Structures.Bitboard(buffer);
+
+        const ushort targetBit = 1;
+        var maxBits = GetPhysicalLimits(bufferSize).TotalBits;
+
+        // Act
+        // Prima disattivazione
+        bitboard.Unset(targetBit);
+        var popCountAfterFirst = bitboard.PopCount();
+
+        // Seconda disattivazione (Idempotenza)
+        bitboard.Unset(targetBit);
+        var popCountAfterSecond = bitboard.PopCount();
+
+        // Assert
+        That(bitboard.IsSet(targetBit), Is.False, "Bit should be unset.");
+        That(popCountAfterFirst, Is.EqualTo(maxBits - 1), "PopCount should decrease by 1.");
+        That(popCountAfterSecond, Is.EqualTo(maxBits - 1), "PopCount should remain stable after second Unset.");
     }
 }
