@@ -17,7 +17,7 @@ public partial class BitboardTests
             bitboard.Set(i);
 
             // Immediate sanity check (fail fast)
-            if (!bitboard.IsSet(i)) Fail($"Immediate failure: Bit {i} was not set.");
+            That(bitboard.IsSet(i), Is.True, $"Immediate failure: Bit {i} was not set.");
         }
 
         // Assert
@@ -25,14 +25,12 @@ public partial class BitboardTests
 
         // 1. Logical Zone Check (Must be 1)
         for (var i = 0; i <= lastIndex; i++)
-            if (!bitboard.IsSet((ushort)i))
-                Fail($"Logic mismatch: Bit {i} should be SET.");
+            That(bitboard.IsSet((ushort)i), Is.True, $"Logic mismatch: Bit {i} should be SET.");
 
         // 2. Padding Zone Check (Must stay 0 - Safety Boundary)
         // This proves that SIMD operations or bit-shifts didn't bleed into reserved memory.
         for (var i = lastIndex + 1; i <= physicalMax; i++)
-            if (bitboard.IsSet((ushort)i))
-                Fail($"Memory corruption: Bit {i} (padding) was incorrectly SET.");
+            That(bitboard.IsSet((ushort)i), Is.False, $"Memory corruption: Bit {i} (padding) was incorrectly SET.");
 
         // 3. Population Count Check
         var expectedCount = lastIndex + 1;
@@ -51,7 +49,7 @@ public partial class BitboardTests
         for (ushort i = 0; i <= lastIndex; i++)
         {
             bitboard.Unset(i);
-            if (bitboard.IsSet(i)) Fail($"Immediate failure: Bit {i} was not unset.");
+            That(bitboard.IsSet(i), Is.False, $"Immediate failure: Bit {i} was not unset.");
         }
 
         // Assert
@@ -59,14 +57,12 @@ public partial class BitboardTests
 
         // 1. Logical Zone Check (Must be 0)
         for (var i = 0; i <= lastIndex; i++)
-            if (bitboard.IsSet((ushort)i))
-                Fail($"Logic mismatch: Bit {i} should be UNSET.");
+            That(bitboard.IsSet((ushort)i), Is.False, $"Logic mismatch: Bit {i} should be UNSET.");
 
         // 2. Padding Zone Check (Must stay 1 - Safety Boundary)
         // Since we started with 0xFF, padding must remain 1.
         for (var i = lastIndex + 1; i <= physicalMax; i++)
-            if (!bitboard.IsSet((ushort)i))
-                Fail($"Memory corruption: Bit {i} (padding) was incorrectly CLEARED.");
+            That(bitboard.IsSet((ushort)i), Is.True, $"Memory corruption: Bit {i} (padding) was incorrectly CLEARED.");
 
         // 3. Population Count Check
         var expectedCount = physicalBits - (lastIndex + 1);
@@ -97,6 +93,7 @@ public partial class BitboardTests
         var destinationBuffer = destinationBitboard.Buffer;
 
         That(destinationBuffer.Length, Is.EqualTo(sourceBuffer.Length), "Buffer length mismatch.");
-        for (var i = 0; i < sourceBuffer.Length; i++) That(destinationBuffer[i], Is.EqualTo(sourceBuffer[i]), $"Memory mismatch at ulong index {i}. Expected {sourceBuffer[i]:X16}, got {destinationBuffer[i]:X16}.");
+        for (var i = 0; i < sourceBuffer.Length; i++) 
+            That(destinationBuffer[i], Is.EqualTo(sourceBuffer[i]), $"Memory mismatch at ulong index {i}. Expected {sourceBuffer[i]:X16}, got {destinationBuffer[i]:X16}.");
     }
 }
