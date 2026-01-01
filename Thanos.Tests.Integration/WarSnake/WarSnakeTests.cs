@@ -9,24 +9,22 @@ namespace Thanos.Tests.Integration.WarSnake;
 public partial class WarSnakeTests
 {
     private const int NormalDamage = 1;
-    
+
     // --- SCENARIOS ---
-    
+
     // 1. Stress Test: Uses max possible length (minimal movement or stationary)
-    public static IEnumerable<TestCaseData> ExhaustiveScenarios => 
+    public static IEnumerable<TestCaseData> ExhaustiveScenarios =>
         BuildScenarios("Stress", Enum.GetValues<SnakeStartCorner>(), (area, _) => Math.Min(area, 255), BodyBuilder.ZigZag, [0, 1, 100, 255]);
 
     // 2. Stacked: Uses width - 1 (Safe spiral unrolling from center)
-    public static IEnumerable<TestCaseData> MovementStackedScenarios => 
+    public static IEnumerable<TestCaseData> MovementStackedScenarios =>
         BuildScenarios("Mov_Stacked", Enum.GetValues<SnakePlacement>(), (_, width) => width - 1, BodyBuilder.Stacked, [50, 100]);
 
     // 3. Unrolled: Reduces max length to (Width - 3) to guarantee 
     // at least 2 safe steps for digestion/double-food mechanics tests.
-    public static IEnumerable<TestCaseData> MovementUnrolledScenarios => 
+    public static IEnumerable<TestCaseData> MovementUnrolledScenarios =>
         BuildScenarios("Mov_Unrolled", Enum.GetValues<SnakeFacing>(), (_, width) => Math.Max(3, width - 3), BodyBuilder.Linear, [1, 50, 100]);
-    
-    // ... (Rest of generic engine remains unchanged) ...
-    
+
     private static IEnumerable<TestCaseData> BuildScenarios<TVariation>(string namePrefix, TVariation[] variations, Func<int, int, int> maxLengthCalculator, Func<int, int, int, TVariation, ushort[]> bodyFactory, byte[] healthValues)
     {
         var maps = new[]
@@ -45,7 +43,6 @@ public partial class WarSnakeTests
             var maxLength = maxLengthCalculator(map.Data.Area, map.Data.Width);
 
             foreach (var variation in variations)
-            {
                 for (var len = 3; len <= maxLength; len++)
                 {
                     // BodyBuilder is now safe and handles positioning
@@ -57,22 +54,21 @@ public partial class WarSnakeTests
                         var isolatedContext = new SnakeMemoryContext(bitboardBytes, capacity, map.Name);
 
                         yield return new TestCaseData(
-                                isolatedContext, 
+                                isolatedContext,
                                 new Environment(map.Data.Width, map.Data.Height, map.Data.Area),
-                                body, 
+                                body,
                                 hp,
                                 variation)
                             .SetName($"{namePrefix}_{map.Name}_{variation}_Len{len}_HP{hp}");
                     }
                 }
-            }
         }
     }
 
     // --- Helpers & Types ---
 
     public record Environment(byte Width, byte Height, ushort Area);
-    
+
     public class SnakeMemoryContext(int bitboardBytes, ushort capacity, string debugName)
     {
         private readonly byte[] _bitboardMemory = new byte[bitboardBytes];
