@@ -63,30 +63,30 @@ public partial class CircularQueueTests
             That(queue.PeekElementBeforeTail, Is.EqualTo(expectedNeck), $"Iter {i}: Neck pointer mismatch.");
         }
     }
-    
+
     [TestCaseSource(nameof(Capacities))]
     public void PeekElementBeforeTail_WhenQueueIsTooShort_ShouldReturnRawMemoryLookahead(ushort capacity, int bufferSize)
     {
-        // Scenario: Accesso ai boundary.
-        // ElementBeforeTail guarda (Tail + 1). Se Length < 2, guarda memoria "futura" o "vecchia".
-        
+        // Scenario: Boundary Access.
+        // ElementBeforeTail looks at (Tail + 1). If Length < 2, it looks at "future" or "old" memory.
+
         // Arrange
         var state = new CircularQueueState();
         var memory = new byte[bufferSize];
         var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
 
-        // Setup: Inseriamo 1 elemento. Tail è a 0.
-        // Head avanza a 1.
+        // Setup: Enqueue 1 element. Tail is at 0.
+        // Head advances to 1.
         queue.Enqueue(0xAAAA);
 
-        // Scriviamo manualmente nel buffer alla posizione Tail + 1 (indice 1)
-        // per verificare che la proprietà legga ESATTAMENTE quella cella di memoria.
-        var span = MemoryMarshal.Cast<byte, ushort>(new Span<byte>(memory)); 
+        // Manually write to buffer at Tail + 1 (index 1)
+        // to verify the property reads EXACTLY that memory cell.
+        var span = MemoryMarshal.Cast<byte, ushort>(new Span<byte>(memory));
         span[1] = 0xBBBB;
 
         // Act
-        // La coda ha Length 1, quindi "ElementBeforeTail" non esiste logicamente.
-        // Ma fisicamente esiste e ci aspettiamo che venga letto.
+        // Queue has Length 1, so "ElementBeforeTail" logically doesn't exist.
+        // But physically it does, and we expect it to be read.
         var phantomNeck = queue.PeekElementBeforeTail;
 
         // Assert
