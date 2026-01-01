@@ -24,9 +24,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         Food.Clear();
         Hazards.Clear();
         Snakes.Clear();
-
-        for (var i = 0; i < System.Count; i++) System[i].Kill();
-
+        
         var board = request.Board;
 
         foreach (var snakeData in board.Snakes)

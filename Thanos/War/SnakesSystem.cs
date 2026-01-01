@@ -35,18 +35,29 @@ public readonly unsafe ref struct SnakesSystem(byte* basePtr, in SlotMemoryLayou
 
     public void Initialize()
     {
+        // Unrolling manuale o iterazione stretta per massimizzare instruction pipeline
         for (var i = 0; i < Count; i++)
         {
             var snakePtr = _basePtr + (nuint)i * _layout.SnakeStride.Next;
+
+            // 1. Reset Queue State (Indici a 0, Length a 0)
             ref var state = ref Unsafe.AsRef<CircularQueueState>(snakePtr + _layout.CircularQueueState.Offset);
             state.Reset();
 
+            // 2. Kill Life (HP a 0, Dead=True)
             ref var life = ref Unsafe.AsRef<WarSnakeLife>(snakePtr + _layout.WarSnakeLife.Offset);
             life.Kill();
+
+            // 3. Clear Local Bitboard (NOVITÀ: Centralizziamo la pulizia qui)
+            // Creiamo una view temporanea per usare la logica SIMD di Clear() già esistente
+            var bitboardSpan = new Span<byte>(snakePtr + _layout.Bitboard.Offset, (int)_layout.Bitboard.Length);
+            var bitboard = new Bitboard(bitboardSpan);
+            bitboard.Clear();
+        
+            // NOTA: Non serve pulire il QueueBuffer (ushort[]), resettare gli indici in state basta.
         }
     }
-
-
+    
     // --- NUOVO METODO: Copia raw ad altissima velocità ---
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyFrom(in SnakesSystem source)

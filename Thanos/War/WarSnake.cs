@@ -13,8 +13,6 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
 
     public void Initialize(in Snake snakeData)
     {
-        _bitboard.Clear();
-        _queue.Clear();
         _life.SetHP(snakeData.Health);
 
         for (var i = snakeData.Body.Length - 1; i >= 0; i--)
