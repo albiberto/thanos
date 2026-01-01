@@ -29,11 +29,11 @@ public partial class BitboardTests
                 // This mimics the production allocation strategy for aligned access.
                 var bufferSizeBytes = (size + 63) / 64 * 8;
 
+                // Scenario A: Physical Boundary Stress
+                // Logic uses the full allocated buffer. Padding is zero.
                 var physicalBits = (ushort)(bufferSizeBytes * 8);
                 var physicalMaxIndex = (ushort)(physicalBits - 1);
 
-                // Scenario A: Physical Boundary Stress
-                // Logic uses the full allocated buffer. Padding is zero.
                 yield return new TestCaseData(physicalMaxIndex, bufferSizeBytes)
                     .SetName($"Size_{size}b_PhysicalMax");
 

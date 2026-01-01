@@ -28,7 +28,6 @@ public partial class BitboardTests
         var destinationBuffer = destinationBitboard.Buffer;
 
         That(destinationBuffer.Length, Is.EqualTo(sourceBuffer.Length), "Buffer length mismatch.");
-        for (var i = 0; i < sourceBuffer.Length; i++)
-            That(destinationBuffer[i], Is.EqualTo(sourceBuffer[i]), $"Memory mismatch at ulong index {i}. Expected {sourceBuffer[i]:X16}, got {destinationBuffer[i]:X16}.");
+        for (var i = 0; i < sourceBuffer.Length; i++) That(destinationBuffer[i], Is.EqualTo(sourceBuffer[i]), $"Memory mismatch at ulong index {i}. Expected {sourceBuffer[i]:X16}, got {destinationBuffer[i]:X16}.");
     }
 }

@@ -24,13 +24,11 @@ public partial class BitboardTests
         var (_, physicalMax) = GetPhysicalLimits(bufferSize);
 
         // 1. Logical Zone Check (Must be 1)
-        for (var i = 0; i <= lastIndex; i++)
-            That(bitboard.IsSet((ushort)i), Is.True, $"Logic mismatch: Bit {i} should be SET.");
+        for (var i = 0; i <= lastIndex; i++) That(bitboard.IsSet((ushort)i), Is.True, $"Logic mismatch: Bit {i} should be SET.");
 
         // 2. Padding Zone Check (Must stay 0 - Safety Boundary)
         // This proves that SIMD operations or bit-shifts didn't bleed into reserved memory.
-        for (var i = lastIndex + 1; i <= physicalMax; i++)
-            That(bitboard.IsSet((ushort)i), Is.False, $"Memory corruption: Bit {i} (padding) was incorrectly SET.");
+        for (var i = lastIndex + 1; i <= physicalMax; i++) That(bitboard.IsSet((ushort)i), Is.False, $"Memory corruption: Bit {i} (padding) was incorrectly SET.");
 
         // 3. Population Count Check
         var expectedCount = lastIndex + 1;
@@ -56,13 +54,11 @@ public partial class BitboardTests
         var (physicalBits, physicalMax) = GetPhysicalLimits(bufferSize);
 
         // 1. Logical Zone Check (Must be 0)
-        for (var i = 0; i <= lastIndex; i++)
-            That(bitboard.IsSet((ushort)i), Is.False, $"Logic mismatch: Bit {i} should be UNSET.");
+        for (var i = 0; i <= lastIndex; i++) That(bitboard.IsSet((ushort)i), Is.False, $"Logic mismatch: Bit {i} should be UNSET.");
 
         // 2. Padding Zone Check (Must stay 1 - Safety Boundary)
         // Since we started with 0xFF, padding must remain 1.
-        for (var i = lastIndex + 1; i <= physicalMax; i++)
-            That(bitboard.IsSet((ushort)i), Is.True, $"Memory corruption: Bit {i} (padding) was incorrectly CLEARED.");
+        for (var i = lastIndex + 1; i <= physicalMax; i++) That(bitboard.IsSet((ushort)i), Is.True, $"Memory corruption: Bit {i} (padding) was incorrectly CLEARED.");
 
         // 3. Population Count Check
         var expectedCount = physicalBits - (lastIndex + 1);

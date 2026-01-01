@@ -22,9 +22,7 @@ public partial class BitboardTests
         // Assert
         That(bitboard.PopCount(), Is.Zero, "PopCount should be zero after Clear.");
 
-        foreach (var b in buffer)
-            if (b != 0)
-                Fail($"Memory not zeroed. Found byte: {b:X2}");
+        foreach (var b in buffer) That(b, Is.EqualTo(0), $"Memory not zeroed. Found byte: {b:X2}");
     }
 
     [TestCaseSource(nameof(TestDimensions))]
@@ -52,14 +50,10 @@ public partial class BitboardTests
         That(bitboard1.PopCount(), Is.EqualTo(physicalBits), "OR operation failed to produce full mask (0xFF).");
 
         // Integrity check for Result (bb1)
-        foreach (var b in buffer1)
-            if (b != 0xFF)
-                Fail($"Integrity check failed. Expected 0xFF, found {b:X2}.");
+        foreach (var b in buffer1) That(b, Is.EqualTo(0xFF), $"Integrity check failed. Expected 0xFF, found {b:X2}.");
 
         // Immutability check for Source (bb2)
-        foreach (var b in buffer2)
-            if (b != 0xAA)
-                Fail($"Source operand was modified. Expected 0xAA, found {b:X2}.");
+        foreach (var b in buffer2) That(b, Is.EqualTo(0xAA), $"Source operand was modified. Expected 0xAA, found {b:X2}.");
     }
 
     [TestCaseSource(nameof(TestDimensions))]
@@ -88,13 +82,9 @@ public partial class BitboardTests
         That(bitboard1.PopCount(), Is.EqualTo(expectedCount), "XOR operation PopCount mismatch.");
 
         // Integrity check for Result (bb1)
-        foreach (var b in buffer1)
-            if (b != 0x55)
-                Fail($"Integrity check failed. Expected 0x55, found {b:X2}.");
+        foreach (var b in buffer1) That(b, Is.EqualTo(0x55), $"Integrity check failed. Expected 0x55, found {b:X2}.");
 
         // Immutability check for Source (bb2)
-        foreach (var b in buffer2)
-            if (b != 0xAA)
-                Fail($"Source operand was modified. Expected 0xAA, found {b:X2}.");
+        foreach (var b in buffer2) That(b, Is.EqualTo(0xAA), $"Source operand was modified. Expected 0xAA, found {b:X2}.");
     }
 }
