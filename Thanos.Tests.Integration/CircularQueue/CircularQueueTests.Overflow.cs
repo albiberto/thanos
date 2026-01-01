@@ -6,9 +6,12 @@ namespace Thanos.Tests.Integration.CircularQueue;
 public partial class CircularQueueTests
 {
     [Test]
-    public void Enqueue_WhenCapacityIsReached_ShouldOverwriteOldestElement()
+    public void Enqueue_WhenCapacityIsReached_ShouldOverwriteOldestElement_WithoutExpandingLength()
     {
         // Scenario: Hard saturation (255 elements).
+        // This tests the explicit byte-limit check in Enqueue:
+        // if (_state.Length < byte.MaxValue) _state.Length++;
+
         const int capacity = 256;
         const int bufferSize = 256 * sizeof(ushort);
         const int physicalLength = capacity - 1; // 255 (Max byte value constraint)
@@ -19,10 +22,11 @@ public partial class CircularQueueTests
         var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
 
         // --- PHASE 1: Fill up to the Byte Limit (255) ---
-        foreach (var i in Enumerable.Range(0, physicalLength)) queue.Enqueue((ushort)i);
+        foreach (var i in Enumerable.Range(0, physicalLength))
+            queue.Enqueue((ushort)i);
 
         // Verify Pre-Saturation state
-        That(queue.Length, Is.EqualTo(physicalLength), "Length should be exactly 255.");
+        That(queue.Length, Is.EqualTo(physicalLength), "Length should be exactly 255 (Byte MaxValue saturation).");
         That(queue.PeekHead, Is.EqualTo(254), "Head should point to 254.");
 
         // --- PHASE 2: Massive Overwrite (Stress Test) ---
@@ -32,25 +36,30 @@ public partial class CircularQueueTests
         {
             var val = (ushort)(255 + i);
 
-            // Act
+            // Act: Enqueue WITHOUT Dequeue (Force Saturation)
             queue.Enqueue(val);
 
             // Assert
             // We verify the internal buffer state directly using math logic (Modulo arithmetic)
 
             var cycle = val / capacity; // How many times we filled the buffer
-            var headIdx = val % capacity; // Current Head physical index
 
-            // 1. Logical Saturation
-            That(queue.Length, Is.EqualTo(physicalLength), $"Length failed at i={i}");
+            // 1. Logical Saturation check
+            That(queue.Length, Is.EqualTo(physicalLength), $"Length exceeded Byte.MaxValue limit at i={i}");
 
             // 2. Head Integrity
             That(queue.PeekHead, Is.EqualTo(val), $"Head integrity failed at i={i}");
 
-            // 3. Tail Integrity (Buffer[0])
-            // Buffer[0] is updated only when head wraps to 0.
-            var expectedTail = (ushort)(cycle * capacity);
-            That(queue.PeekTail, Is.EqualTo(expectedTail), $"Tail integrity failed at i={i}");
+            // 3. Tail Integrity (Underlying Buffer Check)
+            // Since we are NOT calling Dequeue(), the Tail Index logic in the struct stays at 0.
+            // However, the *data* at Buffer[0] (where tail points) gets overwritten 
+            // when Head wraps around.
+            // 
+            // This confirms that CircularQueue behaves as a ring buffer where 
+            // old data is destructively overwritten if not dequeued.
+
+            var expectedTailValue = (ushort)(cycle * capacity);
+            That(queue.PeekTail, Is.EqualTo(expectedTailValue), $"Tail data integrity failed at i={i}. Ring buffer overwrite logic broken.");
         }
     }
 }

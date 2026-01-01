@@ -6,7 +6,7 @@ namespace Thanos.Tests.Integration.CircularQueue;
 public partial class CircularQueueTests
 {
     [TestCaseSource(nameof(Capacities))]
-    public void Constructor_WhenInitialized_ShouldHaveZeroLength(ushort capacity, int bufferSize)
+    public void Constructor_WhenInitialized_ShouldHaveZeroLengthAndResetIndices(ushort capacity, int bufferSize)
     {
         // Arrange
         var state = new CircularQueueState();
@@ -17,6 +17,8 @@ public partial class CircularQueueTests
 
         // Assert
         That(queue.Length, Is.Zero, "Initial length must be 0.");
+
+        // Direct State Inspection (White-box testing required for struct layout verification)
         That(state.HeadIndex, Is.Zero, "Head index must start at 0.");
         That(state.TailIndex, Is.Zero, "Tail index must start at 0.");
     }
@@ -33,6 +35,9 @@ public partial class CircularQueueTests
         queue.Enqueue(100);
         queue.Enqueue(200);
         queue.Dequeue();
+
+        // Pre-Assert to validate setup validity
+        That(queue.Length, Is.Not.Zero, "Setup failed: Queue should be dirty.");
 
         // Act
         queue.Clear();

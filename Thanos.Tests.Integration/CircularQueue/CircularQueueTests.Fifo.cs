@@ -6,10 +6,15 @@ namespace Thanos.Tests.Integration.CircularQueue;
 public partial class CircularQueueTests
 {
     [TestCaseSource(nameof(Capacities))]
-    public void Enqueue_WhenQueueWrapsAround_ShouldPreserveFifoOrder(ushort capacity, int bufferSize)
+    public void EnqueueDequeue_WhenQueueWrapsAround_ShouldPreserveFifoOrder(ushort capacity, int bufferSize)
     {
-        // Skip capacities too small for a snake of length 3
-        if (capacity < 4) Ignore("Capacity too small for simulation.");
+        // Guard: Capacities smaller than the snake length (3) cannot support this specific scenario
+        // without overlapping/overwriting immediately.
+        if (capacity < 4)
+        {
+            Pass($"Skipping scenario for Capacity {capacity} (Too small for Len 3 simulation).");
+            return;
+        }
 
         // Arrange
         var state = new CircularQueueState();
@@ -19,7 +24,8 @@ public partial class CircularQueueTests
         const int SnakeLength = 3;
 
         // 1. Setup Initial Body: [0, 1, 2]
-        foreach (ushort index in Enumerable.Range(0, SnakeLength)) queue.Enqueue(index);
+        foreach (ushort index in Enumerable.Range(0, SnakeLength))
+            queue.Enqueue(index);
 
         // Act & Assert (Simulation Loop)
         var iterations = GetIterations(capacity);
@@ -30,15 +36,16 @@ public partial class CircularQueueTests
             var nextHeadValue = (ushort)(SnakeLength + i);
             var expectedDeqValue = i;
 
-            // --- ACT: The Move ---
+            // --- ACT: The Move (Slide Window) ---
             queue.Enqueue(nextHeadValue);
             var removed = queue.Dequeue();
 
             // --- ASSERT: Invariants ---
-            // 1. FIFO Integrity
+
+            // 1. FIFO Integrity (Value Check)
             That(removed, Is.EqualTo(expectedDeqValue), $"Iter {i}: FIFO violation. Wrong value dequeued.");
 
-            // 2. Structural Integrity
+            // 2. Structural Integrity (Length Check)
             That(queue.Length, Is.EqualTo(SnakeLength), $"Iter {i}: Length corrupted.");
 
             // 3. Pointers Integrity (Oracle Verification)

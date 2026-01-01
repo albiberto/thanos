@@ -12,6 +12,8 @@ namespace Thanos.Tests.Integration.CircularQueue;
 public partial class CircularQueueTests
 {
     private const int WrapCycles = 50;
+
+    // Calculates total iterations to force multiple wrap-arounds
     private static int GetIterations(ushort capacity) => capacity * WrapCycles;
 
     /// <summary>
@@ -22,7 +24,7 @@ public partial class CircularQueueTests
     {
         get
         {
-            // EDGE CASES: Extreme Constriction
+            // EDGE CASES: Extreme Constriction (Minimizes masking logic risks)
             yield return Case(2);
             yield return Case(4);
             yield return Case(8);
@@ -33,11 +35,12 @@ public partial class CircularQueueTests
             // STANDARD LEAGUE: Medium (11x11 -> next PO2: 128)
             yield return Case(128);
 
-            // HARD LIMIT: 256 (Byte index limit)
+            // HARD LIMIT: 256 (Byte index limit in CircularQueueState)
             yield return Case(256);
-            yield break;
-
-            static TestCaseData Case(ushort cap) => new(cap, cap * sizeof(ushort));
         }
     }
+
+    private static TestCaseData Case(ushort cap) =>
+        new TestCaseData(cap, cap * sizeof(ushort))
+            .SetName($"Capacity_{cap}");
 }
