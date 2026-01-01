@@ -20,12 +20,12 @@ public partial class WarSnakeTests
         // Oracle: Calculate expected geometry based on direction
         var targetPos = GetNextPosition(body[0], facing, env.Width);
         var expectedTail = body[^2]; // The neck becomes the new Tail
-        var oldTail = body[^1];      // The old Tail is dropped
+        var oldTail = body[^1]; // The old Tail is dropped
         var expectedHp = hp > NormalDamage ? hp - NormalDamage : 0;
 
         // Act
         // Move without eating (Standard Step)
-        snake.UpdateAfterMove(targetPos, ateFood: false, damage: NormalDamage);
+        snake.UpdateAfterMove(targetPos, false, NormalDamage);
 
         // Assert
         // 1. Vital Signs
@@ -39,7 +39,7 @@ public partial class WarSnakeTests
         That(snake.Length, Is.EqualTo(body.Length), "Length must remain constant.");
         That(snake.Head, Is.EqualTo(targetPos), "Head did not move to target.");
         That(snake.Tail, Is.EqualTo(expectedTail), "Tail did not advance correctly.");
-        
+
         if (body.Length > 2)
         {
             var expectedNeck = body[^3];
@@ -50,7 +50,7 @@ public partial class WarSnakeTests
         That(snake.Body.IsSet(oldTail), Is.False, "Old tail bit was not cleared.");
         That(snake.Body.IsSet(targetPos), Is.True, "New head bit was not set.");
         That(snake.Body.IsSet(expectedTail), Is.True, "New tail bit missing.");
-        
+
         // Paranoid: Ensure no phantom bits were created
         That(snake.Body.PopCount(), Is.EqualTo(body.Length), "Bitboard population count mismatch.");
     }
@@ -72,13 +72,13 @@ public partial class WarSnakeTests
 
         // Act
         // Move onto Food
-        snake.UpdateAfterMove(targetPos, ateFood: true, damage: NormalDamage);
+        snake.UpdateAfterMove(targetPos, true, NormalDamage);
 
         // Assert
         // 1. Vital Signs
         That(snake.HP, Is.EqualTo(100), "Eating should trigger Full Cure (100 HP).");
         That(snake.IsDead, Is.False, "Snake should be alive after eating.");
-        
+
         // 2. Growth Logic
         That(snake.Length, Is.EqualTo(body.Length + 1), "Length should increase by 1 immediately.");
         That(snake.IsGrowthPending, Is.True, "Growth pending flag should be set for next turn.");
@@ -108,19 +108,19 @@ public partial class WarSnakeTests
         var eatPos = GetNextPosition(body[0], facing, env.Width);
 
         // Pre-Condition: Eat Food (Turn T) -> Length + 1, GrowthPending = True
-        snake.UpdateAfterMove(eatPos, ateFood: true, damage: 0);
+        snake.UpdateAfterMove(eatPos, true, 0);
 
         // Prepare for Digestion (Turn T+1)
         var digestPos = GetNextPosition(eatPos, facing, env.Width);
-        
+
         // Oracle: Tail advances now. 
         // Original: [H, B, T]. Eat: [H', H, B, T]. Digest: [H'', H', H, B].
-        var expectedTail = body[^2]; 
+        var expectedTail = body[^2];
         var expectedHp = 100 - NormalDamage;
 
         // Act
         // Move normally (Digest phase)
-        snake.UpdateAfterMove(digestPos, ateFood: false, damage: NormalDamage);
+        snake.UpdateAfterMove(digestPos, false, NormalDamage);
 
         // Assert
         // 1. Vital Signs
@@ -128,7 +128,7 @@ public partial class WarSnakeTests
         That(snake.IsGrowthPending, Is.False, "Growth flag should be consumed.");
 
         // 2. Queue Geometry
-        That(snake.Length, Is.EqualTo(body.Length + 1), "Snake should maintain the gained length."); 
+        That(snake.Length, Is.EqualTo(body.Length + 1), "Snake should maintain the gained length.");
         That(snake.Head, Is.EqualTo(digestPos), "Head mismatch.");
         That(snake.Tail, Is.EqualTo(expectedTail), "Tail MUST advance during digestion phase.");
 
@@ -155,10 +155,10 @@ public partial class WarSnakeTests
 
         // Act
         // Turn 1: Eat
-        snake.UpdateAfterMove(pos1, ateFood: true, damage: 0);
-        
+        snake.UpdateAfterMove(pos1, true, 0);
+
         // Turn 2: Eat Again
-        snake.UpdateAfterMove(pos2, ateFood: true, damage: 0);
+        snake.UpdateAfterMove(pos2, true, 0);
 
         // Assert
         // 1. Vital Signs
@@ -184,9 +184,9 @@ public partial class WarSnakeTests
         int dx = 0, dy = 0;
         switch (facing)
         {
-            case SnakeFacing.Up:    dy = 1; break;
-            case SnakeFacing.Down:  dy = -1; break;
-            case SnakeFacing.Left:  dx = -1; break;
+            case SnakeFacing.Up: dy = 1; break;
+            case SnakeFacing.Down: dy = -1; break;
+            case SnakeFacing.Left: dx = -1; break;
             case SnakeFacing.Right: dx = 1; break;
             default: throw new ArgumentOutOfRangeException(nameof(facing), facing, null);
         }
@@ -194,6 +194,41 @@ public partial class WarSnakeTests
         var y = current / width;
         var x = current % width;
 
-        return (ushort)((y + dy) * width + (x + dx));
+        return (ushort)((y + dy) * width + x + dx);
+    }
+
+    [Test]
+    public void UpdateAfterMove_WhenChasingOwnTail_ShouldMaintainBodyIntegrity()
+    {
+        // Scenario "Ouroboros":
+        // Il serpente si muove esattamente nella cella lasciata libera dalla coda.
+        // Questo è legale. La Bitboard deve riflettere che quella cella è ORA occupata dalla Testa.
+
+        // Arrange
+        var context = new SnakeMemoryContext(16, 64, "TailChase");
+        var snake = context.Build();
+
+        // Body: Head(1), Tail(0). Length 2.
+        // Move to 0 (Where Tail is).
+        ushort[] body = [1, 0];
+        snake.Initialize(new Snake("hero", 100, body));
+
+        var targetPos = body[^1]; // 0 (Tail position)
+
+        // Act
+        snake.UpdateAfterMove(targetPos, false, 1);
+
+        // Assert
+        // 1. Geometry
+        That(snake.Head, Is.EqualTo(targetPos), "Head must be at the old tail position.");
+        That(snake.Tail, Is.EqualTo(body[0]), "Tail must calculate new position correctly (Old Head becomes Tail in Len 2).");
+
+        // 2. Bitboard Logic
+        // Se la logica fosse sbagliata (es: SetHead poi UnsetTail), il bit a 0 verrebbe spento.
+        // Deve essere: UnsetTail (0 -> Off) POI SetHead (0 -> On). Risultato: 0 è On.
+        That(snake.Body.IsSet(targetPos), Is.True, "The position shared by OldTail and NewHead MUST be set.");
+
+        // 3. PopCount
+        That(snake.Body.PopCount(), Is.EqualTo(2), "Snake must preserve its mass (2 bits set).");
     }
 }
