@@ -13,18 +13,29 @@ public partial class SnakesSystemTests
             // Arrange
             var system = ctx.Build();
 
-            // Initialize Snake 0 uniquely
-            system[0].Initialize(new Snake("me", 99, [10]));
+            // Setup: Define explicit expectations for a distinct 4-segment body
+            const byte expectedHp = 99;
+            const ushort expectedHead = 9;
+            const ushort expectedNeck = 11; // Body[Length - 2]
+            const ushort expectedTail = 12; // Body[Length - 1]
+
+            // Initialize Snake 0 uniquely: [Head(9), Body(10), Neck(11), Tail(12)]
+            system[0].Initialize(new Snake("me", expectedHp, [expectedHead, 10, expectedNeck, expectedTail]));
 
             // Act
             var me = system.Me;
 
             // Assert
-            That(me.HP, Is.EqualTo(99));
-            That(me.Head, Is.EqualTo(10));
+            // 1. Vital Signs
+            That(me.HP, Is.EqualTo(expectedHp), "Me.HP mismatch.");
 
-            // Verify structural identity (Index 0)
-            // If we modify 'Me', system[0] should reflect it
+            // 2. Structural Pointers (Verify Queue Pointers)
+            That(me.Head, Is.EqualTo(expectedHead), "Me.Head mismatch.");
+            That(me.ElementBeforeTail, Is.EqualTo(expectedNeck), "Me.ElementBeforeTail mismatch.");
+            That(me.Tail, Is.EqualTo(expectedTail), "Me.Tail mismatch.");
+
+            // 3. Structural Identity (Verify Reference)
+            // If we modify 'Me', system[0] should reflect it immediately (Zero-Copy)
             me.Kill();
             That(system[0].IsDead, Is.True, "Me property is not pointing to Snake[0] reference.");
         }
@@ -41,21 +52,32 @@ public partial class SnakesSystemTests
             // Initialize distinct states for every active snake
             for (var i = 0; i < ctx.ActiveCount; i++)
             {
-                // Assign unique HP/Head based on index
+                // Assign unique HP/Head based on index to prevent accidental collisions
                 var hp = (byte)(10 + i);
-                var head = (ushort)(i * 2);
-                system[i].Initialize(new Snake($"s{i}", hp, [head]));
-            }
+                var head = (ushort)(i * 10);
 
-            // Act & Assert
-            for (var i = 0; i < ctx.ActiveCount; i++)
-            {
+                // Construct a body: [Head, Body, Neck, Tail]
+                var elementBeforeTail = (ushort)(head + 2);
+                var tail = (ushort)(head + 3);
+
+                system[i].Initialize(new Snake($"s{i}", hp, [head, (ushort)(head + 1), elementBeforeTail, tail]));
+
+                // Act & Assert
                 var snake = system[i];
-                var expectedHp = 10 + i;
-                var expectedHead = i * 2;
 
+                // Expectations
+                var expectedHp = hp;
+                var expectedHead = head;
+                var expectedElementBeforeTail = elementBeforeTail;
+                var expectedTail = tail;
+
+                // 1. Vital Signs
                 That(snake.HP, Is.EqualTo(expectedHp), $"Snake {i} HP mismatch.");
+
+                // 2. Structural Pointers
                 That(snake.Head, Is.EqualTo(expectedHead), $"Snake {i} Head mismatch.");
+                That(snake.ElementBeforeTail, Is.EqualTo(expectedElementBeforeTail), $"Snake {i} ElementBeforeTail mismatch.");
+                That(snake.Tail, Is.EqualTo(expectedTail), $"Snake {i} Tail mismatch.");
             }
         }
     }

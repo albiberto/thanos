@@ -51,8 +51,7 @@ public readonly unsafe ref struct SnakesSystem(byte* basePtr, in SlotMemoryLayou
             // 3. Clear Local Bitboard (NOVITÀ: Centralizziamo la pulizia qui)
             // Creiamo una view temporanea per usare la logica SIMD di Clear() già esistente
             var bitboardSpan = new Span<byte>(snakePtr + _layout.Bitboard.Offset, (int)_layout.Bitboard.Length);
-            var bitboard = new Bitboard(bitboardSpan);
-            bitboard.Clear();
+            bitboardSpan.Clear();
         
             // NOTA: Non serve pulire il QueueBuffer (ushort[]), resettare gli indici in state basta.
         }

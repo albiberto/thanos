@@ -39,6 +39,9 @@ public readonly ref partial struct Bitboard(Span<byte> raw)
         ref var chunk = ref Unsafe.Add(ref _root, position1D >> 6);
         return (chunk & (1UL << (position1D & 63))) == 0;
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Clear() => Buffer.Clear();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(Bitboard destination) => Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(destination.Raw), ref MemoryMarshal.GetReference(Raw), (uint)Raw.Length);
