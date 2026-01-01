@@ -110,4 +110,86 @@ public partial class WarSnakeTests
         That(snake.HP, Is.Zero, "HP mismatch.");
         That(snake.Body.PopCount(), Is.EqualTo(3), "Body should persist until external cleanup.");
     }
+    
+    [Test]
+    public void UpdateAfterMove_WhenChasingOwnTail_ShouldMaintainBodyIntegrity()
+    {
+        // Scenario "Ouroboros":
+        // Il serpente si muove esattamente nella cella lasciata libera dalla coda.
+        // Questo è legale. La Bitboard deve riflettere che quella cella è ORA occupata dalla Testa.
+
+        // Arrange
+        var context = new SnakeMemoryContext(16, 64, "TailChase");
+        var snake = context.Build();
+        
+        // Body: Head(1), Tail(0). Length 2.
+        // Move to 0 (Where Tail is).
+        ushort[] body = [1, 0];
+        snake.Initialize(new Snake("hero", 100, body));
+
+        var targetPos = body[^1]; // 0 (Tail position)
+
+        // Act
+        snake.UpdateAfterMove(targetPos, ateFood: false, damage: 1);
+
+        // Assert
+        // 1. Geometry
+        That(snake.Head, Is.EqualTo(targetPos), "Head must be at the old tail position.");
+        That(snake.Tail, Is.EqualTo(body[0]), "Tail must calculate new position correctly (Old Head becomes Tail in Len 2).");
+        
+        // 2. Bitboard Logic
+        // Se la logica fosse sbagliata (es: SetHead poi UnsetTail), il bit a 0 verrebbe spento.
+        // Deve essere: UnsetTail (0 -> Off) POI SetHead (0 -> On). Risultato: 0 è On.
+        That(snake.Body.IsSet(targetPos), Is.True, "The position shared by OldTail and NewHead MUST be set.");
+        
+        // 3. PopCount
+        That(snake.Body.PopCount(), Is.EqualTo(2), "Snake must preserve its mass (2 bits set).");
+    }
+
+    [Test]
+    public void UpdateAfterMove_WhenTakingNonLethalDamage_ShouldSurvive()
+    {
+        // Arrange
+        var context = new SnakeMemoryContext(16, 64, "Survival");
+        var snake = context.Build();
+        
+        ushort[] body = [10, 11, 12];
+        byte startHp = 50;
+        byte damage = 14; // Hazard damage
+
+        snake.Initialize(new Snake("hero", startHp, body));
+        var nextPos = (ushort)(body[0] + 1);
+
+        // Act
+        snake.UpdateAfterMove(nextPos, ateFood: false, damage: damage);
+
+        // Assert
+        var expectedHp = startHp - damage;
+        
+        That(snake.HP, Is.EqualTo(expectedHp), "HP calculation error.");
+        That(snake.IsDead, Is.False, "Snake should strictly survive positive HP.");
+        That(snake.Head, Is.EqualTo(nextPos), "Snake should complete the move.");
+    }
+
+    [Test]
+    public void UpdateAfterMove_WhenHealingFromHighHealth_ShouldCapAtMax()
+    {
+        // Arrange
+        var context = new SnakeMemoryContext(16, 64, "Overheal");
+        var snake = context.Build();
+
+        ushort[] body = [5, 6, 7];
+        byte startHp = 99;
+
+        snake.Initialize(new Snake("hero", startHp, body));
+        var nextPos = (ushort)(body[0] + 1); // Food here (simulated)
+
+        // Act
+        snake.UpdateAfterMove(nextPos, ateFood: true, damage: 0);
+
+        // Assert
+        That(snake.HP, Is.EqualTo(100), "HP should be capped at 100.");
+        // Regression Check: ensure bytes don't overflow/wrap around
+        That(snake.HP, Is.LessThanOrEqualTo(100)); 
+    }
 }
