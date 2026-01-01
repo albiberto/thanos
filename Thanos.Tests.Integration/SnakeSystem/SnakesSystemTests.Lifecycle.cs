@@ -1,4 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Thanos.SourceGen;
+using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
@@ -15,7 +18,7 @@ public partial class SnakesSystemTests
 
             // Setup: Dirty the state of all active snakes
             // We use specific positions [1, 2, 3] to ensure Bitboard has bits set
-            for (var i = 0; i < ctx.ActiveCount; i++) 
+            for (var i = 0; i < ctx.ActiveCount; i++)
                 system[i].Initialize(new Snake($"s{i}", 100, [1, 2, 3]));
 
             // Pre-Assert: Verify setup was effective
@@ -30,14 +33,14 @@ public partial class SnakesSystemTests
             for (var i = 0; i < ctx.ActiveCount; i++)
             {
                 var snake = system[i];
-                
+
                 // 1. Verify Queue Reset
                 That(snake.Length, Is.Zero, $"Snake {i} length was not reset.");
                 That(snake.Head, Is.Zero, $"Snake {i} head was not reset.");
-                
+
                 // 2. Verify Life Reset
                 That(snake.IsDead, Is.True, $"Snake {i} should be dead (HP 0).");
-                
+
                 // 3. Verify Bitboard Reset (TARGET OF THE FIX)
                 // This assertion ensures the bitboard memory range is physically zeroed
                 That(snake.Body.PopCount(), Is.Zero, $"Snake {i} bitboard was not cleared.");
@@ -45,27 +48,59 @@ public partial class SnakesSystemTests
         }
     }
 
+    // --- 1. Infrastructure: Bypass Accessors ---
+    // These allow the test to "see" private fields required for topology verification.
+    // They must match the field names in the original structs exactly.
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_queue")]
+    private static extern ref War.Structures.CircularQueue GetQueue(ref War.WarSnake snake);
+
     [TestCaseSource(nameof(SystemScenarios))]
-    public unsafe void Constructor_WhenInitialized_ShouldMapSnakesToSequentialMemoryBlocks(SnakesSystemTestContext ctx)
+    public unsafe void Memory_Layout_ShouldGuarantee_ExactStride_Between_All_SequentialSnakes(SnakesSystemTestContext ctx)
     {
         using (ctx)
         {
-            // Act
-            // (Build creates the struct which calculates pointers)
+            // Arrange
             var system = ctx.Build();
 
-            // Assert
-            // Verify strict memory stride between sequential snakes.
-            // This ensures that Indexer logic inside SnakesSystem matches physical layout.
-            for (var i = 0; i < ctx.ActiveCount - 1; i++)
-            {
-                var ptrCurrent = ctx.GetSnakePointer(i);
-                var ptrNext = ctx.GetSnakePointer(i + 1);
+            if (system.Count < 2) Ignore("Topology test requires a system capacity of at least 2.");
 
-                var actualDistance = ptrNext - ptrCurrent;
+            // Assert
+            for (var i = 0; i < system.Count - 1; i++)
+            {
+                // 1. Obtain Snake Views
+                var snakeCurrent = system[i];
+                var snakeNext = system[i + 1];
+
+                // 2. Queue Extraction
+                // Use UnsafeAccessor if you prefer encapsulation, or access ._queue directly if public.
+                ref var queueCurrent = ref GetQueue(ref snakeCurrent);
+                ref var queueNext = ref GetQueue(ref snakeNext);
+
+                // 3. Pointer Extraction via RAW/BUFFER
+                // We use the standard MemoryMarshal API to get the pointer to the start of the Buffer.
+                // This is stable and equivalent for stride calculation.
+                var ptrCurrent = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(queueCurrent.Raw));
+                var ptrNext = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(queueNext.Raw));
+
+                // 4. Delta Calculation
+                var actualStride = ptrNext - ptrCurrent;
                 var expectedStride = (long)ctx.Layout.SnakeStride.Next;
 
-                That(actualDistance, Is.EqualTo(expectedStride), $"Stride mismatch between snake {i} and {i + 1}.");
+                // 5. Topology Verification
+                That(actualStride, Is.EqualTo(expectedStride),
+                    $"FATAL: Memory Topology Mismatch between Snake[{i}] and Snake[{i + 1}]. " +
+                    $"Actual stride: {actualStride}, Expected: {expectedStride}.");
+
+                // 6. Overlap Safety Check
+                // We verify that the allocated stride effectively covers the buffer size.
+                // Note: When measuring from QueueBuffer, the critical check is ensuring the NEXT buffer 
+                // starts after THIS buffer ends.
+                var bufferLen = (long)ctx.Layout.QueueBuffer.Length;
+
+                That(actualStride, Is.GreaterThanOrEqualTo(bufferLen),
+                    $"FATAL: Stride too small. Buffer overlap detected. " +
+                    $"Stride {actualStride} < BufferLength {bufferLen}.");
             }
         }
     }

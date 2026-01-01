@@ -6,25 +6,25 @@ namespace Thanos.Tests.Integration.SnakeSystem;
 public partial class SnakesSystemTests
 {
     [TestCaseSource(nameof(SystemScenarios))]
-    public void CopyFrom_WhenSourceHasComplexState_ShouldCloneToDestination(SnakesSystemTestContext srcCtx)
+    public void CopyFrom_WhenSourceHasComplexState_ShouldCloneToDestination(SnakesSystemTestContext sourceContext)
     {
         // Arrange: Create a matching destination context
         // We infer parameters from the source context to ensure compatibility
-        using var dstCtx = new SnakesSystemTestContext(
-            srcCtx.MapName,
-            (ushort)(srcCtx.Layout.FoodBitboard.Count<ulong>() * 64), // Reverse engineering area from bitboard size approximation
-            srcCtx.Layout.QueueCapacity,
-            (byte)srcCtx.ActiveCount,
-            (byte)srcCtx.LayoutCapacity
+        using var destinationContext = new SnakesSystemTestContext(
+            sourceContext.MapName,
+            (ushort)(sourceContext.Layout.FoodBitboard.Count<ulong>() * 64), // Reverse engineering area from bitboard size approximation
+            sourceContext.Layout.QueueCapacity,
+            (byte)sourceContext.ActiveCount,
+            (byte)sourceContext.LayoutCapacity
         );
 
-        using (srcCtx) // Ensure source is disposed
+        using (sourceContext) // Ensure source is disposed
         {
-            var source = srcCtx.Build();
-            var destination = dstCtx.Build();
+            var source = sourceContext.Build();
+            var destination = destinationContext.Build();
 
             // Setup Source: Distinct states
-            for (var i = 0; i < srcCtx.ActiveCount; i++)
+            for (var i = 0; i < sourceContext.ActiveCount; i++)
             {
                 var hp = (byte)(100 - i * 10);
                 // Create a body segment to verify queue copy
@@ -37,7 +37,7 @@ public partial class SnakesSystemTests
             destination.CopyFrom(in source);
 
             // Assert
-            for (var i = 0; i < srcCtx.ActiveCount; i++)
+            for (var i = 0; i < sourceContext.ActiveCount; i++)
             {
                 var srcSnake = source[i];
                 var dstSnake = destination[i];
@@ -57,22 +57,22 @@ public partial class SnakesSystemTests
     }
 
     [TestCaseSource(nameof(SystemScenarios))]
-    public void CopyFrom_WhenDestinationIsModifiedAfterCopy_ShouldNotAffectSource(SnakesSystemTestContext srcCtx)
+    public void CopyFrom_WhenDestinationIsModifiedAfterCopy_ShouldNotAffectSource(SnakesSystemTestContext sourceContext)
     {
         // Scenario: Deep Copy verification
 
-        using var dstCtx = new SnakesSystemTestContext(
-            srcCtx.MapName,
-            (ushort)(srcCtx.Layout.FoodBitboard.Count<ulong>() * 64),
-            srcCtx.Layout.QueueCapacity,
-            (byte)srcCtx.ActiveCount,
-            (byte)srcCtx.LayoutCapacity
+        using var destinationContext = new SnakesSystemTestContext(
+            sourceContext.MapName,
+            (ushort)(sourceContext.Layout.FoodBitboard.Count<ulong>() * 64),
+            sourceContext.Layout.QueueCapacity,
+            (byte)sourceContext.ActiveCount,
+            (byte)sourceContext.LayoutCapacity
         );
 
-        using (srcCtx)
+        using (sourceContext)
         {
-            var source = srcCtx.Build();
-            var destination = dstCtx.Build();
+            var source = sourceContext.Build();
+            var destination = destinationContext.Build();
 
             // Setup initial state
             source[0].Initialize(new Snake("hero", 100, [1, 2]));
