@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
@@ -61,5 +62,34 @@ public partial class CircularQueueTests
             That(queue.PeekTail, Is.EqualTo(expectedTail), $"Iter {i}: Tail pointer mismatch.");
             That(queue.PeekElementBeforeTail, Is.EqualTo(expectedNeck), $"Iter {i}: Neck pointer mismatch.");
         }
+    }
+    
+    [TestCaseSource(nameof(Capacities))]
+    public void PeekElementBeforeTail_WhenQueueIsTooShort_ShouldReturnRawMemoryLookahead(ushort capacity, int bufferSize)
+    {
+        // Scenario: Accesso ai boundary.
+        // ElementBeforeTail guarda (Tail + 1). Se Length < 2, guarda memoria "futura" o "vecchia".
+        
+        // Arrange
+        var state = new CircularQueueState();
+        var memory = new byte[bufferSize];
+        var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
+
+        // Setup: Inseriamo 1 elemento. Tail è a 0.
+        // Head avanza a 1.
+        queue.Enqueue(0xAAAA);
+
+        // Scriviamo manualmente nel buffer alla posizione Tail + 1 (indice 1)
+        // per verificare che la proprietà legga ESATTAMENTE quella cella di memoria.
+        var span = MemoryMarshal.Cast<byte, ushort>(new Span<byte>(memory)); 
+        span[1] = 0xBBBB;
+
+        // Act
+        // La coda ha Length 1, quindi "ElementBeforeTail" non esiste logicamente.
+        // Ma fisicamente esiste e ci aspettiamo che venga letto.
+        var phantomNeck = queue.PeekElementBeforeTail;
+
+        // Assert
+        That(phantomNeck, Is.EqualTo(0xBBBB), "Should read raw memory at (Tail + 1) regardless of logic.");
     }
 }

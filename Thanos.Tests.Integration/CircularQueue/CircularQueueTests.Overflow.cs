@@ -62,4 +62,30 @@ public partial class CircularQueueTests
             That(queue.PeekTail, Is.EqualTo(expectedTailValue), $"Tail data integrity failed at i={i}. Ring buffer overwrite logic broken.");
         }
     }
+    
+    [TestCaseSource(nameof(Capacities))]
+    public void Dequeue_WhenEmpty_ShouldUnderflowLengthToMaxByte(ushort capacity, int bufferSize)
+    {
+        // Scenario: Performance over Safety.
+        // Verifichiamo che l'assenza di controlli causi un underflow deterministico (0 -> 255)
+        // invece di eccezioni o comportamenti indefiniti.
+
+        // Arrange
+        var state = new CircularQueueState();
+        var memory = new byte[bufferSize];
+        var queue = new War.Structures.CircularQueue(memory, ref state, capacity);
+
+        // Act
+        var result = queue.Dequeue(); // Coda vuota!
+
+        // Assert
+        // 1. Il risultato è garbage (0 default)
+        That(result, Is.Zero);
+
+        // 2. Lo stato è corrotto in modo specifico (Underflow)
+        That(state.Length, Is.EqualTo(byte.MaxValue), "Length must underflow to 255.");
+        
+        // 3. Tail avanza comunque (distruggendo l'allineamento, come previsto)
+        That(state.TailIndex, Is.EqualTo(1), "Tail index must advance unconditionally.");
+    }
 }
