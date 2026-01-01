@@ -51,8 +51,6 @@ public partial class SnakesSystemTests
         // SnakesSystem (ref struct) memorizzerà un riferimento a QUESTO campo.
         private readonly SlotMemoryLayout _layout;
 
-        private readonly nuint _totalSize;
-
         // Memory Pointers & Layout Storage
         private byte* _basePointer;
         private bool _disposed;
@@ -70,9 +68,9 @@ public partial class SnakesSystemTests
             _layout = new SlotMemoryLayout((ushort)area, queueCapacity, layoutMaxSnakeCount);
 
             // 2. Calcolo dimensione e Allocazione
-            _totalSize = _layout.SnakeStride.Next * layoutMaxSnakeCount;
-            _basePointer = (byte*)NativeMemory.AlignedAlloc(_totalSize, Constants.CacheLine);
-            NativeMemory.Clear(_basePointer, _totalSize);
+            var totalSize = _layout.SnakeStride.Next * layoutMaxSnakeCount;
+            _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
+            NativeMemory.Clear(_basePointer, totalSize);
         }
 
         // Metadata per i Test
@@ -100,20 +98,6 @@ public partial class SnakesSystemTests
         public SnakesSystem Build() => _disposed
             ? throw new ObjectDisposedException(nameof(SnakesSystemTestContext))
             : new SnakesSystem(_basePointer, in _layout, ActiveCount);
-
-        /// <summary>
-        ///     Helper White-box per asserzioni sulla memoria.
-        ///     Permette di verificare che i serpenti siano distanziati dallo Stride corretto.
-        /// </summary>
-        public byte* GetSnakePointer(int index)
-        {
-            if (_disposed) throw new ObjectDisposedException(nameof(SnakesSystemTestContext));
-
-            var offset = (nuint)index * _layout.SnakeStride.Next;
-            if (offset >= _totalSize) throw new IndexOutOfRangeException($"Pointer Request OOB: Index {index} exceeds allocated memory.");
-
-            return _basePointer + offset;
-        }
 
         public override string ToString() => $"{MapName} | Active:{ActiveCount} | Layout:{LayoutCapacity}";
     }

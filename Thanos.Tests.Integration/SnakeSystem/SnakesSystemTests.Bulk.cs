@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using Thanos.SourceGen;
+using Thanos.War;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
@@ -92,6 +94,60 @@ public partial class SnakesSystemTests
             // Source Unchanged (Isolation)
             That(source[0].Head, Is.EqualTo(1), "Source was modified! Memory overlap detected.");
             That(source[0].HP, Is.EqualTo(100), "Source HP changed.");
+        }
+    }
+    
+    [TestCaseSource(nameof(SystemScenarios))]
+    public unsafe void CopyFrom_WhenExecuted_ShouldNotOverwriteBoundaryMemory(SnakesSystemTestContext sourceCtx)
+    {
+        // Scenario: Buffer Overrun Protection (Sentinel/Canary Check)
+        // Verifichiamo che CopyFrom rispetti rigorosamente la dimensione calcolata 
+        // e non scriva nemmeno un byte oltre la fine del blocco SnakesSystem.
+        // Questo simula la protezione delle Bitboard globali (Food/Hazards) che risiedono subito dopo.
+
+        using (sourceCtx)
+        {
+            // 1. Arrange Source (Dati Validi)
+            var source = sourceCtx.Build();
+            source[0].Initialize(new Snake("filler", 100, [1, 2, 3]));
+
+            // 2. Arrange Destination (Allocazione Manuale "Oversized")
+            // Non usiamo il Context qui perché vogliamo controllo totale sui byte extra.
+            ref readonly var layout = ref sourceCtx.Layout;
+            var snakesCount = sourceCtx.LayoutCapacity;
+            
+            // Calcoliamo la dimensione esatta occupata dal sistema
+            var systemBytes = layout.SnakeStride.Next * (nuint)snakesCount;
+            
+            // Allochiamo: Dimensione Sistema + Sentinella (8 byte / ulong)
+            const UIntPtr sentinelSize = sizeof(ulong);
+            var totalAlloc = systemBytes + sentinelSize;
+            
+            var destPtr = (byte*)NativeMemory.AlignedAlloc(totalAlloc, Constants.CacheLine);
+            
+            try
+            {
+                // Posizioniamo la Sentinella ESATTAMENTE alla fine del blocco SnakesSystem
+                const ulong SentinelPattern = 0xDEADBEEF_DEADBEEF;
+                var sentinelPtr = (ulong*)(destPtr + systemBytes);
+                *sentinelPtr = SentinelPattern;
+
+                // Creiamo la vista Destination (limitata alla dimensione standard)
+                var destination = new SnakesSystem(destPtr, in layout, snakesCount);
+
+                // Act
+                destination.CopyFrom(in source);
+
+                // Assert
+                var actualSentinel = *sentinelPtr;
+                That(actualSentinel, Is.EqualTo(SentinelPattern), 
+                    $"Memory Overrun: CopyFrom ha corrotto la memoria successiva al blocco. " +
+                    $"Expected {SentinelPattern:X}, got {actualSentinel:X}.");
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(destPtr);
+            }
         }
     }
 }

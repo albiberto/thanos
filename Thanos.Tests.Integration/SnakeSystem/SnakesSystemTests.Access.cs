@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
 
@@ -79,6 +81,35 @@ public partial class SnakesSystemTests
                 That(snake.ElementBeforeTail, Is.EqualTo(expectedElementBeforeTail), $"Snake {i} ElementBeforeTail mismatch.");
                 That(snake.Tail, Is.EqualTo(expectedTail), $"Snake {i} Tail mismatch.");
             }
+        }
+    }
+    
+    [TestCaseSource(nameof(SystemScenarios))]
+    public unsafe void Me_WhenComparingPointers_ShouldPointToSameMemoryAsIndexZero(SnakesSystemTestContext ctx)
+    {
+        using (ctx)
+        {
+            // Arrange
+            var system = ctx.Build();
+            
+            // Act
+            // Otteniamo le ref struct (viste)
+            var me = system.Me;
+            var indexZero = system[0];
+
+            // Assert
+            // 1. Estraiamo i riferimenti alla memoria sottostante (Queue Raw Buffer)
+            // Nota: GetQueue è visibile perché definita 'private static' nella partial class in Lifecycle.cs
+            ref var meQueue = ref GetQueue(ref me);
+            ref var zeroQueue = ref GetQueue(ref indexZero);
+
+            // 2. Otteniamo i puntatori agli indirizzi fisici
+            var mePtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(meQueue.Raw));
+            var zeroPtr = Unsafe.AsPointer(ref MemoryMarshal.GetReference(zeroQueue.Raw));
+
+            // 3. Verifica Identità
+            That((nint)mePtr, Is.EqualTo((nint)zeroPtr), 
+                "FATAL: 'Me' property creates a copy or points to different memory than 'this[0]'. Zero-copy violation.");
         }
     }
 }
