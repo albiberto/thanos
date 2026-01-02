@@ -51,9 +51,9 @@ public static class BodyBuilder
         int dx = 0, dy = 0;
         switch (facing)
         {
-            case SnakeFacing.Up:    dy = -1; break; // Il corpo scende
-            case SnakeFacing.Down:  dy = 1;  break; // Il corpo sale
-            case SnakeFacing.Left:  dx = 1;  break; // Il corpo va a destra
+            case SnakeFacing.Up: dy = -1; break; // Il corpo scende
+            case SnakeFacing.Down: dy = 1; break; // Il corpo sale
+            case SnakeFacing.Left: dx = 1; break; // Il corpo va a destra
             case SnakeFacing.Right: dx = -1; break; // Il corpo va a sinistra
             default: throw new ArgumentOutOfRangeException(nameof(facing), facing, null);
         }
@@ -62,20 +62,20 @@ public static class BodyBuilder
         // Invece di partire dal centro, calcoliamo un punto che garantisca spazio "dietro".
         // Se il corpo va a Y- (scende), la testa deve essere abbastanza in alto.
         // Se il corpo va a Y+ (sale), la testa deve essere abbastanza in basso.
-        
+
         var headX = width / 2;
         var headY = height / 2;
 
         // Correzione dinamica per evitare OutOfBounds
-        if (dy < 0) headY = Math.Max(headY, length - 1);          // Deve avere spazio sotto
-        if (dy > 0) headY = Math.Min(headY, height - length);     // Deve avere spazio sopra
-        if (dx < 0) headX = Math.Max(headX, length - 1);          // Deve avere spazio a sinistra
-        if (dx > 0) headX = Math.Min(headX, width - length);      // Deve avere spazio a destra
+        if (dy < 0) headY = Math.Max(headY, length - 1); // Deve avere spazio sotto
+        if (dy > 0) headY = Math.Min(headY, height - length); // Deve avere spazio sopra
+        if (dx < 0) headX = Math.Max(headX, length - 1); // Deve avere spazio a sinistra
+        if (dx > 0) headX = Math.Min(headX, width - length); // Deve avere spazio a destra
 
         for (var i = 0; i < length; i++)
         {
-            var x = headX + (dx * i);
-            var y = headY + (dy * i);
+            var x = headX + dx * i;
+            var y = headY + dy * i;
 
             // Safety Check
             if (x < 0 || x >= width || y < 0 || y >= height)

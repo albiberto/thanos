@@ -1,3 +1,4 @@
+using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.WarSnake;
@@ -13,16 +14,16 @@ public partial class WarSnakeTests
         // Arrange
         var context = new SnakeMemoryContext(16, 64, "HazardFoodPriority");
         var snake = context.Build();
-        
+
         ushort[] body = [10, 11, 12];
-        snake.Initialize(new SourceGen.Snake("hero", 50, body)); // Start with 50 HP
+        snake.Initialize(new Snake("hero", 50, body)); // Start with 50 HP
 
         var nextPos = (ushort)(body[0] + 1);
         const byte HazardDamage = 15;
 
         // Act
         // ateFood = true, damage = 15
-        snake.UpdateAfterMove(nextPos, ateFood: true, damage: HazardDamage);
+        snake.UpdateAfterMove(nextPos, true, HazardDamage);
 
         // Assert
         That(snake.HP, Is.EqualTo(100), "Food healing failed to override hazard damage.");
@@ -34,19 +35,19 @@ public partial class WarSnakeTests
     public void UpdateAfterMove_WhenDamageIsZero_ShouldMaintainCurrentHP()
     {
         // Scenario: Zero-damage move (e.g. custom rules or god mode).
-        
+
         // Arrange
         var context = new SnakeMemoryContext(16, 64, "ZeroDamage");
         var snake = context.Build();
-        
+
         ushort[] body = [10, 11, 12];
         const byte InitialHP = 80;
-        snake.Initialize(new SourceGen.Snake("hero", InitialHP, body));
+        snake.Initialize(new Snake("hero", InitialHP, body));
 
         var nextPos = (ushort)(body[0] + 1);
 
         // Act
-        snake.UpdateAfterMove(nextPos, ateFood: false, damage: 0);
+        snake.UpdateAfterMove(nextPos, false, 0);
 
         // Assert
         That(snake.HP, Is.EqualTo(InitialHP), "HP changed unexpectedly on zero-damage move.");
@@ -65,13 +66,13 @@ public partial class WarSnakeTests
         var snake = context.Build();
 
         // Body: Head(2), Body(1), Tail(0)
-        ushort[] body = [2, 1, 0]; 
-        snake.Initialize(new SourceGen.Snake("hero", 100, body));
+        ushort[] body = [2, 1, 0];
+        snake.Initialize(new Snake("hero", 100, body));
 
         var suicidePos = body[1]; // Position 1 (The Neck/Body)
 
         // Act
-        snake.UpdateAfterMove(suicidePos, ateFood: false, damage: 1);
+        snake.UpdateAfterMove(suicidePos, false, 1);
 
         // Assert
         // 1. Queue State
@@ -82,7 +83,7 @@ public partial class WarSnakeTests
         // Tail (0) should be unset.
         // Head (2) remains set (it's now part of body).
         // NewHead (1) remains set (collision).
-        
+
         That(snake.Body.IsSet(0), Is.False, "Tail was not cleared.");
         That(snake.Body.IsSet(1), Is.True, "Collision point (Neck) should remain set.");
         That(snake.Body.IsSet(2), Is.True, "Old Head should remain set.");
