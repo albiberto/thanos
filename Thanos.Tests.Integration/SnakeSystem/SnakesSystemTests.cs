@@ -46,9 +46,8 @@ public partial class SnakesSystemTests
     /// </summary>
     public unsafe class SnakesSystemTestContext : IDisposable
     {
-        // FIX COMPILATORE:
-        // SlotMemoryLayout deve essere un campo (field) per avere un indirizzo di memoria stabile.
-        // SnakesSystem (ref struct) memorizzerà un riferimento a QUESTO campo.
+        // SlotMemoryLayout must be a field to have a stable memory address.
+        // SnakesSystem (ref struct) will store a reference to THIS field.
         private readonly SlotMemoryLayout _layout;
 
         // Memory Pointers & Layout Storage
@@ -64,21 +63,21 @@ public partial class SnakesSystemTests
             ActiveCount = activeSnakeCount;
             LayoutCapacity = layoutMaxSnakeCount;
 
-            // 1. Inizializzazione Layout nel campo privato
+            // 1. Initialize Layout in private field
             _layout = new SlotMemoryLayout((ushort)area, queueCapacity, layoutMaxSnakeCount);
 
-            // 2. Calcolo dimensione e Allocazione
+            // 2. Size calculation and Allocation
             var totalSize = _layout.SnakeStride.Next * layoutMaxSnakeCount;
             _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
             NativeMemory.Clear(_basePointer, totalSize);
         }
 
-        // Metadata per i Test
+        // Test Metadata
         public string MapName { get; }
         public int ActiveCount { get; }
         public int LayoutCapacity { get; }
 
-        // Esposizione per Asserzioni (Ref Readonly per evitare copie)
+        // Exposure for Assertions (Ref Readonly to avoid copies)
         public ref readonly SlotMemoryLayout Layout => ref _layout;
 
         public void Dispose()

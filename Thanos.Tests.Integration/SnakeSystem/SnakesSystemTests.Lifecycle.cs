@@ -1,7 +1,4 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Thanos.SourceGen;
-using Thanos.War.Structures;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
@@ -41,13 +38,13 @@ public partial class SnakesSystemTests
                 // 2. Verify Life Reset
                 That(snake.IsDead, Is.True, $"Snake {i} should be dead (HP 0).");
 
-                // 3. Verify Bitboard Reset (TARGET OF THE FIX)
+                // 3. Verify Bitboard Reset
                 // This assertion ensures the bitboard memory range is physically zeroed
                 That(snake.Body.PopCount(), Is.Zero, $"Snake {i} bitboard was not cleared.");
             }
         }
     }
-    
+
     [TestCaseSource(nameof(SystemScenarios))]
     public void Initialize_WhenCalled_ShouldResetIndices_ButLeaveQueueBufferDirty(SnakesSystemTestContext ctx)
     {
@@ -57,40 +54,38 @@ public partial class SnakesSystemTests
             var system = ctx.Build();
             var snake = system[0];
 
-            // Setup: Riempiamo il buffer con valori "sporchi" noti
-            // Simuliamo un serpente che si è mosso e ha lasciato dati
+            // Setup: Fill buffer with known "dirty" values
+            // Simulate a snake that moved and left data behind
             ushort[] dirtyPattern = [0xAA, 0xBB, 0xCC];
             snake.Initialize(new Snake("dirty", 100, dirtyPattern));
 
             // Pre-check
             That(snake.Length, Is.EqualTo(3));
-            That(snake.Head, Is.EqualTo(0xAA)); // Assumendo ordine di inserimento
+            That(snake.Head, Is.EqualTo(0xAA)); // Assuming insertion order
 
             // Act
             system.Initialize();
 
             // Assert
-            // 1. Lo stato logico DEVE essere resettato
+            // 1. Logical state MUST be reset
             That(snake.Length, Is.Zero, "Length not reset.");
-            
-            // 2. La memoria fisica DEVE rimanere sporca (Ottimizzazione Performance)
-            // Accediamo alla memoria raw tramite la Queue esposta o unsafe
+
+            // 2. Physical memory MUST remain dirty (Performance Optimization)
+            // Access raw memory via exposed Queue or unsafe accessor
             ref var queue = ref GetQueue(ref snake);
             var bufferSpan = queue.Buffer;
 
-            // Verifichiamo che i byte non siano stati azzerati
-            // Se Initialize() facesse buffer.Clear(), questo test fallirebbe (ed è quello che vogliamo evitare per speed)
+            // Verify bytes were not zeroed
+            // If Initialize() called buffer.Clear(), this test would fail (violating speed requirement)
             var hasDirtyBytes = false;
             foreach (var val in bufferSpan)
             {
-                if (val != 0) 
-                {
-                    hasDirtyBytes = true;
-                    break;
-                }
+                if (val == 0) continue;
+                hasDirtyBytes = true;
+                break;
             }
 
-            That(hasDirtyBytes, Is.True, 
+            That(hasDirtyBytes, Is.True,
                 "PERFORMANCE WARNING: Initialize() is clearing the Queue Buffer. " +
                 "It should only reset indices (Head/Tail/Length) to be O(1).");
         }

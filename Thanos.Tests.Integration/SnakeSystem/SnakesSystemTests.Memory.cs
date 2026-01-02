@@ -8,9 +8,8 @@ namespace Thanos.Tests.Integration.SnakeSystem;
 
 public partial class SnakesSystemTests
 {
-    // --- 1. Infrastructure: Bypass Accessors ---
+    // --- Infrastructure: Bypass Accessors ---
     // These allow the test to "see" private fields required for topology verification.
-    // They must match the field names in the original structs exactly.
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_queue")]
     private static extern ref War.Structures.CircularQueue GetQueue(ref War.WarSnake snake);
@@ -33,13 +32,11 @@ public partial class SnakesSystemTests
                 var snakeNext = system[i + 1];
 
                 // 2. Queue Extraction
-                // Use UnsafeAccessor if you prefer encapsulation, or access ._queue directly if public.
                 ref var queueCurrent = ref GetQueue(ref snakeCurrent);
                 ref var queueNext = ref GetQueue(ref snakeNext);
 
                 // 3. Pointer Extraction via RAW/BUFFER
-                // We use the standard MemoryMarshal API to get the pointer to the start of the Buffer.
-                // This is stable and equivalent for stride calculation.
+                // Stable anchor for stride calculation
                 var ptrCurrent = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(queueCurrent.Raw));
                 var ptrNext = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(queueNext.Raw));
 
@@ -53,7 +50,6 @@ public partial class SnakesSystemTests
                     $"Actual stride: {actualStride}, Expected: {expectedStride}.");
 
                 // 6. Overlap Safety Check
-                // We verify that the allocated stride effectively covers the buffer size.
                 // Note: When measuring from QueueBuffer, the critical check is ensuring the NEXT buffer 
                 // starts after THIS buffer ends.
                 var bufferLen = (long)ctx.Layout.QueueBuffer.Length;
@@ -64,7 +60,7 @@ public partial class SnakesSystemTests
             }
         }
     }
-    
+
     [TestCaseSource(nameof(SystemScenarios))]
     public void CopyFrom_WhenSourceHasComplexState_ShouldCloneToDestination(SnakesSystemTestContext sourceContext)
     {
@@ -72,13 +68,15 @@ public partial class SnakesSystemTests
         // We infer parameters from the source context to ensure compatibility
         using var destinationContext = new SnakesSystemTestContext(
             sourceContext.MapName,
-            (ushort)(sourceContext.Layout.FoodBitboard.Count<ulong>() * 64), // Reverse engineering area from bitboard size approximation
+            // FIX: Rimosso il fattore '* 8'. 
+            // Count<ulong> * 64 ci dà un'area sufficiente a generare lo stesso numero di ulong nel layout.
+            (ushort)(sourceContext.Layout.Bitboard.Count<ulong>() * 64),
             sourceContext.Layout.QueueCapacity,
             (byte)sourceContext.ActiveCount,
             (byte)sourceContext.LayoutCapacity
         );
 
-        using (sourceContext) // Ensure source is disposed
+        using (sourceContext)
         {
             var source = sourceContext.Build();
             var destination = destinationContext.Build();
@@ -87,9 +85,7 @@ public partial class SnakesSystemTests
             for (var i = 0; i < sourceContext.ActiveCount; i++)
             {
                 var hp = (byte)(100 - i * 10);
-                // Create a body segment to verify queue copy
                 var body = new[] { (ushort)(i * 10), (ushort)(i * 10 + 1) };
-
                 source[i].Initialize(new Snake($"s{i}", hp, body));
             }
 
@@ -119,11 +115,11 @@ public partial class SnakesSystemTests
     [TestCaseSource(nameof(SystemScenarios))]
     public void CopyFrom_WhenDestinationIsModifiedAfterCopy_ShouldNotAffectSource(SnakesSystemTestContext sourceContext)
     {
-        // Scenario: Deep Copy verification
+        // Scenario: Deep Copy verification (Isolation)
 
         using var destinationContext = new SnakesSystemTestContext(
             sourceContext.MapName,
-            (ushort)(sourceContext.Layout.FoodBitboard.Count<ulong>() * 64),
+            sourceContext.Layout.Bitboard.Count<ulong>() * 64 * 8,
             sourceContext.Layout.QueueCapacity,
             (byte)sourceContext.ActiveCount,
             (byte)sourceContext.LayoutCapacity
@@ -141,7 +137,6 @@ public partial class SnakesSystemTests
             destination.CopyFrom(in source);
 
             // Modify Destination
-            // Use Indexer to get ref, then call method
             destination[0].UpdateAfterMove(3, false, 10); // Move head to 3, take damage
 
             // Assert
@@ -154,43 +149,43 @@ public partial class SnakesSystemTests
             That(source[0].HP, Is.EqualTo(100), "Source HP changed.");
         }
     }
-    
+
     [TestCaseSource(nameof(SystemScenarios))]
     public unsafe void CopyFrom_WhenExecuted_ShouldNotOverwriteBoundaryMemory(SnakesSystemTestContext sourceCtx)
     {
         // Scenario: Buffer Overrun Protection (Sentinel/Canary Check)
-        // Verifichiamo che CopyFrom rispetti rigorosamente la dimensione calcolata 
-        // e non scriva nemmeno un byte oltre la fine del blocco SnakesSystem.
-        // Questo simula la protezione delle Bitboard globali (Food/Hazards) che risiedono subito dopo.
+        // Verify CopyFrom strictly respects calculated size and does not write a single byte 
+        // beyond the SnakesSystem block.
+        // This simulates protection of adjacent global Bitboards (Food/Hazards) in the real Slot.
 
         using (sourceCtx)
         {
-            // 1. Arrange Source (Dati Validi)
+            // 1. Arrange Source (Valid Data)
             var source = sourceCtx.Build();
             source[0].Initialize(new Snake("filler", 100, [1, 2, 3]));
 
-            // 2. Arrange Destination (Allocazione Manuale "Oversized")
-            // Non usiamo il Context qui perché vogliamo controllo totale sui byte extra.
+            // 2. Arrange Destination (Manual "Oversized" Allocation)
+            // We don't use Context here because we want total control over extra bytes.
             ref readonly var layout = ref sourceCtx.Layout;
             var snakesCount = sourceCtx.LayoutCapacity;
-            
-            // Calcoliamo la dimensione esatta occupata dal sistema
+
+            // Calculate exact system size
             var systemBytes = layout.SnakeStride.Next * (nuint)snakesCount;
-            
-            // Allochiamo: Dimensione Sistema + Sentinella (8 byte / ulong)
+
+            // Allocate: System Size + Sentinel (8 bytes)
             const UIntPtr sentinelSize = sizeof(ulong);
             var totalAlloc = systemBytes + sentinelSize;
-            
+
             var destPtr = (byte*)NativeMemory.AlignedAlloc(totalAlloc, Constants.CacheLine);
-            
+
             try
             {
-                // Posizioniamo la Sentinella ESATTAMENTE alla fine del blocco SnakesSystem
+                // Place Sentinel EXACTLY at the end of SnakesSystem block
                 const ulong SentinelPattern = 0xDEADBEEF_DEADBEEF;
                 var sentinelPtr = (ulong*)(destPtr + systemBytes);
                 *sentinelPtr = SentinelPattern;
 
-                // Creiamo la vista Destination (limitata alla dimensione standard)
+                // Create Destination view (limited to standard size)
                 var destination = new SnakesSystem(destPtr, in layout, snakesCount);
 
                 // Act
@@ -198,8 +193,8 @@ public partial class SnakesSystemTests
 
                 // Assert
                 var actualSentinel = *sentinelPtr;
-                That(actualSentinel, Is.EqualTo(SentinelPattern), 
-                    $"Memory Overrun: CopyFrom ha corrotto la memoria successiva al blocco. " +
+                That(actualSentinel, Is.EqualTo(SentinelPattern),
+                    $"Memory Overrun: CopyFrom corrupted memory beyond the block. " +
                     $"Expected {SentinelPattern:X}, got {actualSentinel:X}.");
             }
             finally
