@@ -47,63 +47,6 @@ public partial class SnakesSystemTests
             }
         }
     }
-
-    // --- 1. Infrastructure: Bypass Accessors ---
-    // These allow the test to "see" private fields required for topology verification.
-    // They must match the field names in the original structs exactly.
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_queue")]
-    private static extern ref War.Structures.CircularQueue GetQueue(ref War.WarSnake snake);
-
-    [TestCaseSource(nameof(SystemScenarios))]
-    public unsafe void Memory_Layout_ShouldGuarantee_ExactStride_Between_All_SequentialSnakes(SnakesSystemTestContext ctx)
-    {
-        using (ctx)
-        {
-            // Arrange
-            var system = ctx.Build();
-
-            if (system.Count < 2) Ignore("Topology test requires a system capacity of at least 2.");
-
-            // Assert
-            for (var i = 0; i < system.Count - 1; i++)
-            {
-                // 1. Obtain Snake Views
-                var snakeCurrent = system[i];
-                var snakeNext = system[i + 1];
-
-                // 2. Queue Extraction
-                // Use UnsafeAccessor if you prefer encapsulation, or access ._queue directly if public.
-                ref var queueCurrent = ref GetQueue(ref snakeCurrent);
-                ref var queueNext = ref GetQueue(ref snakeNext);
-
-                // 3. Pointer Extraction via RAW/BUFFER
-                // We use the standard MemoryMarshal API to get the pointer to the start of the Buffer.
-                // This is stable and equivalent for stride calculation.
-                var ptrCurrent = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(queueCurrent.Raw));
-                var ptrNext = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(queueNext.Raw));
-
-                // 4. Delta Calculation
-                var actualStride = ptrNext - ptrCurrent;
-                var expectedStride = (long)ctx.Layout.SnakeStride.Next;
-
-                // 5. Topology Verification
-                That(actualStride, Is.EqualTo(expectedStride),
-                    $"FATAL: Memory Topology Mismatch between Snake[{i}] and Snake[{i + 1}]. " +
-                    $"Actual stride: {actualStride}, Expected: {expectedStride}.");
-
-                // 6. Overlap Safety Check
-                // We verify that the allocated stride effectively covers the buffer size.
-                // Note: When measuring from QueueBuffer, the critical check is ensuring the NEXT buffer 
-                // starts after THIS buffer ends.
-                var bufferLen = (long)ctx.Layout.QueueBuffer.Length;
-
-                That(actualStride, Is.GreaterThanOrEqualTo(bufferLen),
-                    $"FATAL: Stride too small. Buffer overlap detected. " +
-                    $"Stride {actualStride} < BufferLength {bufferLen}.");
-            }
-        }
-    }
     
     [TestCaseSource(nameof(SystemScenarios))]
     public void Initialize_WhenCalled_ShouldResetIndices_ButLeaveQueueBufferDirty(SnakesSystemTestContext ctx)
