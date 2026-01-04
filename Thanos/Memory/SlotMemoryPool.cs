@@ -46,7 +46,7 @@ public sealed unsafe class SlotMemoryPool : ISlotMemoryPool
     {
         // Costruiamo le view (ref struct) sulla memoria nativa "calda"
         BuildMemory(index, out var system, out var foodBitboard, out var hazardsBitboard, out var collisionsBitboard);
-        return new Arena(system, foodBitboard, hazardsBitboard, collisionsBitboard, _lookupsMemoryPool.NeighborsMatrix, _lookupsMemoryPool.CoordinatesMatrix);
+        return new Arena(system, foodBitboard, hazardsBitboard, collisionsBitboard, _lookupsMemoryPool.NeighborsMatrix);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
