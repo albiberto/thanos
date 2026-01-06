@@ -28,7 +28,7 @@ public partial class WarSnakeTests
         That(snake.Tail, Is.EqualTo(body[^1]), "Tail position mismatch (Queue Tail).");
 
         if (body.Length >= 2)
-            That(snake.ElementBeforeTail, Is.EqualTo(body[^2]), "ElementBeforeTail mismatch (Queue Neck).");
+            That(snake.PreTail, Is.EqualTo(body[^2]), "ElementBeforeTail mismatch (Queue Neck).");
 
         // 3. Bitboard Consistency (Indirect Properties)
         // A. Population Count Integrity

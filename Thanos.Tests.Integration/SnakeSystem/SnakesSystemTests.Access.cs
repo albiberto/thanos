@@ -32,7 +32,7 @@ public partial class SnakesSystemTests
 
             // 2. Structural Pointers
             That(me.Head, Is.EqualTo(expectedHead), "Me.Head mismatch.");
-            That(me.ElementBeforeTail, Is.EqualTo(expectedNeck), "Me.ElementBeforeTail mismatch.");
+            That(me.PreTail, Is.EqualTo(expectedNeck), "Me.ElementBeforeTail mismatch.");
             That(me.Tail, Is.EqualTo(expectedTail), "Me.Tail mismatch.");
 
             // 3. Structural Identity (Verify Reference)
@@ -97,7 +97,7 @@ public partial class SnakesSystemTests
 
                 // 2. Structural Pointers
                 That(snake.Head, Is.EqualTo(head), $"Snake {i} Head mismatch.");
-                That(snake.ElementBeforeTail, Is.EqualTo(elementBeforeTail), $"Snake {i} ElementBeforeTail mismatch.");
+                That(snake.PreTail, Is.EqualTo(elementBeforeTail), $"Snake {i} ElementBeforeTail mismatch.");
                 That(snake.Tail, Is.EqualTo(tail), $"Snake {i} Tail mismatch.");
             }
         }

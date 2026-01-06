@@ -8,7 +8,12 @@ using Thanos.War.Structures;
 
 namespace Thanos.War;
 
-public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard hazards, Bitboard snakes, NeighborsMatrix neighborsMatrix)
+public readonly ref struct Arena(
+    SnakesSystem system,
+    Bitboard food,
+    Bitboard hazards,
+    Bitboard snakes,
+    NeighborsMatrix neighborsMatrix)
 {
     public readonly SnakesSystem System = system;
     public readonly Bitboard Food = food;
@@ -28,17 +33,15 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         var board = request.Board;
 
         foreach (var snakeData in board.Snakes)
-        {
             for (var i = 0; i < orderedIds.Length; i++)
             {
                 if (orderedIds[i] != snakeData.Id) continue;
-                
+
                 var snake = System[i];
                 snake.Initialize(snakeData);
                 Snakes.Or(snake.Body);
                 break;
             }
-        }
 
         foreach (var coordinate in board.Food) Food.Set(coordinate);
         foreach (var coordinate in board.Hazards) Hazards.Set(coordinate);
@@ -73,7 +76,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             if (snake.IsDead) continue;
 
             var nextHead = _neighborsMatrix.Get(snake.Head, moves[snakeIndex]);
-            
+
             // Cache su stack
             nextHeads[snakeIndex] = nextHead;
             lengths[snakeIndex] = snake.Length;
@@ -82,20 +85,15 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             aliveMask |= 1 << snakeIndex;
 
             if (NeighborsMatrix.IsOutOfBound(nextHead))
-            {
                 deadMask |= 1 << snakeIndex;
-            } 
-            else if (Food.IsSet(nextHead)) 
-            {
-                eatMask |= 1 << snakeIndex;
-            }
+            else if (Food.IsSet(nextHead)) eatMask |= 1 << snakeIndex;
         }
 
         // --- FASE 2: Risoluzione Collisioni Corpi (Tail Chasing) ---
-        
+
         // wallsSurvivors: Serpenti vivi che NON si sono schiantati sui muri.
         var wallsSurvivorsMask = aliveMask & ~deadMask;
-        
+
         // movingTailsMask: Sottoinsieme dei sopravvissuti che NON mangiano.
         // Solo le code di questi serpenti libereranno la casella occupata.
         var movingTailsMask = wallsSurvivorsMask & ~eatMask;
@@ -108,7 +106,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             var nextHead = nextHeads[snakeIndex];
 
             // Se la casella è libera, siamo salvi.
-            if (Snakes.IsUnset(nextHead)) continue; 
+            if (Snakes.IsUnset(nextHead)) continue;
 
             // Se la casella è occupata, potremmo venir salvati da una coda che si sposta, cerchiamola
             var isMovingTail = false;
@@ -131,12 +129,12 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
 
         // --- FASE 3: Risoluzione Head-to-Head ---
         // bodyClashSurvivorsMask: Serpenti vivi che NON si sono schiantati contro altri serpenti o contro se stessi.
-        var bodyClashSurvivorsMask  = aliveMask & ~deadMask;
-        
+        var bodyClashSurvivorsMask = aliveMask & ~deadMask;
+
         // (x & (x-1)) != 0 controlla se c'è più di 1 bit settato (minimo 2 per collisione, ci devono essere due serpenti vivi almeno sull'arena)
-        if (bodyClashSurvivorsMask  != 0 && (bodyClashSurvivorsMask  & (bodyClashSurvivorsMask  - 1)) != 0)
+        if (bodyClashSurvivorsMask != 0 && (bodyClashSurvivorsMask & (bodyClashSurvivorsMask - 1)) != 0)
         {
-            var outerMask = bodyClashSurvivorsMask ;
+            var outerMask = bodyClashSurvivorsMask;
             while (outerMask != 0)
             {
                 var snakeIndex = BitOperations.TrailingZeroCount(outerMask);
@@ -145,14 +143,14 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
                 var headA = nextHeads[snakeIndex];
                 var lengthA = lengths[snakeIndex];
 
-                var innerMask = outerMask; 
+                var innerMask = outerMask;
                 while (innerMask != 0)
                 {
                     var enemyIndex = BitOperations.TrailingZeroCount(innerMask);
                     innerMask &= innerMask - 1;
 
                     if (headA != nextHeads[enemyIndex]) continue;
-                    
+
                     var lengthB = lengths[enemyIndex];
                     if (lengthA <= lengthB) deadMask |= 1 << snakeIndex;
                     if (lengthB <= lengthA) deadMask |= 1 << enemyIndex;
@@ -169,7 +167,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             commitMask &= commitMask - 1;
 
             var snake = System[snakeIndex];
-            
+
             // Rimuoviamo il vecchio corpo PRIMA di aggiornare
             Snakes.Xor(snake.Body);
 
@@ -189,59 +187,61 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             }
         }
     }
-
-    // --- MOVE GENERATION & VALIDATION ---
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte GetPlausibleMoves(int index)
     {
         var snake = System[index];
         if (snake.IsDead) return 0;
 
-        var myLen = snake.Length;
-        var mask = GetLegalMoves(snake.Head, snake.Tail, snake.ElementBeforeTail, index, myLen);
+        var mask = GetLegalMoves(snake.Head, snake.Tail, snake.Tail != snake.PreTail);
 
-        return mask == 0 ? (byte)0 : FilterRiskyMoves(mask, index, myLen, snake.Head);
-    }
-
-    // Overload di compatibilità per Engine (che potrebbe non avere la lunghezza)
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte GetLegalMoves(ushort head, ushort tail, ushort neck, int index) 
-        => GetLegalMoves(head, tail, neck, index, System[index].Length);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte GetLegalMoves(ushort headPosition, ushort tailPosition, ushort elementBeforeTailPosition, int heroIndex, int heroLength)
-    {
-        // 1. Single Fetch dei vicini
-        var neighbors = _neighborsMatrix.GetAll(headPosition);
-        byte legalMoves = 0;
-
-        // 2. Check scalare sulle 4 direzioni
-        // Nota: Passiamo i parametri necessari per evitare riletture
-        if (IsMoveSafeFromStatic(neighbors[0], tailPosition, elementBeforeTailPosition)) legalMoves |= Moves.Up;
-        if (IsMoveSafeFromStatic(neighbors[1], tailPosition, elementBeforeTailPosition)) legalMoves |= Moves.Down;
-        if (IsMoveSafeFromStatic(neighbors[2], tailPosition, elementBeforeTailPosition)) legalMoves |= Moves.Left;
-        if (IsMoveSafeFromStatic(neighbors[3], tailPosition, elementBeforeTailPosition)) legalMoves |= Moves.Right;
-
-        return legalMoves;
+        return mask == 0 ? (byte)0 : FilterRiskyMoves(mask, index, snake.Length, snake.Head);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort GetNewHeadPosition(ushort head, byte move) => _neighborsMatrix.Get(head, move);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsMoveSafeFromStatic(ushort pos, ushort tail, ushort neck)
+    public byte GetLegalMoves(ushort head, ushort tail, bool isUnrolled)
     {
-        if (!NeighborsMatrix.IsValid(pos)) return false;
-        if (Snakes.IsSet(pos))
+        var neighbors = _neighborsMatrix.GetAll(head);
+        byte moves = 0;
+
+        // 3. Unrolled Loop con la TUA logica esatta
+        
+        // --- UP ---
+        var p = neighbors[0];
+        if (NeighborsMatrix.IsValid(p))
         {
-            // Eccezioni: Coda (se non protetta dal collo)
-            if (pos != tail) return false;
-            if (pos == neck) return false;
-            // Cibo sulla coda -> Coda cresce -> Collisione
-            if (Food.IsSet(pos)) return false; 
+            // Se vuoto OK.
+            // Se è la coda: OK solo se srotolato E senza cibo.
+            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+                moves |= Moves.Up;
         }
-        return true;
+
+        // --- DOWN ---
+        p = neighbors[1];
+        if (NeighborsMatrix.IsValid(p))
+        {
+            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+                moves |= Moves.Down;
+        }
+
+        // --- LEFT ---
+        p = neighbors[2];
+        if (NeighborsMatrix.IsValid(p))
+        {
+            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+                moves |= Moves.Left;
+        }
+
+        // --- RIGHT ---
+        p = neighbors[3];
+        if (NeighborsMatrix.IsValid(p))
+        {
+            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+                moves |= Moves.Right;
+        }
+
+        return moves;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -278,7 +278,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         {
             if (i == myIndex) continue;
             var enemy = System[i];
-            
+
             // Se nemico morto o più piccolo, non è suicidio
             if (enemy.IsDead || enemy.Length < myLen) continue;
 
@@ -286,6 +286,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             var vEnemyHead = Vector64.Create(enemy.Head);
             if (Vector64.Equals(targetNeighbors, vEnemyHead) != Vector64<ushort>.Zero) return true;
         }
+
         return false;
     }
 
@@ -298,7 +299,7 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
         if (NeighborsMatrix.IsValid(neighbors[1]) && Snakes.IsUnset(neighbors[1])) return false;
         if (NeighborsMatrix.IsValid(neighbors[2]) && Snakes.IsUnset(neighbors[2])) return false;
         if (NeighborsMatrix.IsValid(neighbors[3]) && Snakes.IsUnset(neighbors[3])) return false;
-        
+
         return true;
     }
 

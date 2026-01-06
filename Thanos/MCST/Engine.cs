@@ -221,7 +221,7 @@ public sealed class Engine
         var arena = _slotPool.GetArena(_rootIndex);
         var me = arena.System[0];
         
-        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.ElementBeforeTail, 0);
+        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.PreTail, 0);
 
         if ((legalMoves & Moves.Up) != 0) return Moves.Up;
         if ((legalMoves & Moves.Down) != 0) return Moves.Down;

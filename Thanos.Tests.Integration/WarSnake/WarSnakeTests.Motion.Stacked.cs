@@ -56,7 +56,7 @@ public partial class WarSnakeTests
             That(snake.Tail, Is.EqualTo(oracleQueue.Peek()), "Tail mismatch.");
 
             if (body.Length >= 2)
-                That(snake.ElementBeforeTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
+                That(snake.PreTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
 
             var expectedUniqueBits = oracleQueue.Distinct().Count();
             That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), "PopCount mismatch.");

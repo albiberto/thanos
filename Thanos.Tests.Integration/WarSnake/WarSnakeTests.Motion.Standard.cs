@@ -43,7 +43,7 @@ public partial class WarSnakeTests
         if (body.Length > 2)
         {
             var expectedNeck = body[^3];
-            That(snake.ElementBeforeTail, Is.EqualTo(expectedNeck), "ElementBeforeTail (Neck) is incorrect.");
+            That(snake.PreTail, Is.EqualTo(expectedNeck), "ElementBeforeTail (Neck) is incorrect.");
         }
 
         // 3. Bitboard Consistency
@@ -86,7 +86,7 @@ public partial class WarSnakeTests
         // 3. Queue Geometry (Anchor Check)
         That(snake.Head, Is.EqualTo(targetPos), "Head mismatch.");
         That(snake.Tail, Is.EqualTo(currentTail), "Tail should NOT move when eating (Anchored).");
-        That(snake.ElementBeforeTail, Is.EqualTo(currentNeck), "Neck should remain unchanged.");
+        That(snake.PreTail, Is.EqualTo(currentNeck), "Neck should remain unchanged.");
 
         // 4. Bitboard Consistency
         That(snake.Body.IsSet(targetPos), Is.True, "New head bit missing.");

@@ -26,7 +26,7 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     // --- PROPRIETÀ E ACCESSORI ---
     public ushort Head => _queue.PeekHead;
     public ushort Tail => _queue.PeekTail;
-    public ushort ElementBeforeTail => _queue.PeekElementBeforeTail;
+    public ushort PreTail => _queue.PeekElementBeforeTail;
     public int Length => _queue.Length;
     public Bitboard Body => _bitboard;
     public int HP => _life.HP;
