@@ -40,14 +40,13 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
             }
         }
 
-        foreach (var p in board.Food) Food.Set(p);
-        foreach (var p in board.Hazards) Hazards.Set(p);
+        foreach (var coordinate in board.Food) Food.Set(coordinate);
+        foreach (var coordinate in board.Hazards) Hazards.Set(coordinate);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CloneFrom(in Arena source)
     {
-        // Semantica "Pull" (Io copio da te) coerente
         System.CopyFrom(in source.System);
         Food.CopyFrom(in source.Food);
         Hazards.CopyFrom(in source.Hazards);
@@ -59,44 +58,37 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SimulateTurn(ReadOnlySpan<byte> moves, int hazardDamage)
     {
-        // 1. Stack Allocation: Velocità luce, zero GC, zero Pool.
-        // Questi buffer vivono solo qui per evitare di riaccedere a System[i] (lento).
         Span<ushort> nextHeads = stackalloc ushort[Constants.MaxSnakesCount];
         Span<ushort> tails = stackalloc ushort[Constants.MaxSnakesCount];
         Span<int> lengths = stackalloc int[Constants.MaxSnakesCount];
 
-        // 2. Registri CPU per lo stato (Locals)
-        int aliveMask = 0;
-        int deadMask = 0;
-        int eatMask = 0;
+        var aliveMask = 0;
+        var deadMask = 0;
+        var eatMask = 0;
 
         // --- FASE 1: Snapshot & Move Calculation ---
-        for (var i = 0; i < System.Count; i++)
+        for (var snakeIndex = 0; snakeIndex < System.Count; snakeIndex++)
         {
-            var snake = System[i];
+            var snake = System[snakeIndex];
             if (snake.IsDead) continue;
 
-            var nextHead = _neighborsMatrix.Get(snake.Head, moves[i]);
+            var nextHead = _neighborsMatrix.Get(snake.Head, moves[snakeIndex]);
             
             // Cache su stack
-            nextHeads[i] = nextHead;
-            lengths[i] = snake.Length;
-            tails[i] = snake.Tail;
+            nextHeads[snakeIndex] = nextHead;
+            lengths[snakeIndex] = snake.Length;
+            tails[snakeIndex] = snake.Tail;
 
-            aliveMask |= 1 << i;
+            aliveMask |= 1 << snakeIndex;
 
-            // "The LightSpeed": If-Else a cascata per safety e velocità.
-            // Se è muro, NON controlliamo il cibo (evita IndexOutOfRangeException).
             if (NeighborsMatrix.IsOutOfBound(nextHead))
             {
-                deadMask |= 1 << i; // Muro -> Morte certa
+                deadMask |= 1 << snakeIndex;
             } 
             else if (Food.IsSet(nextHead)) 
             {
-                eatMask |= 1 << i;
+                eatMask |= 1 << snakeIndex;
             }
-            
-            // Nota: Non controlliamo i corpi qui. Deferiamo alla Fase 2 (Tail Chasing).
         }
 
         // --- FASE 2: Risoluzione Collisioni Corpi (Tail Chasing) ---
@@ -110,88 +102,90 @@ public readonly ref struct Arena(SnakesSystem system, Bitboard food, Bitboard ha
 
         while (wallsSurvivorsMask != 0)
         {
-            var i = BitOperations.TrailingZeroCount(wallsSurvivorsMask);
+            var snakeIndex = BitOperations.TrailingZeroCount(wallsSurvivorsMask);
             wallsSurvivorsMask &= wallsSurvivorsMask - 1;
 
-            var nextHead = nextHeads[i];
+            var nextHead = nextHeads[snakeIndex];
 
-            // Se la casella è libera staticamente, siamo salvi.
+            // Se la casella è libera, siamo salvi.
             if (Snakes.IsUnset(nextHead)) continue; 
 
-            // Se occupata, cerchiamo un "Salvatrice" (Snake J) che libera la coda.
-            var isSafeTail = false;
-            
+            // Se la casella è occupata, potremmo venir salvati da una coda che si sposta, cerchiamola
+            var isMovingTail = false;
             for (var j = 0; j < System.Count; j++)
             {
-                // Filtro Negativo: Saltiamo J se NON può salvarci.
-                // J fallisce se: È statico (Bit 0) OPPURE La sua coda non è dove vogliamo andare.
+                // Filtro Negativo: Scartiamo J se non libera la casella che ci serve.
+                // Saltiamo l'iterazione (continue) se:
+                // 1. La coda di J è statica (non si muoverà).
+                //    Non presente nella lista dei serpenti la cui coda si muoverà
+                // 2. La coda di J non coincide con la nostra destinazione (la posizione della mia futura testa).
                 if ((movingTailsMask & (1 << j)) == 0 || nextHead != tails[j]) continue;
 
                 // Se arriviamo qui: J si muove E libera esattamente nextHead.
-                isSafeTail = true;
+                isMovingTail = true;
                 break;
             }
 
-            if (!isSafeTail) deadMask |= 1 << i;
+            if (!isMovingTail) deadMask |= 1 << snakeIndex;
         }
 
         // --- FASE 3: Risoluzione Head-to-Head ---
-        var h2hCandidates = aliveMask & ~deadMask;
+        // bodyClashSurvivorsMask: Serpenti vivi che NON si sono schiantati contro altri serpenti o contro se stessi.
+        var bodyClashSurvivorsMask  = aliveMask & ~deadMask;
         
-        // (x & (x-1)) != 0 controlla se c'è più di 1 bit settato (minimo 2 per collisione)
-        if (h2hCandidates != 0 && (h2hCandidates & (h2hCandidates - 1)) != 0)
+        // (x & (x-1)) != 0 controlla se c'è più di 1 bit settato (minimo 2 per collisione, ci devono essere due serpenti vivi almeno sull'arena)
+        if (bodyClashSurvivorsMask  != 0 && (bodyClashSurvivorsMask  & (bodyClashSurvivorsMask  - 1)) != 0)
         {
-            var outerMask = h2hCandidates;
+            var outerMask = bodyClashSurvivorsMask ;
             while (outerMask != 0)
             {
-                var i = BitOperations.TrailingZeroCount(outerMask);
+                var snakeIndex = BitOperations.TrailingZeroCount(outerMask);
                 outerMask &= outerMask - 1;
 
-                var headA = nextHeads[i];
-                var lenA = lengths[i];
+                var headA = nextHeads[snakeIndex];
+                var lengthA = lengths[snakeIndex];
 
-                // Loop interno ottimizzato: controlla solo j > i
                 var innerMask = outerMask; 
                 while (innerMask != 0)
                 {
-                    var j = BitOperations.TrailingZeroCount(innerMask);
+                    var enemyIndex = BitOperations.TrailingZeroCount(innerMask);
                     innerMask &= innerMask - 1;
 
-                    if (headA == nextHeads[j])
-                    {
-                        var lenB = lengths[j];
-                        if (lenA <= lenB) deadMask |= 1 << i;
-                        if (lenB <= lenA) deadMask |= 1 << j;
-                    }
+                    if (headA != nextHeads[enemyIndex]) continue;
+                    
+                    var lengthB = lengths[enemyIndex];
+                    if (lengthA <= lengthB) deadMask |= 1 << snakeIndex;
+                    if (lengthB <= lengthA) deadMask |= 1 << enemyIndex;
                 }
             }
         }
 
         // --- FASE 4: Commit ---
+        // commitMask: Serpenti soravvisuti nelle faci precedenti, a questo punti alive mask contiene solo i sopravvisuti quindi uso direttamnte lei
         var commitMask = aliveMask;
         while (commitMask != 0)
         {
-            var i = BitOperations.TrailingZeroCount(commitMask);
+            var snakeIndex = BitOperations.TrailingZeroCount(commitMask);
             commitMask &= commitMask - 1;
 
-            var snake = System[i];
+            var snake = System[snakeIndex];
             
             // Rimuoviamo il vecchio corpo PRIMA di aggiornare
             Snakes.Xor(snake.Body);
 
-            if ((deadMask & (1 << i)) != 0)
+            if ((deadMask & (1 << snakeIndex)) != 0)
             {
                 snake.Kill();
             }
             else
             {
-                var eating = (eatMask & (1 << i)) != 0;
-                var damage = Hazards.IsSet(nextHeads[i]) ? hazardDamage : 0;
+                var eating = (eatMask & (1 << snakeIndex)) != 0;
+                var damage = Hazards.IsSet(nextHeads[snakeIndex]) ? hazardDamage : 0;
 
-                snake.UpdateAfterMove(nextHeads[i], eating, damage + 1);
+                snake.UpdateAfterMove(nextHeads[snakeIndex], eating, damage + 1);
 
                 Snakes.Or(snake.Body);
-                if (eating) Food.Unset(nextHeads[i]);
+                if (eating) Food.Unset(nextHeads[snakeIndex]);
             }
         }
     }
