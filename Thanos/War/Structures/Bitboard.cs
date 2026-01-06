@@ -45,4 +45,7 @@ public readonly ref partial struct Bitboard(Span<byte> raw)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(Bitboard destination) => Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(destination.Raw), ref MemoryMarshal.GetReference(Raw), (uint)Raw.Length);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyFrom(in Bitboard source) => Unsafe.CopyBlockUnaligned(ref MemoryMarshal.GetReference(Raw), ref MemoryMarshal.GetReference(source.Raw), (uint)Raw.Length);
 }
