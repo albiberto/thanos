@@ -187,120 +187,129 @@ public readonly ref struct Arena(
             }
         }
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte GetPlausibleMoves(int index)
     {
         var snake = System[index];
         if (snake.IsDead) return 0;
 
-        var mask = GetLegalMoves(snake.Head, snake.Tail, snake.Tail != snake.PreTail);
+        // 1. Fetch unico dalla memoria (SIMD Load)
+        var neighbors = _neighborsMatrix.GetAll(snake.Head);
 
-        return mask == 0 ? (byte)0 : FilterRiskyMoves(mask, index, snake.Length, snake.Head);
+        // 2. Estrazione scalare sui registri (Cost 0 dopo inlining)
+        var up = neighbors.GetElement(0);
+        var down = neighbors.GetElement(1);
+        var left = neighbors.GetElement(2);
+        var right = neighbors.GetElement(3);
+
+        // 3. Calcolo Legalità (Branchless friendly)
+        var mask = GetLegalMoves(up, down, left, right, snake.Tail, snake.Tail != snake.PreTail);
+
+        // 4. Filtro Rischi (Solo se necessario)
+        return mask == 0
+            ? (byte)0
+            : FilterRiskyMoves(up, down, left, right, mask, index, snake.Length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte GetLegalMoves(ushort head, ushort tail, bool isUnrolled)
+    public byte GetLegalMoves(ushort up, ushort down, ushort left, ushort right, ushort tail, bool isUnrolled)
     {
-        var neighbors = _neighborsMatrix.GetAll(head);
         byte moves = 0;
 
-        // 3. Unrolled Loop con la TUA logica esatta
-        
+        // Nota: Food.IsUnset è veloce, lo facciamo solo nel ramo 'else' (p == tail)
+        // L'ordine (IsUnset || ...) sfrutta lo short-circuit per il caso comune (casella vuota).
+
         // --- UP ---
-        var p = neighbors[0];
-        if (NeighborsMatrix.IsValid(p))
-        {
-            // Se vuoto OK.
-            // Se è la coda: OK solo se srotolato E senza cibo.
-            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+        if (NeighborsMatrix.IsValid(up))
+            if (Snakes.IsUnset(up) || (up == tail && isUnrolled && Food.IsUnset(up)))
                 moves |= Moves.Up;
-        }
 
         // --- DOWN ---
-        p = neighbors[1];
-        if (NeighborsMatrix.IsValid(p))
-        {
-            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+        if (NeighborsMatrix.IsValid(down))
+            if (Snakes.IsUnset(down) || (down == tail && isUnrolled && Food.IsUnset(down)))
                 moves |= Moves.Down;
-        }
 
         // --- LEFT ---
-        p = neighbors[2];
-        if (NeighborsMatrix.IsValid(p))
-        {
-            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+        if (NeighborsMatrix.IsValid(left))
+            if (Snakes.IsUnset(left) || (left == tail && isUnrolled && Food.IsUnset(left)))
                 moves |= Moves.Left;
-        }
 
         // --- RIGHT ---
-        p = neighbors[3];
-        if (NeighborsMatrix.IsValid(p))
-        {
-            if (Snakes.IsUnset(p) || (p == tail && isUnrolled && Food.IsUnset(p))) 
+        if (NeighborsMatrix.IsValid(right))
+            if (Snakes.IsUnset(right) || (right == tail && isUnrolled && Food.IsUnset(right)))
                 moves |= Moves.Right;
-        }
 
         return moves;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private byte FilterRiskyMoves(byte mask, int myIndex, int myLen, ushort head)
+    private byte FilterRiskyMoves(ushort up, ushort down, ushort left, ushort right, byte mask, int myIndex,
+        int myLength)
     {
-        var myNeighbors = _neighborsMatrix.GetAll(head);
+        // Check UP
+        if ((mask & Moves.Up) != 0 && !IsMoveSafeDynamic(up, myIndex, myLength))
+            mask ^= Moves.Up;
 
-        // Se la mossa è legale (bit a 1), controlliamo se è rischiosa (suicidio/vicolo cieco)
-        // Se rischiosa, spegniamo il bit con XOR (che funge da toggle off sicuro perché sappiamo che è 1)
-        if ((mask & Moves.Up) != 0 && !IsMoveSafeDynamic(myNeighbors[0], myIndex, myLen)) mask ^= Moves.Up;
-        if ((mask & Moves.Down) != 0 && !IsMoveSafeDynamic(myNeighbors[1], myIndex, myLen)) mask ^= Moves.Down;
-        if ((mask & Moves.Left) != 0 && !IsMoveSafeDynamic(myNeighbors[2], myIndex, myLen)) mask ^= Moves.Left;
-        if ((mask & Moves.Right) != 0 && !IsMoveSafeDynamic(myNeighbors[3], myIndex, myLen)) mask ^= Moves.Right;
+        // Check DOWN
+        if ((mask & Moves.Down) != 0 && !IsMoveSafeDynamic(down, myIndex, myLength))
+            mask ^= Moves.Down;
+
+        // Check LEFT
+        if ((mask & Moves.Left) != 0 && !IsMoveSafeDynamic(left, myIndex, myLength))
+            mask ^= Moves.Left;
+
+        // Check RIGHT
+        if ((mask & Moves.Right) != 0 && !IsMoveSafeDynamic(right, myIndex, myLength))
+            mask ^= Moves.Right;
 
         return mask;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsMoveSafeDynamic(ushort targetPos, int myIndex, int myLen)
+    private bool IsMoveSafeDynamic(ushort targetHead, int myIndex, int myLength)
     {
-        // Nota: IsValid già controllato prima, ma per sicurezza nel metodo privato lo teniamo
-        if (!NeighborsMatrix.IsValid(targetPos)) return false;
+        // 1. Fetch unico SIMD dei vicini della futura testa
+        var targetNeighbors = _neighborsMatrix.GetAll(targetHead);
 
-        var targetNeighbors = _neighborsMatrix.GetAll(targetPos);
-        if (IsSuicidal(targetNeighbors, myIndex, myLen)) return false;
-        if (IsDeadEnd(targetNeighbors)) return false;
-        return true;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsSuicidal(Vector64<ushort> targetNeighbors, int myIndex, int myLen)
-    {
+        // --- STEP A: HEAD-TO-HEAD (Suicide Check) ---
+        // Integrato qui per risparmiare una chiamata e riusare il registro 'targetNeighbors'
         for (var i = 0; i < System.Count; i++)
         {
             if (i == myIndex) continue;
             var enemy = System[i];
 
             // Se nemico morto o più piccolo, non è suicidio
-            if (enemy.IsDead || enemy.Length < myLen) continue;
+            if (enemy.IsDead || enemy.Length < myLength) continue;
 
-            // SIMD Check: Testa nemica adiacente?
+            // Se uno dei miei futuri vicini è la testa di un nemico pericoloso -> UNSAFE
             var vEnemyHead = Vector64.Create(enemy.Head);
-            if (Vector64.Equals(targetNeighbors, vEnemyHead) != Vector64<ushort>.Zero) return true;
+            if (Vector64.Equals(targetNeighbors, vEnemyHead) != Vector64<ushort>.Zero)
+                return false;
         }
 
+        // --- STEP B: DEAD END (Vicolo Cieco Check) ---
+        // Cerchiamo ALMENO UNA via di fuga libera.
+        // Basta un vicino Valido E Vuoto (IsUnset) per dire che non siamo in trappola immediata.
+
+        // UP
+        var n = targetNeighbors.GetElement(0);
+        if (NeighborsMatrix.IsValid(n) && Snakes.IsUnset(n)) return true;
+
+        // DOWN
+        n = targetNeighbors.GetElement(1);
+        if (NeighborsMatrix.IsValid(n) && Snakes.IsUnset(n)) return true;
+
+        // LEFT
+        n = targetNeighbors.GetElement(2);
+        if (NeighborsMatrix.IsValid(n) && Snakes.IsUnset(n)) return true;
+
+        // RIGHT
+        n = targetNeighbors.GetElement(3);
+        if (NeighborsMatrix.IsValid(n) && Snakes.IsUnset(n)) return true;
+
+        // Nessuna uscita trovata -> DEAD END -> UNSAFE
         return false;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsDeadEnd(Vector64<ushort> neighbors)
-    {
-        // Se c'è ALMENO una via libera (IsValid E Unset), NON è un DeadEnd.
-        // Accesso scalare rapido ai 4 elementi del vettore
-        if (NeighborsMatrix.IsValid(neighbors[0]) && Snakes.IsUnset(neighbors[0])) return false;
-        if (NeighborsMatrix.IsValid(neighbors[1]) && Snakes.IsUnset(neighbors[1])) return false;
-        if (NeighborsMatrix.IsValid(neighbors[2]) && Snakes.IsUnset(neighbors[2])) return false;
-        if (NeighborsMatrix.IsValid(neighbors[3]) && Snakes.IsUnset(neighbors[3])) return false;
-
-        return true;
     }
 
     public void SimulateRandomFoodSpawn(int foodSpawnChance, int minimumFood, int area)
