@@ -26,11 +26,13 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     // --- PROPRIETÀ E ACCESSORI ---
     public ushort Head => _queue.PeekHead;
     public ushort Tail => _queue.PeekTail;
-    public ushort PreTail => _queue.PeekElementBeforeTail;
+    public ushort PreTail => _queue.PreTail;
     public int Length => _queue.Length;
     public Bitboard Body => _bitboard;
     public int HP => _life.HP;
     public bool IsDead => _life.IsDead;
+    
+    public bool IsTailStacked => _queue.PeekTail == _queue.PreTail;
 
     // MODIFICA: Espone lo stato di crescita per l'euristica
     public bool IsGrowthPending => _life.IsGrowthPending;

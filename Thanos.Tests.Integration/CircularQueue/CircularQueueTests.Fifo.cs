@@ -60,7 +60,7 @@ public partial class CircularQueueTests
 
             That(queue.PeekHead, Is.EqualTo(expectedHead), $"Iter {i}: Head pointer mismatch.");
             That(queue.PeekTail, Is.EqualTo(expectedTail), $"Iter {i}: Tail pointer mismatch.");
-            That(queue.PeekElementBeforeTail, Is.EqualTo(expectedNeck), $"Iter {i}: Neck pointer mismatch.");
+            That(queue.PreTail, Is.EqualTo(expectedNeck), $"Iter {i}: Neck pointer mismatch.");
         }
     }
 
@@ -87,7 +87,7 @@ public partial class CircularQueueTests
         // Act
         // Queue has Length 1, so "ElementBeforeTail" logically doesn't exist.
         // But physically it does, and we expect it to be read.
-        var phantomNeck = queue.PeekElementBeforeTail;
+        var phantomNeck = queue.PreTail;
 
         // Assert
         That(phantomNeck, Is.EqualTo(0xBBBB), "Should read raw memory at (Tail + 1) regardless of logic.");

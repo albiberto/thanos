@@ -68,6 +68,7 @@ public readonly ref struct Arena(
         var aliveMask = 0;
         var deadMask = 0;
         var eatMask = 0;
+        var stackedMask = 0;
 
         // --- FASE 1: Snapshot & Move Calculation ---
         for (var snakeIndex = 0; snakeIndex < System.Count; snakeIndex++)
@@ -83,10 +84,15 @@ public readonly ref struct Arena(
             tails[snakeIndex] = snake.Tail;
 
             aliveMask |= 1 << snakeIndex;
-
+            if (snake.IsTailStacked) stackedMask |= 1 << snakeIndex;
             if (NeighborsMatrix.IsOutOfBound(nextHead))
+            {
                 deadMask |= 1 << snakeIndex;
-            else if (Food.IsSet(nextHead)) eatMask |= 1 << snakeIndex;
+            }
+            else if (Food.IsSet(nextHead))
+            {
+                eatMask |= 1 << snakeIndex;
+            }
         }
 
         // --- FASE 2: Risoluzione Collisioni Corpi (Tail Chasing) ---
@@ -168,22 +174,38 @@ public readonly ref struct Arena(
 
             var snake = System[snakeIndex];
 
-            // Rimuoviamo il vecchio corpo PRIMA di aggiornare
-            Snakes.Xor(snake.Body);
-
+            // CASO 1: MORTE (Full Clear)
             if ((deadMask & (1 << snakeIndex)) != 0)
             {
+                Snakes.Xor(snake.Body); // Rimuovi tutto
                 snake.Kill();
             }
+            // CASO 2: SOPRAVVISSUTO (Delta Update)
             else
             {
                 var eating = (eatMask & (1 << snakeIndex)) != 0;
                 var damage = Hazards.IsSet(nextHeads[snakeIndex]) ? hazardDamage : 0;
+                
+                var newHead = nextHeads[snakeIndex];
+                var oldTail = tails[snakeIndex];
 
-                snake.UpdateAfterMove(nextHeads[snakeIndex], eating, damage + 1);
+                // 1. Aggiornamento Stato Interno
+                snake.UpdateAfterMove(newHead, eating, damage + 1);
 
-                Snakes.Or(snake.Body);
-                if (eating) Food.Unset(nextHeads[snakeIndex]);
+                // 2. Aggiornamento Globale (Ottimizzato)
+                
+                // UNSET: Rimuoviamo la coda SOLO se:
+                // a) Non stiamo mangiando (altrimenti la coda cresce/resta ferma)
+                // b) La coda NON era impilata (check su registro stackedMask)
+                if (!eating && (stackedMask & (1 << snakeIndex)) == 0)
+                {
+                    Snakes.Unset(oldTail);
+                }
+
+                // SET: La testa vince sempre (anche se era la stessa cella della coda)
+                Snakes.Set(newHead);
+
+                if (eating) Food.Unset(newHead);
             }
         }
     }

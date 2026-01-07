@@ -33,7 +33,7 @@ public ref struct CircularQueue
         get => Buffer[_state.TailIndex & _mask];
     }
     
-    public readonly ushort PeekElementBeforeTail
+    public readonly ushort PreTail
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Buffer[(_state.TailIndex + 1) & _mask];
