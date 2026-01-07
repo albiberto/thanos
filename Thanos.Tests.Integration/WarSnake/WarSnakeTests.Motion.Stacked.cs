@@ -58,6 +58,12 @@ public partial class WarSnakeTests
             if (body.Length >= 2)
                 That(snake.PreTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
 
+            var expectedTail = oracleQueue.Peek();
+            var expectedNeck = oracleQueue.ElementAt(1);
+            var isOracleStacked = expectedTail == expectedNeck;
+
+            That(snake.IsTailStacked, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
+
             var expectedUniqueBits = oracleQueue.Distinct().Count();
             That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), "PopCount mismatch.");
 
@@ -81,7 +87,7 @@ public partial class WarSnakeTests
         foreach (var move in moves)
         {
             // 1. Reset for the new direction (Start fresh from center for each cardinal test)
-            context.Reset(); // <--- FIX APPLICATO QUI
+            context.Reset();
             snake.Initialize(in snakeData);
 
             var oracleQueue = new Queue<ushort>(body.Reverse());
@@ -89,7 +95,6 @@ public partial class WarSnakeTests
             var startPosition = oracleQueue.Peek();
 
             // 2. Define L-Shape Path: Primary Direction -> Clockwise Direction
-            // Example: Up (to Wall) -> Right (to Wall)
             var nextMove = move switch
             {
                 Moves.Up => Moves.Right,
@@ -112,8 +117,8 @@ public partial class WarSnakeTests
                 {
                     Moves.Up => env.Height - 1 - currY,
                     Moves.Right => env.Width - 1 - currX,
-                    Moves.Down => currY, // Distance to 0
-                    Moves.Left => currX, // Distance to 0
+                    Moves.Down => currY,
+                    Moves.Left => currX,
                     _ => 0
                 };
 
@@ -146,6 +151,12 @@ public partial class WarSnakeTests
                     That(snake.Tail, Is.EqualTo(startPosition), "Tail moved from anchor.");
                     That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
                     That(snake.Length, Is.EqualTo(oracleQueue.Count), "Length mismatch.");
+
+                    var expectedTail = oracleQueue.Peek();
+                    var expectedNeck = oracleQueue.ElementAt(1);
+                    var isOracleStacked = expectedTail == expectedNeck;
+
+                    That(snake.IsTailStacked, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
 
                     That(snake.Body.PopCount(), Is.EqualTo(oracleQueue.Distinct().Count()), "PopCount mismatch.");
                     That(snake.Body.IsSet(startPosition), Is.True, "Anchor bit lost.");
