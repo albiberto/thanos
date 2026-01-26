@@ -28,12 +28,12 @@ public class WarSnakeLifeTests
         life.ScheduleGrowth();
 
         // Act
-        life.SetHP(hp);
+        life.SetHp(hp);
 
         // Assert
         var expected = CalculateExpected(hp);
 
-        That(life.HP, Is.EqualTo(expected.Hp), $"HP mismatch for input {hp}");
+        That(life.Hp, Is.EqualTo(expected.Hp), $"HP mismatch for input {hp}");
         That(life.IsDead, Is.EqualTo(expected.IsDead), $"IsDead mismatch for input {hp}");
         That(life.IsGrowthPending, Is.False, "SetHP must reset any pending growth flag.");
     }
@@ -45,7 +45,7 @@ public class WarSnakeLifeTests
 
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(hp);
+        life.SetHp(hp);
 
         // Act
         life.Damage(DamageAmount);
@@ -53,7 +53,7 @@ public class WarSnakeLifeTests
         // Assert
         var expected = CalculateExpected(hp, DamageAmount);
 
-        That(life.HP, Is.EqualTo(expected.Hp), "HP check failed.");
+        That(life.Hp, Is.EqualTo(expected.Hp), "HP check failed.");
         That(life.IsDead, Is.EqualTo(expected.IsDead), "Death check failed.");
         That(life.IsGrowthPending, Is.False, "Normal damage must not trigger growth.");
     }
@@ -65,7 +65,7 @@ public class WarSnakeLifeTests
 
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(hp);
+        life.SetHp(hp);
 
         // Act
         life.Damage(DamageAmount);
@@ -73,7 +73,7 @@ public class WarSnakeLifeTests
         // Assert
         var expected = CalculateExpected(hp, DamageAmount);
 
-        That(life.HP, Is.EqualTo(expected.Hp), "HP check failed.");
+        That(life.Hp, Is.EqualTo(expected.Hp), "HP check failed.");
         That(life.IsDead, Is.EqualTo(expected.IsDead), "Death check failed.");
         That(life.IsGrowthPending, Is.False, "Hazard damage must not trigger growth.");
     }
@@ -83,13 +83,13 @@ public class WarSnakeLifeTests
     {
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(hp);
+        life.SetHp(hp);
 
         // Act
         life.Kill();
 
         // Assert
-        That(life.HP, Is.Zero, "HP must be 0 after Kill.");
+        That(life.Hp, Is.Zero, "HP must be 0 after Kill.");
         That(life.IsDead, Is.True, "IsDead must be true after Kill.");
         That(life.IsGrowthPending, Is.False, "Killing the snake must not trigger growth.");
     }
@@ -101,14 +101,14 @@ public class WarSnakeLifeTests
 
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(initialHp);
+        life.SetHp(initialHp);
 
         // Act
         life.FullCure();
 
         // Assert
         // Note: FullCure technically resurrects a dead snake (0 HP -> 100 HP).
-        That(life.HP, Is.EqualTo(ExpectedMaxHealth), "FullCure must restore exactly 100 HP.");
+        That(life.Hp, Is.EqualTo(ExpectedMaxHealth), "FullCure must restore exactly 100 HP.");
         That(life.IsDead, Is.False, "Snake must be alive after FullCure.");
         That(life.IsGrowthPending, Is.False, "FullCure (healing only) must not trigger growth by itself.");
     }
@@ -118,7 +118,7 @@ public class WarSnakeLifeTests
     {
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(initialHp);
+        life.SetHp(initialHp);
 
         // Act
         life.ScheduleGrowth();
@@ -132,7 +132,7 @@ public class WarSnakeLifeTests
     {
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(initialHp);
+        life.SetHp(initialHp);
         life.ScheduleGrowth();
 
         // Act
@@ -148,7 +148,7 @@ public class WarSnakeLifeTests
     {
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(initialHp);
+        life.SetHp(initialHp);
 
         // Act
         var result = life.ConsumePendingGrowth();
@@ -162,7 +162,7 @@ public class WarSnakeLifeTests
     {
         // Arrange
         var life = new WarSnakeLife();
-        life.SetHP(initialHp);
+        life.SetHp(initialHp);
 
         // --- TURN 1: Eat Food ---
         life.ScheduleGrowth();

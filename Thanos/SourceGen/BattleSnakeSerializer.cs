@@ -12,14 +12,14 @@ public partial class BattleSnakeSerializerContext : JsonSerializerContext;
 
 public static class BattleSnakeSerializer
 {
-    private static readonly BattleSnakeSerializerContext?[] _fastContextCache = new BattleSnakeSerializerContext[32];
+    private static readonly BattleSnakeSerializerContext?[] FastContextCache = new BattleSnakeSerializerContext[32];
 
     static BattleSnakeSerializer()
     {
         // Pre-warm common sizes
-        _fastContextCache[7] = CreateContext(7);   // Small
-        _fastContextCache[11] = CreateContext(11); // Standard
-        _fastContextCache[19] = CreateContext(19); // Large
+        FastContextCache[7] = CreateContext(7);   // Small
+        FastContextCache[11] = CreateContext(11); // Standard
+        FastContextCache[19] = CreateContext(19); // Large
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,13 +62,13 @@ public static class BattleSnakeSerializer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static BattleSnakeSerializerContext GetContextForWidth(int width)
     {
-        if (width >= _fastContextCache.Length) return CreateContext(width);
+        if (width >= FastContextCache.Length) return CreateContext(width);
         
-        var ctx = _fastContextCache[width];
+        var ctx = FastContextCache[width];
         if (ctx is not null) return ctx;
         
         // Lazy init per dimensioni non standard ma piccole
-        return _fastContextCache[width] = CreateContext(width);
+        return FastContextCache[width] = CreateContext(width);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

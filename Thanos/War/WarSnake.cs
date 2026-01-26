@@ -13,7 +13,7 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
 
     public void Initialize(in Snake snakeData)
     {
-        _life.SetHP(snakeData.Health);
+        _life.SetHp(snakeData.Health);
 
         for (var i = snakeData.Body.Length - 1; i >= 0; i--)
         {
@@ -29,7 +29,7 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public ushort PreTail => _queue.PreTail;
     public int Length => _queue.Length;
     public Bitboard Body => _bitboard;
-    public int HP => _life.HP;
+    public int HP => _life.Hp;
     public bool IsDead => _life.IsDead;
     
     public bool IsTailStacked => _queue.PeekTail == _queue.PreTail;
