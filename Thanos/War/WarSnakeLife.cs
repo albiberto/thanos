@@ -8,18 +8,18 @@ public struct WarSnakeLife
 {
     private const byte FullHealth = 100;
 
-    private byte _credits;
+    public byte Credits { get; private set; }
 
     public byte Hp { get; private set; }
 
     public readonly bool IsDead => Hp <= 0;
-    public readonly bool IsGrowthPending => _credits != 0;
+    public readonly bool IsGrowthPending => Credits != 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetHp(byte hp)
     {
         Hp = hp;
-        _credits = 0;
+        Credits = 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -30,13 +30,13 @@ public struct WarSnakeLife
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ScheduleGrowth() => _credits++;
+    public void ScheduleGrowth() => Credits++;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ConsumePendingGrowth()
     {
-        if (_credits == 0) return false;
-        _credits--;
+        if (Credits == 0) return false;
+        Credits--;
         return true;
     }
 

@@ -179,19 +179,51 @@ public class WarSnakeLifeTests
     }
 
     [Test]
-    public void ScheduleGrowth_WhenCalledTwiceBeforeConsume_ShouldNotStack_ButRemainSet()
+    public void ScheduleGrowth_WhenSaturatedAtMaxByte_ShouldHandle255CreditsWithoutOverflow()
     {
         // Arrange
         var life = new WarSnakeLife();
+        life.SetHp(100);
 
-        // Act
-        life.ScheduleGrowth();
-        life.ScheduleGrowth(); // Idempotent
+        // Physical limit of the byte counter (0-255)
+        const int maxCredits = 255;
 
-        var result = life.ConsumePendingGrowth();
+        // Act & Assert: Accumulation Phase
+        // Verify increment integrity and property exposure
+        for (var i = 1; i <= maxCredits; i++)
+        {
+            life.ScheduleGrowth();
 
-        // Assert
-        That(result, Is.True, "Should still return true.");
-        That(life.IsGrowthPending, Is.False, "Flag should be consumed completely (no stacking).");
+            That(life.IsGrowthPending, Is.True, $"Growth must be pending after {i} increments.");
+            That(life.Credits, Is.EqualTo((byte)i), $"Internal Credits counter mismatch at step {i}.");
+        }
+
+        // Act & Assert: Consumption Phase
+        // Verify deterministic drainage of the stacked credits
+        for (var i = maxCredits; i >= 1; i--)
+        {
+            That(life.Credits, Is.EqualTo((byte)i), $"Credits count mismatch before consumption at step {i}.");
+
+            var result = life.ConsumePendingGrowth();
+            That(result, Is.True, $"Consumption failed at remaining count: {i}");
+
+            if (i > 1)
+            {
+                That(life.IsGrowthPending, Is.True, $"Growth should still be pending with {i - 1} credits left.");
+                That(life.Credits, Is.EqualTo((byte)(i - 1)), $"Credits count mismatch after consumption at step {i}.");
+            }
+            else
+            {
+                That(life.IsGrowthPending, Is.False, "Growth flag must be cleared exactly after the 255th consumption.");
+                That(life.Credits, Is.Zero, "Credits must be zero after final consumption.");
+            }
+        }
+
+        var finalResult = life.ConsumePendingGrowth();
+        var isStillPending = life.IsGrowthPending;
+
+        That(finalResult, Is.False, "Underflow protection: 256th consumption must return false.");
+        That(isStillPending, Is.False, "IsGrowthPending must remain false after full drainage.");
+        That(life.Credits, Is.Zero, "Credits property must remain zero on underflow attempt.");
     }
 }
