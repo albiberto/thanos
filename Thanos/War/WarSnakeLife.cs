@@ -16,7 +16,11 @@ public struct WarSnakeLife
     public readonly bool IsGrowthPending => _credits != 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void SetHp(byte hp) => Hp = hp;
+    public void SetHp(byte hp)
+    {
+        Hp = hp;
+        _credits = 0;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Damage(byte amount)
@@ -41,7 +45,4 @@ public struct WarSnakeLife
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void FullCure() => Hp = FullHealth;
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ResetStack() => _credits = 0;
 }

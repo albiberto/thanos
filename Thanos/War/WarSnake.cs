@@ -15,7 +15,6 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public void Initialize(in Snake snakeData)
     {
         _life.SetHp(snakeData.Health);
-        _life.ResetStack();
 
         var body = snakeData.Body;
         var length = body.Length;
