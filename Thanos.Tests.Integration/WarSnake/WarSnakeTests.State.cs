@@ -1,5 +1,5 @@
 using Thanos.SourceGen;
-using Thanos.Tests.Integration.WarSnake.Support;
+using Thanos.Tests.Integration.Support;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.WarSnake;

@@ -1,5 +1,5 @@
 using System.Numerics;
-using Thanos.Tests.Integration.WarSnake.Support;
+using Thanos.Tests.Integration.Support;
 using Thanos.War;
 using Thanos.War.Structures;
 

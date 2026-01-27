@@ -1,4 +1,4 @@
-namespace Thanos.Tests.Integration.WarSnake.Support;
+namespace Thanos.Tests.Integration.Support;
 
 public static class BodyBuilder
 {
