@@ -68,7 +68,7 @@ public readonly ref struct Arena(
         var aliveMask = 0;
         var deadMask = 0;
         var eatMask = 0;
-        var stackedMask = 0;
+        var ateMask = 0;
 
         // --- PHASE 1: Snapshot & Move Calculation ---
         // GOAL: Calculate intended moves and build bitmasks for fast logic.
@@ -97,7 +97,7 @@ public readonly ref struct Arena(
 
             // Check if the tail is "Stacked" (Pending Growth).
             // If TRUE, the tail is anchored and will NOT move even if we don't eat.
-            if (snake.IsGrowthPending) stackedMask |= 1 << snakeIndex;
+            if (snake.IsGrowthPending) ateMask |= 1 << snakeIndex;
 
             // 5. Evaluate Immediate Consequences
             if (NeighborsMatrix.IsOutOfBound(nextHead))
@@ -110,15 +110,15 @@ public readonly ref struct Arena(
                 eatMask |= 1 << snakeIndex;
         }
 
-        // --- FASE 2: Risoluzione Collisioni Corpi (Tail Chasing) ---
-
-        // wallsSurvivors: Serpenti vivi che NON si sono schiantati sui muri.
+        // --- PHASE 2: Body Collision Resolution (Tail Chasing) ---
+        // wallsSurvivors: Snakes alive that did NOT crash into walls.
         var wallsSurvivorsMask = aliveMask & ~deadMask;
 
-        // movingTailsMask: Sottoinsieme dei sopravvissuti che NON mangiano.
-        // Solo le code di questi serpenti libereranno la casella occupata.
-        var movingTailsMask = wallsSurvivorsMask & ~eatMask;
-
+        // movingTailsMask: Snakes that will effectively clear their tail position.
+        // 1. Survivors that are NOT eating AND NOT stacked (tail moves forward).
+        // 2. Snakes that died (deadMask), because their entire body (including tail) is removed.
+        var movingTailsMask = (wallsSurvivorsMask & ~eatMask & ~ateMask) | deadMask;
+        
         while (wallsSurvivorsMask != 0)
         {
             var snakeIndex = BitOperations.TrailingZeroCount(wallsSurvivorsMask);
@@ -126,24 +126,27 @@ public readonly ref struct Arena(
 
             var nextHead = nextHeads[snakeIndex];
 
-            // Se la casella è libera, siamo salvi.
+            // If the tile is free, we are safe (for now).
             if (Snakes.IsUnset(nextHead)) continue;
 
-            // Se la casella è occupata, potremmo venir salvati da una coda che si sposta, cerchiamola
+            // If occupied, check if it's a tail that is moving away.
             var isMovingTail = false;
 
-            // Check against all potential moving tails
-            while (movingTailsMask != 0)
+            // Important: Make a local copy of the mask to iterate without destroying the original for others.
+            var potentialMovers = movingTailsMask; 
+            while (potentialMovers != 0)
             {
-                var j = BitOperations.TrailingZeroCount(movingTailsMask);
-                movingTailsMask &= movingTailsMask - 1;
+                var j = BitOperations.TrailingZeroCount(potentialMovers);
+                potentialMovers &= potentialMovers - 1;
 
+                // If my target is J's tail, and J is moving its tail (or dying), the spot is safe.
                 if (tails[j] != nextHead) continue;
+                
                 isMovingTail = true;
                 break;
             }
 
-            if (!isMovingTail) deadMask |= 1 << i;
+            if (!isMovingTail) deadMask |= 1 << snakeIndex;
         }
 
         // --- PHASE 3: Head-to-Head Resolution ---
@@ -183,15 +186,14 @@ public readonly ref struct Arena(
         var survivorsMask = 0;
 
         // Pass A: Deaths, Internal Updates, Tail Clears
-        var commitMask = aliveMask;
-        while (commitMask != 0)
+        while (aliveMask != 0)
         {
-            var i = BitOperations.TrailingZeroCount(commitMask);
-            commitMask &= commitMask - 1;
+            var snakeId = BitOperations.TrailingZeroCount(aliveMask);
+            aliveMask &= aliveMask - 1;
 
-            var snake = System[i];
+            var snake = System[snakeId];
 
-            if ((deadMask & (1 << i)) != 0)
+            if ((deadMask & (1 << snakeId)) != 0)
             {
                 // Death: Remove entire body from global bitboard
                 Snakes.Xor(snake.Body);
@@ -200,26 +202,26 @@ public readonly ref struct Arena(
             else
             {
                 // Survivor
-                var eating = (eatMask & (1 << i)) != 0;
-                var damage = Hazards.IsSet(nextHeads[i]) ? hazardDamage : 0;
+                var eating = (eatMask & (1 << snakeId)) != 0;
+                var damage = Hazards.IsSet(nextHeads[snakeId]) ? hazardDamage : 0;
 
                 // 1. Update internal state
                 // Standard Rules: 1 HP decay per turn + Hazard damage
-                snake.UpdateAfterMove(nextHeads[i], eating, damage + 1);
+                snake.UpdateAfterMove(nextHeads[snakeId], eating, damage + 1);
 
                 switch (eating)
                 {
                     // 2. Global Board: Remove Old Tail
                     // Only if not eating AND not previously stacked/anchored
-                    case false when (stackedMask & (1 << i)) == 0:
-                        Snakes.Unset(tails[i]);
+                    case false when (ateMask & (1 << snakeId)) == 0:
+                        Snakes.Unset(tails[snakeId]);
                         break;
                     case true:
-                        Food.Unset(nextHeads[i]);
+                        Food.Unset(nextHeads[snakeId]);
                         break;
                 }
 
-                survivorsMask |= 1 << i;
+                survivorsMask |= 1 << snakeId;
             }
         }
 

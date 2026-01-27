@@ -27,7 +27,7 @@ public static class ZobristHasher
             // Combina l'hash con l'indice e la salute
             hash ^= i; // Assicura che l'HP del Serpente 0 sia diverso da quello del Serpente 1
             hash = long.RotateLeft(hash, 7);
-            hash ^= snake.HP;
+            hash ^= snake.Hp;
             hash = long.RotateLeft(hash, 13);
             hash ^= snake.Length;
             hash = long.RotateLeft(hash, 11);

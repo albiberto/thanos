@@ -24,6 +24,13 @@ public interface INodeMemoryPool : IDisposable
     /// Ritorna -1 se il pool è pieno.
     /// </summary>
     int Allocate();
+    
+    /// <summary>
+    /// Alloca un blocco contiguo di nodi in modo atomico.
+    /// </summary>
+    /// <param name="count">Numero di nodi da allocare.</param>
+    /// <returns>L'indice del primo nodo del blocco, o -1 se il pool è esaurito.</returns>
+    int AllocateBatch(int count);
 
     /// <summary>
     /// Resetta il puntatore di allocazione a 1 (0 è riservato).

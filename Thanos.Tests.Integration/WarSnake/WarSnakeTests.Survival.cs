@@ -22,7 +22,7 @@ public partial class WarSnakeTests
 
         // Assert: Snake lives, grows, and heals
         That(snake.IsDead, Is.False, "Snake should satisfy hunger before starving.");
-        That(snake.HP, Is.EqualTo(100), "Health should be fully restored.");
+        That(snake.Hp, Is.EqualTo(100), "Health should be fully restored.");
         That(snake.Length, Is.EqualTo(4), "Snake should grow.");
         That(snake.Head, Is.EqualTo(nextPos), "Snake should move to food.");
     }
@@ -43,7 +43,7 @@ public partial class WarSnakeTests
         snake.UpdateAfterMove(nextPos, false, 1);
 
         // Assert: Snake dies but position updates (for collision resolution)
-        That(snake.HP, Is.EqualTo(0), "HP should drop to 0.");
+        That(snake.Hp, Is.EqualTo(0), "HP should drop to 0.");
         That(snake.IsDead, Is.True, "Snake should be dead.");
         That(snake.Head, Is.EqualTo(nextPos), "Head position should update even on death turn.");
     }
@@ -65,7 +65,7 @@ public partial class WarSnakeTests
         snake.UpdateAfterMove(nextPos, false, hazardDamage);
 
         // Assert: Dies correctly without underflow
-        That(snake.HP, Is.EqualTo(0), "HP should be zeroed.");
+        That(snake.Hp, Is.EqualTo(0), "HP should be zeroed.");
         That(snake.IsDead, Is.True, "Snake should die from hazard damage.");
     }
 
@@ -90,7 +90,7 @@ public partial class WarSnakeTests
         // Assert
         var expectedHp = startHp - damage;
 
-        That(snake.HP, Is.EqualTo(expectedHp), "HP calculation error.");
+        That(snake.Hp, Is.EqualTo(expectedHp), "HP calculation error.");
         That(snake.IsDead, Is.False, "Snake should strictly survive positive HP.");
         That(snake.Head, Is.EqualTo(nextPos), "Snake should complete the move.");
     }
@@ -112,8 +112,8 @@ public partial class WarSnakeTests
         snake.UpdateAfterMove(nextPos, true, 0);
 
         // Assert
-        That(snake.HP, Is.EqualTo(100), "HP should be capped at 100.");
+        That(snake.Hp, Is.EqualTo(100), "HP should be capped at 100.");
         // Regression Check: ensure bytes don't overflow/wrap around
-        That(snake.HP, Is.LessThanOrEqualTo(100));
+        That(snake.Hp, Is.LessThanOrEqualTo(100));
     }
 }

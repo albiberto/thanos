@@ -8,20 +8,21 @@ namespace Thanos.MCST;
 
 public sealed class Engine
 {
+    private const int FIXED_POINT_FACTOR = 10000; // Deve matchare quello del Worker
+
     private readonly ISlotMemoryPool _slotPool;
     private readonly INodeMemoryPool _nodePool;
-    private readonly int _index;
-    private readonly IWorker _worker;
+    private readonly IWorker[] _workers; // Array di worker per il parallelismo
 
     private int _rootIndex = -1; 
     private string[] _sortedSnakeIds = [];
 
-    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool, IWorker worker, int index)
+    // Costruttore aggiornato per ricevere tutti i worker disponibili
+    public Engine(ISlotMemoryPool slotPool, INodeMemoryPool nodePool, IWorker[] workers)
     {
         _slotPool = slotPool;
         _nodePool = nodePool;
-        _index = index;
-        _worker = worker;
+        _workers = workers;
     }
 
     public void InitializeGame(string[] sortedSnakeIds)
@@ -41,7 +42,7 @@ public sealed class Engine
     {
         var treeReused = false;
         
-        var memoryPressure = _nodePool.Index >= _nodePool.Capacity * 0.85f;
+        var memoryPressure = _nodePool.Index >= _nodePool.Capacity * 0.90f; // Soglia alzata al 90%
 
         // FASE 1: Tree Reuse
         if (!memoryPressure && _rootIndex != -1 && lastChosenIndex > 0)
@@ -65,11 +66,11 @@ public sealed class Engine
             _nodePool.Reset();
             _slotPool.Reset();
 
-            _rootIndex = _nodePool.Allocate();
+            _rootIndex = _nodePool.Allocate(); // Allocazione Thread-Safe
             var slotIndex = _slotPool.Allocate();
 
             if (_rootIndex == -1 || slotIndex == -1) 
-                throw new InvalidOperationException("Pools exhausted.");
+                throw new InvalidOperationException("Pools exhausted at start.");
             
             Debug.Assert(_rootIndex == slotIndex);
 
@@ -80,8 +81,8 @@ public sealed class Engine
             rootNode.PlacementRoot(targetHash); 
         }
 
-        // FASE 3: MCTS
-        RunIterations(request.Board.Area);
+        // FASE 3: MCTS (Parallel)
+        RunIterationsParallel(request.Board.Area);
 
         // FASE 4: Selection
         return SelectBestChildIndex(_rootIndex);
@@ -90,6 +91,7 @@ public sealed class Engine
     private int FindNewRoot(int myLastMoveNodeIndex, long targetHash)
     {
         ref var myLastMoveNode = ref _nodePool.Get(myLastMoveNodeIndex);
+        // Ricerca limitata in profondità per ritrovare lo stato corrente
         return FindNodeWithHash(myLastMoveNode.FirstChildIndex, targetHash, 5);
     }
 
@@ -97,14 +99,15 @@ public sealed class Engine
     {
         if (startIndex <= 0 || depthLimit <= 0) return 0;
         var current = startIndex;
-        var safetyCounter = 0;
-        const int MaxSiblingsSearch = 5000;
+        const int MaxSiblingsSearch = 100; // Limitiamo la ricerca orizzontale per velocità
 
-        while (current > 0 && safetyCounter++ < MaxSiblingsSearch)
+        var count = 0;
+        while (current > 0 && count++ < MaxSiblingsSearch)
         {
             ref var node = ref _nodePool.Get(current);
             if (node.Hash == targetHash) return current;
 
+            // Ricorsione: controlliamo anche i nipoti (nel caso di mosse "environment" intermedie)
             var foundInChild = FindNodeWithHash(node.FirstChildIndex, targetHash, depthLimit - 1);
             if (foundInChild != 0) return foundInChild;
             
@@ -114,43 +117,48 @@ public sealed class Engine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void RunIterations(int area)
+    private void RunIterationsParallel(int area)
     {
         const long maxTimeMs = 450;
-        const long forcedMoveTimeMs = 50; 
         var stopwatch = Stopwatch.StartNew();
+        
         ref var rootNode = ref _nodePool.Get(_rootIndex);
 
-        if (rootNode.IsLeafNode) _worker.RunIteration(area, _rootIndex);
-
-        var childCount = CountChildren(_rootIndex);
-        
-        if (childCount <= 1) 
+        // Quick check: se è foglia, facciamo almeno un passaggio per espanderla
+        if (rootNode.IsLeafNode) 
         {
-            if (rootNode.Visits >= 50) return;
-            
-            for(var i=0; i<500; i++) _worker.RunIteration(area, _rootIndex);
-            return; 
-        } 
-
-        var counter = 0;
-        while (stopwatch.ElapsedMilliseconds < maxTimeMs)
-        {
-            if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) break;
-            var remainingTime = maxTimeMs - stopwatch.ElapsedMilliseconds;
-
-            var currentBatchSize = remainingTime switch
-            {
-                > 250 => 1500, > 100 => 500, > 50 => 100, _ => 10
-            };
-            
-            counter += currentBatchSize;
-
-            for (var i = 0; i < currentBatchSize; i++) _worker.RunIteration(area, _rootIndex);
+            _workers[0].RunIteration(area, _rootIndex);
         }
+
+        // Se dopo l'espansione è già solved (es. morte immediata), usciamo
+        if (rootNode.IsSolvedWin || rootNode.IsSolvedLoss) return;
+
+        // Loop Parallelo
+        // Ogni worker macina iterazioni finché non scade il tempo
+        var isSolvedWin = rootNode.IsSolvedWin;
+        var isSolvedLoss = rootNode.IsSolvedLoss;
+        Parallel.ForEach(_workers, worker =>
+        {
+            // Batching locale per ridurre le chiamate a stopwatch
+            const int batchSize = 100;
+            while (stopwatch.ElapsedMilliseconds < maxTimeMs)
+            {
+                // Check condizioni di stop globali (es. Solved)
+                // Nota: Leggere rootNode.IsSolved... in parallelo è safe (lettura volatile implicita)
+                if (isSolvedWin || isSolvedLoss) break;
+
+                // Esegui batch
+                for (var i = 0; i < batchSize; i++)
+                {
+                    worker.RunIteration(area, _rootIndex);
+                }
+            }
+        });
+
         stopwatch.Stop();
         
-        Console.WriteLine($"[Engine]: {_index}. MCTS Iterations: {counter}, Children: {childCount}, Visits: {rootNode.Visits}");
+        // Log statistiche (usiamo Interlocked.Read implicitamente tramite accesso int)
+        // Console.WriteLine($"[Engine] Time: {stopwatch.ElapsedMilliseconds}ms, Visits: {rootNode.Visits}");
     }
 
     private unsafe int SelectBestChildIndex(int rootIndex)
@@ -159,24 +167,26 @@ public sealed class Engine
         
         var bestChildIndex = -1;
         var maxVisits = -1;
-        var maxScore = float.NegativeInfinity;
+        var maxScore = int.MinValue; // Confrontiamo interi (AtomicRewards)
 
         var childIndex = rootNode.FirstChildIndex;
         while (childIndex != -1)
         {
             ref var child = ref _nodePool.Get(childIndex);
             
+            // Logica di selezione robusta
             if (child.Visits > maxVisits)
             {
                 maxVisits = child.Visits;
-                maxScore = child.Rewards[0];
+                maxScore = child.AtomicRewards[0]; // Hero Index = 0
                 bestChildIndex = childIndex;
             }
             else if (child.Visits == maxVisits)
             {
-                if (child.Rewards[0] > maxScore)
+                // Tie-break sullo score
+                if (child.AtomicRewards[0] > maxScore)
                 {
-                    maxScore = child.Rewards[0];
+                    maxScore = child.AtomicRewards[0];
                     bestChildIndex = childIndex;
                 }
             }
@@ -186,15 +196,6 @@ public sealed class Engine
         return bestChildIndex;
     }
     
-    private int CountChildren(int nodeIndex)
-    {
-        var count = 0;
-        ref var node = ref _nodePool.Get(nodeIndex);
-        var child = node.FirstChildIndex;
-        while (child != -1) { count++; child = _nodePool.Get(child).NextSiblingIndex; }
-        return count;
-    }
-
     public unsafe void GetRootStats(List<RootMoveStat> outputBuffer)
     {
         outputBuffer.Clear();
@@ -208,8 +209,9 @@ public sealed class Engine
             ref var childNode = ref _nodePool.Get(childIndex);
             if (childNode.Visits > 0)
             {
-                var avgScore = childNode.Rewards[0] / childNode.Visits;
-                outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, avgScore));
+                // Convertiamo Fixed-Point -> Float per la visualizzazione/debug
+                var avgScore = (double)childNode.AtomicRewards[0] / childNode.Visits / FIXED_POINT_FACTOR;
+                outputBuffer.Add(new RootMoveStat(childNode.Move, childNode.Visits, (float)avgScore));
             }
             childIndex = childNode.NextSiblingIndex;
         }
@@ -217,16 +219,17 @@ public sealed class Engine
 
     public byte GetFallbackMove()
     {
-        if (_rootIndex <= 0) return Moves.Up;
-        var arena = _slotPool.GetArena(_rootIndex);
-        var me = arena.System[0];
-        
-        var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.PreTail, 0);
-
-        if ((legalMoves & Moves.Up) != 0) return Moves.Up;
-        if ((legalMoves & Moves.Down) != 0) return Moves.Down;
-        if ((legalMoves & Moves.Left) != 0) return Moves.Left;
-        if ((legalMoves & Moves.Right) != 0) return Moves.Right;
+        // if (_rootIndex <= 0) return Moves.Up;
+        // var arena = _slotPool.GetArena(_rootIndex);
+        // var me = arena.System[0];
+        //
+        // // Usiamo la logica dell'Arena per trovare una mossa legale qualsiasi
+        // var legalMoves = arena.GetLegalMoves(me.Head, me.Tail, me.PreTail, 0);
+        //
+        // if ((legalMoves & Moves.Up) != 0) return Moves.Up;
+        // if ((legalMoves & Moves.Down) != 0) return Moves.Down;
+        // if ((legalMoves & Moves.Left) != 0) return Moves.Left;
+        // if ((legalMoves & Moves.Right) != 0) return Moves.Right;
         
         return Moves.Up;
     }

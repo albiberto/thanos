@@ -29,7 +29,7 @@ public partial class WarSnakeTests
 
         // Assert
         // 1. Vital Signs
-        That(snake.HP, Is.EqualTo(expectedHp), "HP should decrease by damage amount.");
+        That(snake.Hp, Is.EqualTo(expectedHp), "HP should decrease by damage amount.");
         That(snake.IsDead, Is.EqualTo(expectedHp == 0), "Dead status mismatch.");
         That(snake.IsGrowthPending, Is.False, "Standard move should not trigger growth.");
 
@@ -76,7 +76,7 @@ public partial class WarSnakeTests
 
         // Assert
         // 1. Vital Signs
-        That(snake.HP, Is.EqualTo(100), "Eating should trigger Full Cure (100 HP).");
+        That(snake.Hp, Is.EqualTo(100), "Eating should trigger Full Cure (100 HP).");
         That(snake.IsDead, Is.False, "Snake should be alive after eating.");
 
         // 2. Growth Logic
@@ -124,7 +124,7 @@ public partial class WarSnakeTests
 
         // Assert
         // 1. Vital Signs
-        That(snake.HP, Is.EqualTo(expectedHp), "HP should decrease normally during digestion.");
+        That(snake.Hp, Is.EqualTo(expectedHp), "HP should decrease normally during digestion.");
         That(snake.IsGrowthPending, Is.False, "Growth flag should be consumed.");
 
         // 2. Queue Geometry
@@ -162,7 +162,7 @@ public partial class WarSnakeTests
 
         // Assert
         // 1. Vital Signs
-        That(snake.HP, Is.EqualTo(100), "Full cure failed on second eat.");
+        That(snake.Hp, Is.EqualTo(100), "Full cure failed on second eat.");
         That(snake.IsGrowthPending, Is.True, "Growth flag should remain set (re-armed).");
 
         // 2. Queue Geometry

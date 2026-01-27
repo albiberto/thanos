@@ -28,7 +28,7 @@ public partial class SnakesSystemTests
 
             // Assert
             // 1. Vital Signs
-            That(me.HP, Is.EqualTo(expectedHp), "Me.HP mismatch.");
+            That(me.Hp, Is.EqualTo(expectedHp), "Me.HP mismatch.");
 
             // 2. Structural Pointers
             That(me.Head, Is.EqualTo(expectedHead), "Me.Head mismatch.");
@@ -93,7 +93,7 @@ public partial class SnakesSystemTests
                 var snake = system[i];
 
                 // 1. Vital Signs
-                That(snake.HP, Is.EqualTo(hp), $"Snake {i} HP mismatch.");
+                That(snake.Hp, Is.EqualTo(hp), $"Snake {i} HP mismatch.");
 
                 // 2. Structural Pointers
                 That(snake.Head, Is.EqualTo(head), $"Snake {i} Head mismatch.");

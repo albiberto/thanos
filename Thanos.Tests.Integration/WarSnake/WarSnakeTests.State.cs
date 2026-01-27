@@ -18,7 +18,7 @@ public partial class WarSnakeTests
 
         // Assert
         // 1. Vital Signs (Direct Properties)
-        That(snake.HP, Is.EqualTo(hp), "HP property mismatch.");
+        That(snake.Hp, Is.EqualTo(hp), "HP property mismatch.");
         That(snake.IsDead, Is.EqualTo(hp == 0), "IsDead property logic failed.");
         That(snake.IsGrowthPending, Is.False, "IsGrowthPending should be false after initialization.");
 
@@ -59,7 +59,7 @@ public partial class WarSnakeTests
 
         // Assert: Flag is dead, but body remains for simultaneous collision resolution
         That(snake.IsDead, Is.True, "IsDead flag mismatch.");
-        That(snake.HP, Is.Zero, "HP mismatch.");
+        That(snake.Hp, Is.Zero, "HP mismatch.");
         That(snake.Body.PopCount(), Is.EqualTo(3), "Body should persist until external cleanup.");
     }
 
@@ -81,7 +81,7 @@ public partial class WarSnakeTests
 
         // Assert: Operation is idempotent
         That(snake.Head, Is.EqualTo(initialHead), "Dead snake should not move.");
-        That(snake.HP, Is.EqualTo(0), "Dead snake should not heal.");
+        That(snake.Hp, Is.EqualTo(0), "Dead snake should not heal.");
         That(snake.Body.IsSet(nextPos), Is.False, "Dead snake should not occupy new bits.");
     }
 }

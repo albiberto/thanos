@@ -135,7 +135,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
             var score = 0.0f;
 
-            score += EvaluateHealth(snake.HP, weights.Health);
+            score += EvaluateHealth(snake.Hp, weights.Health);
             score += EvaluateTailDistance(head, snake.Tail, weights.Tail);
             score += EvaluateCollisionsAndTraps(i, head, snake.Length, in baseWalls);
 
@@ -164,7 +164,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private HeuristicWeights SelectProfile(in WarSnake snake, int snakeIndex, bool isPhaseComplete)
     {
-        if (snake.HP < 35) return HeuristicWeights.Hungry;
+        if (snake.Hp < 35) return HeuristicWeights.Hungry;
 
         // Calcoliamo la lunghezza "effettiva" (conservativa se necessario)
         var myLen = GetConservativeLength(in snake, isPhaseComplete);
@@ -179,7 +179,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
 
         // Ora HeadHunter si attiva solo se siamo "Veramente" più grandi, 
         // scontando eventuali vantaggi temporanei di questo turno.
-        if (myLen > maxEnemyLen && snake.HP > 50)
+        if (myLen > maxEnemyLen && snake.Hp > 50)
             return HeuristicWeights.HeadHunter;
 
         if (myLen <= maxEnemyLen)
@@ -307,7 +307,7 @@ public readonly ref struct Heuristics(SnakesSystem system, Bitboard food, Bitboa
         {
             if (_system[i].IsDead) continue;
             var w = SelectProfile(_system[i], i, isPhaseComplete);
-            foodScores[i] = (101.0f - _system[i].HP) * w.Food;
+            foodScores[i] = (101.0f - _system[i].Hp) * w.Food;
         }
 
         for (var i = 0; i < area; i++)

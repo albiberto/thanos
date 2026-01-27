@@ -47,7 +47,7 @@ public partial class WarSnakeTests
 
             // Verification
             expectedHp -= NormalDamage;
-            That(snake.HP, Is.EqualTo(expectedHp), $"HP mismatch at {nextHead}.");
+            That(snake.Hp, Is.EqualTo(expectedHp), $"HP mismatch at {nextHead}.");
             That(snake.IsDead, Is.EqualTo(expectedHp <= 0), "IsDead logic failed.");
             That(snake.IsGrowthPending, Is.False, "Snake should not grow without food.");
 
@@ -62,7 +62,7 @@ public partial class WarSnakeTests
             var expectedNeck = oracleQueue.ElementAt(1);
             var isOracleStacked = expectedTail == expectedNeck;
 
-            That(snake.IsTailStacked, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
+            That(snake.IsGrowthPending, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
 
             var expectedUniqueBits = oracleQueue.Distinct().Count();
             That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), "PopCount mismatch.");
@@ -144,7 +144,7 @@ public partial class WarSnakeTests
                     snake.UpdateAfterMove(nextHead, true, 0);
 
                     // Verification
-                    That(snake.HP, Is.EqualTo(100), "Full cure failed.");
+                    That(snake.Hp, Is.EqualTo(100), "Full cure failed.");
                     That(snake.IsDead, Is.False, "Snake died.");
                     That(snake.IsGrowthPending, Is.True, "Growth pending failed.");
 
@@ -156,7 +156,7 @@ public partial class WarSnakeTests
                     var expectedNeck = oracleQueue.ElementAt(1);
                     var isOracleStacked = expectedTail == expectedNeck;
 
-                    That(snake.IsTailStacked, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
+                    That(snake.IsGrowthPending, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
 
                     That(snake.Body.PopCount(), Is.EqualTo(oracleQueue.Distinct().Count()), "PopCount mismatch.");
                     That(snake.Body.IsSet(startPosition), Is.True, "Anchor bit lost.");

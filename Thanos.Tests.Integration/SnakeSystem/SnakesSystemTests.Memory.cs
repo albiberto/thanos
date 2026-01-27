@@ -99,7 +99,7 @@ public partial class SnakesSystemTests
                 var dstSnake = destination[i];
 
                 // Verify Vital Signs
-                That(dstSnake.HP, Is.EqualTo(srcSnake.HP), $"Snake {i} HP copy failed.");
+                That(dstSnake.Hp, Is.EqualTo(srcSnake.Hp), $"Snake {i} HP copy failed.");
                 That(dstSnake.Length, Is.EqualTo(srcSnake.Length), $"Snake {i} Length copy failed.");
 
                 // Verify Queue State
@@ -142,11 +142,11 @@ public partial class SnakesSystemTests
             // Assert
             // Destination Changed
             That(destination[0].Head, Is.EqualTo(3));
-            That(destination[0].HP, Is.EqualTo(90));
+            That(destination[0].Hp, Is.EqualTo(90));
 
             // Source Unchanged (Isolation)
             That(source[0].Head, Is.EqualTo(1), "Source was modified! Memory overlap detected.");
-            That(source[0].HP, Is.EqualTo(100), "Source HP changed.");
+            That(source[0].Hp, Is.EqualTo(100), "Source HP changed.");
         }
     }
 

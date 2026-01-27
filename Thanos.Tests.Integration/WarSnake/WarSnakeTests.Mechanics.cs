@@ -26,7 +26,7 @@ public partial class WarSnakeTests
         snake.UpdateAfterMove(nextPos, true, HazardDamage);
 
         // Assert
-        That(snake.HP, Is.EqualTo(100), "Food healing failed to override hazard damage.");
+        That(snake.Hp, Is.EqualTo(100), "Food healing failed to override hazard damage.");
         That(snake.IsDead, Is.False, "Snake should not die when eating.");
         That(snake.IsGrowthPending, Is.True, "Growth should be scheduled.");
     }
@@ -50,7 +50,7 @@ public partial class WarSnakeTests
         snake.UpdateAfterMove(nextPos, false, 0);
 
         // Assert
-        That(snake.HP, Is.EqualTo(InitialHP), "HP changed unexpectedly on zero-damage move.");
+        That(snake.Hp, Is.EqualTo(InitialHP), "HP changed unexpectedly on zero-damage move.");
     }
 
     [Test]
