@@ -28,6 +28,7 @@ public struct WarSnakeLife
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void ScheduleGrowth() => _credits++;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ConsumePendingGrowth()
     {
         if (_credits == 0) return false;
@@ -35,6 +36,12 @@ public struct WarSnakeLife
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Kill() => Hp = 0;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void FullCure() => Hp = FullHealth;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ResetStack() => _credits = 0;
 }

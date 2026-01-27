@@ -35,7 +35,6 @@ public readonly ref struct Arena(
         foreach (var snakeData in board.Snakes)
             for (var i = 0; i < orderedIds.Length; i++)
             {
-                // Ordinal comparison is mandatory for speed and correctness
                 if (!string.Equals(orderedIds[i], snakeData.Id, StringComparison.Ordinal)) continue;
 
                 var snake = System[i];

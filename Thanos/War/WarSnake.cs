@@ -11,13 +11,30 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     private readonly Bitboard _bitboard = bitboard;
     private CircularQueue _queue = queue;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Initialize(in Snake snakeData)
     {
         _life.SetHp(snakeData.Health);
+        _life.ResetStack();
 
-        for (var i = snakeData.Body.Length - 1; i >= 0; i--)
+        var body = snakeData.Body;
+        var length = body.Length;
+
+        for (var i = length - 1; i > 0; i--)
         {
-            var part = snakeData.Body[i];
+            if (body[i] == body[i - 1])
+            {
+                _life.ScheduleGrowth();
+            }
+            else 
+            {
+                break; 
+            }
+        }
+
+        for (var i = length - 1; i >= 0; i--)
+        {
+            var part = body[i];
             _queue.Enqueue(part);
             _bitboard.Set(part);
         }
@@ -27,14 +44,13 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     public ushort Head => _queue.PeekHead;
     public ushort Tail => _queue.PeekTail;
     public ushort PreTail => _queue.PreTail;
+    
     public int Length => _queue.Length;
     public Bitboard Body => _bitboard;
-    public int HP => _life.Hp;
-    public bool IsDead => _life.IsDead;
     
-    public bool IsTailStacked => _queue.PeekTail == _queue.PreTail;
+    public int Hp => _life.Hp;
+    public bool IsDead => _life.IsDead;
 
-    // MODIFICA: Espone lo stato di crescita per l'euristica
     public bool IsGrowthPending => _life.IsGrowthPending;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,22 +58,14 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     {
         if (IsDead) return;
 
-        _life.ConsumePendingGrowth();
+        var isGrowing = _life.ConsumePendingGrowth();
 
-        if (!ateFood)
+        if (!isGrowing)
         {
-            // 1. Chiama SEMPRE RemoveTail() per far avanzare la coda logica
             var oldTailPos = _queue.Dequeue();
 
-            // 2. Leggi la posizione della NUOVA coda (dopo che RemoveTail ha avanzato l'indice)
             var newTailPos = _queue.PeekTail;
-
-            // 3. Esegui il controllo PRIMA di aggiornare il bitboard
-            //    Se la vecchia coda e la nuova coda sono diverse,
-            //    significa che il serpente è disteso e possiamo cancellare il bit.
             if (oldTailPos != newTailPos) _bitboard.Unset(oldTailPos);
-            // Se sono uguali (serpente collassato), non facciamo
-            // l'Unset, lasciando il bit attivo (correttamente).
         }
 
         _queue.Enqueue(newHead);
