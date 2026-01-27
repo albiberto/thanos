@@ -57,14 +57,12 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     {
         if (IsDead) return;
 
-        var isGrowing = _life.ConsumePendingGrowth();
-
-        if (!isGrowing)
+        var wasGrowing = _life.ConsumePendingGrowth();
+    
+        if (!wasGrowing && !ateFood)
         {
             var oldTailPos = _queue.Dequeue();
-
-            var newTailPos = _queue.PeekTail;
-            if (oldTailPos != newTailPos) _bitboard.Unset(oldTailPos);
+            if (oldTailPos != _queue.PeekTail) _bitboard.Unset(oldTailPos);
         }
 
         _queue.Enqueue(newHead);
