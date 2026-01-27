@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.SourceGen;
 using Thanos.War;
 using static NUnit.Framework.Assert;
 
@@ -86,7 +85,7 @@ public partial class SnakesSystemTests
             {
                 var hp = (byte)(100 - i * 10);
                 var body = new[] { (ushort)(i * 10), (ushort)(i * 10 + 1) };
-                source[i].Initialize(new Snake($"s{i}", hp, body));
+                source[i].Initialize(new($"s{i}", hp, body));
             }
 
             // Act
@@ -131,7 +130,7 @@ public partial class SnakesSystemTests
             var destination = destinationContext.Build();
 
             // Setup initial state
-            source[0].Initialize(new Snake("hero", 100, [1, 2]));
+            source[0].Initialize(new("hero", 100, [1, 2]));
 
             // Act
             destination.CopyFrom(in source);
@@ -162,7 +161,7 @@ public partial class SnakesSystemTests
         {
             // 1. Arrange Source (Valid Data)
             var source = sourceCtx.Build();
-            source[0].Initialize(new Snake("filler", 100, [1, 2, 3]));
+            source[0].Initialize(new("filler", 100, [1, 2, 3]));
 
             // 2. Arrange Destination (Manual "Oversized" Allocation)
             // We don't use Context here because we want total control over extra bytes.

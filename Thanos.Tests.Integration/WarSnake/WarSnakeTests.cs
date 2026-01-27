@@ -81,7 +81,7 @@ public partial class WarSnakeTests
         {
             var bitboard = new War.Structures.Bitboard(_bitboardMemory);
             var queue = new War.Structures.CircularQueue(_queueMemory, ref _queueState, capacity);
-            return new War.WarSnake(ref _life, bitboard, queue);
+            return new(ref _life, bitboard, queue);
         }
 
         /// <summary>

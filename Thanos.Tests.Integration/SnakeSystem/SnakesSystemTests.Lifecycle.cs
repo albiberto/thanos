@@ -1,4 +1,3 @@
-using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
@@ -16,7 +15,7 @@ public partial class SnakesSystemTests
             // Setup: Dirty the state of all active snakes
             // We use specific positions [1, 2, 3] to ensure Bitboard has bits set
             for (var i = 0; i < ctx.ActiveCount; i++)
-                system[i].Initialize(new Snake($"s{i}", 100, [1, 2, 3]));
+                system[i].Initialize(new($"s{i}", 100, [1, 2, 3]));
 
             // Pre-Assert: Verify setup was effective
             // We must confirm the Bitboard is actually dirty before testing the cleanup
@@ -57,7 +56,7 @@ public partial class SnakesSystemTests
             // Setup: Fill buffer with known "dirty" values
             // Simulate a snake that moved and left data behind
             ushort[] dirtyPattern = [0xAA, 0xBB, 0xCC];
-            snake.Initialize(new Snake("dirty", 100, dirtyPattern));
+            snake.Initialize(new("dirty", 100, dirtyPattern));
 
             // Pre-check
             That(snake.Length, Is.EqualTo(3));

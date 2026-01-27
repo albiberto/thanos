@@ -64,7 +64,7 @@ public partial class SnakesSystemTests
             LayoutCapacity = layoutMaxSnakeCount;
 
             // 1. Initialize Layout in private field
-            _layout = new SlotMemoryLayout((ushort)area, queueCapacity, layoutMaxSnakeCount);
+            _layout = new((ushort)area, queueCapacity, layoutMaxSnakeCount);
 
             // 2. Size calculation and Allocation
             var totalSize = _layout.SnakeStride.Next * layoutMaxSnakeCount;

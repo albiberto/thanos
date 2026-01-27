@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
@@ -21,7 +20,7 @@ public partial class SnakesSystemTests
             const ushort expectedNeck = 11;
             const ushort expectedTail = 12;
 
-            system[0].Initialize(new Snake("me", expectedHp, [expectedHead, 10, expectedNeck, expectedTail]));
+            system[0].Initialize(new("me", expectedHp, [expectedHead, 10, expectedNeck, expectedTail]));
 
             // Act
             var me = system.Me;
@@ -87,7 +86,7 @@ public partial class SnakesSystemTests
                 var elementBeforeTail = (ushort)(head + 2);
                 var tail = (ushort)(head + 3);
 
-                system[i].Initialize(new Snake($"s{i}", hp, [head, (ushort)(head + 1), elementBeforeTail, tail]));
+                system[i].Initialize(new($"s{i}", hp, [head, (ushort)(head + 1), elementBeforeTail, tail]));
 
                 // Act & Assert
                 var snake = system[i];

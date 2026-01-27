@@ -52,7 +52,7 @@ public partial class WarSnakeTests
         var context = new SnakeMemoryContext(16, 64, "ExplicitKill");
         var snake = context.Build();
         ushort[] body = [10, 11, 12];
-        snake.Initialize(new Snake("hero", 100, body));
+        snake.Initialize(new("hero", 100, body));
 
         // Act: Explicitly kill (e.g. collision detected)
         snake.Kill();
@@ -71,7 +71,7 @@ public partial class WarSnakeTests
         var snake = context.Build();
 
         ushort[] body = [0, 1, 2];
-        snake.Initialize(new Snake("hero", 0, body));
+        snake.Initialize(new("hero", 0, body));
 
         var initialHead = snake.Head;
         const ushort nextPos = 3;

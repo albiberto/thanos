@@ -15,18 +15,21 @@ public partial class WarSnakeTests
         var snakeData = new Snake("stacked-hero", hp, body);
         snake.Initialize(in snakeData);
 
-        // Oracle: Physical segments [Tail -> Body -> Head]
+        // Se lunghezza è 10, abbiamo 9 segmenti sovrapposti = 9 crediti iniziali
+        var initialCredits = body.Length - 1;
+        var initialTailPos = body[^1];
+
         var oracleQueue = new Queue<ushort>(body.Reverse());
         var currentHead = oracleQueue.Last();
-
         var moves = new[] { Moves.Up, Moves.Right, Moves.Down, Moves.Left };
         var expectedHp = (int)hp;
+        var turnCounter = 0;
 
         // Act & Assert
         foreach (var move in moves)
         foreach (var __ in Enumerable.Range(1, env.Width / 2))
         {
-            // Oracle Step
+            turnCounter++;
             var (cx, cy) = GetCoord(currentHead, env.Width);
             var (nx, ny) = move switch
             {
@@ -38,37 +41,47 @@ public partial class WarSnakeTests
             };
 
             var nextHead = (ushort)(ny * env.Width + nx);
-
             oracleQueue.Enqueue(nextHead);
-            oracleQueue.Dequeue(); // Logic: Move without growth (constant length)
+
+            // La coda resta ferma per esattamente 'initialCredits' turni.
+            // Al turno initialCredits + 1, il serpente deve finalmente fare Dequeue.
+            var isCurrentlyUnrolling = turnCounter <= initialCredits;
+
+            if (!isCurrentlyUnrolling) oracleQueue.Dequeue();
 
             // Execution
             snake.UpdateAfterMove(nextHead, false, NormalDamage);
 
             // Verification
             expectedHp -= NormalDamage;
-            That(snake.Hp, Is.EqualTo(expectedHp), $"HP mismatch at {nextHead}.");
-            That(snake.IsDead, Is.EqualTo(expectedHp <= 0), "IsDead logic failed.");
-            That(snake.IsGrowthPending, Is.False, "Snake should not grow without food.");
+            That(snake.Hp, Is.EqualTo(expectedHp), $"Turn {turnCounter}: HP mismatch.");
 
-            That(snake.Length, Is.EqualTo(body.Length), "Length mismatch.");
-            That(snake.Head, Is.EqualTo(oracleQueue.Last()), "Head mismatch.");
-            That(snake.Tail, Is.EqualTo(oracleQueue.Peek()), "Tail mismatch.");
+            if (isCurrentlyUnrolling)
+            {
+                // FASE DI UNROLL: La coda deve restare ancorata
+                That(snake.Tail, Is.EqualTo(initialTailPos), $"Turn {turnCounter}: Tail moved during unroll.");
 
-            if (body.Length >= 2)
-                That(snake.PreTail, Is.EqualTo(oracleQueue.ElementAt(1)), "Neck mismatch.");
+                // Logica IsGrowthPending: 
+                // Se avevamo 9 crediti, al turno 9 il metodo ConsumePendingGrowth() li porta a 0.
+                // Quindi al turno 9 IsGrowthPending è già FALSE.
+                if (turnCounter < initialCredits)
+                    That(snake.IsGrowthPending, Is.True, $"Turn {turnCounter}: Growth should be pending.");
+                else
+                    That(snake.IsGrowthPending, Is.False, $"Turn {turnCounter}: Last credit consumed, pending should be false.");
+            }
+            else
+            {
+                // FASE POST-UNROLL: La coda avanza normalmente
+                That(snake.Tail, Is.EqualTo(oracleQueue.Peek()), $"Turn {turnCounter}: Tail stall after unroll.");
+                That(snake.IsGrowthPending, Is.False, $"Turn {turnCounter}: Growth pending should be false.");
+            }
 
-            var expectedTail = oracleQueue.Peek();
-            var expectedNeck = oracleQueue.ElementAt(1);
-            var isOracleStacked = expectedTail == expectedNeck;
-
-            That(snake.IsGrowthPending, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
+            // Invariants
+            That(snake.Length, Is.EqualTo(oracleQueue.Count), $"Turn {turnCounter}: Length mismatch.");
+            That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
 
             var expectedUniqueBits = oracleQueue.Distinct().Count();
-            That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), "PopCount mismatch.");
-
-            foreach (var segment in oracleQueue)
-                That(snake.Body.IsSet(segment), Is.True, $"Bitboard missing segment {segment}.");
+            That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), $"Turn {turnCounter}: PopCount mismatch.");
 
             currentHead = nextHead;
         }

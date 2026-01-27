@@ -1,4 +1,3 @@
-using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.WarSnake;
@@ -16,7 +15,7 @@ public partial class WarSnakeTests
         var snake = context.Build();
 
         ushort[] body = [10, 11, 12];
-        snake.Initialize(new Snake("hero", 50, body)); // Start with 50 HP
+        snake.Initialize(new("hero", 50, body)); // Start with 50 HP
 
         var nextPos = (ushort)(body[0] + 1);
         const byte HazardDamage = 15;
@@ -42,7 +41,7 @@ public partial class WarSnakeTests
 
         ushort[] body = [10, 11, 12];
         const byte InitialHP = 80;
-        snake.Initialize(new Snake("hero", InitialHP, body));
+        snake.Initialize(new("hero", InitialHP, body));
 
         var nextPos = (ushort)(body[0] + 1);
 
@@ -67,7 +66,7 @@ public partial class WarSnakeTests
 
         // Body: Head(2), Body(1), Tail(0)
         ushort[] body = [2, 1, 0];
-        snake.Initialize(new Snake("hero", 100, body));
+        snake.Initialize(new("hero", 100, body));
 
         var suicidePos = body[1]; // Position 1 (The Neck/Body)
 

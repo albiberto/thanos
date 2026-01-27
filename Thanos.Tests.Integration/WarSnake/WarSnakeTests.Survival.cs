@@ -1,4 +1,3 @@
-using Thanos.SourceGen;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.WarSnake;
@@ -13,7 +12,7 @@ public partial class WarSnakeTests
         var snake = context.Build();
 
         ushort[] body = [0, 1, 2];
-        snake.Initialize(new Snake("hero", 1, body));
+        snake.Initialize(new("hero", 1, body));
 
         const ushort nextPos = 3;
 
@@ -35,7 +34,7 @@ public partial class WarSnakeTests
         var snake = context.Build();
 
         ushort[] body = [0, 1, 2];
-        snake.Initialize(new Snake("hero", 1, body));
+        snake.Initialize(new("hero", 1, body));
 
         const ushort nextPos = 3;
 
@@ -56,7 +55,7 @@ public partial class WarSnakeTests
         var snake = context.Build();
 
         ushort[] body = [0, 1, 2];
-        snake.Initialize(new Snake("hero", 10, body));
+        snake.Initialize(new("hero", 10, body));
 
         const ushort nextPos = 3;
         const int hazardDamage = 15;
@@ -81,7 +80,7 @@ public partial class WarSnakeTests
         byte startHp = 50;
         byte damage = 14; // Hazard damage
 
-        snake.Initialize(new Snake("hero", startHp, body));
+        snake.Initialize(new("hero", startHp, body));
         var nextPos = (ushort)(body[0] + 1);
 
         // Act
@@ -105,7 +104,7 @@ public partial class WarSnakeTests
         ushort[] body = [5, 6, 7];
         byte startHp = 99;
 
-        snake.Initialize(new Snake("hero", startHp, body));
+        snake.Initialize(new("hero", startHp, body));
         var nextPos = (ushort)(body[0] + 1); // Food here (simulated)
 
         // Act
