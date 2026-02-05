@@ -147,7 +147,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
 
     private void ExpandSimultaneousMoves(int parentIndex, ref Node parentNode, int area)
     {
-        var parentArena = _slotPool.GetArena(parentIndex);
+        var parentArena = _slotPool.GetGameState(parentIndex);
         var snakeCount = parentArena.System.Count;
 
         // Check rapido morte Hero
@@ -245,7 +245,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
 
         if (childIndex == -1 || childSlotIndex == -1) return;
 
-        var childArena = _slotPool.GetArena(childIndex);
+        var childArena = _slotPool.GetGameState(childIndex);
         childArena.CloneFrom(in parentArena);
 
         // Simulazione Simultanea
@@ -279,7 +279,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
     private void Evaluate(int nodeIndex, float[] rewardsBuffer)
     {
         var heuristics = _slotPool.GetHeuristics(nodeIndex);
-        var arena = _slotPool.GetArena(nodeIndex);
+        var arena = _slotPool.GetGameState(nodeIndex);
 
         Array.Clear(rewardsBuffer);
 

@@ -22,7 +22,7 @@ public sealed unsafe class LookupsMemoryPool : ILookupsMemoryPool
     private readonly LookupsMemoryLayout _layout;
 
     public CoordinatesMatrix CoordinatesMatrix => new(CoordinatesSpan);
-    public NeighborsMatrix NeighborsMatrix => new(NeighborsSpan);
+    public NeighborsMatrix NeighborsMatrix => new(NeighborsSpan.ToArray());
     
     private ReadOnlySpan<Coordinate> CoordinatesSpan => 
         new(_basePointer + _layout.Coordinates.Offset, _layout.Coordinates.Count<Coordinate>());

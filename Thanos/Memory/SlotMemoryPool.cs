@@ -4,6 +4,7 @@ using Thanos.Abstract;
 using Thanos.War;
 using Thanos.War.Brain;
 using Thanos.War.Snake;
+using Thanos.War.State;
 using Thanos.War.Structures;
 
 namespace Thanos.Memory;
@@ -37,18 +38,18 @@ public sealed unsafe class SlotMemoryPool : ISlotMemoryPool
         
         Capacity = capacity;
         
-        var totalSize = _stride * (nuint)capacity;
+        var totalSize = _stride * capacity;
         _basePointer = (byte*)NativeMemory.AlignedAlloc(totalSize, Constants.CacheLine);
         NativeMemory.Clear(_basePointer, totalSize);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Arena GetArena(int index)
+    public GameState GetGameState(int index)
     {
         BuildMemory(index, out var system, out var foodBitboard, out var hazardsBitboard, out var collisionsBitboard);
-        return new(system, foodBitboard, hazardsBitboard, collisionsBitboard, _lookupsMemoryPool.NeighborsMatrix);
+        return new(system, foodBitboard, hazardsBitboard, collisionsBitboard);
     }
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Heuristics GetHeuristics(int index)
     {

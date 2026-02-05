@@ -1,5 +1,6 @@
 using Thanos.War;
 using Thanos.War.Brain;
+using Thanos.War.State;
 
 namespace Thanos.Abstract;
 
@@ -8,7 +9,7 @@ public interface ISlotMemoryPool : IDisposable
     uint Capacity { get; }
     int Index { get; }
     
-    Arena GetArena(int index);
+    GameState GetGameState(int index);
     Heuristics GetHeuristics(int index);
 
     int Allocate();

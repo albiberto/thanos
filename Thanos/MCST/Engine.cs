@@ -54,7 +54,7 @@ public sealed class Engine
                 ref var newRootNode = ref _nodePool.Get(_rootIndex);
                 newRootNode.NewRoot(); 
 
-                var rootArena = _slotPool.GetArena(_rootIndex);
+                var rootArena = _slotPool.GetGameState(_rootIndex);
                 rootArena.InitializeFromRequest(in request, _sortedSnakeIds);
                 treeReused = true;
             }
@@ -74,7 +74,7 @@ public sealed class Engine
             
             Debug.Assert(_rootIndex == slotIndex);
 
-            var rootArena = _slotPool.GetArena(_rootIndex);
+            var rootArena = _slotPool.GetGameState(_rootIndex);
             rootArena.InitializeFromRequest(in request, _sortedSnakeIds);
 
             ref var rootNode = ref _nodePool.Get(_rootIndex);

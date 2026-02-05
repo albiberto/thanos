@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Thanos.War;
+using Thanos.War.State;
 
 namespace Thanos.Common;
 
@@ -7,13 +8,13 @@ public static class ZobristHasher
 {
     // In Thanos/Common/ZobristHasher.cs
 
-    public static long CalculateHash(in Arena arena)
+    public static long CalculateHash(in GameState state)
     {
         long hash = 0;
 
-        for (var i = 0; i < arena.System.Count; i++)
+        for (var i = 0; i < state.System.Count; i++)
         {
-            var snake = arena.System[i];
+            var snake = state.System[i];
             if (snake.IsDead) continue;
 
             var snakeBodyBitboard = snake.Body.Buffer;
@@ -34,10 +35,10 @@ public static class ZobristHasher
             // --- FINE FIX ---
         }
 
-        var foodBitboard = arena.Food.Buffer;
+        var foodBitboard = state.Food.Buffer;
         hash = HashFoodBitboard(hash, foodBitboard);
 
-        var hazardBitboard = arena.Hazards.Buffer;
+        var hazardBitboard = state.Hazards.Buffer;
         hash = HashHazardBitboard(hash, hazardBitboard);
 
         return hash;
