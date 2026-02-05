@@ -1,48 +1,67 @@
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using Thanos.Common;
 
 namespace Thanos.Shared;
 
-public readonly ref struct NeighborsMatrix(ReadOnlySpan<ushort> buffer)
+/// <summary>
+/// A high-performance lookup table for grid adjacency.
+/// STRUCTURE: 
+/// - Wraps a standard array to allow Heap storage (inside GameContext).
+/// - Uses Unsafe/MemoryMarshal for pointer-like access speed (No Bounds Checks).
+/// </summary>
+public readonly struct NeighborsMatrix
 {
-    private readonly ReadOnlySpan<ushort> _buffer = buffer;
+    private readonly ushort[] _data;
+    public readonly int Length;
 
-    /// <summary>
-    /// Restituisce il vicino nella direzione specificata dalla maschera di bit.
-    /// Ottimizzato per l'accesso scalare usando istruzioni hardware per calcolare l'offset.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ushort Get(ushort currentPos, byte moveMask) 
-        => _buffer[currentPos * 4 + BitOperations.TrailingZeroCount(moveMask)];
-
-    /// <summary>
-    /// Restituisce i 4 vicini packed in un registro SIMD 64-bit (4 x ushort).
-    /// Layout: [0]=Up, [1]=Down, [2]=Left, [3]=Right.
-    /// Fondamentale per i check vettoriali (Suicidio, DeadEnd) in Arena.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Vector64<ushort> GetAll(ushort currentPos) 
+    public NeighborsMatrix(ushort[] data)
     {
-        // Calcoliamo l'indirizzo di memoria base per la cella corrente.
-        // currentPos * 4 perché ogni cella ha 4 vicini contigui in memoria.
-        ref var address = ref Unsafe.Add(ref MemoryMarshal.GetReference(_buffer), (nint)currentPos * 4);
-        
-        // Carichiamo 64 bit (8 byte) in un colpo solo direttamente nei registri SIMD.
-        return Vector64.LoadUnsafe(ref address);
+        _data = data;
+        // La lunghezza logica è data / 4 direzioni
+        Length = data.Length / 4;
     }
 
     /// <summary>
-    /// Verifica se la posizione è valida (dentro la griglia).
+    /// Returns the neighbor coordinate given a head position and a move index.
+    /// Uses Unsafe logic to skip array bounds checking.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsValid(ushort position) => position != ushort.MaxValue;
+    public ushort Get(int headIndex, int moveIndex)
+    {
+        // Formula: index = (head * 4) + move
+        // MemoryMarshal.GetArrayDataReference ottiene il puntatore al primo elemento (0 overhead)
+        // Unsafe.Add esegue l'aritmetica dei puntatori
+        return Unsafe.Add(
+            ref MemoryMarshal.GetArrayDataReference(_data), 
+            (nint)((headIndex << 2) + moveIndex)
+        );
+    }
 
     /// <summary>
-    /// Verifica se la posizione è fuori dai bordi (Muro).
+    /// Returns a Vector64 (4 ushorts) containing all neighbors for a specific head.
+    /// Optimized for SIMD processing.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsOutOfBound(ushort position) => position == ushort.MaxValue;
+    public System.Runtime.Intrinsics.Vector64<ushort> GetAll(int headIndex)
+    {
+        // Carichiamo 4 ushort (64 bit) in un colpo solo dalla memoria
+        ref var address = ref Unsafe.Add(
+            ref MemoryMarshal.GetArrayDataReference(_data), 
+            (nint)(headIndex << 2)
+        );
+        
+        return Unsafe.ReadUnaligned<System.Runtime.Intrinsics.Vector64<ushort>>(ref Unsafe.As<ushort, byte>(ref address));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsOutOfBound(ushort coordinate)
+    {
+        return coordinate == 0xFFFF;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsValid(ushort coordinate)
+    {
+        return coordinate != 0xFFFF;
+    }
 }

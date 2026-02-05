@@ -1,23 +1,19 @@
 ﻿using System.Runtime.CompilerServices;
-using Thanos.Shared;
 using Thanos.War.Snake;
 using Thanos.War.Structures;
 
 namespace Thanos.War.State;
 
-// PURE DATA VIEW
 public readonly ref struct GameState(
     SnakesSystem system,
     Bitboard food,
     Bitboard hazards,
-    Bitboard snakes,
-    NeighborsMatrix neighborsMatrix)
+    Bitboard snakes) // Removed NeighborsMatrix
 {
     public readonly SnakesSystem System = system;
     public readonly Bitboard Food = food;
     public readonly Bitboard Hazards = hazards;
     public readonly Bitboard Snakes = snakes;
-    public readonly NeighborsMatrix Neighbors = neighborsMatrix;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyFrom(in GameState source)
