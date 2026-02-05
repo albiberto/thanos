@@ -15,10 +15,10 @@ public partial class WarSnakeTests
         var snakeData = new Snake("stacked-hero", hp, body);
         snake.Initialize(in snakeData);
 
-        // Se lunghezza è 10, abbiamo 9 segmenti sovrapposti = 9 crediti iniziali
         var initialCredits = body.Length - 1;
         var initialTailPos = body[^1];
 
+        // Oracle: Standard Queue represents the LOGICAL body (fully unrolled view)
         var oracleQueue = new Queue<ushort>(body.Reverse());
         var currentHead = oracleQueue.Last();
         var moves = new[] { Moves.Up, Moves.Right, Moves.Down, Moves.Left };
@@ -41,13 +41,14 @@ public partial class WarSnakeTests
             };
 
             var nextHead = (ushort)(ny * env.Width + nx);
+            
+            // Oracle Logic:
+            // 1. Always Enqueue new head.
+            // 2. Always Dequeue old tail (Conservation of Mass).
+            //    The "Unrolling" is a physical implementation detail of the SUT (Credits -> Queue),
+            //    but logically the snake has constant length during movement without food.
             oracleQueue.Enqueue(nextHead);
-
-            // La coda resta ferma per esattamente 'initialCredits' turni.
-            // Al turno initialCredits + 1, il serpente deve finalmente fare Dequeue.
-            var isCurrentlyUnrolling = turnCounter <= initialCredits;
-
-            if (!isCurrentlyUnrolling) oracleQueue.Dequeue();
+            oracleQueue.Dequeue();
 
             // Execution
             snake.UpdateAfterMove(nextHead, false, NormalDamage);
@@ -56,18 +57,29 @@ public partial class WarSnakeTests
             expectedHp -= NormalDamage;
             That(snake.Hp, Is.EqualTo(expectedHp), $"Turn {turnCounter}: HP mismatch.");
 
+            // Length Verification (Dual Property Check)
+            // ActualLength: The logical game length (must match Oracle count).
+            // Length: The physical queue length (matches Oracle unique segments if compression is perfect).
+            That(snake.ActualLength, Is.EqualTo(oracleQueue.Count), $"Turn {turnCounter}: ActualLength mismatch.");
+            
+            // Note: snake.Length represents occupied physical slots. For a stacked snake, 
+            // this roughly matches the number of *unique* positions in the logical body 
+            // (assuming the stack is all on one tile).
+            var expectedPhysicalLength = oracleQueue.Distinct().Count();
+            That(snake.Length, Is.EqualTo(expectedPhysicalLength), $"Turn {turnCounter}: Physical Length mismatch.");
+
+            var isCurrentlyUnrolling = turnCounter <= initialCredits;
             if (isCurrentlyUnrolling)
             {
-                // FASE DI UNROLL: La coda deve restare ancorata
+                // FASE DI UNROLL: La coda LOGICA è ancora ferma sulla cella di start
+                // The Snake implementation handles this via Credits.
                 That(snake.Tail, Is.EqualTo(initialTailPos), $"Turn {turnCounter}: Tail moved during unroll.");
 
-                // Logica IsGrowthPending: 
-                // Se avevamo 9 crediti, al turno 9 il metodo ConsumePendingGrowth() li porta a 0.
-                // Quindi al turno 9 IsGrowthPending è già FALSE.
+                // Check Stack State
                 if (turnCounter < initialCredits)
-                    That(snake.IsGrowthPending, Is.True, $"Turn {turnCounter}: Growth should be pending.");
+                    That(snake.IsGrowthPending, Is.True, $"Turn {turnCounter}: Growth should be pending (Stacked).");
                 else
-                    That(snake.IsGrowthPending, Is.False, $"Turn {turnCounter}: Last credit consumed, pending should be false.");
+                    That(snake.IsGrowthPending, Is.False, $"Turn {turnCounter}: Last credit consumed.");
             }
             else
             {
@@ -77,11 +89,8 @@ public partial class WarSnakeTests
             }
 
             // Invariants
-            That(snake.Length, Is.EqualTo(oracleQueue.Count), $"Turn {turnCounter}: Length mismatch.");
             That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
-
-            var expectedUniqueBits = oracleQueue.Distinct().Count();
-            That(snake.Body.PopCount(), Is.EqualTo(expectedUniqueBits), $"Turn {turnCounter}: PopCount mismatch.");
+            That(snake.Body.PopCount(), Is.EqualTo(expectedPhysicalLength), $"Turn {turnCounter}: PopCount mismatch.");
 
             currentHead = nextHead;
         }
@@ -99,7 +108,6 @@ public partial class WarSnakeTests
         // Act & Assert
         foreach (var move in moves)
         {
-            // 1. Reset for the new direction (Start fresh from center for each cardinal test)
             context.Reset();
             snake.Initialize(in snakeData);
 
@@ -107,7 +115,6 @@ public partial class WarSnakeTests
             var currentHead = oracleQueue.Last();
             var startPosition = oracleQueue.Peek();
 
-            // 2. Define L-Shape Path: Primary Direction -> Clockwise Direction
             var nextMove = move switch
             {
                 Moves.Up => Moves.Right,
@@ -119,11 +126,8 @@ public partial class WarSnakeTests
 
             var pathDirections = new[] { move, nextMove };
 
-            // 3. Simulation Loop
             foreach (var direction in pathDirections)
             {
-                // Calculate steps dynamically based on CURRENT head position relative to the board edges.
-                // This replaces the complex pre-calculation logic.
                 var (currX, currY) = GetCoord(currentHead, env.Width);
 
                 var stepsToWall = direction switch
@@ -137,7 +141,6 @@ public partial class WarSnakeTests
 
                 foreach (var __ in Enumerable.Range(1, stepsToWall))
                 {
-                    // Oracle Step
                     (currX, currY) = GetCoord(currentHead, env.Width);
                     var (nx, ny) = direction switch
                     {
@@ -150,8 +153,8 @@ public partial class WarSnakeTests
 
                     var nextHead = (ushort)(ny * env.Width + nx);
 
+                    // Oracle Logic: Grow (Enqueue but NO Dequeue)
                     oracleQueue.Enqueue(nextHead);
-                    // Logic: Continuous growth (no Dequeue), Tail stays anchored
 
                     // Execution
                     snake.UpdateAfterMove(nextHead, true, 0);
@@ -159,17 +162,23 @@ public partial class WarSnakeTests
                     // Verification
                     That(snake.Hp, Is.EqualTo(100), "Full cure failed.");
                     That(snake.IsDead, Is.False, "Snake died.");
-                    That(snake.IsGrowthPending, Is.True, "Growth pending failed.");
 
-                    That(snake.Tail, Is.EqualTo(startPosition), "Tail moved from anchor.");
-                    That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
-                    That(snake.Length, Is.EqualTo(oracleQueue.Count), "Length mismatch.");
-
+                    // LOGIC FIX: Check IsGrowthPending based on Stack state.
+                    // Even with Eager execution, if the snake *remains* stacked (Tail == Neck),
+                    // the implementation must maintain Credits > 0.
                     var expectedTail = oracleQueue.Peek();
                     var expectedNeck = oracleQueue.ElementAt(1);
                     var isOracleStacked = expectedTail == expectedNeck;
+                    
+                    That(snake.IsGrowthPending, Is.EqualTo(isOracleStacked), 
+                        $"IsGrowthPending mismatch. OracleStacked: {isOracleStacked}.");
 
-                    That(snake.IsGrowthPending, Is.EqualTo(isOracleStacked), $"IsTailStacked logic failed. Expected {isOracleStacked} (Tail:{expectedTail} vs Neck:{expectedNeck}).");
+                    That(snake.Tail, Is.EqualTo(startPosition), "Tail moved from anchor.");
+                    That(snake.Head, Is.EqualTo(nextHead), "Head mismatch.");
+                    
+                    // Length Verification (Dual Property)
+                    That(snake.ActualLength, Is.EqualTo(oracleQueue.Count), "ActualLength mismatch.");
+                    That(snake.Length, Is.EqualTo(oracleQueue.Distinct().Count()), "Physical Length mismatch.");
 
                     That(snake.Body.PopCount(), Is.EqualTo(oracleQueue.Distinct().Count()), "PopCount mismatch.");
                     That(snake.Body.IsSet(startPosition), Is.True, "Anchor bit lost.");

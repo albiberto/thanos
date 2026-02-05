@@ -27,7 +27,14 @@ public partial class WarSnakeTests
         // Assert
         That(snake.Hp, Is.EqualTo(100), "Food healing failed to override hazard damage.");
         That(snake.IsDead, Is.False, "Snake should not die when eating.");
-        That(snake.IsGrowthPending, Is.True, "Growth should be scheduled.");
+        
+        // Non-stacked snake eating: Grows immediately. Credits 0 -> 1 -> 0.
+        // So pending should be False.
+        That(snake.IsGrowthPending, Is.False, "Growth should be consumed immediately for non-stacked snake.");
+        
+        // Length check
+        That(snake.ActualLength, Is.EqualTo(4), "Snake should have grown.");
+        That(snake.Length, Is.EqualTo(4), "Physical length should match.");
     }
 
     [Test]
@@ -56,10 +63,7 @@ public partial class WarSnakeTests
     public void UpdateAfterMove_WhenCollidingWithNeck_ShouldMaintainStructConsistency()
     {
         // Scenario: Suicide move (180 degree turn).
-        // Head moves exactly to where the 'Neck' (ElementBeforeTail in logic, but technically Body[1]) is.
-        // Note: For Length 3 [H, B, T], moving H to B is a collision.
-        // We verify that Bitboard logic handles the overlapping set correctly (Idempotency).
-
+        
         // Arrange
         var context = new SnakeMemoryContext(16, 64, "SuicideIntegrity");
         var snake = context.Build();
@@ -74,22 +78,14 @@ public partial class WarSnakeTests
         snake.UpdateAfterMove(suicidePos, false, 1);
 
         // Assert
-        // 1. Queue State
         That(snake.Head, Is.EqualTo(suicidePos), "Head logic failed to update.");
-        That(snake.Length, Is.EqualTo(3), "Length should not change.");
-
-        // 2. Bitboard Integrity
-        // Tail (0) should be unset.
-        // Head (2) remains set (it's now part of body).
-        // NewHead (1) remains set (collision).
-
+        That(snake.ActualLength, Is.EqualTo(3), "Length should not change.");
+        
+        // Bitboard Integrity
         That(snake.Body.IsSet(0), Is.False, "Tail was not cleared.");
         That(snake.Body.IsSet(1), Is.True, "Collision point (Neck) should remain set.");
         That(snake.Body.IsSet(2), Is.True, "Old Head should remain set.");
-
-        // 3. PopCount Anomaly Check
-        // Length is 3, but spatially we only occupy 2 unique squares (1 and 2).
-        // The Head is physically 'inside' the body.
-        That(snake.Body.PopCount(), Is.EqualTo(2), "Bitboard PopCount should reflect spatial overlap (loss of 1 unique bit).");
+        
+        That(snake.Body.PopCount(), Is.EqualTo(2), "Bitboard PopCount should reflect spatial overlap.");
     }
 }

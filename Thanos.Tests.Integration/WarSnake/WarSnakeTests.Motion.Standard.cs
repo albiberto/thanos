@@ -80,7 +80,8 @@ public partial class WarSnakeTests
 
         // 2. Growth Logic
         That(snake.Length, Is.EqualTo(body.Length + 1), "Length should increase by 1 immediately.");
-        That(snake.IsGrowthPending, Is.True, "Growth pending flag should be set for next turn.");
+        // FIX: Eager consumption -> Pending is False
+        That(snake.IsGrowthPending, Is.False, "Growth credit should be consumed immediately.");
 
         // 3. Queue Geometry (Anchor Check)
         That(snake.Head, Is.EqualTo(targetPos), "Head mismatch.");
@@ -95,16 +96,11 @@ public partial class WarSnakeTests
 
     /// <summary>
     ///     Verifies the "Digestion" turn (the move immediately following food consumption).
-    ///     The growth flag is consumed, and the tail finally advances.
-    /// </summary>
-    /// <summary>
-    ///     Verifies the "Digestion" turn (the move immediately following food consumption).
-    ///     In Battlesnake, a single food item keeps the tail stationary for TWO turns total:
-    ///     1. The turn it is eaten (immediate growth).
-    ///     2. The following turn (consuming the growth credit).
+    ///     Eager Strategy: The growth was fully processed in the previous turn (Queue Length + 1).
+    ///     So this turn, the snake should behave normally (Tail advances).
     /// </summary>
     [TestCaseSource(nameof(MovementUnrolledScenarios))]
-    public void UpdateAfterMove_WhenDigestingFood_ShouldKeepTailStationaryDueToCredit(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakeFacing facing)
+    public void UpdateAfterMove_WhenDigestingFood_ShouldResumeNormalMotion(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakeFacing facing)
     {
         // Arrange
         var snake = context.Build();
@@ -114,45 +110,36 @@ public partial class WarSnakeTests
         var eatPos = GetNextPosition(body[0], facing, env.Width);
 
         // --- STEP 1: Turn T (Eat Food) ---
-        // ateFood: true -> Skip Dequeue. Length becomes 11. Credit added: 1.
+        // ateFood: true -> Skip Dequeue. Length becomes 11. Credit consumed immediately.
         snake.UpdateAfterMove(eatPos, true, 0);
 
         That(snake.Length, Is.EqualTo(body.Length + 1), "Turn T: Length should increase immediately.");
         That(snake.Tail, Is.EqualTo(originalTail), "Turn T: Tail must stay anchored.");
-        That(snake.IsGrowthPending, Is.True, "Turn T: Should have a pending credit.");
+        That(snake.IsGrowthPending, Is.False, "Turn T: Credit should be fully consumed.");
 
-        // --- STEP 2: Turn T+1 (Digestion Phase) ---
+        // --- STEP 2: Turn T+1 (Digestion Phase / Resume) ---
         var digestPos = GetNextPosition(eatPos, facing, env.Width);
+        var expectedNewTail = body[^2]; // Tail finally moves
 
         // Act: Move onto empty space
-        // wasGrowing: true (consumes credit) -> Skip Dequeue. Length becomes 12.
+        // wasGrowing: false (already consumed) -> Dequeue occurs. Length stays at body.Length + 1.
         snake.UpdateAfterMove(digestPos, false, NormalDamage);
 
         // Assert
         // 1. Vital Signs
         That(snake.Hp, Is.EqualTo(100 - NormalDamage), "HP should decrease normally.");
-        That(snake.IsGrowthPending, Is.False, "Credit must be consumed.");
+        That(snake.IsGrowthPending, Is.False, "No pending growth expected.");
 
         // 2. Queue Geometry
-        // Rule: The tail stays stationary AGAIN because the credit from eating is being processed.
-        That(snake.Length, Is.EqualTo(body.Length + 2), "Turn T+1: Length increases again as tail stays stationary.");
+        // Rule: Tail now moves because we only ate 1 food 1 turn ago.
+        That(snake.Length, Is.EqualTo(body.Length + 1), "Turn T+1: Length should remain stable after growth.");
         That(snake.Head, Is.EqualTo(digestPos), "Head mismatch.");
-        That(snake.Tail, Is.EqualTo(originalTail), "Turn T+1: Tail must STILL be anchored due to credit.");
+        That(snake.Tail, Is.EqualTo(expectedNewTail), "Turn T+1: Tail must advance normally.");
 
         // 3. Bitboard Consistency
-        That(snake.Body.IsSet(originalTail), Is.True, "Tail bit must still be set.");
-        That(snake.Body.PopCount(), Is.EqualTo(body.Length + 2), "Bitboard population count mismatch.");
-
-        // --- STEP 3: Turn T+2 (Final Unroll) ---
-        var finalPos = GetNextPosition(digestPos, facing, env.Width);
-        var expectedNewTail = body[^2]; // Finally, the tail moves forward
-
-        // wasGrowing: false && ateFood: false -> Dequeue occurs. Length stays 12.
-        snake.UpdateAfterMove(finalPos, false, NormalDamage);
-
-        That(snake.Length, Is.EqualTo(body.Length + 2), "Turn T+2: Length stays stable as tail finally moves.");
-        That(snake.Tail, Is.EqualTo(expectedNewTail), "Turn T+2: Tail must finally advance.");
-        That(snake.Body.IsSet(originalTail), Is.False, "Turn T+2: Old tail bit must be cleared.");
+        That(snake.Body.IsSet(originalTail), Is.False, "Turn T+1: Old tail bit must be cleared.");
+        That(snake.Body.IsSet(expectedNewTail), Is.True, "Turn T+1: New tail bit must be set.");
+        That(snake.Body.PopCount(), Is.EqualTo(body.Length + 1), "Bitboard population count mismatch.");
     }
 
     /// <summary>
@@ -163,7 +150,6 @@ public partial class WarSnakeTests
     public void UpdateAfterMove_WhenEatingConsecutively_ShouldStackGrowthCreditsAndKeepTailStationary(SnakeMemoryContext context, Environment env, ushort[] body, byte hp, SnakeFacing facing)
     {
         // Arrange
-        // Production Code: The LightSpeed logic relies on WarSnakeLife.Credits
         var snake = context.Build();
         snake.Initialize(new("hero", 100, body));
 
@@ -172,24 +158,21 @@ public partial class WarSnakeTests
         var originalTail = body[^1];
 
         // Act & Assert: Turn 1 (First Food)
-        // Rule: Food consumption scheduled. Credits: 0 -> 1.
         snake.UpdateAfterMove(pos1, true, 0);
 
-        That(snake.IsGrowthPending, Is.True, "Growth should be pending after first eat.");
+        // FIX: Eager consumption
+        That(snake.IsGrowthPending, Is.False, "Growth should be consumed immediately.");
         That(snake.Length, Is.EqualTo(body.Length + 1), "Length must increase immediately.");
         That(snake.Tail, Is.EqualTo(originalTail), "Tail must stay anchored on the turn food is consumed.");
 
         // Act & Assert: Turn 2 (Second Food - Chain)
-        // Rule: Credits should stack. Credits: 1 -> 2.
-        // Note: UpdateAfterMove calls ConsumePendingGrowth (1 -> 0) then ScheduleGrowth (0 -> 1)
-        // because at Turn 2 we consume the growth of Turn 1 but add a new one.
-        // Actually, in our logic, if we eat while a growth is pending, the tail still doesn't move.
+        // Rule: Eat again. Add 1 credit. Consume 1 credit. Skip Dequeue again.
         snake.UpdateAfterMove(pos2, true, 0);
 
         // Final Verifications
         // 1. Vital Signs & Stacked State
         That(snake.Hp, Is.EqualTo(100), "Full cure failed on second eat.");
-        That(snake.IsGrowthPending, Is.True, "Growth flag should remain set.");
+        That(snake.IsGrowthPending, Is.False, "Growth should be consumed immediately.");
 
         // 2. Queue Geometry (The "Human" logic check)
         // After eating twice, length is original + 2 and tail hasn't moved a single unit.
@@ -198,7 +181,6 @@ public partial class WarSnakeTests
         That(snake.Tail, Is.EqualTo(originalTail), "Tail must stay anchored for 2 turns of consecutive eating.");
 
         // 3. Bitboard Consistency (Paranoia Effect)
-        // Verify every segment is correctly registered in the Bitboard
         That(snake.Body.IsSet(body[0]), Is.True, "Original head position bit lost.");
         That(snake.Body.IsSet(pos1), Is.True, "First food position bit lost.");
         That(snake.Body.IsSet(pos2), Is.True, "Second food position bit missing.");
