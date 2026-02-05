@@ -177,9 +177,9 @@ public class WarSnakeLifeTests
         That(growTurn2, Is.True, "Turn 2: Snake should grow again (Flag re-arming failed).");
         That(life.IsGrowthPending, Is.False, "Flag must be reset after the second consumption.");
     }
-
+    
     [Test]
-    public void ScheduleGrowth_WhenSaturatedAtMaxByte_ShouldHandle255CreditsWithoutOverflow()
+    public void ScheduleGrowth_WhenExceedingMaxByte_ShouldOverflowToZero()
     {
         // Arrange
         var life = new WarSnakeLife();
@@ -187,8 +187,8 @@ public class WarSnakeLifeTests
 
         const int maxCredits = 255;
 
-        // Act & Assert: Accumulation Phase
-        // Verify increment integrity and property exposure
+        // Act & Assert: Accumulation Phase (0 -> 255)
+        // Verify increment integrity up to the physical limit
         for (var i = 1; i <= maxCredits; i++)
         {
             life.ScheduleGrowth();
@@ -197,39 +197,19 @@ public class WarSnakeLifeTests
             That(life.Credits, Is.EqualTo((byte)i), $"Internal Credits counter mismatch at step {i}.");
         }
 
-        // Saturation Attempt (255 -> 255)
-        // This is the only part that validates your 'if' check.
+        // Act: Overflow Trigger (255 -> 0)
+        // We explicitly accept the overflow for performance reasons (Branchless)
         life.ScheduleGrowth(); // The 256th call
 
-        That(life.Credits, Is.EqualTo(byte.MaxValue), "Credits must saturate at 255 and NOT wrap to 0.");
-        That(life.IsGrowthPending, Is.True, "Growth must remain pending at saturation.");
+        // Assert: Verify Wrap-Around
+        That(life.Credits, Is.Zero, 
+            "Credits must overflow to 0 after exceeding byte.MaxValue (Performance decision).");
+    
+        That(life.IsGrowthPending, Is.False, 
+            "Growth must NOT be pending after wrapping around to 0.");
 
-        // Consumption Phase (255 -> 0)
-        // Preserved: Verifies drainage from max value
-        for (var i = maxCredits; i >= 1; i--)
-        {
-            That(life.Credits, Is.EqualTo((byte)i), $"Credits count mismatch before consumption at step {i}.");
-
-            var result = life.ConsumePendingGrowth();
-            That(result, Is.True, $"Consumption failed at remaining count: {i}");
-
-            if (i > 1)
-            {
-                That(life.IsGrowthPending, Is.True, $"Growth should still be pending with {i - 1} credits left.");
-                That(life.Credits, Is.EqualTo((byte)(i - 1)), $"Credits count mismatch after consumption at step {i}.");
-            }
-            else
-            {
-                That(life.IsGrowthPending, Is.False, "Growth flag must be cleared exactly after the 255th consumption.");
-                That(life.Credits, Is.Zero, "Credits must be zero after final consumption.");
-            }
-        }
-
-        // Underflow Phase (0 -> 0)
-        var finalResult = life.ConsumePendingGrowth();
-        
-        That(finalResult, Is.False, "Underflow protection: 256th consumption must return false.");
-        That(life.IsGrowthPending, Is.False, "IsGrowthPending must remain false after full drainage.");
-        That(life.Credits, Is.Zero, "Credits property must remain zero on underflow attempt.");
+        // Verification: Ensure consumption fails on empty/overflowed state
+        var result = life.ConsumePendingGrowth();
+        That(result, Is.False, "Cannot consume growth after overflow reset.");
     }
 }

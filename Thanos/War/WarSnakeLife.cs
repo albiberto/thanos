@@ -30,10 +30,10 @@ public struct WarSnakeLife
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void ScheduleGrowth()
-    {
-        if (Credits < byte.MaxValue) Credits++;
-    }
+    public void SetPendingGrowth(byte credits) => Credits = credits;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void ScheduleGrowth() => Credits++;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ConsumePendingGrowth()
