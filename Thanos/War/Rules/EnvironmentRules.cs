@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using Thanos.Shared;
 using Thanos.War.State;
 using Thanos.War.Structures;
 
@@ -12,23 +11,21 @@ namespace Thanos.War.Rules;
 public static class EnvironmentRules
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SimulateFoodSpawn(ref GameState state, int foodSpawnChance, int minimumFood)
+    public static void SimulateFoodSpawn(ref GameState state, GameContext context)
     {
-        // 1. Fast Exit: Se c'è abbastanza cibo o il dado dice no.
-        // Nota: Random.Shared è thread-safe in .NET 6+, ma per determinismo estremo in futuro 
-        // potremmo voler passare un oggetto 'FastRandom' custom.
-        if (state.Food.PopCount() >= minimumFood && Random.Shared.Next(0, 100) >= foodSpawnChance) 
+        // 1. Fast Exit: Accesso diretto a MinFood e Chance dal Context
+        if (state.Food.PopCount() >= context.MinFood && Random.Shared.Next(0, 100) >= context.FoodSpawnChance) 
             return;
 
         // 2. Spawn Logic (Try-and-fail approach for performance)
-        // Tentiamo max 10 volte di trovare un posto libero. 
-        // È molto più veloce che calcolare l'elenco delle celle libere e sceglierne una.
-        var area = state.Area;
+        // Usiamo Area pre-calcolata dal Context
+        var area = context.Area;
+
         for (var i = 0; i < 10; i++)
         {
             var spot = (ushort)Random.Shared.Next(0, area);
             
-            // Check collisione: Non su un serpente (corpo o testa) e non su cibo esistente
+            // Check collisione: Non su un serpente, cibo o hazard
             if (state.Snakes.IsSet(spot) || state.Food.IsSet(spot) || state.Hazards.IsSet(spot)) 
                 continue;
 

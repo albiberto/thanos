@@ -1,23 +1,22 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
+using Thanos.Common;
 using Thanos.Shared;
 using Thanos.War.State;
+using Thanos.War.Structures;
 
 namespace Thanos.War.Rules;
 
 /// <summary>
-///     PURE PHYSICS ENGINE.
-///     Determines the outcome of moves. Deterministic.
+/// PURE PHYSICS ENGINE.
+/// Determines the outcome of moves. Deterministic.
+/// Transform: (State_t, Moves, Context) -> State_t+1
 /// </summary>
 public static class StandardRules
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void SimulateTurn(ref GameState state, ReadOnlySpan<byte> moves, int hazardDamage)
+    public static void SimulateTurn(ref GameState state, GameContext context, ReadOnlySpan<byte> moves)
     {
-        // ... (Il codice di SimulateTurn rimane identico a prima) ...
-        // Copia qui SOLO il metodo SimulateTurn che abbiamo scritto nel passo precedente.
-        // Niente euristiche qui.
-
         // Stack allocation ensures zero GC pressure during simulation.
         Span<ushort> nextHeads = stackalloc ushort[Constants.MaxSnakesCount];
         Span<ushort> tails = stackalloc ushort[Constants.MaxSnakesCount];
@@ -35,8 +34,8 @@ public static class StandardRules
 
             if (snake.IsDead) continue;
 
-            // Resolve next position using the lookup matrix
-            var nextHead = state.Neighbors.Get(snake.Head, moves[snakeIndex]);
+            // Resolve next position using the CONTEXT (Immutable Topology)
+            var nextHead = context.Neighbors.Get(snake.Head, moves[snakeIndex]);
 
             // Cache vital data
             nextHeads[snakeIndex] = nextHead;
@@ -48,7 +47,7 @@ public static class StandardRules
             // If growth is pending (ate last turn), tail is anchored
             if (snake.IsGrowthPending) ateMask |= 1 << snakeIndex;
 
-            // Immediate Collisions (Walls)
+            // Immediate Collisions (Walls via Neighbors Logic or Static check)
             if (NeighborsMatrix.IsOutOfBound(nextHead))
                 deadMask |= 1 << snakeIndex;
             else if (state.Food.IsSet(nextHead))
@@ -62,7 +61,7 @@ public static class StandardRules
         // 1. The snake is alive, NOT eating NOW, and NOT growing (ate previously).
         // 2. The snake died (entire body removed).
         var movingTailsMask = (wallsSurvivorsMask & ~eatMask & ~ateMask) | deadMask;
-
+        
         var scanner = wallsSurvivorsMask;
         while (scanner != 0)
         {
@@ -76,14 +75,14 @@ public static class StandardRules
 
             // If occupied, check if it's a "Moving Tail"
             var isMovingTail = false;
-            var potentialMovers = movingTailsMask;
+            var potentialMovers = movingTailsMask; 
             while (potentialMovers != 0)
             {
                 var j = BitOperations.TrailingZeroCount(potentialMovers);
                 potentialMovers &= potentialMovers - 1;
 
                 if (tails[j] != nextHead) continue;
-
+                
                 isMovingTail = true;
                 break;
             }
@@ -126,7 +125,7 @@ public static class StandardRules
         // 1. Updates & Clears (Must happen before setting new heads)
         var survivorsMask = 0;
         var commitScanner = aliveMask;
-
+        
         while (commitScanner != 0)
         {
             var snakeId = BitOperations.TrailingZeroCount(commitScanner);
@@ -144,15 +143,21 @@ public static class StandardRules
             {
                 // Survivor
                 var eating = (eatMask & (1 << snakeId)) != 0;
-                var damage = state.Hazards.IsSet(nextHeads[snakeId]) ? hazardDamage : 0;
+                
+                // DAMAGE CALCULATION FROM CONTEXT
+                var damage = state.Hazards.IsSet(nextHeads[snakeId]) ? context.HazardDamage : 0;
 
                 snake.UpdateAfterMove(nextHeads[snakeId], eating, damage + 1);
 
                 if (eating)
+                {
                     state.Food.Unset(nextHeads[snakeId]);
+                }
                 else if ((ateMask & (1 << snakeId)) == 0)
+                {
                     // Tail moves -> Clear bit
                     state.Snakes.Unset(tails[snakeId]);
+                }
 
                 survivorsMask |= 1 << snakeId;
             }
