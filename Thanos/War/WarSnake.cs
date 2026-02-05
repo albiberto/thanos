@@ -52,7 +52,6 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     
     public int Length => _queue.Length;
     public int ActualLength => _queue.Length + _life.Credits;
-    public int PendingGrowth => _life.Credits;
     
     public Bitboard Body => _bitboard;
     
