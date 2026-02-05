@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Thanos.War;
+using Thanos.War.Snake;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
@@ -11,7 +12,7 @@ public partial class SnakesSystemTests
     // These allow the test to "see" private fields required for topology verification.
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_queue")]
-    private static extern ref War.Structures.CircularQueue GetQueue(ref War.WarSnake snake);
+    private static extern ref War.Structures.CircularQueue GetQueue(ref War.Snake.WarSnake snake);
 
     [TestCaseSource(nameof(SystemScenarios))]
     public unsafe void Memory_Layout_ShouldGuarantee_ExactStride_Between_All_SequentialSnakes(SnakesSystemTestContext ctx)

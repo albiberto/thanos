@@ -1,8 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.Shared;
+using Thanos.War.Snake;
 using Thanos.War.Structures;
 
-namespace Thanos.War.Arena;
+namespace Thanos.War.State;
 
 // PURE DATA VIEW
 public readonly ref struct GameState(

@@ -1,11 +1,10 @@
-﻿using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Thanos.Common;
 using Thanos.Shared;
-using Thanos.SourceGen;
+using Thanos.War.Snake;
 using Thanos.War.Structures;
 
-namespace Thanos.War;
+namespace Thanos.War.Brain;
 
 public static class HeuristicsConstants
 {

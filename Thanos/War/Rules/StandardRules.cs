@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using Thanos.Shared;
-using Thanos.War.Arena;
+using Thanos.War.State;
 
 namespace Thanos.War.Rules;
 

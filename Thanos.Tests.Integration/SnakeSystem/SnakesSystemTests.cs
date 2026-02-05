@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Thanos.Memory;
 using Thanos.War;
+using Thanos.War.Snake;
 
 namespace Thanos.Tests.Integration.SnakeSystem;
 

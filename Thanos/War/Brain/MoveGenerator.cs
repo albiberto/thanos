@@ -2,9 +2,9 @@
 using System.Runtime.Intrinsics;
 using Thanos.Common;
 using Thanos.Shared;
-using Thanos.War.Arena;
+using Thanos.War.State;
 
-namespace Thanos.War.Rules;
+namespace Thanos.War.Brain;
 
 /// <summary>
 ///     Responsible for generating valid moves and pruning obviously bad ones (Heuristics).

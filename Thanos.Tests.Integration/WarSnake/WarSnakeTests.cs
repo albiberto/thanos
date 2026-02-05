@@ -1,6 +1,7 @@
 using System.Numerics;
 using Thanos.Tests.Integration.Support;
 using Thanos.War;
+using Thanos.War.Snake;
 using Thanos.War.Structures;
 
 namespace Thanos.Tests.Integration.WarSnake;
@@ -77,7 +78,7 @@ public partial class WarSnakeTests
         private WarSnakeLife _life;
         private CircularQueueState _queueState;
 
-        public War.WarSnake Build()
+        public War.Snake.WarSnake Build()
         {
             var bitboard = new War.Structures.Bitboard(_bitboardMemory);
             var queue = new War.Structures.CircularQueue(_queueMemory, ref _queueState, capacity);

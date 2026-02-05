@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Thanos.SourceGen;
 
-namespace Thanos.War.Arena;
+namespace Thanos.War.State;
 
 public static class StateMapper
 {

@@ -2,7 +2,7 @@
 using Thanos.Memory;
 using Thanos.War.Structures;
 
-namespace Thanos.War;
+namespace Thanos.War.Snake;
 
 public readonly unsafe ref struct SnakesSystem(byte* basePtr, in SlotMemoryLayout layout, int count)
 {

@@ -1,9 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Thanos.SourceGen;
 using Thanos.War.Structures;
 
-namespace Thanos.War;
+namespace Thanos.War.Snake;
 
 public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQueue queue)
 {
@@ -13,7 +12,7 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
     private CircularQueue _queue = queue;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Initialize(in Snake snakeData)
+    public void Initialize(in SourceGen.Snake snakeData)
     {
         ReadOnlySpan<ushort> body = snakeData.Body;
         var totalLength = body.Length;

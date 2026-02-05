@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using Thanos.Abstract;
 using Thanos.War;
+using Thanos.War.Brain;
+using Thanos.War.Snake;
 using Thanos.War.Structures;
 
 namespace Thanos.Memory;

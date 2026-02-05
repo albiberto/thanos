@@ -1,4 +1,5 @@
 using Thanos.War;
+using Thanos.War.Snake;
 using static NUnit.Framework.Assert;
 
 namespace Thanos.Tests.Integration.WarSnake;
