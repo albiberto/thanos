@@ -29,9 +29,9 @@ public partial class ArenaTests
         // 2. Global Bitboard Synchronization
         // The Arena.Snakes bitboard must be the union of all individual snake bodies
         var expectedPopCount = 0;
-        for (int i = 0; i < 4; i++) expectedPopCount += arena.System[i].Length;
-        
-        That(arena.Snakes.PopCount(), Is.EqualTo(expectedPopCount), 
+        for (var i = 0; i < 4; i++) expectedPopCount += arena.System[i].Length;
+
+        That(arena.Snakes.PopCount(), Is.EqualTo(expectedPopCount),
             "Global Snakes bitboard must match the sum of individual snake lengths.");
 
         // 3. Environment Bitboards
@@ -49,7 +49,7 @@ public partial class ArenaTests
         // ARRANGE
         using var sourceCtx = new ArenaTestContext(_lookups, _layout);
         using var destCtx = new ArenaTestContext(_lookups, _layout);
-        
+
         var source = sourceCtx.Arena;
         var destination = destCtx.Arena;
 
@@ -70,7 +70,7 @@ public partial class ArenaTests
         // Modifying the source MUST NOT affect the destination
         source.Food.Clear();
         That(destination.Food.PopCount(), Is.EqualTo(4), "Clone must be a deep copy, not a reference copy.");
-        
+
         source.System[0].Kill();
         That(destination.System[0].IsDead, Is.False, "Snake life state must be isolated after clone.");
     }
@@ -83,7 +83,7 @@ public partial class ArenaTests
         using var ctx = new ArenaTestContext(_lookups, _layout);
         var arena = ctx.Arena;
         var request = BattleSnakeSerializer.Parse(Support.Constants.MediumJson);
-        
+
         // We only provide 2 IDs
         string[] orderedIds = [Support.Constants.Me, Support.Constants.Enemy1];
 
@@ -93,7 +93,7 @@ public partial class ArenaTests
         // ASSERT
         That(arena.System[0].IsDead, Is.False, "Hero (0) should be initialized.");
         That(arena.System[1].IsDead, Is.False, "Enemy1 (1) should be initialized.");
-        
+
         // SnakesSystem handles cleanup in Initialize(), so 2 and 3 must be dead
         That(arena.System[2].IsDead, Is.True, "Snake 2 was not in orderedIds and should remain dead.");
         That(arena.System[3].IsDead, Is.True, "Snake 3 was not in orderedIds and should remain dead.");

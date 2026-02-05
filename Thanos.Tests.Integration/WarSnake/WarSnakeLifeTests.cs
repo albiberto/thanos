@@ -185,7 +185,6 @@ public class WarSnakeLifeTests
         var life = new WarSnakeLife();
         life.SetHp(100);
 
-        // Physical limit of the byte counter (0-255)
         const int maxCredits = 255;
 
         // Act & Assert: Accumulation Phase
@@ -198,8 +197,15 @@ public class WarSnakeLifeTests
             That(life.Credits, Is.EqualTo((byte)i), $"Internal Credits counter mismatch at step {i}.");
         }
 
-        // Act & Assert: Consumption Phase
-        // Verify deterministic drainage of the stacked credits
+        // Saturation Attempt (255 -> 255)
+        // This is the only part that validates your 'if' check.
+        life.ScheduleGrowth(); // The 256th call
+
+        That(life.Credits, Is.EqualTo(byte.MaxValue), "Credits must saturate at 255 and NOT wrap to 0.");
+        That(life.IsGrowthPending, Is.True, "Growth must remain pending at saturation.");
+
+        // Consumption Phase (255 -> 0)
+        // Preserved: Verifies drainage from max value
         for (var i = maxCredits; i >= 1; i--)
         {
             That(life.Credits, Is.EqualTo((byte)i), $"Credits count mismatch before consumption at step {i}.");
@@ -219,11 +225,11 @@ public class WarSnakeLifeTests
             }
         }
 
+        // Underflow Phase (0 -> 0)
         var finalResult = life.ConsumePendingGrowth();
-        var isStillPending = life.IsGrowthPending;
-
+        
         That(finalResult, Is.False, "Underflow protection: 256th consumption must return false.");
-        That(isStillPending, Is.False, "IsGrowthPending must remain false after full drainage.");
+        That(life.IsGrowthPending, Is.False, "IsGrowthPending must remain false after full drainage.");
         That(life.Credits, Is.Zero, "Credits property must remain zero on underflow attempt.");
     }
 }
