@@ -57,7 +57,7 @@ public readonly unsafe ref struct SnakesSystem(byte* basePtr, in SlotMemoryLayou
         }
     }
     
-    // --- NUOVO METODO: Copia raw ad altissima velocità ---
+    // --- Copia raw ad altissima velocità ---
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyFrom(in SnakesSystem source)
     {
