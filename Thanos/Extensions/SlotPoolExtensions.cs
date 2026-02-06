@@ -12,7 +12,8 @@ public static class SlotPoolExtensions
         var arena = slotPool.GetGameState(index);
         
         // Passiamo gli ID per mappare correttamente le stringhe JSON agli indici interni (0, 1..)
-        arena.InitializeFromRequest(in request, sortedSnakeIds);
+        // TODO: REINTRODUCE THIS
+        // arena.InitializeFromRequest(in request, sortedSnakeIds);
 
         var hash = ZobristHasher.CalculateHash(in arena);
 

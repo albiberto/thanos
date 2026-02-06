@@ -4,6 +4,7 @@ using Thanos.Abstract;
 using Thanos.Common;
 using Thanos.SourceGen;
 using Thanos.War;
+using Thanos.War.State;
 
 namespace Thanos.MCST;
 
@@ -168,7 +169,8 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
             }
             else
             {
-                var mask = parentArena.GetPlausibleMoves(i);
+                // var mask = parentArena.GetPlausibleMoves(i);
+                    var mask = (byte)0b1111; // TODO: REINTRODUCE PLAUSIBILITY CHECK
                 if (mask == 0) 
                 {
                     if (i == 0) // Hero non ha mosse -> Game Over
@@ -205,7 +207,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         Span<byte> currentMoves, 
         int parentIndex,
         ref int lastChildIndex,
-        in Arena parentArena)
+        in GameState parentArena)
     {
         if (currentSnakeIndex == totalSnakes)
         {
@@ -238,7 +240,7 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         ReadOnlySpan<byte> moves, 
         int parentIndex, 
         ref int lastChildIndex, 
-        in Arena parentArena)
+        in GameState parentArena)
     {
         var childIndex = _nodeMemoryPool.Allocate(); // Thread-Safe Atomic Allocation
         var childSlotIndex = _slotPool.Allocate();
@@ -246,10 +248,10 @@ public sealed class Worker(ISlotMemoryPool slotPool, INodeMemoryPool nodeMemoryP
         if (childIndex == -1 || childSlotIndex == -1) return;
 
         var childArena = _slotPool.GetGameState(childIndex);
-        childArena.CloneFrom(in parentArena);
+        // childArena.CloneFrom(in parentArena);
 
         // Simulazione Simultanea
-        childArena.SimulateTurn(moves, _settings.HazardDamagePerTurn);
+        // childArena.SimulateTurn(moves, _settings.HazardDamagePerTurn);
 
         var hash = ZobristHasher.CalculateHash(in childArena);
         var myMove = moves[0]; 
