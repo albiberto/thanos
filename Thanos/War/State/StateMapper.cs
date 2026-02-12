@@ -36,4 +36,24 @@ public static class StateMapper
         foreach (var coordinate in board.Food) state.Food.Set(coordinate);
         foreach (var coordinate in board.Hazards) state.Hazards.Set(coordinate);
     }
+
+    public static void Initialize(ref GameState state, ushort[] positions)
+    {
+        // 1. Clean Local State
+        state.System.Initialize();
+
+        // 2. Clean Global State
+        state.Food.Clear();
+        state.Hazards.Clear();
+        state.Snakes.Clear();
+        
+        for (var i = 0; i < positions.Length; i++)
+        {
+            var snake = state.System[i];
+            snake.InitializeFrom(positions[i]);
+
+            // Project body onto global map
+            state.Snakes.Or(snake.Body);
+        }
+    }
 }

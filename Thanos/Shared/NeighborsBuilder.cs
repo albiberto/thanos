@@ -14,19 +14,19 @@ public static class NeighborsBuilder
                 var currentPos = y * width + x;
                 var baseOffset = currentPos * 4;
 
-                memory[baseOffset + 0] = y >= height - 1 
+                memory[baseOffset + 0] = y >= height - 1 // down
                     ? ushort.MaxValue 
                     : (ushort)(currentPos + width);
                 
-                memory[baseOffset + 1] = y == 0 
+                memory[baseOffset + 1] = y == 0 // up
                     ? ushort.MaxValue 
                     : (ushort)(currentPos - width);
                 
-                memory[baseOffset + 2] = x == 0 
+                memory[baseOffset + 2] = x == 0 // left
                     ? ushort.MaxValue 
                     : (ushort)(currentPos - 1);
                 
-                memory[baseOffset + 3] = x == width - 1 
+                memory[baseOffset + 3] = x == width - 1  // right
                     ? ushort.MaxValue 
                     : (ushort)(currentPos + 1);
             }

@@ -43,6 +43,17 @@ public ref struct WarSnake(ref WarSnakeLife life, Bitboard bitboard, CircularQue
             _bitboard.Set(part);
         }
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void InitializeFrom(ushort part)
+    {
+        _life.SetHp(100);
+
+        _life.SetPendingGrowth(2);
+
+        _queue.Enqueue(part);
+        _bitboard.Set(part);
+    }
 
     // --- PROPRIETÀ E ACCESSORI ---
     public ushort Head => _queue.PeekHead;

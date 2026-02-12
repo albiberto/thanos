@@ -11,6 +11,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1"/>
+        <PackageReference Include="Spectre.Console" Version="0.50.1-preview.0.26" />
     </ItemGroup>
 
     <ItemGroup>
