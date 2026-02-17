@@ -40,17 +40,13 @@ BenchmarkRunner.Run<SimulationBenchmarks>();
 [MemoryDiagnoser]
 public class SimulationBenchmarks
 {
-    readonly Allocator allocator = new(10240);
+    private const int Turns = 100;
     
-    readonly GameContext context = new(LookupsMemoryPool.Medium.NeighborsMatrix, 0, 0, 20);
-    readonly SlotMemoryPool pool = new(
-        10,
-        0, 
-        Constants.MaxSnakesCount, 
-        LookupsMemoryPool.Medium, 
-        new SlotMemoryLayout(Constants.Medium.Area, 64, Constants.MaxSnakesCount));
+    private readonly Allocator _allocator = new(10240);
+    private readonly GameContext _context = new(LookupsMemoryPool.Medium.NeighborsMatrix, 0, 0, 20);
+    private readonly SlotMemoryPool _pool = new(10, 0, Constants.MaxSnakesCount, LookupsMemoryPool.Medium, new (Constants.Medium.Area, 64, Constants.MaxSnakesCount));
 
-    readonly byte[][] moves = new byte[][]
+    private readonly byte[][] _moves = new byte[][]
     {
         // up
         [1, 1, 1, 1],
@@ -61,13 +57,11 @@ public class SimulationBenchmarks
         // left
         [2, 2, 2, 2]
     };
-
-    const int turns = 100;
-
+    
     [Benchmark(Baseline = true)]
     public void Alby()
     {
-        var game = pool.GetGameState(0);
+        var game = _pool.GetGameState(0);
         StateMapper.Initialize(ref game, [
             5 + 2 * 11,
             5 + 8 * 11,
@@ -75,20 +69,20 @@ public class SimulationBenchmarks
             8 + 5 * 11
         ]);
 
-        for (var i = 0; i < turns; i++)
+        for (var i = 0; i < Turns; i++)
         {
-            StandardRules.SimulateTurn(ref game, context, moves[i % moves.Length]);
-            EnvironmentRules.SimulateFoodSpawn(ref game, context);
+            StandardRules.SimulateTurn(ref game, _context, _moves[i % _moves.Length]);
+            EnvironmentRules.SimulateFoodSpawn(ref game, _context);
         }
         
-        pool.Reset();
+        _pool.Reset();
     }
     
     [Benchmark]
     public void Roald()
     {
         var board = new Board();
-        board.New(allocator, new Board.Parameters
+        board.New(_allocator, new Board.Parameters
         {
             Width = 11,
             Height = 11,
@@ -101,19 +95,19 @@ public class SimulationBenchmarks
             ]
         });
 
-        for (var i = 0; i < turns; i++)
+        for (var i = 0; i < Turns; i++)
         {
             board.BeginTurn();
-            board.MoveSnakes(moves[i % moves.Length]);
+            board.MoveSnakes(_moves[i % _moves.Length]);
             board.EndTurn(spawnFood: true);
         }
 
-        allocator.Reset();
+        _allocator.Reset();
     }   
 
     public void Alby(LiveDisplayContext ctx)
     {
-        var game = pool.GetGameState(0);
+        var game = _pool.GetGameState(0);
         StateMapper.Initialize(ref game, [
             5 + 2 * 11,
             5 + 8 * 11,
@@ -121,10 +115,10 @@ public class SimulationBenchmarks
             8 + 5 * 11
         ]);
         
-        for (var i = 0; i < turns; i++)
+        for (var i = 0; i < Turns; i++)
         {
-            StandardRules.SimulateTurn(ref game, context, moves[i % moves.Length]);
-            EnvironmentRules.SimulateFoodSpawn(ref game, context);
+            StandardRules.SimulateTurn(ref game, _context, _moves[i % _moves.Length]);
+            EnvironmentRules.SimulateFoodSpawn(ref game, _context);
             
             var ui = game.Render(Constants.Medium.Width, Constants.Medium.Height);
             ctx.UpdateTarget(new Panel(new Markup(ui)));
@@ -133,13 +127,13 @@ public class SimulationBenchmarks
             Thread.Sleep(50);
         }
         
-        pool.Reset();
+        _pool.Reset();
     }
     
     public void Roald(LiveDisplayContext ctx)
     {
         var board = new Board();
-        board.New(allocator, new Board.Parameters
+        board.New(_allocator, new Board.Parameters
         {
             Width = 11,
             Height = 11,
@@ -152,10 +146,10 @@ public class SimulationBenchmarks
             ]
         });
 
-        for (var i = 0; i < turns; i++)
+        for (var i = 0; i < Turns; i++)
         {
             board.BeginTurn();
-            board.MoveSnakes(moves[i % moves.Length]);
+            board.MoveSnakes(_moves[i % _moves.Length]);
             board.EndTurn(true);
 
             var ui = board.Render([]);
@@ -165,6 +159,6 @@ public class SimulationBenchmarks
             Thread.Sleep(50);
         }
         
-        allocator.Reset();
+        _allocator.Reset();
     }
 }
