@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Snake\Snakes.Core.csproj" />
+      <ProjectReference Include="..\Thanos.Hyper\Thanos.Hyper.csproj" />
       <ProjectReference Include="..\Thanos\Thanos.csproj" />
     </ItemGroup>
 
