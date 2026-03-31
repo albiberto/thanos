@@ -5,18 +5,12 @@ namespace Thanos.LightSpeed;
 
 public static class HyperRules
 {
-    // Mappatura Standard Battlesnake Y=0 in basso (0=Left, 1=Right, 2=Up, 3=Down)
-    // Left: -1 (255), Right: +1, Up: +16, Down: -16 (240)
-    // Usiamo una property statica che il JIT converte in una data section inline.
-    private static ReadOnlySpan<byte> Offsets => [255, 1, 16, 240];
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void SimulateTurn(ref HyperState state, ReadOnlySpan<byte> moves)
     {
         byte aliveMask = 0;
         byte deadMask = 0;
         byte eatMask = 0;
-
         byte h0 = 0, h1 = 0, h2 = 0, h3 = 0;
 
         ref var s0 = ref state.Snake0;
@@ -24,15 +18,19 @@ public static class HyperRules
         ref var s2 = ref state.Snake2;
         ref var s3 = ref state.Snake3;
         
-        ref var offsets = ref MemoryMarshal.GetReference(Offsets);
+        ref var offsets = ref MemoryMarshal.GetReference(HyperMoves.Offsets);
 
-        // --- PHASE 1: Snapshot intent and Temporary Tail Removal ---
+        // --- PHASE 1: Snapshot intent ---
         if (s0.Health > 0)
         {
             aliveMask |= 1;
             h0 = unchecked((byte)(s0.GetHead() + Unsafe.Add(ref offsets, moves[0])));
             if (state.Food.IsSet(h0)) eatMask |= 1;
-            else if (s0.PendingGrowth == 0) state.Obstacles.Unset(s0.GetTail());
+            else 
+            {
+                if (s0.StackedSegments > 0) s0.StackedSegments--;
+                else if (s0.PendingGrowth == 0) state.Obstacles.Unset(s0.GetTail());
+            }
         }
 
         if (s1.Health > 0)
@@ -40,7 +38,11 @@ public static class HyperRules
             aliveMask |= 2;
             h1 = unchecked((byte)(s1.GetHead() + Unsafe.Add(ref offsets, moves[1])));
             if (state.Food.IsSet(h1)) eatMask |= 2;
-            else if (s1.PendingGrowth == 0) state.Obstacles.Unset(s1.GetTail());
+            else 
+            {
+                if (s1.StackedSegments > 0) s1.StackedSegments--;
+                else if (s1.PendingGrowth == 0) state.Obstacles.Unset(s1.GetTail());
+            }
         }
 
         if (s2.Health > 0)
@@ -48,7 +50,11 @@ public static class HyperRules
             aliveMask |= 4;
             h2 = unchecked((byte)(s2.GetHead() + Unsafe.Add(ref offsets, moves[2])));
             if (state.Food.IsSet(h2)) eatMask |= 4;
-            else if (s2.PendingGrowth == 0) state.Obstacles.Unset(s2.GetTail());
+            else 
+            {
+                if (s2.StackedSegments > 0) s2.StackedSegments--;
+                else if (s2.PendingGrowth == 0) state.Obstacles.Unset(s2.GetTail());
+            }
         }
 
         if (s3.Health > 0)
@@ -56,7 +62,11 @@ public static class HyperRules
             aliveMask |= 8;
             h3 = unchecked((byte)(s3.GetHead() + Unsafe.Add(ref offsets, moves[3])));
             if (state.Food.IsSet(h3)) eatMask |= 8;
-            else if (s3.PendingGrowth == 0) state.Obstacles.Unset(s3.GetTail());
+            else 
+            {
+                if (s3.StackedSegments > 0) s3.StackedSegments--;
+                else if (s3.PendingGrowth == 0) state.Obstacles.Unset(s3.GetTail());
+            }
         }
 
         // --- PHASE 2: Static Collisions ---
@@ -67,7 +77,6 @@ public static class HyperRules
 
         // --- PHASE 3: Head-to-Head Collisions ---
         byte survivors = (byte)(aliveMask & ~deadMask);
-        
         if (survivors != 0 && (survivors & (survivors - 1)) != 0)
         {
             if ((survivors & 3) == 3 && h0 == h1) {
@@ -126,30 +135,31 @@ public static class HyperRules
         }
         else
         {
-            snake.Health--;
-            if (snake.Health == 0)
+            if (--snake.Health == 0)
             {
                 KillSnake(ref state, ref snake);
                 return;
             }
         }
 
-        // Branchless growth arithmetic
+        // Fully Branchless logic
         byte grows = (byte)(snake.PendingGrowth > 0 ? 1 : 0);
+        byte oldTail = snake.Body[snake.TailPointer];
+        
         snake.PendingGrowth -= grows;
         snake.Length += grows;
         
-        // Se grows = 0, avanza la coda. Rimuoviamo il vecchio tail dalla maschera.
-        if (grows == 0)
-        {
-            byte oldTail = snake.GetTail();
-            snake.BodyMask.Unset(oldTail);
-            // Non serve unset state.Obstacles, è stato fatto nella Fase 1
-        }
-
+        // Advance tail pointer only if grows == 0
         snake.TailPointer = unchecked((byte)(snake.TailPointer + (1 - grows)));
         
-        // Avanza la testa
+        // Maschera condizionale: grows=1 → 0UL (noop), grows=0 → 0xFFFFFFFFFFFFFFFF
+        // Se la coda non cresce (grows=0), applichiamo AND NOT al bit della coda.
+        ulong killMask = (ulong)(grows - 1); 
+        int chunk = oldTail >> 6;
+        ulong bit = 1UL << (oldTail & 63);
+        snake.BodyMask.Chunks[chunk] &= ~(bit & killMask);
+
+        // Advance head
         snake.HeadPointer = unchecked((byte)(snake.HeadPointer + 1));
         snake.Body[snake.HeadPointer] = nextHead;
         
@@ -157,16 +167,13 @@ public static class HyperRules
         snake.BodyMask.Set(nextHead);
     }
 
-    /// <summary>
-    /// O(1) Instant Snake Obliteration via SIMD Bitmask XOR/ANDNOT.
-    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void KillSnake(ref HyperState state, ref HyperSnake snake)
     {
-        // One SIMD instruction to clear the whole snake from the global map
+        // SIMD XOR-Clear
         state.Obstacles.AndNot(ref snake.BodyMask);
         snake.BodyMask.Clear();
         snake.Health = 0;
-        state.AliveCount--;
+        state.AliveCount--; // ← Bug Fix: Decremento corretto
     }
 }

@@ -20,6 +20,14 @@ public struct HyperState
     public int AliveCount;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Initialize11x11(int initialAliveCount)
+    {
+        Obstacles = PrecomputedBoards.Border11x11; // 32-byte SIMD copy
+        Food.Clear();
+        AliveCount = initialAliveCount;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe void Initialize(int width, int height)
     {
         // Paint the borders
