@@ -16,7 +16,6 @@ public class SimulationBenchmarks
     private readonly Allocator _allocator = new(10240);
     private readonly GameContext _context = new(LookupsMemoryPool.Medium.NeighborsMatrix, 0, 0, 20);
     private readonly SlotMemoryPool _pool = new(10, 0, Constants.MaxSnakesCount, LookupsMemoryPool.Medium, new (Constants.Medium.Area, 64, Constants.MaxSnakesCount));
-    private readonly sbyte[] _hyperOffsets = [-1, 1, 16, -16];
     private readonly byte[][] _moves = new byte[][]
     {
         // up
@@ -32,41 +31,45 @@ public class SimulationBenchmarks
     [Benchmark]
     public void HyperSpeed()
     {
-        // Nessuna allocazione heap. State vive sullo stack.
+        // 1. Inizializzazione a Costo Zero (Allocazione sullo Stack)
         var state = new HyperState();
-        state.Initialize(11, 11);
+        state.Initialize(11, 11); // Inizializza i Ghost Borders per una mappa 11x11
 
-        // TRADUZIONE COORDINATE (X, Y) -> 1-based Ghost Border (X+1, Y+1)
-        // Formula: (Y + 1) * 16 + (X + 1)
-        
-        // Alby: 5 + 2 * 11 (X=5, Y=2) => X=6, Y=3 => 3 * 16 + 6 = 54
+        // 2. Setup iniziale dei serpenti. 
+        // Come in Board.cs di Roald, impostiamo Health=100, Length=1 e EatenFood=2 (che per noi è PendingGrowth)
+    
+        // Snake 0: equivalente a 5 + 2 * 11
+        state.Snake0.Health = 100;
+        state.Snake0.Length = 1;
+        state.Snake0.PendingGrowth = 2;
         state.Snake0.AdvanceHead(ref state.Obstacles, 54);
-        
-        // Alby: 5 + 8 * 11 (X=5, Y=8) => X=6, Y=9 => 9 * 16 + 6 = 150
+
+        // Snake 1: equivalente a 5 + 8 * 11
+        state.Snake1.Health = 100;
+        state.Snake1.Length = 1;
+        state.Snake1.PendingGrowth = 2;
         state.Snake1.AdvanceHead(ref state.Obstacles, 150);
-        
-        // Alby: 2 + 5 * 11 (X=2, Y=5) => X=3, Y=6 => 6 * 16 + 3 = 99
+
+        // Snake 2: equivalente a 2 + 5 * 11
+        state.Snake2.Health = 100;
+        state.Snake2.Length = 1;
+        state.Snake2.PendingGrowth = 2;
         state.Snake2.AdvanceHead(ref state.Obstacles, 99);
-        
-        // Alby: 8 + 5 * 11 (X=8, Y=5) => X=9, Y=6 => 6 * 16 + 9 = 105
+
+        // Snake 3: equivalente a 8 + 5 * 11
+        state.Snake3.Health = 100;
+        state.Snake3.Length = 1;
+        state.Snake3.PendingGrowth = 2;
         state.Snake3.AdvanceHead(ref state.Obstacles, 105);
 
+        // 3. Esecuzione del Benchmark
         for (var i = 0; i < Turns; i++)
         {
+            // Estraiamo l'array di byte con le mosse per questo turno
             var turnMoves = _moves[i % _moves.Length];
-
-            // PHASE 1: Srotolamento Code (BeginTurn)
-            state.Snake0.AdvanceTail(ref state.Obstacles);
-            state.Snake1.AdvanceTail(ref state.Obstacles);
-            state.Snake2.AdvanceTail(ref state.Obstacles);
-            state.Snake3.AdvanceTail(ref state.Obstacles);
-
-            // PHASE 2: Movimento Teste (MoveSnakes)
-            // L'unchecked permette il wrap-around dei calcoli sui byte in 1 ciclo di clock
-            state.Snake0.AdvanceHead(ref state.Obstacles, unchecked((byte)(state.Snake0.GetHead() + _hyperOffsets[turnMoves[0]])));
-            state.Snake1.AdvanceHead(ref state.Obstacles, unchecked((byte)(state.Snake1.GetHead() + _hyperOffsets[turnMoves[1]])));
-            state.Snake2.AdvanceHead(ref state.Obstacles, unchecked((byte)(state.Snake2.GetHead() + _hyperOffsets[turnMoves[2]])));
-            state.Snake3.AdvanceHead(ref state.Obstacles, unchecked((byte)(state.Snake3.GetHead() + _hyperOffsets[turnMoves[3]])));
+        
+            // La macchina macina le mosse, gestisce code, cibo, muri e morti. Tutto su stack.
+            HyperRules.SimulateTurn(ref state, turnMoves);
         }
     }
     
