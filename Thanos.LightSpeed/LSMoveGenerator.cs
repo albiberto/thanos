@@ -5,6 +5,22 @@ namespace Thanos.LightSpeed;
 public static class LSMoveGenerator
 {
     /// <summary>
+    /// Extracts the lowest valid move index from the move mask and unsets it.
+    /// Returns 0=Left, 1=Right, 2=Up, 3=Down.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte PopNextMove(ref byte moveMask)
+    {
+        // Trova l'indice del primo bit a 1 (0, 1, 2 o 3)
+        byte moveIndex = (byte)System.Numerics.BitOperations.TrailingZeroCount(moveMask);
+    
+        // Azzera il bit appena letto (Trick di Brian Kernighan)
+        moveMask &= (byte)(moveMask - 1); 
+    
+        return moveIndex;
+    }
+    
+    /// <summary>
     /// Generates a bitmask of legal moves based on the obstacles bitboard.
     /// Bit 0: Left, Bit 1: Right, Bit 2: Up, Bit 3: Down
     /// Assumes 'AdvanceTail' has already been called for non-growing snakes if calculating mid-turn.

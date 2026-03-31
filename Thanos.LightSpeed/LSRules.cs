@@ -21,16 +21,14 @@ public static class LSRules
         ref var offsets = ref MemoryMarshal.GetReference(LSMoves.Offsets);
 
         // --- PHASE 1: Snapshot intent ---
+        // --- PHASE 1: Snapshot intent ---
         if (s0.Health > 0)
         {
             aliveMask |= 1;
             h0 = unchecked((byte)(s0.GetHead() + Unsafe.Add(ref offsets, moves[0])));
             if (state.Food.IsSet(h0)) eatMask |= 1;
-            else 
-            {
-                if (s0.StackedSegments > 0) s0.StackedSegments--;
-                else if (s0.PendingGrowth == 0) state.Obstacles.Unset(s0.GetTail());
-            }
+            // Micro-ottimizzazione: Bitwise OR per testare due byte a zero in un singolo check
+            else if ((s0.StackedSegments | s0.PendingGrowth) == 0) state.Obstacles.Unset(s0.GetTail());
         }
 
         if (s1.Health > 0)
@@ -38,11 +36,7 @@ public static class LSRules
             aliveMask |= 2;
             h1 = unchecked((byte)(s1.GetHead() + Unsafe.Add(ref offsets, moves[1])));
             if (state.Food.IsSet(h1)) eatMask |= 2;
-            else 
-            {
-                if (s1.StackedSegments > 0) s1.StackedSegments--;
-                else if (s1.PendingGrowth == 0) state.Obstacles.Unset(s1.GetTail());
-            }
+            else if ((s1.StackedSegments | s1.PendingGrowth) == 0) state.Obstacles.Unset(s1.GetTail());
         }
 
         if (s2.Health > 0)
@@ -50,11 +44,7 @@ public static class LSRules
             aliveMask |= 4;
             h2 = unchecked((byte)(s2.GetHead() + Unsafe.Add(ref offsets, moves[2])));
             if (state.Food.IsSet(h2)) eatMask |= 4;
-            else 
-            {
-                if (s2.StackedSegments > 0) s2.StackedSegments--;
-                else if (s2.PendingGrowth == 0) state.Obstacles.Unset(s2.GetTail());
-            }
+            else if ((s2.StackedSegments | s2.PendingGrowth) == 0) state.Obstacles.Unset(s2.GetTail());
         }
 
         if (s3.Health > 0)
@@ -62,11 +52,7 @@ public static class LSRules
             aliveMask |= 8;
             h3 = unchecked((byte)(s3.GetHead() + Unsafe.Add(ref offsets, moves[3])));
             if (state.Food.IsSet(h3)) eatMask |= 8;
-            else 
-            {
-                if (s3.StackedSegments > 0) s3.StackedSegments--;
-                else if (s3.PendingGrowth == 0) state.Obstacles.Unset(s3.GetTail());
-            }
+            else if ((s3.StackedSegments | s3.PendingGrowth) == 0) state.Obstacles.Unset(s3.GetTail());
         }
 
         // --- PHASE 2: Static Collisions ---
@@ -142,27 +128,37 @@ public static class LSRules
             }
         }
 
-        // Fully Branchless logic
-        byte grows = (byte)(snake.PendingGrowth > 0 ? 1 : 0);
+        // --- FULLY BRANCHLESS TAIL & GROWTH LOGIC ---
+        byte frozen = (byte)(snake.StackedSegments > 0 ? 1 : 0);
+        byte grows  = (byte)(snake.PendingGrowth > 0 ? 1 : 0);
+        byte tailFree = (byte)((frozen | grows) == 0 ? 1 : 0); // 1 se la coda avanza (nessun blocco)
+
+        snake.StackedSegments -= frozen;
+    
+        // Si consuma PendingGrowth solo se non siamo già bloccati dallo srotolamento iniziale
+        byte consumesGrowth = (byte)((1 - frozen) & grows);
+        snake.PendingGrowth -= consumesGrowth;
+    
+        // La lunghezza aumenta ogni volta che la testa si muove ma la coda no
+        snake.Length += (byte)(1 - tailFree);
+
         byte oldTail = snake.Body[snake.TailPointer];
-        
-        snake.PendingGrowth -= grows;
-        snake.Length += grows;
-        
-        // Advance tail pointer only if grows == 0
-        snake.TailPointer = unchecked((byte)(snake.TailPointer + (1 - grows)));
-        
-        // Maschera condizionale: grows=1 → 0UL (noop), grows=0 → 0xFFFFFFFFFFFFFFFF
-        // Se la coda non cresce (grows=0), applichiamo AND NOT al bit della coda.
-        ulong killMask = (ulong)(grows - 1); 
+    
+        // Avanza il puntatore della coda solo se è libera
+        snake.TailPointer = unchecked((byte)(snake.TailPointer + tailFree));
+    
+        // Costruzione sicura della maschera a 64-bit:
+        // tailFree = 1 -> -(int)1 = -1 -> (ulong) = 0xFFFFFFFFFFFFFFFF (Cancella il bit)
+        // tailFree = 0 -> -(int)0 =  0 -> (ulong) = 0x0000000000000000 (Mantieni il bit)
+        ulong killMask = unchecked((ulong)(-(int)tailFree)); 
         int chunk = oldTail >> 6;
         ulong bit = 1UL << (oldTail & 63);
         snake.BodyMask.Chunks[chunk] &= ~(bit & killMask);
 
-        // Advance head
+        // --- HEAD ADVANCE ---
         snake.HeadPointer = unchecked((byte)(snake.HeadPointer + 1));
         snake.Body[snake.HeadPointer] = nextHead;
-        
+    
         state.Obstacles.Set(nextHead);
         snake.BodyMask.Set(nextHead);
     }

@@ -22,8 +22,8 @@ public struct LSState
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Initialize11x11(int initialAliveCount)
     {
-        Obstacles = PrecomputedBoards.Border11x11; // 32-byte SIMD copy
-        Food.Clear();
+        Obstacles = PrecomputedBoards.Border11x11;
+        Food.Clear(); // VMOVDQU nativo, 1 istruzione CPU
         AliveCount = initialAliveCount;
     }
     
@@ -34,6 +34,6 @@ public struct LSState
         Obstacles.InitializeGhostBorders(width, height);
         
         // Clear food
-        Food.Chunks[0] = Food.Chunks[1] = Food.Chunks[2] = Food.Chunks[3] = 0UL;
+        Food.Clear();
     }
 }
