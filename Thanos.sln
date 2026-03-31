@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thans.Console", "Thans.Cons
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.Hyper", "Thanos.Hyper\Thanos.Hyper.csproj", "{6E0D9F5F-79CC-48AE-AA75-D3A129AC0ECC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Thanos.LightSpeed", "Thanos.LightSpeed\Thanos.LightSpeed.csproj", "{130E3566-30C6-4624-B050-12F99E6CAB3B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{6E0D9F5F-79CC-48AE-AA75-D3A129AC0ECC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E0D9F5F-79CC-48AE-AA75-D3A129AC0ECC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E0D9F5F-79CC-48AE-AA75-D3A129AC0ECC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{130E3566-30C6-4624-B050-12F99E6CAB3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{130E3566-30C6-4624-B050-12F99E6CAB3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{130E3566-30C6-4624-B050-12F99E6CAB3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{130E3566-30C6-4624-B050-12F99E6CAB3B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
