@@ -6,16 +6,16 @@ namespace Thanos.LightSpeed;
 /// The entire game state packed into contiguous memory.
 /// Can be passed by 'ref' without any heap allocation.
 /// </summary>
-public struct HyperState
+public struct LSState
 {
-    public Bitboard256 Obstacles;
-    public Bitboard256 Food;
+    public LSBitboard Obstacles;
+    public LSBitboard Food;
     
     // For a 4-player game. Array overhead removed by manual unrolling.
-    public HyperSnake Snake0;
-    public HyperSnake Snake1;
-    public HyperSnake Snake2;
-    public HyperSnake Snake3;
+    public LSSnake Snake0;
+    public LSSnake Snake1;
+    public LSSnake Snake2;
+    public LSSnake Snake3;
 
     public int AliveCount;
 

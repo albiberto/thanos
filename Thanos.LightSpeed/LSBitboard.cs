@@ -9,7 +9,7 @@ namespace Thanos.LightSpeed;
 /// Packed to 32 bytes for AVX2 Vectorization.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 32)]
-public unsafe struct Bitboard256
+public unsafe struct LSBitboard
 {
     public fixed ulong Chunks[4]; // 256 bits
 
@@ -43,7 +43,7 @@ public unsafe struct Bitboard256
     /// Used for O(1) Snake Kills.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AndNot(ref Bitboard256 other)
+    public void AndNot(ref LSBitboard other)
     {
         if (Vector256.IsHardwareAccelerated)
         {

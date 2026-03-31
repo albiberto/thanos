@@ -4,7 +4,7 @@
 /// Unifies move semantics and memory offsets.
 /// Left: -1 (255), Right: +1, Up: +16, Down: -16 (240)
 /// </summary>
-public static class HyperMoves
+public static class LSMoves
 {
     public const byte Left = 0;
     public const byte Right = 1;

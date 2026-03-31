@@ -1,10 +1,13 @@
-﻿using BenchmarkDotNet.Attributes;
+﻿using System.Runtime.CompilerServices;
+using BenchmarkDotNet.Attributes;
 using Snakes.Core;
 using Spectre.Console;
-using Thanos.Hyper;
+using Thanos.LightSpeed;
 using Thanos.Memory;
 using Thanos.War.Rules;
 using Thanos.War.State;
+using HyperRules = Thanos.Hyper.HyperRules;
+using HyperState = Thanos.Hyper.HyperState;
 
 namespace Thanos.Benchmarks.Benchmarks;
 
@@ -14,8 +17,6 @@ public class SimulationBenchmarks
     private const int Turns = 100;
     
     private readonly Allocator _allocator = new(10240);
-    private readonly GameContext _context = new(LookupsMemoryPool.Medium.NeighborsMatrix, 0, 0, 20);
-    private readonly SlotMemoryPool _pool = new(10, 0, Constants.MaxSnakesCount, LookupsMemoryPool.Medium, new (Constants.Medium.Area, 64, Constants.MaxSnakesCount));
     private readonly byte[][] _moves = new byte[][]
     {
         // up
@@ -27,6 +28,72 @@ public class SimulationBenchmarks
         // left
         [2, 2, 2, 2]
     };
+    
+    [Benchmark]
+    public void LightSpeed()
+    {
+        // 1. Inizializzazione Estrema a Costo Zero
+        // Evitiamo la bzero() nativa di C# su 1KB di memoria. Massima velocità.
+        Unsafe.SkipInit(out LSState state);
+
+        // Inizializzazione tramite HyperBoard Pre-calcolata (Copia SIMD 32-byte in 1 ciclo di clock)
+        state.Obstacles = PrecomputedBoards.Border11x11;
+        state.Food.Clear();
+        state.AliveCount = 4;
+
+        // Pulizia manuale delle BodyMask (Necessaria perché usiamo SkipInit)
+        state.Snake0.BodyMask.Clear();
+        state.Snake1.BodyMask.Clear();
+        state.Snake2.BodyMask.Clear();
+        state.Snake3.BodyMask.Clear();
+
+        // 2. Setup iniziale dei serpenti. 
+        // Snake 0: equivalente a 5 + 2 * 11 (X=6, Y=3) -> 54
+        state.Snake0.Health = 100;
+        state.Snake0.Length = 1;
+        state.Snake0.PendingGrowth = 2;
+        state.Snake0.StackedSegments = 0;
+        state.Snake0.HeadPointer = 0;
+        state.Snake0.TailPointer = 0;
+        state.Snake0.AdvanceHead(ref state.Obstacles, 54);
+
+        // Snake 1: equivalente a 5 + 8 * 11 (X=6, Y=9) -> 150
+        state.Snake1.Health = 100;
+        state.Snake1.Length = 1;
+        state.Snake1.PendingGrowth = 2;
+        state.Snake1.StackedSegments = 0;
+        state.Snake1.HeadPointer = 0;
+        state.Snake1.TailPointer = 0;
+        state.Snake1.AdvanceHead(ref state.Obstacles, 150);
+
+        // Snake 2: equivalente a 2 + 5 * 11 (X=3, Y=6) -> 99
+        state.Snake2.Health = 100;
+        state.Snake2.Length = 1;
+        state.Snake2.PendingGrowth = 2;
+        state.Snake2.StackedSegments = 0;
+        state.Snake2.HeadPointer = 0;
+        state.Snake2.TailPointer = 0;
+        state.Snake2.AdvanceHead(ref state.Obstacles, 99);
+
+        // Snake 3: equivalente a 8 + 5 * 11 (X=9, Y=6) -> 105
+        state.Snake3.Health = 100;
+        state.Snake3.Length = 1;
+        state.Snake3.PendingGrowth = 2;
+        state.Snake3.StackedSegments = 0;
+        state.Snake3.HeadPointer = 0;
+        state.Snake3.TailPointer = 0;
+        state.Snake3.AdvanceHead(ref state.Obstacles, 105);
+
+        // 3. Esecuzione del Benchmark
+        for (var i = 0; i < Turns; i++)
+        {
+            // Array di byte estratto e passato by ref (Zero overhead)
+            var turnMoves = _moves[i % _moves.Length];
+        
+            // La macchina branchless macina le mosse
+            LSRules.SimulateTurn(ref state, turnMoves);
+        }
+    }
     
     [Benchmark]
     public void HyperSpeed()
@@ -73,26 +140,6 @@ public class SimulationBenchmarks
         }
     }
     
-    [Benchmark(Baseline = true)]
-    public void Alby()
-    {
-        var game = _pool.GetGameState(0);
-        StateMapper.Initialize(ref game, [
-            5 + 2 * 11,
-            5 + 8 * 11,
-            2 + 5 * 11,
-            8 + 5 * 11
-        ]);
-
-        for (var i = 0; i < Turns; i++)
-        {
-            StandardRules.SimulateTurn(ref game, _context, _moves[i % _moves.Length]);
-            EnvironmentRules.SimulateFoodSpawn(ref game, _context);
-        }
-        
-        _pool.Reset();
-    }
-    
     [Benchmark]
     public void Roald()
     {
@@ -119,61 +166,4 @@ public class SimulationBenchmarks
 
         _allocator.Reset();
     }   
-
-    public void Alby(LiveDisplayContext ctx)
-    {
-        var game = _pool.GetGameState(0);
-        StateMapper.Initialize(ref game, [
-            5 + 2 * 11,
-            5 + 8 * 11,
-            2 + 5 * 11,
-            8 + 5 * 11
-        ]);
-        
-        for (var i = 0; i < Turns; i++)
-        {
-            StandardRules.SimulateTurn(ref game, _context, _moves[i % _moves.Length]);
-            EnvironmentRules.SimulateFoodSpawn(ref game, _context);
-            
-            var ui = game.Render(Constants.Medium.Width, Constants.Medium.Height);
-            ctx.UpdateTarget(new Panel(new Markup(ui)));
-            ctx.Refresh();
-
-            Thread.Sleep(50);
-        }
-        
-        _pool.Reset();
-    }
-    
-    public void Roald(LiveDisplayContext ctx)
-    {
-        var board = new Board();
-        board.New(_allocator, new Board.Parameters
-        {
-            Width = 11,
-            Height = 11,
-            Snakes =
-            [
-                5 + 2 * 11,
-                5 + 8 * 11,
-                2 + 5 * 11,
-                8 + 5 * 11 
-            ]
-        });
-
-        for (var i = 0; i < Turns; i++)
-        {
-            board.BeginTurn();
-            board.MoveSnakes(_moves[i % _moves.Length]);
-            board.EndTurn(true);
-
-            var ui = board.Render([]);
-            ctx.UpdateTarget(new Panel(new Markup(ui)));
-            ctx.Refresh();
-
-            Thread.Sleep(50);
-        }
-        
-        _allocator.Reset();
-    }
 }

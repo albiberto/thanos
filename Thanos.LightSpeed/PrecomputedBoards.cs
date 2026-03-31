@@ -2,12 +2,12 @@
 
 public static class PrecomputedBoards
 {
-    public static readonly Bitboard256 Border11x11 = BuildBorder(11, 11);
-    public static readonly Bitboard256 Border19x19 = BuildBorder(19, 19);
+    public static readonly LSBitboard Border11x11 = BuildBorder(11, 11);
+    public static readonly LSBitboard Border19x19 = BuildBorder(19, 19);
 
-    private static Bitboard256 BuildBorder(int w, int h)
+    private static LSBitboard BuildBorder(int w, int h)
     {
-        var b = new Bitboard256();
+        var b = new LSBitboard();
         b.Clear();
         for (int y = 0; y < 16; y++)
         {

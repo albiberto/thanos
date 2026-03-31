@@ -2,7 +2,7 @@
 
 namespace Thanos.LightSpeed;
 
-public static class HyperMoveGenerator
+public static class LSMoveGenerator
 {
     /// <summary>
     /// Generates a bitmask of legal moves based on the obstacles bitboard.
@@ -10,7 +10,7 @@ public static class HyperMoveGenerator
     /// Assumes 'AdvanceTail' has already been called for non-growing snakes if calculating mid-turn.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static byte GetPlausibleMoves(ref Bitboard256 obstacles, byte headPosition)
+    public static byte GetPlausibleMoves(ref LSBitboard obstacles, byte headPosition)
     {
         byte moves = 0;
 
@@ -25,10 +25,10 @@ public static class HyperMoveGenerator
 
             // Costruiamo la bitmask usando le costanti di HyperMoves (0, 1, 2, 3)
             // Se il bit nella mappa ostacoli è 0 (IsUnset), la mossa è legale.
-            if (obstacles.IsUnset(left))  moves |= (byte)(1 << HyperMoves.Left);
-            if (obstacles.IsUnset(right)) moves |= (byte)(1 << HyperMoves.Right);
-            if (obstacles.IsUnset(up))    moves |= (byte)(1 << HyperMoves.Up);
-            if (obstacles.IsUnset(down))  moves |= (byte)(1 << HyperMoves.Down);
+            if (obstacles.IsUnset(left))  moves |= (byte)(1 << LSMoves.Left);
+            if (obstacles.IsUnset(right)) moves |= (byte)(1 << LSMoves.Right);
+            if (obstacles.IsUnset(up))    moves |= (byte)(1 << LSMoves.Up);
+            if (obstacles.IsUnset(down))  moves |= (byte)(1 << LSMoves.Down);
         }
 
         return moves;

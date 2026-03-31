@@ -4,10 +4,10 @@ using System.Runtime.InteropServices;
 namespace Thanos.LightSpeed;
 
 [StructLayout(LayoutKind.Sequential, Pack = 32)]
-public unsafe struct HyperSnake
+public unsafe struct LSSnake
 {
     public byte StackedSegments; // > 0 nei primi turni
-    public Bitboard256 BodyMask; // SIMD Friendly tracking
+    public LSBitboard BodyMask; // SIMD Friendly tracking
     
     public fixed byte Body[256];
     
@@ -25,7 +25,7 @@ public unsafe struct HyperSnake
     public byte GetTail() => Body[TailPointer];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AdvanceHead(ref Bitboard256 obstacles, byte newHeadPos)
+    public void AdvanceHead(ref LSBitboard obstacles, byte newHeadPos)
     {
         HeadPointer = unchecked((byte)(HeadPointer + 1));
         Body[HeadPointer] = newHeadPos;

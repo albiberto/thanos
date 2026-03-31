@@ -3,10 +3,10 @@ using System.Runtime.InteropServices;
 
 namespace Thanos.LightSpeed;
 
-public static class HyperRules
+public static class LSRules
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void SimulateTurn(ref HyperState state, ReadOnlySpan<byte> moves)
+    public static unsafe void SimulateTurn(ref LSState state, ReadOnlySpan<byte> moves)
     {
         byte aliveMask = 0;
         byte deadMask = 0;
@@ -18,7 +18,7 @@ public static class HyperRules
         ref var s2 = ref state.Snake2;
         ref var s3 = ref state.Snake3;
         
-        ref var offsets = ref MemoryMarshal.GetReference(HyperMoves.Offsets);
+        ref var offsets = ref MemoryMarshal.GetReference(LSMoves.Offsets);
 
         // --- PHASE 1: Snapshot intent ---
         if (s0.Health > 0)
@@ -125,7 +125,7 @@ public static class HyperRules
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static unsafe void CommitSnake(ref HyperState state, ref HyperSnake snake, byte nextHead, bool eating)
+    private static unsafe void CommitSnake(ref LSState state, ref LSSnake snake, byte nextHead, bool eating)
     {
         if (eating)
         {
@@ -168,7 +168,7 @@ public static class HyperRules
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void KillSnake(ref HyperState state, ref HyperSnake snake)
+    private static void KillSnake(ref LSState state, ref LSSnake snake)
     {
         // SIMD XOR-Clear
         state.Obstacles.AndNot(ref snake.BodyMask);
